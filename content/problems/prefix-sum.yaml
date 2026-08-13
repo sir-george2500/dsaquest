@@ -1,0 +1,196 @@
+# Problems that are really Prefix Sums & Difference Arrays.
+#
+# None of these may contain the word "prefix" — the whole exercise is spotting
+# the cumulative quantity without being handed it. Two of the four are aimed
+# squarely at the sliding-window confusion, which is the single most valuable
+# discrimination in World 1: the moment a value can be negative, or the ranges
+# arrive out of order, no single moving region can answer the question.
+
+- id: greenhouse-bench-totals
+  pattern: prefix-sum
+  title: Greenhouse Bench
+  difficulty: easy
+  statement: >-
+    A greenhouse bench carries n beds in a line. At the start of the season each
+    bed i receives w[i] millilitres of water, and the log is closed — nothing is
+    watered again and no entry is ever corrected. Afterwards the head grower asks
+    q separate questions, each naming two bed numbers l and r, and each wanting
+    the total millilitres delivered to beds l through r inclusive. The questions
+    arrive in whatever order the grower thinks of them. Answer all of them.
+  constraints: |
+    1 <= n <= 200000
+    1 <= q <= 200000
+    0 <= w[i] <= 10^9
+    0 <= l <= r <= n-1
+    an answer can exceed 2^31
+  signals_present:
+    - the log is closed before the first question, so nothing changes underneath you
+    - many independent totals, each over a contiguous stretch
+    - n and q both 2 * 10^5, so answering each question by walking it is 4 * 10^10 steps
+  decoy_signals:
+    - any one question is answered by a single trivial sweep, which is exactly what makes the quadratic solution look reasonable
+    - every value is non-negative, the condition a moving region usually thrives on
+    - the questions arrive in arbitrary order, so no single advancing region can serve them all — but you have to notice that
+  expected_complexity: O(n + q)
+  hints:
+    - text: >-
+        Nobody ever edits the log. What are you allowed to compute once, before
+        the first question is even asked?
+    - text: >-
+        Suppose you knew the total for beds 0 through r for every single r. Could
+        you then answer a question about beds l through r without touching
+        anything in between?
+    - text: >-
+        Build a table of cumulative totals with one extra leading zero, so that
+        the answer for (l, r) is table[r+1] - table[l] and l = 0 needs no special
+        case. Use 64-bit integers throughout.
+      reveals_pattern: true
+  why: >-
+    "The log is closed" plus q ranges handed to you in arbitrary order is the
+    complete licence for precomputation. Staticness means a built table stays
+    correct, and the arbitrary order means no single region sweeping left to right
+    can be positioned for every question.
+  classic_ref: LeetCode 303 family (Range Sum Query — Immutable)
+
+- id: sleeper-berth-bookings
+  pattern: prefix-sum
+  title: Sleeper Berths
+  difficulty: medium
+  statement: >-
+    A rail company numbers the sleeper berths on a night train 1 through n. Over
+    the booking season it receives m block reservations; reservation j assigns
+    p[j] extra passengers to every berth from l[j] to r[j] inclusive, and the
+    company deliberately allows a berth to be assigned more than once. Nobody
+    inspects the train until the season closes and all m reservations are in.
+    When it does close, print for every berth the total number of passengers
+    assigned to it.
+  constraints: |
+    1 <= n <= 200000
+    1 <= m <= 200000
+    1 <= l[j] <= r[j] <= n
+    1 <= p[j] <= 10000
+  signals_present:
+    - every reservation touches a contiguous block of berths
+    - all the writes happen before any read — the state in the middle is never inspected
+    - applying each reservation berth by berth is 4 * 10^10 operations
+  decoy_signals:
+    - "\"add p to every berth in this block\" invites you to do exactly that, which is the O(n*m) trap the bounds are set to punish"
+    - sorting the reservations by their left endpoint makes a sweep carrying the set of currently active reservations look like the natural answer
+    - a map from berth number to its running load sounds sufficient until you notice each reservation covers a whole block, not one berth
+  expected_complexity: O(n + m)
+  hints:
+    - text: >-
+        No intermediate state of the train is ever observed — only the final one.
+        What does that let you postpone?
+    - text: >-
+        A reservation only really says two things: from here on add p, and from
+        just past here stop adding p. Record those two facts per reservation and
+        reconstruct the whole train in one final sweep.
+    - text: >-
+        Keep an array d of size n+2. Per reservation do d[l] += p and
+        d[r+1] -= p. Then sweep once accumulating d into a running total; the
+        running total at berth i is that berth's answer.
+      reveals_pattern: true
+  why: >-
+    "Nobody inspects the train until the season closes" is the decisive line: all
+    updates precede all reads. Combined with each update covering a contiguous
+    block, that is the licence to store only where each change starts and stops
+    and to materialise the array exactly once, inverting the usual trade.
+  classic_ref: LeetCode 1109 / 370 family (Corporate Flight Bookings, Range Addition)
+
+- id: reservoir-net-change
+  pattern: prefix-sum
+  title: Reservoir Net Change
+  difficulty: medium
+  statement: >-
+    A field station records, once a day for n days, how much a reservoir's level
+    moved that day in centimetres. The number is positive on days it rained and
+    negative on days water was drawn off, and it can be zero. Given the n
+    readings and a target D, report how many blocks of consecutive days exist
+    over which the level moved by exactly D centimetres in net. Two blocks are
+    different if they start or end on different days, even if they cover the same
+    net movement.
+  constraints: |
+    1 <= n <= 200000
+    -10^9 <= reading[i] <= 10^9
+    -10^14 <= D <= 10^14
+    the answer can exceed 2^31
+  signals_present:
+    - blocks of consecutive days, so contiguity is part of the condition
+    - an exact net total, and the blocks are counted rather than optimised over
+    - readings can be negative, so extending a block can move its total in either direction
+  decoy_signals:
+    - "\"consecutive days\" and \"exactly D\" is the precise silhouette of a single advancing region that grows on the right and shrinks on the left"
+    - that region trick is correct for this shape whenever values cannot decrease the total, and the statement quietly withholds that guarantee
+    - "\"count the blocks\" reads as an instruction to enumerate them, which is O(n^2) and passes every small sample"
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Try the sweep you want to try: grow a block on the right, shrink it on the
+        left whenever the total overshoots D. Now construct a set of readings that
+        makes it give the wrong answer.
+    - text: >-
+        Readings like 5, -5, 5 do it — the total is not monotone in the block's
+        length, so shrinking from the left is no longer guaranteed to help and you
+        can never rule a start position out. Express the total of days l..r as the
+        difference of two cumulative quantities instead.
+    - text: >-
+        Sweep once keeping the cumulative movement. The blocks ending at today
+        with net D are exactly the earlier cumulative values equal to
+        current - D, so keep a hash map from cumulative value to how many times it
+        has occurred, seeded with one occurrence of 0, and query it before
+        inserting today's value.
+      reveals_pattern: true
+  why: >-
+    "Positive on days it rained and negative on days water was drawn off" is the
+    whole problem. Negatives destroy the monotonicity a single advancing region
+    depends on — once you cannot safely give up a start position, no one sweep
+    exists. What survives is that the total over days l..r is the difference of
+    two cumulative values, which turns "net exactly D" into a lookup for a
+    cumulative value you have already seen.
+  classic_ref: LeetCode 560 family (Subarray Sum Equals K)
+
+- id: drill-core-balance
+  pattern: prefix-sum
+  title: Drill Core
+  difficulty: hard
+  statement: >-
+    A geologist logs a drill core as n layers from top to bottom, each recorded
+    as either sandstone or shale and nothing else. A stretch of consecutive
+    layers is called settled when it holds as many sandstone layers as shale
+    layers. Report the number of layers in the longest settled stretch, or 0 if
+    no stretch is settled.
+  constraints: |
+    1 <= n <= 200000
+    each layer is 'S' (sandstone) or 'H' (shale)
+  signals_present:
+    - a stretch of consecutive layers, so contiguity is part of the condition
+    - exactly two categories with an equality demanded between their counts
+    - longest such stretch, over quadratically many candidate stretches
+  decoy_signals:
+    - "\"longest stretch of consecutive items satisfying a condition\" is the textbook advertisement for a single advancing region — but \"equally many\" is not monotone in the length, so the left edge can never be safely advanced"
+    - two categories and a count of each makes a plain tally of the two kinds look sufficient, when the tally alone forgets where the stretch began
+    - no total, no sum and no number appears anywhere in the statement, so the cumulative quantity has to be invented rather than read off
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Replace each layer by a number so that "as many of one kind as of the
+        other" becomes a statement about one single quantity rather than two.
+    - text: >-
+        Sandstone +1, shale -1. Now a stretch is settled exactly when its numbers
+        add to zero. What must be true of the cumulative value at the two ends of
+        such a stretch?
+    - text: >-
+        The cumulative value is identical at both ends. Sweep once keeping it, and
+        keep a hash map from each cumulative value to the earliest index where it
+        appeared (seed value 0 at index -1); the answer is the largest gap between
+        a repeat and its first appearance.
+      reveals_pattern: true
+  why: >-
+    "As many sandstone layers as shale layers" is an equality between two counts,
+    and an equality between counts is a difference of zero — the moment you say
+    difference you have a cumulative quantity with the same value at both ends of
+    the stretch. That the encoding is +1/-1 also means negatives are present, so
+    a single advancing region is off the table even though the statement looks
+    exactly like one.
+  classic_ref: LeetCode 525 family (Contiguous Array)

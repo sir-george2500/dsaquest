@@ -1,0 +1,192 @@
+# Problems that are really Binary Search on the Answer.
+#
+# None of these may say "binary search", "search the answer" or anything about a
+# monotone check — the whole exercise is spotting that the objective IS the
+# threshold. `decoy_signals` records what pulls the learner toward ordinary
+# binary search over a sorted container, or toward a greedy/DP construction.
+
+- id: cider-press-rate
+  pattern: binary-search-answer
+  title: Cider Press Rate
+  difficulty: easy
+  statement: >-
+    A cider house must work through n crates of apples, crate i holding w[i]
+    kilograms. Before the shift starts you choose one whole-number rate r for
+    the press and it never changes. In one hour the press draws up to r
+    kilograms out of a single crate and never touches a second crate in the same
+    hour, so a crate holding less than r kilograms simply leaves the rest of
+    that hour idle. Every crate must be emptied within H hours. Presses cost
+    more the faster they run, so report the smallest rate r that still finishes
+    the shift on time.
+  constraints: |
+    1 <= n <= 200000
+    n <= H <= 10^9
+    1 <= w[i] <= 10^9
+  signals_present:
+    - a fixed budget of H hours with the rate left as the unknown
+    - the smallest rate that still finishes (a boundary between works and fails)
+    - a faster press can never take more hours than a slower one
+    - r ranges over 1..10^9 while totalling the hours is one pass over the crates
+  decoy_signals:
+    - the hours a crate needs is a ceiling division, which invites solving for r algebraically
+    - "'smallest rate' next to a list of crate weights tempts sorting the weights and probing that list — but r need not equal any w[i]"
+    - a greedy that spends the hour budget on the heaviest crates first looks plausible and is not even well defined
+  expected_complexity: O(n log(max w))
+  hints:
+    - text: >-
+        Forget choosing r for a moment. If someone handed you a rate, how much
+        work is it to say whether the shift fits in H hours?
+    - text: >-
+        One pass, adding up the hours each crate needs. Now compare two rates:
+        could the faster press ever need more hours than the slower one?
+    - text: >-
+        Never — so the hour count falls as r rises and crosses H exactly once.
+        Bisect r over [1, max w], keeping every rate whose total hours is at
+        most H, and return the surviving bound.
+      reveals_pattern: true
+  why: >-
+    "Every crate must be emptied within H hours" fixes the budget and leaves the
+    rate as the unknown, and "the smallest rate r that still finishes" asks for
+    the boundary of a yes/no question rather than for a computed quantity. The
+    range 1..10^9 with a single-pass check is the economics: thirty passes buy
+    the exact rate.
+  classic_ref: LeetCode 875 / 1011 family
+
+- id: museum-guide-split
+  pattern: binary-search-answer
+  title: Museum Guide Split
+  difficulty: medium
+  statement: >-
+    A museum corridor displays n exhibits in a fixed order that visitors cannot
+    reorder, and exhibit i takes t[i] minutes to talk about. The commentary is
+    shared among g guides: each guide is assigned a block of consecutive
+    exhibits, every exhibit is covered by exactly one guide, and no guide is
+    left without exhibits. All g groups set off at once, so the tour is over
+    only when the busiest guide has stopped talking. Choose the blocks so that
+    the guide who talks the longest talks for as short a time as possible, and
+    report how long that guide talks.
+  constraints: |
+    1 <= g <= n <= 200000
+    1 <= t[i] <= 10^6
+  signals_present:
+    - the guide who talks longest should talk as little as possible (the objective is itself a ceiling)
+    - a fixed number of consecutive blocks is a budget, not something to optimise
+    - any ceiling at least as large as the answer is obviously satisfiable, anything smaller is not
+  decoy_signals:
+    - "a table over (exhibits placed, guides used) is the natural construction, is correct, and dies at n = 2*10^5"
+    - "'split into g blocks' invites a greedy that hands each guide roughly total/g minutes, which is wrong whenever one exhibit is huge"
+    - prefix sums make the cost of any block O(1), which feels like it must be the whole solution
+  expected_complexity: O(n log(sum t))
+  hints:
+    - text: >-
+        Stop asking where the cuts go. Ask instead what you could do if someone
+        told you, in advance, how long the busiest guide ends up talking.
+    - text: >-
+        Fix a ceiling L. Sweep the exhibits and start a new block whenever
+        adding the next exhibit would push the current block past L — that uses
+        the fewest blocks any arrangement could use. When is L acceptable?
+    - text: >-
+        Exactly when that block count is at most g. Raising L never needs more
+        blocks, so bisect L over [max t, sum t] and keep the smallest L that
+        still fits in g blocks.
+      reveals_pattern: true
+  why: >-
+    "The guide who talks the longest talks for as short a time as possible" is
+    the objective stated as a ceiling — the thing you are minimising is already
+    a threshold, and g is a budget you spend rather than a dimension you
+    optimise over. Once you fix the ceiling, one greedy sweep settles it.
+  classic_ref: LeetCode 410 / split-array-largest-sum family
+
+- id: ridge-sensor-spacing
+  pattern: binary-search-answer
+  title: Ridge Sensor Spacing
+  difficulty: medium
+  statement: >-
+    A ranger station owns b portable weather sensors and maintains n survey
+    posts along one straight ridge trail, post j standing at kilometre mark
+    p[j]. The marks are given in no particular order and no two coincide. Every
+    sensor must stand on a post, a post can hold at most one sensor, and two
+    sensors that end up near each other corrupt each other's readings. Pick the
+    posts so that the closest pair of sensors ends up as far apart as it
+    possibly can be, and report that separation.
+  constraints: |
+    2 <= b <= n <= 100000
+    0 <= p[j] <= 10^9
+    all p[j] are distinct
+  signals_present:
+    - the closest pair should be as far apart as it possibly can be (maximise the minimum)
+    - fixing a required separation turns the choice into one greedy left-to-right sweep
+    - insisting on a wider separation can only fit fewer sensors, never more
+  decoy_signals:
+    - the posts must be sorted first, and "a sorted list plus find a distance" reads like an ordinary lookup inside that list
+    - choosing which b of the n posts to use looks like a subset problem, so a table over (posts considered, sensors placed) is tempting
+    - "the answer is always some p[j] - p[i], which invites enumerating the O(n^2) differences and probing those"
+  expected_complexity: O(n log n + n log(max p))
+  hints:
+    - text: >-
+        Choosing the b posts outright is hopeless, but judging a proposal is
+        easy. If you demanded that no two sensors sit closer than d, how many
+        could you place?
+    - text: >-
+        Sort, take the leftmost post, then take every post that stands at least
+        d beyond the last one you took — that fits the most sensors any
+        arrangement could. So d is allowed exactly when that count reaches b.
+    - text: >-
+        A larger d never fits more sensors, so bisect d over
+        [0, max p - min p], keeping every d that still fits b. Round the
+        midpoint up, because here the accepting branch is the one that moves lo.
+      reveals_pattern: true
+  why: >-
+    "The closest pair of sensors ends up as far apart as it possibly can be" is
+    the loudest phrasing there is: the quantity being maximised is the minimum
+    over the arrangement, so it doubles as a threshold you can test. Note that
+    mid is a distance you invented, not an index into the sorted posts — that is
+    what separates this from an ordinary lookup on that same sorted list.
+  classic_ref: SPOJ AGGRCOW / aggressive cows family
+
+- id: loom-order-deadline
+  pattern: binary-search-answer
+  title: Loom Order Deadline
+  difficulty: hard
+  statement: >-
+    A workshop runs m looms side by side, all started at the same instant and
+    none of them ever stopping, breaking, or waiting on another. Loom i
+    completes one bracelet every t[i] seconds, so by second x it has turned out
+    floor(x / t[i]) finished bracelets and nothing more. An order for k
+    bracelets is open, and it can be shipped the moment the workshop's combined
+    output reaches k. Report the earliest second at which that happens.
+  constraints: |
+    1 <= m <= 100000
+    1 <= t[i] <= 10^9
+    1 <= k <= 10^9
+    the answer can be as large as 10^18, so 64-bit arithmetic is required
+  signals_present:
+    - the earliest second at which the total reaches k (the first x for which a yes/no test passes)
+    - total output never falls as the clock advances
+    - the answer runs to 10^18 while counting the output at one given second is a single pass over m looms
+  decoy_signals:
+    - "m looms each emitting on a fixed period is a merge of m sorted streams — a heap popping k completions is correct and hopeless at k = 10^9"
+    - the periods invite a closed form via least common multiples, which collapses the moment the t[i] share no structure
+    - "sorting the t[i] suggests the answer is one of the multiples already present, so an ordinary lookup in that sorted list feels natural"
+  expected_complexity: O(m log(k * min t))
+  hints:
+    - text: >-
+        k is a billion, so nothing that touches one bracelet at a time can
+        survive. Answer a smaller question instead: by second x, exactly how
+        many bracelets exist?
+    - text: >-
+        A sum of x / t[i] over the looms — m divisions, one pass, and it never
+        decreases as x grows. You want the first x at which it reaches k.
+    - text: >-
+        Bisect x over [1, k * min t] in 64-bit arithmetic, keeping every x whose
+        count is at least k, and stop the running sum once it passes k so it
+        cannot overflow.
+      reveals_pattern: true
+  why: >-
+    The decisive contrast is between "the answer can be as large as 10^18" and
+    the fact that "by second x it has turned out floor(x / t[i]) bracelets" makes
+    the count at any single second an O(m) sum. A range that huge with a check
+    that cheap is the entire economics of the pattern; sixty passes over the
+    looms cost less than the heap simulation's first thousand pops. "The
+    earliest second at which that happens" then names the boundary you want.
+  classic_ref: LeetCode 1482 / 1201 minimum-time family

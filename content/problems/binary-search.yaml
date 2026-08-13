@@ -1,0 +1,205 @@
+# Problems that are really Binary Search on Sorted Data.
+#
+# None of these may contain the words "binary search" — the whole exercise is
+# recognising it unaided. Note that in every one of these there IS a concrete
+# ordered collection to probe, which is what separates them from searching over
+# an invented answer. `decoy_signals` records what makes each one hard.
+
+- id: ice-core-age-block
+  pattern: binary-search
+  title: Ice Core Ages
+  difficulty: easy
+  statement: >-
+    A drilling team cuts a single ice core into n samples and lists them from
+    the surface downwards. Deeper ice is never younger than the ice above it, so
+    the recorded ages along the list never decrease. Over the following weeks q
+    researchers each name an age that is guaranteed to appear somewhere in the
+    list, and each wants two numbers back: how many samples carry exactly that
+    age, and the position of the shallowest sample carrying it. The list is
+    never edited.
+  constraints: |
+    1 <= n <= 200000
+    1 <= q <= 200000
+    ages are given in non-decreasing order and fit in a 32-bit signed integer
+    the list is fixed before the first question and never changes
+  signals_present:
+    - the collection arrives already ordered and is never modified
+    - many independent questions asked against the same static collection
+    - each question asks for a count of one value and for the position of its first occurrence
+    - n and q both 2*10^5, so a walk of the list per question is 4*10^10 steps
+  decoy_signals:
+    - "\"how many samples carry exactly that age\" is textbook frequency-map language, and a map from age to positions does answer it"
+    - the guarantee that the age is present makes a straight scan feel safe, and it is safe — merely far too slow
+    - equal ages sit next to each other, which invites finding one and then crawling outwards from it
+  expected_complexity: O(log n) per question
+  hints:
+    - text: >-
+        The list never changes and the questions do not depend on one another.
+        What property of the list itself would a hash map be throwing away?
+    - text: >-
+        Samples of equal age form one unbroken block. Find the two edges of that
+        block — the first position whose age is not below the target, and the
+        first position whose age is strictly above it. Both answers fall out of
+        those two indices.
+    - text: >-
+        Keep a half-open range [lo, hi) that certainly contains the edge, with
+        hi starting at n. Test the midpoint, discard the half that is proven
+        wrong (lo = mid + 1 when you reject mid), and the two edge queries
+        differ only in whether the comparison is < or <=.
+      reveals_pattern: true
+  why: >-
+    "The ages never decrease" plus 2*10^5 independent questions against a list
+    that is never edited plus a question about POSITION and COUNT rather than
+    mere existence. The number of occurrences of a value on ordered data is the
+    gap between two boundaries, and each boundary is located by probing instead
+    of walking: 4*10^10 operations become under four million.
+  classic_ref: LeetCode 34 / std::equal_range family
+
+- id: tram-next-departure
+  pattern: binary-search
+  title: Next Tram Out
+  difficulty: medium
+  statement: >-
+    A tram line publishes n departure times for the day, in strictly increasing
+    minutes after midnight. q passengers phone in, each stating the minute they
+    will reach the stop. For every passenger report the departure they will
+    catch, meaning the earliest departure that is not before their arrival, or
+    the word LATE if every tram for the day has already gone. Passengers are
+    listed in the order they phoned, which has nothing to do with when they
+    arrive, and your answers must come back in that same order.
+  constraints: |
+    1 <= n <= 200000
+    1 <= q <= 200000
+    departure times are strictly increasing, 0 <= time <= 10^9
+    arrival minutes are in arbitrary order and may repeat
+  signals_present:
+    - a static ordered timetable interrogated many times
+    - "\"the earliest departure not before x\" is the successor question stated in words"
+    - a failure case for arrivals past the last departure, which is a real boundary to get right
+    - each query stands alone and the answers must be produced in the input order
+  decoy_signals:
+    - two sequences of times tempt a single coordinated forward sweep with one index in each — but that needs the arrivals in time order, which the required output order forbids without extra bookkeeping
+    - "\"the earliest departure that works\" reads like a scheduling greedy over the day"
+    - the LATE case invites a special-case scan of the tail of the timetable
+  expected_complexity: O(log n) per query
+  hints:
+    - text: >-
+        Each passenger's answer depends on the timetable alone and on nothing
+        the other passengers do. Solve one passenger properly and you have
+        solved all q.
+    - text: >-
+        You need the first entry of an increasing list that is not smaller than
+        x. Keep a range that certainly contains that entry and shrink it by
+        testing a single entry inside it.
+    - text: >-
+        Half-open range [lo, hi) with hi = n. While lo < hi, take mid and set
+        lo = mid + 1 if t[mid] < x, else hi = mid. Landing on n means every
+        departure was earlier — that is LATE, and it is the same check as an
+        iterator that came back equal to end().
+      reveals_pattern: true
+  why: >-
+    "The earliest departure that is not before their arrival" is the successor
+    question in plain words, asked q times against a timetable that never
+    changes. The requirement to answer in phone-in order is what blocks the
+    coordinated forward sweep that would otherwise be linear: every query has to
+    stand on its own, and standing alone is what costs a logarithm instead of a
+    scan.
+  classic_ref: LeetCode 744 / std::lower_bound family
+
+- id: burst-window-tally
+  pattern: binary-search
+  title: Burst Tally
+  difficulty: medium
+  statement: >-
+    A radio observatory records the arrival time of n cosmic bursts. The log is
+    flushed to disk out of order, so the times come in no particular sequence.
+    Overnight, q analysts each pick two times l and r and ask how many bursts
+    arrived in the closed interval between them. No burst is ever added or
+    removed while the questions are being answered.
+  constraints: |
+    1 <= n <= 200000
+    1 <= q <= 200000
+    0 <= arrival time <= 10^12
+    l <= r for every question
+    several bursts may share an arrival time
+  signals_present:
+    - a static log interrogated 2*10^5 times, so one tidying step can be paid for once and amortised
+    - each question counts how many values fall inside a range of values
+    - the count is the difference between two boundary positions
+  decoy_signals:
+    - "\"how many fall between l and r\" is the exact phrasing of a range-sum query, which advertises a cumulative table"
+    - a tally indexed by time is the first thing that comes to mind and cannot be built, since times reach 10^12
+    - many queries over static data invites a segment tree, which is a great deal of machinery for a log nobody ever updates
+  expected_complexity: O((n + q) log n)
+  hints:
+    - text: >-
+        The order the disks flushed in is noise, and nothing is ever inserted
+        afterwards. What does one O(n log n) tidying step buy you, given that
+        every one of the q questions gets to reuse it?
+    - text: >-
+        Once the times are in order, the bursts inside the interval occupy one
+        unbroken block of the log. You only need where that block starts and
+        where it ends.
+    - text: >-
+        Order the log once. Per question, find the first position whose time is
+        at least l and the first position whose time is strictly greater than r;
+        the answer is the difference of those two indices, with no +1 or -1
+        anywhere.
+      reveals_pattern: true
+  why: >-
+    The interval in the question is an interval of VALUES, not of positions, so
+    there is nothing to index into directly — and times running to 10^12 kill
+    the tally array outright. A static log plus 2*10^5 independent counting
+    questions is the pay-once-then-probe shape, and counting by value on ordered
+    data is a subtraction of two boundaries.
+  classic_ref: std::upper_bound minus std::lower_bound counting family
+
+- id: anthology-page-lookup
+  pattern: binary-search
+  title: Missing Index
+  difficulty: hard
+  statement: >-
+    An anthology binds n stories back to back. Story i occupies c[i] pages and
+    the pages are numbered from 1 straight through the whole book without
+    restarting at each story. The index at the back of the volume was never
+    printed, so for each of q page numbers a reader hands you, name the story
+    that page belongs to and how many pages into that story it sits.
+  constraints: |
+    1 <= n <= 200000
+    1 <= q <= 200000
+    1 <= c[i] <= 10^9
+    the book has up to 10^14 pages, so page numbers need 64 bits
+    every queried page number is a real page of the book
+  signals_present:
+    - the running page total after each story increases by construction, whatever the individual counts are
+    - each question asks which entry of that increasing sequence a given value falls under
+    - q independent questions against a book that is never re-bound
+    - the midpoint you would test is an index into a table you actually hold
+  decoy_signals:
+    - cumulative page counts are a cumulative table, and it is easy to build one, stop there, and then walk it per query
+    - 10^14 pages tempts a lookup keyed directly by page number, which cannot be built at all
+    - "\"which story contains page p\" sounds like nominating a story number and checking whether it fits, i.e. testing a candidate answer rather than locating a value in something you already have"
+    - n and q both 2*10^5 make a walk per query 4*10^10 steps, which is the only reason the obvious version fails
+  expected_complexity: O(n + q log n)
+  hints:
+    - text: >-
+        Write down the page number of the LAST page of each story, in order.
+        What is guaranteed about that sequence of n numbers, no matter how
+        lopsided the individual stories are?
+    - text: >-
+        It strictly increases. So "which story holds page p" becomes "which is
+        the first entry of that sequence that is at least p", and the offset
+        inside the story is p minus the entry before it.
+    - text: >-
+        Build the running totals once into a 64-bit array. For each p, probe
+        that array's midpoint to find the first total that is at least p; the
+        index you land on names the story, and subtracting the previous total
+        gives the offset.
+      reveals_pattern: true
+  why: >-
+    The ordered collection is not handed to you, but it is forced to exist the
+    moment you write down cumulative page counts, and the question is a
+    predecessor lookup on it. The decisive detail is what the midpoint IS: an
+    index into a table you built and can read directly, not a story number you
+    guessed and then had to verify with a feasibility check.
+  classic_ref: prefix sums plus std::upper_bound bucket lookup (the "which chapter is this page in" shape)

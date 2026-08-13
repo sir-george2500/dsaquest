@@ -1,0 +1,179 @@
+# Problems that are really Hashing & Frequency Counting.
+#
+# None of these may contain the words "hashing frequency" — and none of them
+# should tip the learner off with "map", "count how many times each", or any
+# other giveaway. `decoy_signals` records what pulls each one towards a
+# confusable pattern (prefix-sum, sliding-window), which is what the
+# post-answer feedback quotes back.
+
+- id: turnstile-rescan
+  pattern: hashing-frequency
+  title: Turnstile Rescan
+  difficulty: easy
+  statement: >-
+    A metro turnstile writes down the id printed on every travel pass as it is
+    presented, in the order the scans happen, giving a list of n ids for the
+    day. A pass is valid for one entry per day. Report the id belonging to the
+    earliest scan that used a pass already presented earlier that day. If no
+    pass was presented twice, report -1.
+  constraints: |
+    1 <= n <= 200000
+    0 <= id <= 10^9
+    ids are not sorted and need not be contiguous
+  signals_present:
+    - the question is whether a value has been met before
+    - ids span a far wider range than the number of scans
+    - only equality of values matters, never how far apart two scans were
+  decoy_signals:
+    - the scans are handed to you in strict chronological order, which invites tracking a stretch of recent scans
+    - "\"earliest\" tempts you to sort the ids and look for neighbouring equals, which throws away the order the answer depends on"
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        When you reach a scan, what is the cheapest question about it that
+        settles the whole problem?
+    - text: >-
+        You only ever need "have I met this id before" — never how long ago, and
+        never how many scans lie between. So carry the answer to that question
+        with you as you sweep.
+    - text: >-
+        Keep a set of the ids already presented. Walk the list once; the first id
+        that is already in the set is the answer. Insert every id after checking it.
+      reveals_pattern: true
+  why: >-
+    "A pass already presented earlier that day" is a question about everything
+    that came before, not about a neighbourhood. Nothing in the statement makes
+    two nearby scans different from two distant ones, so position carries no
+    information and remembering what you have seen is the entire job.
+  classic_ref: LeetCode 217 family (Contains Duplicate)
+
+- id: glaze-recipe-groups
+  pattern: hashing-frequency
+  title: Glaze Recipes
+  difficulty: medium
+  statement: >-
+    A ceramics studio keeps n glaze recipes. Each recipe is written as a string
+    of lowercase letters, one letter per scoop of pigment. Two recipes fire to
+    the same glaze when each is a rearrangement of the other — the scoops may be
+    written down in any order and the kiln cannot tell the difference. Report the
+    size of the largest collection of recipes that all fire to the same glaze.
+  constraints: |
+    1 <= n <= 100000
+    total length of all recipes <= 1000000
+    every character is 'a'..'z'
+  signals_present:
+    - "\"a rearrangement of the other\" — sameness up to a transformation, so a canonical form exists"
+    - the order the scoops are written in is explicitly declared meaningless
+    - largest collection of things that agree, which is a question about how often each canonical form occurs
+  decoy_signals:
+    - each recipe is a string read left to right, and string problems train you to reach for a stretch of adjacent characters
+    - "\"the same amounts of each pigment\" sounds like a cumulative quantity along the string"
+    - comparing every recipe against every other is the obvious reading and is quadratic in n
+  expected_complexity: O(total length)
+  hints:
+    - text: >-
+        Two recipes that fire to the same glaze agree on something you can work
+        out from each recipe alone, without ever looking at the other one. What?
+    - text: >-
+        Reduce each recipe to one small object that is identical for exactly the
+        interchangeable recipes — the 26 scoop totals, say, or the letters in
+        sorted order. Now the question is about how often each object turns up.
+    - text: >-
+        Build the canonical key per recipe, bucket the recipes by that key in a
+        hash map, and report the largest bucket size.
+      reveals_pattern: true
+  why: >-
+    "The scoops may be written down in any order" removes position from the
+    problem outright. Once adjacency and order carry no information there is
+    nothing for a moving region or a running total to hold on to; what is left is
+    a canonical form per recipe and a tally over those forms.
+  classic_ref: LeetCode 49 family (Group Anagrams)
+
+- id: crane-paired-crates
+  pattern: hashing-frequency
+  title: Dockside Crane
+  difficulty: medium
+  statement: >-
+    A dockside crane lifts exactly two crates per trip and is calibrated so that
+    a trip is efficient when the two crates together weigh exactly S kilograms.
+    The yard holds n crates and the crane may take any two of them, from anywhere
+    in the yard, in any order. Report how many different unordered pairs of
+    distinct crates make an efficient trip.
+  constraints: |
+    2 <= n <= 200000
+    1 <= w[i] <= 10^9
+    2 <= S <= 2 * 10^9
+    the answer can exceed 2^31
+  signals_present:
+    - each crate determines exactly one partner weight that would complete it
+    - pairs are to be counted, not listed, so enumerating them is not required
+    - "\"from anywhere in the yard\" — the two crates need not be near each other"
+  decoy_signals:
+    - "\"together weigh exactly S\" reads like a total over a range, which is the standard advertisement for cumulative sums"
+    - all weights are positive and the target is a fixed total, the exact silhouette of a converging scan over a sorted list
+    - sorting first feels productive but costs O(n log n) and answers a question nobody asked
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Fix one crate. How many different weights could its partner possibly have?
+    - text: >-
+        Exactly one — S minus this crate's weight. So sweep the yard once and ask,
+        for each crate, how many crates you have already passed weigh precisely
+        that much.
+    - text: >-
+        Keep a hash map from weight to how many crates of that weight you have
+        passed. For each crate add map[S - w] to a 64-bit accumulator, then insert
+        w. Querying before inserting is what stops a crate pairing with itself.
+      reveals_pattern: true
+  why: >-
+    The target fixes a unique partner for every crate, which is the shape this
+    pattern exists for. "From anywhere in the yard, in any order" is the line
+    that kills the alternatives: with no contiguity there is no range whose total
+    you could take, and with no ordering requirement there is nothing to converge
+    on from two ends.
+  classic_ref: LeetCode 1 / 1512 family (two-sum pair counting)
+
+- id: lantern-pairs-multiple
+  pattern: hashing-frequency
+  title: Festival Lanterns
+  difficulty: hard
+  statement: >-
+    A festival hangs lanterns two to a wire. Lantern i holds c[i] candles. A wire
+    burns evenly when the two lanterns on it hold a multiple of m candles between
+    them. Any two lanterns on the field may share a wire, wherever they happen to
+    be standing. Report how many unordered pairs of distinct lanterns would burn
+    evenly.
+  constraints: |
+    2 <= n <= 200000
+    1 <= c[i] <= 10^9
+    1 <= m <= 10^9
+    the answer can exceed 2^31
+  signals_present:
+    - whether a pair works depends on a derived key, not on the two exact numbers
+    - "\"any two lanterns on the field\" — the pair is unconstrained by position"
+    - m is far larger than n, so only n of its residues can ever be occupied
+  decoy_signals:
+    - "\"a multiple of m\" applied to a total is the textbook cue for cumulative totals taken modulo m, which is a genuinely different problem"
+    - the lanterns are given as a list in field order, tempting a sweep over consecutive lanterns
+    - m up to 10^9 makes an array indexed by remainder impossible, which can push you away from the right idea for the wrong reason
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Two lanterns holding 1000000007 and 999999993 candles, with m = 10. You do
+        not need either number to decide the wire. What do you need?
+    - text: >-
+        Only each lantern's remainder modulo m. Two lanterns share a good wire
+        exactly when their remainders sum to m, or when both remainders are zero.
+        So the problem reduces to how many lanterns fall in each remainder class.
+    - text: >-
+        Tally remainders in a hash map (m is too large for an array). Pair class r
+        with class m-r by multiplying their sizes; inside class 0, and inside
+        class m/2 when m is even, take k*(k-1)/2. Accumulate in a 64-bit integer.
+      reveals_pattern: true
+  why: >-
+    Divisibility of a pair's total is a property of remainders, and a remainder is
+    a canonical key — the same move as grouping by sorted letters, wearing
+    arithmetic clothes. "Any two lanterns, wherever they happen to be standing"
+    is the phrase that rules out cumulative totals: there is no contiguous stretch
+    here whose sum could be taken modulo anything.
+  classic_ref: LeetCode 1010 / Codeforces "pairs divisible by k" family

@@ -1,0 +1,239 @@
+id: binary-search-answer
+name: Binary Search on the Answer
+world: 2
+order: 1
+tagline: >-
+  Stop trying to compute the answer and guess it instead: if "is x achievable?"
+  is a cheap monotone check, bisect the answer range and let the predicate do
+  the work.
+
+prerequisites:
+  - binary-search
+
+signals:
+  - cue: minimise the maximum / minimize the largest
+    strength: 3
+    note: >-
+      The loudest phrase in competitive programming. "Largest part as small as
+      possible", "minimum possible maximum load" - the objective is itself a
+      threshold, so guess the threshold and ask whether it is achievable.
+  - cue: maximise the minimum / largest possible smallest gap
+    strength: 3
+    note: >-
+      The mirror image. Place c cows so the closest pair is as far apart as
+      possible: guess the distance d, greedily check that c cows fit.
+  - cue: smallest x such that it is possible (or largest x such that it still is)
+    strength: 3
+    note: >-
+      A statement phrased as "find the boundary of possible" has already told
+      you the answer space is ordered and the predicate has one flip.
+  - cue: the answer ranges over 1..1e9 or 1..1e18 but checking one guess is a linear sweep
+    strength: 3
+    note: >-
+      A huge range with a cheap verifier is the whole economics of the pattern:
+      60 sweeps buys you the exact answer. If checking is as hard as solving,
+      this is not it.
+  - cue: a fixed budget - in at most D days, with k machines, in h hours
+    strength: 2
+    note: >-
+      The budget is the constraint, the rate/capacity is the unknown. "Ship all
+      packages within D days" is a bisection on the daily capacity.
+  - cue: raising your guess can only make the task easier (or only harder), never both
+    strength: 2
+    note: >-
+      This is monotonicity stated in the language of the problem. When the
+      statement makes it obvious, the pattern is decided.
+  - cue: the answer is a single number, not a construction or a subset
+    strength: 1
+    note: Weak alone - but bisection can only ever return a value, never a witness.
+
+anti_signals:
+  - cue: the container is already sorted and you want a value, its index, or its insertion point
+    instead: binary-search
+    note: >-
+      There is a real array under `mid` and the comparison is a[mid] vs target.
+      No feasibility function is involved.
+  - cue: the thing you would bisect is the length of a contiguous window, tightening as it grows
+    instead: sliding-window
+    note: >-
+      "Longest subarray with sum <= S" is monotone in length, so bisection
+      works - and is strictly worse. A window answers it in O(n) with no log.
+  - cue: feasibility is "exactly k", not "at most k", so true and false interleave
+    instead: sliding-window
+    note: >-
+      Bisection needs exactly one flip. A predicate that flips more than once
+      has no boundary to find; over contiguous segments the at-most-k trick
+      restores monotonicity instead.
+  - cue: many range sums or counts over a static array, with no threshold being chosen
+    instead: prefix-sum
+    note: Nothing is being guessed - there is no answer space to search.
+  - cue: two indices converging from the ends of a sorted array toward a target sum
+    instead: two-pointers
+    note: >-
+      The search is over pairs of positions, not over candidate answers. One
+      linear pass, no predicate.
+
+confusable_with:
+  - pattern_id: binary-search
+    tell: >-
+      Point at the sorted array you are searching. If you can - `mid` is an
+      index into data that already exists and the test is `a[mid] vs target` -
+      it is plain binary search. If you cannot, and `mid` is a candidate ANSWER
+      that only means something once you write `can(mid)`, it is this pattern.
+    mistake_code: PATTERN_DIRECT_OVER_SEARCH_ON_ANSWER
+
+invariant: >-
+  The answer always lies in [lo, hi]: can(hi) is true and can(lo - 1) is false,
+  and every iteration halves the interval without ever violating that.
+
+complexity:
+  time: O(C * log R)
+  space: O(1)
+  note: >-
+    R is the width of the answer range, C the cost of one can(x) - almost always
+    a linear greedy, giving O(n log R). log(1e18) is 60, so the range is
+    effectively free and only the predicate matters. Space is whatever can()
+    needs; the search itself holds two numbers.
+
+data_structures:
+  - two bounds (lo, hi) over the answer, not over indices
+  - a monotone feasibility predicate can(x)
+  - a running accumulator inside the predicate (parts used, days used, cows placed)
+  - the input sorted, when the predicate is a greedy over positions
+
+cpp_facilities:
+  - long long for bounds and accumulators
+  - lo + (hi - lo) / 2 as the overflow-safe midpoint
+  - std::max_element and std::accumulate to derive the initial bounds
+  - std::partition_point - the STL spelling of "find the flip in a predicate"
+  - std::fixed and std::setprecision for the real-valued variant
+
+traps:
+  - description: >-
+      Trying to construct the answer directly - a greedy split, an O(n*k) DP -
+      because the statement never says "search".
+    mistake_code: PATTERN_DIRECT_OVER_SEARCH_ON_ANSWER
+    symptom: >-
+      Either you stall entirely, or you ship a DP that is correct and TLEs the
+      moment n and k reach 1e5, where 60 linear sweeps would have finished.
+  - description: >-
+      In the maximise-the-minimum form (`lo = mid`), using the rounding-down
+      midpoint `lo + (hi - lo) / 2`.
+    mistake_code: BOUNDS_BINARY_SEARCH_INFINITE_LOOP
+    symptom: >-
+      Hangs whenever hi == lo + 1 and can(lo) is true: mid == lo, lo does not
+      move, the loop spins forever. Usually visible on the sample as a program
+      that never prints.
+  - description: >-
+      Mixing the two conventions - writing `hi = mid - 1` in the loop that
+      returns lo, or returning hi from a loop that maintained lo.
+    mistake_code: BOUNDS_BINARY_SEARCH_OFF_BY_ONE
+    symptom: >-
+      Off by exactly one on nearly every test, including the sample; or correct
+      except when the answer equals one of the initial bounds.
+  - description: >-
+      Initial bounds that exclude the answer - hi = max(a) for split-array when
+      one part may need the whole sum, or lo = 1 when 0 is a legal answer.
+    mistake_code: BOUNDS_BINARY_SEARCH_OFF_BY_ONE
+    symptom: >-
+      Returns the clamped bound instead of the answer. Silent: the loop still
+      terminates and still looks like it worked.
+  - description: >-
+      Accumulating the predicate's running total (and the hi bound) in int.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      hi = sum(a) wraps negative for n = 1e5 values near 1e9, so can(hi) is
+      false and the invariant is broken before the first iteration. Small tests
+      all pass.
+  - description: >-
+      Terminating the real-valued search with `while (hi - lo > 1e-9)`.
+    mistake_code: BOUNDS_BINARY_SEARCH_INFINITE_LOOP
+    symptom: >-
+      Fine on small magnitudes, hangs on large ones: near 1e12 the gap between
+      adjacent doubles already exceeds 1e-9, so the condition never goes false.
+
+recall_rubric:
+  - key: monotone-predicate
+    prompt: >-
+      State the property can(x) must have for bisection to mean anything - once
+      it flips, it never flips back.
+    essential: true
+    accepts:
+      - monotone
+      - never flips back
+      - if can(x) then can(x+1)
+      - false then true
+      - one boundary
+  - key: search-space
+    prompt: >-
+      Say what lo and hi are and why the answer must lie between them - name an
+      obviously feasible bound and an obviously infeasible one.
+    essential: true
+    accepts:
+      - lo = max element
+      - hi = total sum
+      - obviously feasible
+      - answer range
+      - bounds
+  - key: concrete-predicate
+    prompt: >-
+      Give a real can(x) for a named problem, e.g. the greedy count of parts
+      whose sum stays <= x, and say what it costs.
+    essential: true
+    accepts:
+      - greedy
+      - count parts
+      - number of days
+      - o(n) check
+      - cows placed
+  - key: loop-and-answer
+    prompt: >-
+      Write the loop and say which endpoint you return (they meet, so state
+      which one you trust).
+    essential: false
+    accepts:
+      - while (lo < hi)
+      - return lo
+      - hi = mid
+      - lo = mid + 1
+  - key: rounding
+    prompt: >-
+      Say when mid must round up instead of down, and what breaks if it does not.
+    essential: false
+    accepts:
+      - lo + (hi - lo + 1) / 2
+      - round up
+      - infinite loop
+      - maximise the minimum
+      - lo = mid
+  - key: real-valued
+    prompt: State how the floating-point variant terminates, and why not on an epsilon.
+    essential: false
+    accepts:
+      - fixed iterations
+      - 100 iterations
+      - not epsilon
+      - doubles cannot get closer
+  - key: complexity
+    prompt: Give the complexity in terms of the range and the cost of the predicate.
+    essential: false
+    accepts:
+      - log
+      - o(n log
+      - cost of can
+      - 60 iterations
+
+template_file: binary-search-answer.cpp
+template_notes: >-
+  Three forms. The first (minimise the maximum, `hi = mid`) is the one to
+  internalise - read it until the shape "bounds, predicate, bisect" is
+  automatic. The second is the same search with the inequality flipped
+  (maximise the minimum, `lo = mid`), and exists mainly to burn in the
+  round-up midpoint that stops it looping forever. The third is the real-valued
+  variant: a fixed 100 iterations, never an epsilon comparison. In every form
+  the only interesting code is can().
+
+related:
+  - binary-search
+  - prefix-sum
+  - sliding-window

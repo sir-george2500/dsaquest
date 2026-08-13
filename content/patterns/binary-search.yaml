@@ -1,0 +1,253 @@
+id: binary-search
+name: Binary Search on Sorted Data
+world: 2
+order: 0
+tagline: >-
+  Order you already have is information. Spend it to turn "where is this value"
+  into O(log n) - and know exactly what lower_bound hands back when the value
+  is not there.
+
+prerequisites: []
+
+signals:
+  - cue: the array is given sorted (or you sort it once) and then queried many times
+    strength: 3
+    note: >-
+      Sort-once-query-many is the shape. The sort is paid once at O(n log n);
+      every question after that is a probe, not a scan.
+  - cue: smallest element >= x, largest element <= x, successor, predecessor
+    strength: 3
+    note: >-
+      This is the literal definition of lower_bound / upper_bound. If a
+      statement says "the next value at least as large", stop reading and write it.
+  - cue: how many values are less than x, or lie in the value range [l, r]
+    strength: 3
+    note: >-
+      Counting by value on sorted data is upper_bound(r) - lower_bound(l).
+      Half-open subtraction, no +1, no -1.
+  - cue: q independent queries against a static array, both n and q around 1e5
+    strength: 2
+    note: >-
+      The constraint is doing the talking. O(n*q) is 1e10; a log factor per
+      query is 1.7e6. Nothing is modified between queries, so no tree is needed.
+  - cue: for each element of B, find its match or position in sorted A
+    strength: 2
+    note: >-
+      The two-array lookup. Sort A once, then n_B probes. Also the shape of
+      coordinate compression.
+  - cue: does x occur in the collection, and at what index
+    strength: 2
+    note: >-
+      Weak alone - a hash set answers "does it occur" in O(1). The word "index",
+      or any follow-up question about neighbours, is what earns the sort.
+  - cue: values are timestamps, coordinates or prices already in increasing order
+    strength: 1
+    note: >-
+      A hint, not a proof. Naturally ordered data invites bisection, but check
+      that a question about position is actually being asked.
+
+anti_signals:
+  - cue: the values are unsorted and you only need existence or a count of exact values
+    instead: hashing-frequency
+    note: >-
+      A hash map answers in O(1) with no O(n log n) sort. Sorting pays for
+      itself only when you need ORDER - neighbours, ranks, value ranges.
+  - cue: >-
+      the quantity you are bisecting is a capacity, a time limit or a threshold
+      that appears nowhere in the input
+    instead: binary-search-answer
+    note: >-
+      There is no container to index. You invent the range and test it with a
+      monotone predicate. Different pattern, same skeleton.
+  - cue: find a pair in a sorted array summing to a target
+    instead: two-pointers
+    note: >-
+      One coordinated sweep is O(n) and needs no probes at all. Binary searching
+      the complement of every element is O(n log n) for a strictly worse answer.
+  - cue: sum of the elements between index l and index r
+    instead: prefix-sum
+    note: >-
+      That is an index range, not a value lookup. Nothing is being located, so
+      there is nothing to bisect.
+  - cue: longest contiguous stretch of the array satisfying a constraint
+    instead: sliding-window
+    note: >-
+      Positional order, not value order. Sorting would destroy the very
+      adjacency the question is about.
+
+confusable_with:
+  - pattern_id: binary-search-answer
+    tell: >-
+      Point at mid and ask what it is. If mid is an INDEX into data you were
+      given, and you can write a[mid], it is this pattern. If mid is a candidate
+      ANSWER you invented - a speed, a capacity, a day number - and you must
+      call feasible(mid) to judge it, it is binary search on the answer.
+    mistake_code: PATTERN_SEARCH_ON_ANSWER_OVER_DIRECT
+  - pattern_id: two-pointers
+    tell: >-
+      Are the lookups independent, or coordinated? Each query probing the array
+      alone means binary search; one left-to-right pass where a second index
+      only ever moves forward means two pointers, and that is O(n) - strictly
+      better whenever it applies.
+    mistake_code: PATTERN_LINEAR_OVER_BINARY_SEARCH
+
+invariant: >-
+  The answer always lies in the half-open range [lo, hi): everything before lo
+  is proven too small and everything from hi onward is proven not-too-small, so
+  when lo == hi that one index is the answer.
+
+complexity:
+  time: O(log n) per query
+  space: O(1)
+  note: >-
+    Add O(n log n) once if you must sort first - and check that the sort is
+    amortised over enough queries to be worth it. On std::set and std::map the
+    member lower_bound is O(log n); the free function on the same iterators is
+    O(n), which is the classic silent TLE.
+
+data_structures:
+  - sorted std::vector
+  - std::vector<std::pair<K, V>> sorted by key
+  - std::set / std::map (node-based, ordered)
+
+cpp_facilities:
+  - std::lower_bound
+  - std::upper_bound
+  - std::equal_range
+  - std::binary_search
+  - std::partition_point
+  - std::set::lower_bound / std::map::lower_bound (member, not free)
+  - structured bindings to unpack equal_range
+
+traps:
+  - description: >-
+      Writing `lo = mid` in the rejecting branch instead of `lo = mid + 1`.
+      Rejecting mid means excluding it; keeping it means the range never shrinks.
+    mistake_code: BOUNDS_BINARY_SEARCH_INFINITE_LOOP
+    symptom: >-
+      Hangs, not a wrong answer. TLE with the process pinned at 100% CPU, and it
+      only triggers once the range narrows to two elements, so tiny tests pass.
+  - description: >-
+      Mixing conventions - starting `hi = n - 1` but still updating `hi = mid`,
+      or looping `while (lo < hi)` with an inclusive right end.
+    mistake_code: BOUNDS_BINARY_SEARCH_OFF_BY_ONE
+    symptom: >-
+      Off by one exactly at the ends: the last element is never found, or an
+      x larger than everything reports index n-1 instead of n.
+  - description: >-
+      Dereferencing the lower_bound result without checking it against end().
+      When every element is smaller than x, lower_bound returns end().
+    mistake_code: CPP_OUT_OF_BOUNDS
+    symptom: >-
+      Segfault or garbage on the query whose value exceeds the maximum - often
+      the very last test, and never the sample.
+  - description: >-
+      Taking prev(upper_bound(...)) for "largest element <= x" without first
+      checking that the iterator is not begin().
+    mistake_code: BOUNDS_EMPTY_INPUT
+    symptom: >-
+      Crash or nonsense the first time a query is smaller than every element,
+      i.e. when no predecessor exists at all.
+  - description: >-
+      mid = (lo + hi) / 2 with lo and hi as ints near the top of the range.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Negative mid and an immediate out-of-bounds read. Invisible until values
+      or bounds pass 2^30; `lo + (hi - lo) / 2` never overflows.
+  - description: >-
+      Calling the free std::lower_bound on a std::set or std::map. It compiles
+      and returns the right answer, but the iterators are bidirectional, so it
+      walks node by node.
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      TLE that looks algorithmic. Correct on every test, quadratic in wall clock;
+      the member s.lower_bound(x) is the same line and O(log n).
+
+recall_rubric:
+  - key: half-open-invariant
+    prompt: >-
+      State the invariant and say that hi starts at n, not n-1, so that
+      "not found" has an index to land on.
+    essential: true
+    accepts:
+      - half-open
+      - "[lo, hi)"
+      - hi = n
+      - answer lies in
+      - exclusive
+  - key: lower-bound-when-absent
+    prompt: >-
+      Say what lower_bound returns when the value is ABSENT (the insertion
+      point / first element strictly greater - NOT end(), unless x exceeds all).
+    essential: true
+    accepts:
+      - insertion point
+      - first element greater
+      - first >= x
+      - where it would go
+      - not end
+  - key: reject-mid-plus-one
+    prompt: >-
+      Say that the rejecting branch is lo = mid + 1 and explain why omitting
+      the +1 loops forever.
+    essential: true
+    accepts:
+      - mid + 1
+      - exclude mid
+      - never shrinks
+      - infinite loop
+  - key: count-formula
+    prompt: Give the formula for the number of occurrences of x.
+    essential: false
+    accepts:
+      - upper_bound - lower_bound
+      - equal_range
+      - ub - lb
+  - key: mid-overflow
+    prompt: Write the safe midpoint and say what it avoids.
+    essential: false
+    accepts:
+      - lo + (hi - lo) / 2
+      - overflow
+  - key: member-vs-free
+    prompt: >-
+      Contrast set::lower_bound with std::lower_bound on the same set, and give
+      both complexities.
+    essential: false
+    accepts:
+      - member
+      - o(n) on a set
+      - not random access
+      - bidirectional
+  - key: precondition
+    prompt: >-
+      Name the precondition: the range must be partitioned by the same
+      comparator used to sort it.
+    essential: false
+    accepts:
+      - must be sorted
+      - same comparator
+      - partitioned
+  - key: complexity
+    prompt: Give the per-query cost and the cost of sorting first, if needed.
+    essential: false
+    accepts:
+      - o(log n)
+      - logarithmic
+      - n log n
+
+template_file: binary-search.cpp
+template_notes: >-
+  Four forms. The hand-written half-open loop comes first because it is the one
+  that generalises - lower_bound and upper_bound differ by a single character
+  there (`<` becomes `<=`), which is easier to hold in memory than two function
+  names. Then the STL equivalents plus equal_range for counting, then
+  partition_point for "first element satisfying P" on a vector of pairs, then
+  the member lower_bound on std::set with the O(n) free-function trap spelled
+  out. The demo asserts the hand-written loop agrees with the STL on every
+  query, which is how you should test your own.
+
+related:
+  - two-pointers
+  - binary-search-answer
+  - prefix-sum

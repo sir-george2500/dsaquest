@@ -1,0 +1,120 @@
+# Problems that are really Sliding Window.
+#
+# None of these may contain the words "sliding window" — the entire exercise is
+# recognising it without being told. `decoy_signals` records what makes each one
+# hard, which is what the post-answer feedback quotes back.
+
+- id: signal-run-k-frequencies
+  pattern: sliding-window
+  title: Clean Signal Run
+  difficulty: medium
+  statement: >-
+    A receiver logs one integer frequency per millisecond into an array of
+    length n. Engineering calls a stretch of consecutive milliseconds "clean" if
+    it contains at most k different frequencies. Report the length of the
+    longest clean stretch. If n is zero, report 0.
+  constraints: |
+    1 <= n <= 200000
+    1 <= k <= n
+    frequencies fit in a 32-bit signed integer
+  signals_present:
+    - consecutive milliseconds (contiguity)
+    - longest stretch (optimisation over windows)
+    - at most k different values (monotone in window size)
+  decoy_signals:
+    - counting distinct values suggests a plain frequency map
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        The answer is a range of adjacent positions. What happens to the number
+        of distinct values when you extend that range to the right?
+    - text: >-
+        It can only grow. So once a range has too many distinct values, the only
+        way to fix it is to give up positions on the left.
+    - text: >-
+        Keep a frequency map of the current range. Extend right by one, then
+        drop from the left until at most k distinct remain, then record.
+      reveals_pattern: true
+  why: >-
+    "Consecutive" plus "longest" plus "at most k" is the complete signature. The
+    at-most-k constraint is monotone in the size of the range, which is exactly
+    what makes it safe to give up positions on the left and never take them back.
+  classic_ref: LeetCode 340 / 159 family
+
+- id: warehouse-shelf-swaps
+  pattern: sliding-window
+  title: Warehouse Shelf
+  difficulty: medium
+  statement: >-
+    A shelf holds n crates in a row, each stamped with a single uppercase
+    letter. You may relabel at most k crates to any letters you choose. After
+    relabelling, what is the greatest number of adjacent crates that all carry
+    the same letter?
+  constraints: |
+    1 <= n <= 100000
+    0 <= k <= n
+    letters are 'A'..'Z'
+  signals_present:
+    - adjacent crates (contiguity)
+    - greatest number (optimisation over windows)
+    - at most k relabels (a budget, monotone in window size)
+  decoy_signals:
+    - "'relabel at most k' reads like a decision problem, inviting binary search on k"
+    - a 26-letter alphabet invites brute force over each letter separately
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        For a fixed range of crates, how many relabels does it need? Only the
+        ones that are not already the range's most common letter.
+    - text: >-
+        So a range is affordable when (length - count of its most common letter)
+        is at most k. Is that condition monotone as the range grows?
+    - text: >-
+        Extend right, track letter counts and the running maximum count, and
+        shrink from the left while length minus max-count exceeds k.
+      reveals_pattern: true
+  why: >-
+    The budget k applies to a contiguous block, and "cost of this block" only
+    increases as the block grows. That monotonicity is the licence to advance
+    the left edge and never revisit it.
+  classic_ref: LeetCode 424 family
+
+- id: courier-fuel-window
+  pattern: sliding-window
+  title: Courier Fuel
+  difficulty: hard
+  statement: >-
+    A courier drives past n depots in order, taking on f[i] litres of fuel at
+    depot i. Every depot takes on a non-negative amount. The van's tank holds at
+    most C litres in total across any run of consecutive depots before it must
+    stop and unload. Find the shortest run of consecutive depots whose total
+    intake is strictly greater than C, or report -1 if no such run exists.
+  constraints: |
+    1 <= n <= 200000
+    0 <= f[i] <= 10^9
+    1 <= C <= 10^18
+  signals_present:
+    - run of consecutive depots (contiguity)
+    - shortest such run (optimisation over windows)
+    - non-negative intake (sums only grow as the run extends)
+  decoy_signals:
+    - a sum over a range is the textbook advertisement for prefix sums
+    - "'strictly greater than C' reads like a threshold to binary search"
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Note the guarantee that every f[i] is non-negative. What does that tell
+        you about the total as you extend a run to the right?
+    - text: >-
+        It never decreases. So once a run exceeds C you should stop extending
+        and instead try to make it shorter from the left.
+    - text: >-
+        Extend right accumulating the sum; while the sum exceeds C, record the
+        length and then subtract from the left.
+      reveals_pattern: true
+  why: >-
+    The non-negativity guarantee is doing all the work. It makes the running sum
+    monotone in the length of the run, which is the precondition this technique
+    needs. Remove that guarantee and the approach collapses — with negative
+    values you would need prefix sums and a hash map instead.
+  classic_ref: LeetCode 209 family

@@ -1,0 +1,59 @@
+[project]
+name = "dsa-quest"
+version = "0.1.0"
+description = "A terminal game that trains DSA pattern recognition, recall and implementation in C++"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+dependencies = [
+    "textual[syntax]>=8.0",
+    "rich>=14.0",
+    "typer>=0.15",
+    "pydantic>=2.10",
+    "pyyaml>=6.0",
+    "fsrs>=6.0",
+    "platformdirs>=4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=6.0",
+    "textual-dev>=1.7",
+    "ruff>=0.9",
+]
+
+[project.scripts]
+dsa = "dsaquest.cli.main:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dsaquest"]
+
+# Content is data, not code, but it ships with the package.
+[tool.hatch.build.targets.wheel.force-include]
+"content" = "dsaquest/_content"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "security: adversarial sandbox-escape tests (slow, spawn real processes)",
+    "slow: tests that compile C++ and therefore take seconds",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+# SIM105 wants contextlib.suppress. In judge/sandbox.py the try/except/pass
+# blocks are best-effort resource cleanup and, in the post-fork child, must stay
+# on the async-signal-safe path between fork() and exec() — no context managers.
+"src/dsaquest/judge/sandbox.py" = ["SIM105"]

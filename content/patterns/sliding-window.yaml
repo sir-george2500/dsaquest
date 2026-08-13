@@ -1,0 +1,186 @@
+id: sliding-window
+name: Sliding Window
+world: 1
+order: 3
+tagline: >-
+  Answer a question about every contiguous window in O(n) by growing on the
+  right and shrinking on the left, never looking backwards.
+
+prerequisites:
+  - two-pointers
+  - hashing-frequency
+
+signals:
+  - cue: contiguous subarray or substring
+    strength: 3
+    note: >-
+      The word that does the work. Contiguity is what lets one pointer move
+      forward without ever revisiting; drop it and this pattern dies.
+  - cue: longest / shortest / maximum-length satisfying a condition
+    strength: 3
+    note: An optimisation over windows, not over arbitrary subsets.
+  - cue: at most k distinct / at most k replacements / no repeats
+    strength: 3
+    note: >-
+      "At most" is the giveaway. It is monotonic in window size, which is
+      exactly what makes shrinking from the left safe.
+  - cue: fixed window size k given in the statement
+    strength: 2
+    note: The degenerate case - no while loop, the window slides instead of breathing.
+  - cue: all values are non-negative
+    strength: 1
+    note: >-
+      Weak on its own, but it is what rescues sum-based windows. With negative
+      values, growing the window can decrease the sum and the invariant breaks.
+
+anti_signals:
+  - cue: subsequence rather than subarray (elements need not be adjacent)
+    instead: hashing-frequency
+    note: >-
+      No contiguity means no window. Order-free counting or DP, never this.
+  - cue: sum over a range with negative numbers allowed
+    instead: prefix-sum
+    note: >-
+      Shrinking no longer monotonically reduces the sum, so the invariant is
+      unmaintainable. Prefix sums plus a hash map handle negatives.
+  - cue: you must answer many range queries on a static array
+    instead: prefix-sum
+    note: A window is a single left-to-right sweep, not a query structure.
+
+confusable_with:
+  - pattern_id: prefix-sum
+    tell: >-
+      Can shrinking the window from the left ever make the answer better? If
+      yes the window is valid; if the values can be negative it cannot, and you
+      need prefix sums with a hash map.
+    mistake_code: PATTERN_PREFIX_OVER_WINDOW
+  - pattern_id: two-pointers
+    tell: >-
+      Do both pointers move forward (window), or do they start at opposite ends
+      and converge (two pointers)? A window maintains a region; two pointers
+      close a gap.
+  - pattern_id: hashing-frequency
+    tell: >-
+      Does the answer depend on the elements being adjacent? If order and
+      adjacency are irrelevant it is plain counting, and the window adds nothing.
+
+invariant: >-
+  After processing index r, the window [l, r] is the longest window ending at r
+  that satisfies the constraint - so every index enters once and leaves once.
+
+complexity:
+  time: O(n)
+  space: O(k)
+  note: >-
+    Amortised: the inner while loop runs at most n times in total across the
+    whole outer loop, because l only ever increases. Space is the window state,
+    typically the number of distinct values held.
+
+data_structures:
+  - two indices (l, r)
+  - frequency map or array
+  - running aggregate (sum, count of violations)
+
+cpp_facilities:
+  - std::unordered_map
+  - std::array as a fixed-alphabet counter
+  - std::max
+  - structured bindings when iterating the counter
+
+traps:
+  - description: >-
+      Shrinking with `if` instead of `while`. One eviction is not always enough
+      to restore the invariant.
+    mistake_code: INVARIANT_WINDOW_NOT_SHRUNK
+    symptom: >-
+      Passes small samples, fails as soon as two or more evictions are needed in
+      one step - typically a mid-size random test.
+  - description: >-
+      Decrementing the frequency counter but never erasing the zero entry, then
+      using map.size() as the distinct count.
+    mistake_code: INVARIANT_COUNTER_NOT_DECREMENTED
+    symptom: >-
+      Answer is too small. size() counts keys with value 0, so the window looks
+      more constrained than it is.
+  - description: >-
+      Recording the answer inside the shrink loop rather than after it, so a
+      window that still violates the constraint is counted.
+    mistake_code: INVARIANT_WINDOW_SHRUNK_TOO_FAR
+    symptom: Answer is too large by exactly the size of an invalid window.
+  - description: >-
+      Using a window on a sum problem where values can be negative.
+    mistake_code: PATTERN_WINDOW_OVER_PREFIX
+    symptom: >-
+      Correct on all-positive tests, wrong the moment a negative appears. This
+      is the single most common way to misapply the pattern.
+  - description: >-
+      unordered_map with adversarial integer keys degrading to O(n^2).
+    mistake_code: CPP_UNORDERED_MAP_WORST_CASE
+    symptom: TLE on a large test that looks no different from the ones that passed.
+
+recall_rubric:
+  - key: invariant
+    prompt: State the loop invariant that makes the window correct.
+    essential: true
+    accepts:
+      - longest window ending at r
+      - valid window ending at r
+      - satisfies the constraint
+  - key: shrink-is-a-loop
+    prompt: Say that shrinking uses `while`, not `if`, and why one step is not enough.
+    essential: true
+    accepts:
+      - while
+      - until valid
+      - repeatedly
+  - key: amortised
+    prompt: Explain why the nested loop is still O(n).
+    essential: false
+    accepts:
+      - each index enters once
+      - l only increases
+      - amortised
+      - never moves backwards
+  - key: monotonicity-requirement
+    prompt: >-
+      Name the property the constraint must have for a window to work
+      (shrinking must not hurt / "at most" is monotonic).
+    essential: true
+    accepts:
+      - monotonic
+      - at most
+      - shrinking helps
+      - non-negative
+  - key: at-most-k-trick
+    prompt: Give the identity that converts "exactly k" into two window passes.
+    essential: false
+    accepts:
+      - atmost(k) - atmost(k-1)
+      - at most k minus at most k-1
+      - exactly = atmost
+  - key: fixed-vs-variable
+    prompt: Distinguish the fixed-size form from the variable-size form.
+    essential: false
+    accepts:
+      - fixed has no while
+      - one in one out
+      - given k
+  - key: complexity
+    prompt: Give the time and space complexity.
+    essential: false
+    accepts:
+      - o(n)
+      - linear
+
+template_file: sliding-window.cpp
+template_notes: >-
+  Three forms in one file: the variable window (the one to internalise), the
+  fixed window (no while loop - it slides rather than breathes), and the
+  at-most-k trick that converts a non-monotonic "exactly k" into two monotonic
+  passes. Read the variable form until the admit / shrink / record rhythm is
+  automatic; the other two are corollaries.
+
+related:
+  - two-pointers
+  - prefix-sum
+  - hashing-frequency

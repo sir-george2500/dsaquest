@@ -1,0 +1,242 @@
+id: hashing-frequency
+name: Hashing & Frequency Counting
+world: 1
+order: 0
+tagline: >-
+  Spend memory to buy time: remember what you have already seen, and every
+  "have I seen this / how many of these / which of these are the same" question
+  collapses from a scan to O(1).
+
+prerequisites: []
+
+signals:
+  - cue: does there exist a pair whose sum / difference / xor equals a target
+    strength: 3
+    note: >-
+      Each element defines exactly one partner it needs. Ask the map for the
+      partner instead of scanning for it - that is the whole pattern.
+  - cue: duplicates, "are all elements distinct", "the first repeated value"
+    strength: 3
+    note: A seen-set answers this in one pass; nothing cheaper exists.
+  - cue: how many times / most frequent / appears exactly k times
+    strength: 3
+    note: >-
+      The statement is literally asking for a tally. Counting is the answer, not
+      a step towards it.
+  - cue: group / are-these-the-same-up-to (anagrams, permutations, same digits, same remainder)
+    strength: 3
+    note: >-
+      "Equal after some transformation" means there is a canonical key. Build
+      the key, bucket by it, and the grouping falls out.
+  - cue: count pairs (i, j) with i < j satisfying a relation between a[i] and a[j]
+    strength: 2
+    note: >-
+      Fix j, ask how many earlier elements complete it. One pass, accumulate
+      counts, never enumerate the pairs.
+  - cue: order does not matter / any order accepted / a subsequence, not a subarray
+    strength: 2
+    note: >-
+      Positions are irrelevant, so the multiset is the whole state. That rules
+      out windows and prefix sums and leaves counting.
+  - cue: values up to 1e9 but n up to 1e5
+    strength: 1
+    note: >-
+      Weak alone, but it is the line that decides hash map over array counter -
+      the value range is too wide to index directly.
+
+anti_signals:
+  - cue: the chosen elements must be contiguous
+    instead: sliding-window
+    note: >-
+      A tally forgets where things were. The moment adjacency is part of the
+      condition you need a structure that tracks position.
+  - cue: sums over ranges, or many range queries on a static array
+    instead: prefix-sum
+    note: >-
+      A hash map may appear inside that solution, but the idea is the running
+      total; the map is only the lookup table for it.
+  - cue: the array is already sorted and O(1) extra space is demanded
+    instead: two-pointers
+    note: >-
+      Sortedness already gives you the partner search for free. Paying O(n)
+      memory for what convergence does for nothing is a false trade.
+  - cue: you need the nearest value below x, the k-th smallest, or ordered iteration
+    instead: binary-search
+    note: >-
+      Hashing answers equality only. Any question about order or proximity needs
+      a sorted structure - a hash map cannot answer "closest" at any price.
+  - cue: find the smallest capacity / largest minimum that makes a check pass
+    instead: binary-search-answer
+    note: >-
+      That is a search over the answer space; counting may live inside the
+      feasibility check, but it is not the shape of the problem.
+
+confusable_with:
+  - pattern_id: prefix-sum
+    tell: >-
+      Is the key you look up an element's own value, or a running total over a
+      range? Values means counting; running totals means prefix sums, where the
+      map is just the lookup and the prefix is the idea.
+    mistake_code: PATTERN_PREFIX_OVER_HASH
+  - pattern_id: sliding-window
+    tell: >-
+      Does the answer require the chosen elements to be adjacent? If it does,
+      you need a window; a frequency map knows how many, never where.
+    mistake_code: PATTERN_WINDOW_OVER_HASH
+
+invariant: >-
+  At the moment index i is examined, the map holds the tally of exactly the
+  prefix a[0..i-1] - so every lookup answers a question about strictly earlier
+  elements, and a[i] is inserted only after its own answer is recorded.
+
+complexity:
+  time: O(n)
+  space: O(d)
+  note: >-
+    Average O(1) per operation, over d distinct keys. The worst case is O(n) per
+    operation and it is reachable on purpose: libstdc++ hashes integers with the
+    identity function, so keys spaced by the bucket count all collide. A fixed
+    alphabet replaces the hash with an array index and makes O(1) unconditional.
+
+data_structures:
+  - hash map from value to count
+  - hash map from value to index (or to a list of indices)
+  - hash set of seen values
+  - array counter for a small bounded alphabet
+  - canonical key mapped to a bucket of members
+
+cpp_facilities:
+  - std::unordered_map and std::unordered_set
+  - a custom hash functor (splitmix64 + a runtime seed)
+  - std::map when you need order rather than speed
+  - std::array<int, 26> as a fixed-alphabet counter
+  - insert().second to test-and-add in one lookup
+  - find() versus operator[] - only one of them is a read
+  - reserve() to pay for the buckets once
+
+traps:
+  - description: >-
+      Testing membership with `if (freq[x])` instead of `freq.count(x)` or
+      `find`. operator[] default-inserts a zero entry, so every probe you make
+      becomes a key.
+    mistake_code: CPP_UNINITIALISED_VALUE
+    symptom: >-
+      Any answer derived from map.size() or from iterating the map is too large -
+      phantom zero-count keys. Memory also grows with the number of queries.
+  - description: >-
+      Inserting a[i] before querying for its complement, so an element pairs
+      with itself.
+    mistake_code: BOUNDS_SINGLE_ELEMENT
+    symptom: >-
+      Fails the test where target is exactly twice a value that occurs once -
+      reports the pair (i, i). Passes every test where the answer needs two
+      genuinely different values.
+  - description: >-
+      Accumulating a pair count in an int.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Negative or absurd output on a large test with many equal values
+      (n = 2e5 identical elements is ~2e10 pairs). Small tests are all correct.
+  - description: >-
+      unordered_map with integer keys against a test built to collide.
+    mistake_code: CPP_UNORDERED_MAP_WORST_CASE
+    symptom: >-
+      TLE on one large test that looks no different from the ones that passed,
+      often with a suspiciously round n. Fix by wrapping keys in splitmix64 with
+      a chrono-seeded constant, or by sorting instead.
+  - description: >-
+      An array counter indexed by `c - 'a'` on input that also contains
+      uppercase letters, digits or spaces.
+    mistake_code: CPP_OUT_OF_BOUNDS
+    symptom: >-
+      No crash, just wrong answers on the tests that contain the unexpected
+      characters - a negative index silently reads and writes past the array.
+  - description: >-
+      Sorting the input to find duplicates or complements when the required
+      output is the original indices.
+    mistake_code: PATTERN_SORT_OVER_HASH
+    symptom: >-
+      The values reported are right and the indices are wrong, because they are
+      positions in the sorted copy. Also gratuitously O(n log n).
+
+recall_rubric:
+  - key: invariant
+    prompt: >-
+      State what the map contains at the moment you query it (the tally of
+      everything strictly before the current index).
+    essential: true
+    accepts:
+      - everything before
+      - earlier elements
+      - prefix a[0..i-1]
+      - already seen
+  - key: query-before-insert
+    prompt: >-
+      Say that you look up the complement BEFORE inserting the current element,
+      and what breaks if you do not.
+    essential: true
+    accepts:
+      - before inserting
+      - query first
+      - pairs with itself
+      - target - a[i]
+  - key: array-vs-hashmap
+    prompt: >-
+      Name the condition under which an array counter beats a hash map, and why
+      (small bounded value range, index instead of hash).
+    essential: true
+    accepts:
+      - bounded alphabet
+      - small range
+      - array of 26
+      - no hashing
+  - key: pair-counting
+    prompt: >-
+      Give the one-pass rule for counting pairs (add the count of earlier
+      completions, in a 64-bit accumulator).
+    essential: false
+    accepts:
+      - count of earlier
+      - += cnt[complement]
+      - long long
+  - key: canonical-key
+    prompt: >-
+      Describe grouping by canonical key and give one example key (sorted
+      string, 26-counter signature).
+    essential: false
+    accepts:
+      - sorted string
+      - canonical
+      - signature
+      - same key
+  - key: hash-hardening
+    prompt: >-
+      Say why unordered_map<int, ...> can go quadratic and name the fix.
+    essential: false
+    accepts:
+      - identity hash
+      - collide
+      - custom hash
+      - splitmix64
+      - random seed
+  - key: complexity
+    prompt: Give time and space, and say what the space is proportional to.
+    essential: false
+    accepts:
+      - o(n)
+      - distinct
+      - linear
+
+template_file: hashing-frequency.cpp
+template_notes: >-
+  Four forms, in the order they become reflexes: the seen-set and complement
+  lookup (query before insert - burn this in), frequency counting including the
+  one-pass pair count, grouping by a canonical key, and the fixed-alphabet array
+  counter that beats the map outright. The file opens with the hardened hash
+  functor; copy it into anything that keys a map by an integer you did not
+  choose yourself.
+
+related:
+  - prefix-sum
+  - sliding-window
+  - two-pointers

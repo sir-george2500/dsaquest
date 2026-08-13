@@ -1,0 +1,197 @@
+# Problems that are really Two Pointers.
+#
+# None of these may contain the words "two pointers", and none may describe the
+# mechanism ("from both ends", "converge") in the statement — the whole exercise
+# is recognising it unaided. `decoy_signals` records what makes each one hard,
+# which is what the post-answer feedback quotes back.
+
+- id: voucher-stamp-pair
+  pattern: two-pointers
+  title: Voucher Stamps
+  difficulty: easy
+  statement: >-
+    A market stall lists n collectible stamps on one long card, printed in
+    non-decreasing order of price. A customer holds a voucher worth exactly V
+    and refuses to leave change behind: she wants two different stamps from the
+    card whose prices add up to V exactly. Report the 1-based positions of such
+    a pair, or "0 0" if the voucher cannot be spent this way. The stall's till
+    is ancient and can hold only a constant number of extra values in memory.
+  constraints: |
+    2 <= n <= 200000
+    1 <= price[i] <= 10^9, given in non-decreasing order
+    2 <= V <= 2*10^9
+    O(1) extra memory beyond the input
+  signals_present:
+    - the prices arrive already in non-decreasing order
+    - find two entries whose values hit an exact target sum
+    - the positions asked for are positions in the list as given, and the list is already ordered
+    - a constant-memory clause that forbids storing anything per stamp
+  decoy_signals:
+    - "\"two entries adding up to V\" is the standard advertisement for a value-to-index hash map"
+    - the constant-memory clause is easy to skim past, and without it the hash map is genuinely fine
+    - an exact target over a huge price range invites looking up the complement of each price one price at a time
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Put the cheapest stamp beside the dearest one and add them. The verdict
+        is one of three things. What does each verdict prove about that
+        particular cheapest or dearest stamp, not just about that pair?
+    - text: >-
+        If the total falls short, that cheapest stamp is finished: every partner
+        still on the card is no dearer than the one you just tried it with, so
+        it can never reach V. Symmetrically for a total that overshoots.
+    - text: >-
+        Hold one index at each end of the card. While they have not met, add the
+        two prices; on a shortfall advance the left index, on an overshoot
+        retract the right one, and stop the moment the sum is V.
+      reveals_pattern: true
+  why: >-
+    "Printed in non-decreasing order" plus "two stamps adding to exactly V" is
+    the classic pairing of cues, and the constant-memory clause is what rules
+    out the hash map that would otherwise be the natural answer. Order is what
+    turns the verdict on one pair into a proof about a whole family of pairs.
+  classic_ref: LeetCode 167 family
+
+- id: canal-tarpaulin-span
+  pattern: two-pointers
+  title: Canal Tarpaulin
+  difficulty: medium
+  statement: >-
+    n vertical stakes stand in a straight line along a canal bank, exactly one
+    metre apart, and stake i rises h[i] centimetres above the water. A sheet of
+    tarpaulin can be slung between the tops of any two stakes; it sags into the
+    channel and the volume it holds equals the distance between those two stakes
+    multiplied by the shorter of their two heights. Choose the pair of stakes
+    that holds the most and report that volume.
+  constraints: |
+    2 <= n <= 200000
+    0 <= h[i] <= 10^9
+    the answer may exceed 2^31
+    heights are in the order the stakes stand and are not sorted
+  signals_present:
+    - the quantity being maximised is a function of exactly two positions
+    - the largest distance available is the one between the two outermost stakes
+    - the shorter of the two heights caps the pair, naming which side is the limiting one
+    - n up to 2*10^5 with an obvious double loop over pairs
+  decoy_signals:
+    - a row of bar heights triggers the histogram reflex and a stack of increasing bars
+    - "\"the pair that holds the most\" invites sorting the stakes by height, which destroys the distances the answer is measured in"
+    - the answer is described by a span of the row, which reads like a stretch to be grown and shrunk under a constraint
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Measure the outermost pair first. That distance is the largest one that
+        will ever be on offer; every other pair of stakes is closer together.
+    - text: >-
+        For that pair the shorter stake is what binds. Any other pair still
+        using that shorter stake is closer together AND still capped by the same
+        height, so no such pair can beat the volume you just measured. That
+        stake is done.
+    - text: >-
+        Keep an index at each end. Each step, record distance times the smaller
+        height, then move the index sitting on the shorter stake one place
+        inwards; stop when the indices meet.
+      reveals_pattern: true
+  why: >-
+    The measure is distance multiplied by the smaller height: one factor is
+    maximal at the extremes and the other factor points at the side that is
+    provably capped. That is the exchange argument — the shorter stake of the
+    current pair can be thrown away outright, which is exactly what a maintained
+    region never does.
+  classic_ref: LeetCode 11 family
+
+- id: bead-ribbon-trim
+  pattern: two-pointers
+  title: Bead Ribbon
+  difficulty: medium
+  statement: >-
+    A ribbon carries n beads in a row, each stamped with one lowercase colour
+    code. A jeweller may repeat the following as often as she likes: pick a
+    colour, snip a non-empty run of beads of that colour off the left tip and a
+    non-empty run of the same colour off the right tip, and discard both. The
+    two runs she snips must not overlap. Whatever survives is still one
+    unbroken stretch of ribbon. Report the length of the shortest stretch she
+    can be left with.
+  constraints: |
+    1 <= n <= 100000
+    colour codes are 'a'..'z'
+    the surviving stretch may be empty
+  signals_present:
+    - progress depends on comparing the bead at one tip against the bead at the other tip
+    - each operation removes material at each tip and never puts any back
+    - the surviving piece is fixed by two marks that only ever move inwards
+  decoy_signals:
+    - "\"shortest\" plus \"one unbroken stretch\" is the exact vocabulary of a shortest-contiguous-region question"
+    - beads are shed from the left, which reads like evicting from the left of a region you are maintaining
+    - a 26-letter alphabet invites tallying colours inside the surviving piece
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        What survives is pinned down by two marks, one near each tip. Under what
+        single condition is the jeweller allowed to move either of them at all?
+    - text: >-
+        Only when the bead at one tip and the bead at the other carry the same
+        colour. And when they do, she should consume the entire run of that
+        colour on both sides at once — none of those beads could ever have been
+        worth keeping.
+    - text: >-
+        While the two tip beads differ, stop and report. Otherwise note the
+        colour, advance the left mark past every bead of it and retract the
+        right mark past every bead of it, guarding both loops so the marks never
+        cross.
+      reveals_pattern: true
+  why: >-
+    Nothing is being maintained between the marks — every step DISCARDS a run at
+    each tip on a proof that it can belong to no shorter survivor. "Shortest
+    unbroken stretch" is bait for the region-growing reflex; the giveaway is
+    that progress depends on the two tips agreeing with each other, never on any
+    property of the middle.
+  classic_ref: LeetCode 1750 family
+
+- id: drone-triple-lift
+  pattern: two-pointers
+  title: Drone Triple Lift
+  difficulty: hard
+  statement: >-
+    A delivery drone lifts at most L grams per flight, and regulations require
+    every flight to carry exactly three distinct parcels. A depot holds n
+    parcels of known weight, dumped on the floor in no particular order. Count
+    how many different sets of three parcels the drone is allowed to fly, that
+    is, sets whose combined weight is at most L. Two sets differ if at least one
+    parcel differs; loading order is irrelevant.
+  constraints: |
+    3 <= n <= 3000
+    1 <= w[i] <= 10^9
+    3 <= L <= 3*10^9
+    the count may exceed 2^31
+  signals_present:
+    - the answer counts sets, never mentioning the parcels' given positions, so rearranging them costs nothing
+    - once one member of the triple is pinned the remaining condition is a one-sided bound on a pair
+    - n up to 3000 leaves a quadratic method comfortable and a cubic one hopeless
+  decoy_signals:
+    - "\"combined weight at most L\" is budget language, which invites growing and shrinking a region under a cap"
+    - counting sets by their sum invites a frequency map of pair sums
+    - "\"at most L\" invites probing for the heaviest admissible third parcel once per pair, paying a log factor for work that can be done in bulk"
+  expected_complexity: O(n^2)
+  hints:
+    - text: >-
+        The question is about sets, not about where parcels lie on the floor, so
+        you may arrange the weights however you please first. Which arrangement
+        makes "how many partners does this parcel have" cheap to answer?
+    - text: >-
+        Pin the heaviest member of the triple. What remains is counting pairs
+        among the lighter parcels whose sum is at most L minus that weight — and
+        those pairs can be counted many at a time instead of one at a time.
+    - text: >-
+        Sort. For each index k taken as the heaviest member, put one index i at
+        the start and one index j just below k. If w[i] + w[j] + w[k] <= L then
+        every index strictly between i and j also works alongside i, so add
+        (j - i) and advance i; otherwise retract j.
+      reveals_pattern: true
+  why: >-
+    Nothing in the question refers to the order the parcels were dumped in, so
+    the weights may be sorted — and once sorted, "at most L" becomes a one-sided
+    test on a pair of extremes, where satisfying it certifies a whole block of
+    pairs at once. Counting in bulk rather than testing each pair is the entire
+    saving, and it is available only because of the ordering.
+  classic_ref: LeetCode 259 family (3Sum Smaller), sibling of LeetCode 15

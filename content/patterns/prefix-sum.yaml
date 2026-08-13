@@ -1,0 +1,266 @@
+id: prefix-sum
+name: Prefix Sums & Difference Arrays
+world: 1
+order: 1
+tagline: >-
+  Pay O(n) once so that every range question costs O(1) - and run the same idea
+  backwards so that every range update costs O(1) too.
+
+prerequisites: []
+
+signals:
+  - cue: many queries of the form "sum of a[l..r]", answered offline or on a static array
+    strength: 3
+    note: >-
+      q queries times O(n) per query is the naive cost the statement is daring
+      you to pay. Precomputation moves all of it to the build.
+  - cue: count subarrays whose sum equals k, where values may be negative
+    strength: 3
+    note: >-
+      The decisive combination. Negatives kill the window; prefix sums plus a
+      hash map turn it into "how many earlier prefixes equal pre - k".
+  - cue: "add v to every element of a[l..r], repeated q times, then print the array"
+    strength: 3
+    note: >-
+      Range UPDATE with all reads deferred to the end is the difference array,
+      exactly. Applying each update elementwise is the O(n*q) trap.
+  - cue: sum of a sub-rectangle of a grid, many times
+    strength: 3
+    note: The 2-D form. Build once, then four lookups per query via inclusion-exclusion.
+  - cue: >-
+      count subarrays with equal numbers of two things (0s and 1s, opening and
+      closing brackets, vowels and consonants)
+    strength: 2
+    note: >-
+      Map one thing to +1 and the other to -1 and "equal counts" becomes "sum
+      zero", which is the prefix-plus-hash-map form again.
+  - cue: subarray whose sum is divisible by k, or whose XOR equals k
+    strength: 2
+    note: >-
+      Same skeleton over a different key - prefix mod k, or prefix XOR. Anything
+      with an inverse operation works.
+  - cue: array is fixed for the whole problem, or all updates come before all queries
+    strength: 2
+    note: >-
+      Staticness is what licenses precomputation. If reads and writes interleave
+      you need a different structure entirely.
+
+anti_signals:
+  - cue: >-
+      all values are non-negative and the question is the longest or shortest
+      range satisfying a bound
+    instead: sliding-window
+    note: >-
+      Non-negativity makes the sum monotone in the window, so a single sweep
+      answers it in O(1) space. Prefix sums would work but are the heavier tool.
+  - cue: the elements need not be adjacent (subsequence, any subset, reordering allowed)
+    instead: hashing-frequency
+    note: >-
+      A prefix sum is an ordered running total. Drop contiguity and there is no
+      prefix to take a difference of.
+  - cue: the key you are counting is an element value, not a running total
+    instead: hashing-frequency
+    note: >-
+      Both use a hash map, which is why they blur. Plain counting keys on a[i];
+      this pattern keys on pre[i]. If no cumulative quantity appears, it is not this.
+  - cue: the array is sorted and the answer is a pair or a boundary index
+    instead: two-pointers
+    note: Sortedness is a positional property; prefix sums do not care about order at all.
+  - cue: >-
+      the answer is the smallest threshold / capacity / day for which a feasibility
+      check passes
+    instead: binary-search-answer
+    note: >-
+      Prefix sums are frequently the O(n) checker inside the search, but the
+      pattern being tested is the search. Do not stop at the precomputation.
+  - cue: you must find the first position where a running total crosses a bound
+    instead: binary-search
+    note: >-
+      With non-negative values the prefix array is sorted, so lower_bound answers
+      it. The prefix array is the input to the search, not the answer.
+
+confusable_with:
+  - pattern_id: sliding-window
+    tell: >-
+      Is one moving region enough? A window answers only about the region it is
+      currently holding; a prefix array answers about every range at once. The
+      moment a value can be negative, or the ranges are handed to you out of
+      order, no single sweep exists and you must precompute.
+    mistake_code: PATTERN_WINDOW_OVER_PREFIX
+  - pattern_id: hashing-frequency
+    tell: >-
+      What is the key in the map - an element, or a running total? Counting a[i]
+      is plain frequency; counting pre[i] is this pattern. If removing the word
+      "subarray" from the statement changes nothing, it was never prefix sums.
+
+invariant: >-
+  pre[i] is the sum of the first i elements and nothing else - pre has n+1
+  entries, pre[0] = 0, and therefore sum(a[l..r]) = pre[r+1] - pre[l] with no
+  special case for l = 0.
+
+complexity:
+  time: O(n) build, O(1) per query
+  space: O(n)
+  note: >-
+    2-D is O(R*C) build and O(1) per rectangle. A difference array inverts the
+    trade: O(1) per update, one O(n) pass to materialise. Neither survives
+    interleaved updates and queries - that is a Fenwick/segment tree, not this.
+
+data_structures:
+  - prefix array of size n+1 with pre[0] = 0
+  - difference array of size n+1 so that d[r+1] is always writable
+  - hash map from prefix value to how many times it has occurred
+  - 2-D prefix table of size (R+1) x (C+1)
+
+cpp_facilities:
+  - std::vector<long long>
+  - std::unordered_map
+  - std::partial_sum / std::exclusive_scan
+  - std::adjacent_difference
+  - std::lower_bound on a monotone prefix array
+
+traps:
+  - description: >-
+      Building a size-n prefix and writing pre[r] - pre[l-1], instead of a
+      size-(n+1) prefix and pre[r+1] - pre[l].
+    mistake_code: BOUNDS_PREFIX_INDEX_SHIFT
+    symptom: >-
+      Every query works except the ones with l = 0, which index pre[-1]: garbage
+      or a crash. Samples that never start a range at the first element pass.
+  - description: >-
+      Declaring the prefix array as int, or summing into an int before the
+      assignment to a long long.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Accepted on the samples, wrong (often negative) totals on the maximum test.
+      n = 2e5 with values near 1e9 overflows before index 3.
+  - description: >-
+      In the prefix + hash map count, forgetting to seed the map with {0: 1}
+      before the loop.
+    mistake_code: BOUNDS_PREFIX_INDEX_SHIFT
+    symptom: >-
+      Undercounts by exactly the number of qualifying subarrays that start at
+      index 0. A test whose only answer is the whole array returns 0.
+  - description: >-
+      Inserting the current prefix into the map before querying for
+      running - target, rather than after.
+    mistake_code: INVARIANT_COUNTER_NOT_DECREMENTED
+    symptom: >-
+      Only visible when target is 0: every position matches itself, so the answer
+      is too large by exactly n (the empty subarrays).
+  - description: >-
+      Sizing the difference array at n, so an update ending at r = n-1 writes
+      d[n] out of bounds.
+    mistake_code: CPP_OUT_OF_BOUNDS
+    symptom: >-
+      Silent heap corruption or a sanitiser abort, triggered only by an update
+      that touches the last element - which most hand-written samples do not.
+  - description: >-
+      2-D query without adding the doubly-subtracted corner back:
+      pre[r2+1][c2+1] - pre[r1][c2+1] - pre[r2+1][c1] and stopping there.
+    mistake_code: BOUNDS_PREFIX_INDEX_SHIFT
+    symptom: >-
+      Correct for any rectangle touching row 0 or column 0 (including the whole
+      grid), wrong for every interior rectangle - so full-grid samples pass.
+  - description: >-
+      unordered_map<long long, int> on prefix values that an adversary chose to
+      collide.
+    mistake_code: CPP_UNORDERED_MAP_WORST_CASE
+    symptom: >-
+      TLE on one large test that looks identical to the large tests that passed.
+      Fix with a custom hash and a random seed, or sort the prefixes instead.
+
+recall_rubric:
+  - key: index-convention
+    prompt: >-
+      State the convention exactly: pre[0] = 0, pre has n+1 entries, and
+      sum(a[l..r]) = pre[r+1] - pre[l].
+    essential: true
+    accepts:
+      - pre[0] = 0
+      - n + 1
+      - pre[r+1] - pre[l]
+      - r+1
+  - key: why-the-shift
+    prompt: Say what the +1 shift buys you (l = 0 needs no special case).
+    essential: false
+    accepts:
+      - no special case
+      - l = 0
+      - empty prefix
+      - avoids pre[-1]
+  - key: hash-map-count
+    prompt: >-
+      Give the count-subarrays-with-sum-k recipe: map from prefix value to
+      count, seeded with {0: 1}, look up running - k before inserting.
+    essential: true
+    accepts:
+      - running - k
+      - pre - k
+      - seed
+      - "{0: 1}"
+      - hash map of prefixes
+  - key: negatives
+    prompt: >-
+      Say why this and not a sliding window when values can be negative.
+    essential: false
+    accepts:
+      - negative
+      - not monotone
+      - shrinking does not help
+      - window fails
+  - key: difference-array
+    prompt: >-
+      Give the difference array: d[l] += v, d[r+1] -= v per update, then one
+      prefix pass to materialise; size it n+1.
+    essential: true
+    accepts:
+      - d[l] += v
+      - d[r+1] -= v
+      - materialise
+      - prefix of the difference
+  - key: two-d
+    prompt: Write the 2-D query with all four terms, including the added-back corner.
+    essential: false
+    accepts:
+      - inclusion-exclusion
+      - + pre[r1][c1]
+      - add back
+      - four terms
+  - key: overflow
+    prompt: Say that the accumulator is long long and why.
+    essential: false
+    accepts:
+      - long long
+      - overflow
+      - 64-bit
+  - key: other-monoids
+    prompt: Name one non-sum version and the operation that undoes it.
+    essential: false
+    accepts:
+      - xor
+      - prefix product
+      - modular inverse
+      - prefix mod
+  - key: complexity
+    prompt: Give build and query cost, and what breaks the pattern.
+    essential: false
+    accepts:
+      - o(n) build
+      - o(1) query
+      - interleaved updates
+      - fenwick
+
+template_file: prefix-sum.cpp
+template_notes: >-
+  Four forms. Form 1 is the index convention - read it until pre[r+1] - pre[l]
+  is what your fingers type. Form 2 is the one that wins contests: prefix plus a
+  hash map, the answer to every "count subarrays with sum k" where a window
+  cannot go. Form 3 inverts the idea for O(1) range updates. Form 4 is the same
+  telescoping in two dimensions, where the only new thing is adding the corner
+  back. All accumulators are long long on purpose.
+
+related:
+  - sliding-window
+  - hashing-frequency
+  - two-pointers

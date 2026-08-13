@@ -1,0 +1,227 @@
+id: two-pointers
+name: Two Pointers
+world: 1
+order: 2
+tagline: >-
+  Collapse an O(n^2) search over pairs into one linear sweep by proving, at
+  every step, that one end of the range can never be part of a better answer.
+
+prerequisites: []
+
+signals:
+  - cue: the array is sorted, or nothing stops you from sorting it
+    strength: 3
+    note: >-
+      Sortedness is what makes the discard argument available: it tells you
+      which direction the sum/comparison moves when you retract a pointer.
+  - cue: find a pair (or triple) with a given sum / closest to a target
+    strength: 3
+    note: >-
+      "Sorted" plus "find a pair" is the classic pair of cues. Fix one end,
+      the other is forced, and the search space is one-dimensional.
+  - cue: the quantity depends on two positions and the outer positions are the promising ones
+    strength: 3
+    note: >-
+      Container-with-most-water shape: width is maximal at the ends, so you
+      start wide and only give up a side when it is provably capped.
+  - cue: compare the sequence against itself from both ends (palindrome, reverse)
+    strength: 2
+    note: The degenerate case - the two ends must agree, so both move every step.
+  - cue: merge / interleave two already-sorted sequences
+    strength: 2
+    note: >-
+      One pointer per sequence; the smaller head is always safe to emit, which
+      is the same discard argument phrased over two inputs.
+  - cue: rearrange / remove / partition in place with O(1) extra space
+    strength: 2
+    note: >-
+      The same-direction form - a slow write pointer trailing a fast read
+      pointer. Announcing O(1) extra space is the tell.
+  - cue: n up to 1e5 with an obvious O(n^2) double loop over pairs
+    strength: 1
+    note: Weak alone, but it says "the pair loop must collapse", and this is one way it does.
+
+anti_signals:
+  - cue: the answer is a contiguous subarray or substring, longest/shortest under a constraint
+    instead: sliding-window
+    note: >-
+      Both pointers move forward and the region between them IS the answer.
+      Nothing is discarded from an end on a proof - it is evicted to restore a
+      constraint. That is a window.
+  - cue: the array is unsorted and you must return the ORIGINAL indices
+    instead: hashing-frequency
+    note: >-
+      Sorting destroys the indices the answer is stated in. One pass with a
+      hash map of value -> index is the right tool.
+  - cue: you are locating one position or threshold in a sorted array by testing a midpoint
+    instead: binary-search
+    note: >-
+      One unknown, halved each step. Two pointers has two indices that each
+      move at most n times and never jump.
+  - cue: you must decide feasibility of a numeric answer that is monotone in that answer
+    instead: binary-search-answer
+    note: >-
+      "Minimise the maximum" and friends search over the answer, not over
+      positions in the array.
+  - cue: range sums over an array with negative values, or many range queries
+    instead: prefix-sum
+    note: >-
+      No end is safe to discard when adding an element can decrease the total.
+      The monotonicity the discard argument needs simply is not there.
+
+confusable_with:
+  - pattern_id: sliding-window
+    tell: >-
+      Ask what a step THROWS AWAY. Two pointers discards one end forever
+      because it is provably useless; a window keeps everything between l and r
+      and only evicts from the left to restore a constraint. Side discarded on
+      a proof - this. Region maintained - window.
+  - pattern_id: binary-search
+    tell: >-
+      Do you compare a[l] against a[r] (the two ends against each other), or
+      a[mid] against a fixed predicate? Comparing the ends is two pointers and
+      each index moves at most n times; testing a midpoint halves the space and
+      is binary search.
+
+invariant: >-
+  Every pair that could still beat the current answer lies inside [l, r] - each
+  move discards only pairs already proven no better than one you have seen.
+
+complexity:
+  time: O(n) after sorting, so O(n log n) if you must sort; O(n^2) for the fix-one-then-converge form
+  space: O(1)
+  note: >-
+    Linear because l only increases and r only decreases: together they take at
+    most n steps, no matter how the branches interleave. The sort, not the
+    sweep, is usually the dominant term.
+
+data_structures:
+  - a sorted array or string
+  - two indices (l, r) converging
+  - slow write / fast read indices for the same-direction form
+
+cpp_facilities:
+  - std::sort as the precondition step
+  - std::vector::resize / erase for in-place compaction
+  - std::min and std::max
+  - std::swap for the partition form
+  - long long casts on a[l] + a[r]
+
+traps:
+  - description: >-
+      Running the converging loop on an array that was never sorted, or sorting
+      a copy and then converging over the original.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      Accepted on the samples (which are often already sorted) and wrong on the
+      first random test. The discard argument is silently false, so answers are
+      merely plausible.
+  - description: >-
+      Writing `while (l <= r)` instead of `while (l < r)`, which lets a single
+      element pair with itself.
+    mistake_code: BOUNDS_SINGLE_ELEMENT
+    symptom: >-
+      Reports a pair for target 6 on an array containing one 3. Shows up on a
+      test whose answer should be "no pair".
+  - description: >-
+      Duplicate handling in the fix-one-then-converge (3-sum) form: not skipping
+      an equal fixed element, not skipping equal values after recording a hit,
+      or writing the skip loop without an `l < r` guard.
+    mistake_code: CPP_OUT_OF_BOUNDS
+    symptom: >-
+      Either the same triple is emitted several times (all-equal input like
+      [0,0,0,0] produces many copies), or the unguarded skip walks off the end
+      and reads garbage.
+  - description: >-
+      Computing `a[l] + a[r]` in `int` when values reach 1e9 and the target is
+      up to 2e9.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      A negative sum where a huge positive one belongs, so the pointer moves the
+      wrong way and the search misses the pair entirely.
+  - description: >-
+      Sorting purely to enable the sweep on a problem that asks for the original
+      indices of the pair.
+    mistake_code: PATTERN_SORT_OVER_HASH
+    symptom: >-
+      The values are right and the indices are wrong. The give-away is that you
+      had to store index pairs alongside the values to fix it - at which point a
+      hash map was the cheaper pattern.
+
+recall_rubric:
+  - key: discard-argument
+    prompt: >-
+      State the exchange argument concretely: why is it safe to move l when
+      a[l] + a[r] is below the target?
+    essential: true
+    accepts:
+      - every remaining partner is smaller
+      - a[l] can never reach the target
+      - discard
+      - exchange argument
+      - provably useless
+  - key: precondition
+    prompt: Name the precondition the sequence must satisfy for the argument to hold.
+    essential: true
+    accepts:
+      - sorted
+      - monotone
+      - non-decreasing
+      - must sort first
+  - key: not-a-window
+    prompt: >-
+      Say how this differs from a sliding window (converge and discard vs both
+      forward maintaining a region).
+    essential: true
+    accepts:
+      - opposite ends
+      - converge
+      - discards a side
+      - window maintains a region
+  - key: loop-bound
+    prompt: Give the loop condition and why it is strict.
+    essential: false
+    accepts:
+      - while (l < r)
+      - l < r
+      - an element must not pair with itself
+  - key: duplicates
+    prompt: Describe how the 3-sum form avoids emitting the same triple twice.
+    essential: false
+    accepts:
+      - skip equal
+      - a[i] == a[i-1]
+      - continue
+      - move both pointers past duplicates
+  - key: same-direction-form
+    prompt: >-
+      Describe the slow/fast variant and what the slow pointer means.
+    essential: false
+    accepts:
+      - write pointer
+      - slow is the next write position
+      - everything before slow is the answer
+      - in place
+  - key: complexity
+    prompt: Give the time and space complexity, including the cost of sorting.
+    essential: false
+    accepts:
+      - o(n) after sorting
+      - o(n log n)
+      - o(1) space
+      - linear sweep
+
+template_file: two-pointers.cpp
+template_notes: >-
+  Four forms. Form 1 (pair sum on a sorted array) is the one to internalise -
+  read the two comments next to `++l` and `--r` until the justification is
+  automatic, because those two lines are the pattern. Form 2 is the fix-one
+  outer loop plus the same sweep, with the duplicate skipping written out
+  properly. Form 3 shows the argument applied to something that is not a sum.
+  Form 4 is the same-direction cousin: a slow write pointer trailing a fast read
+  pointer, plus the merge of two sorted sequences.
+
+related:
+  - sliding-window
+  - binary-search
+  - hashing-frequency
