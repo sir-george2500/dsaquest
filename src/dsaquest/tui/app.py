@@ -11,6 +11,7 @@ two, and doing it on the UI thread freezes the terminal mid-keystroke.
 
 from __future__ import annotations
 
+import contextlib
 from datetime import UTC, datetime
 
 from textual import on, work
@@ -26,8 +27,15 @@ from ..context import AppContext
 from ..domain.enums import GameMode
 from ..game.levels import progress
 from ..game.modes import build_round_for, judge_round
-from ..game.modes.complete import exercise_source, find_hole, judge_completion, parse_holes
+from ..game.modes.complete import (
+    exercise_source,
+    find_hole,
+    judge_completion,
+    judge_source,
+    parse_holes,
+)
 from ..game.session import ExerciseResult, begin_exercise, complete_exercise
+from ..judge import workspace
 from ..learning.mastery import all_mastery
 from ..learning.planner import PlannedItem, build_session
 from ..storage import repositories as repo
@@ -165,6 +173,7 @@ class SessionScreen(Screen):
         Binding("3", "pick(2)", "C", show=False),
         Binding("4", "pick(3)", "D", show=False),
         Binding("ctrl+s", "submit_code", "Submit", show=False),
+        Binding("e", "edit_externally", "Edit in $EDITOR", show=False),
         Binding("space", "advance", "Next", show=False),
     ]
 
@@ -179,6 +188,8 @@ class SessionScreen(Screen):
         self.current: object | None = None
         self.xp_earned = 0
         self.correct_count = 0
+        self.workspace = None
+        self.edited_source: str | None = None
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
@@ -260,6 +271,8 @@ class SessionScreen(Screen):
         hole = holes[seed % len(holes)]
 
         self.current = (pattern.template_file, hole.id)
+        self.workspace = None
+        self.edited_source = None
         self.attempt_id = begin_exercise(
             context.conn,
             pattern_id=item.pattern_id,
@@ -271,7 +284,8 @@ class SessionScreen(Screen):
 
         self.query_one("#prompt", Static).update(
             f"[dim]{self.index + 1}/{len(self.queue)}  ·  {item.reason}  ·  "
-            f"{pattern.name}[/]\n[b]TODO: {hole.prompt}[/]   [dim](ctrl+s to submit)[/]"
+            f"{pattern.name}[/]\n[b]TODO: {safe(hole.prompt)}[/]   "
+            f"[dim](ctrl+s submit · e edit in $EDITOR)[/]"
         )
         self.query_one("#statement", Static).update(
             f"[dim]{safe(exercise_source(source, hole.id))}[/]"
@@ -343,8 +357,58 @@ class SessionScreen(Screen):
 
         self.show_feedback("\n".join(body), correct=feedback.correct)
 
+    def action_edit_externally(self) -> None:
+        """Hand the whole exercise file to $EDITOR.
+
+        The point of leaving the app is that you practise in the environment you
+        compete in — your keybinds, your snippets, your clangd. The generated
+        compile_commands.json uses the judge's own flags, so what the editor
+        tells you and what the judge does cannot disagree.
+        """
+        if self.awaiting_advance or not isinstance(self.current, tuple):
+            return
+
+        template_file, hole_id = self.current
+        source = read_template(template_file)
+        hole = find_hole(source, hole_id)
+
+        try:
+            self.workspace = workspace.create(
+                attempt_id=self.attempt_id or 0,
+                starter=exercise_source(source, hole_id),
+                statement=(
+                    f"# {template_file}\n\n"
+                    f"Fill in the TODO.\n\n"
+                    f"    {hole.prompt}\n\n"
+                    f"About {hole.line_count} line(s). Save and quit to submit.\n"
+                ),
+            )
+        except Exception as exc:  # pragma: no cover - environment dependent
+            self.notify(f"Could not prepare a workspace: {exc}", severity="error")
+            return
+
+        with self.app.suspend():
+            try:
+                workspace.open_in_editor(self.workspace)
+            except Exception as exc:  # pragma: no cover - no editor installed
+                self.app.notify(f"Editor failed: {exc}", severity="error")
+                return
+
+        self.edited_source = self.workspace.read_source()
+        # Mirror it into the inline editor when one is mounted, so the two
+        # views never disagree about what is about to be submitted.
+        with contextlib.suppress(Exception):
+            self.query_one("#editor", TextArea).text = self.edited_source
+        self.query_one("#prompt", Static).update(
+            "[green]Edited externally.[/]  [dim]ctrl+s to submit, e to go back[/]"
+        )
+
     def action_submit_code(self) -> None:
         if self.awaiting_advance or not isinstance(self.current, tuple):
+            return
+        if self.edited_source is not None:
+            self.query_one("#prompt", Static).update("[yellow]Compiling and running…[/]")
+            self.judge_whole(self.edited_source)
             return
         try:
             editor = self.query_one("#editor", TextArea)
@@ -352,6 +416,14 @@ class SessionScreen(Screen):
             return
         self.query_one("#prompt", Static).update("[yellow]Compiling and running…[/]")
         self.judge_code(editor.text)
+
+    @work(thread=True)
+    def judge_whole(self, candidate: str) -> None:
+        template_file, _ = self.current  # type: ignore[misc]
+        report = judge_source(
+            read_template(template_file), candidate, list(samples_for(template_file))
+        )
+        self.app.call_from_thread(self.finish_code, report, candidate)
 
     @work(thread=True)
     def judge_code(self, answer: str) -> None:

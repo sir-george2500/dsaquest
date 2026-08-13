@@ -207,13 +207,37 @@ def judge_completion(
     workdir: Path | None = None,
 ) -> CompletionReport:
     """Judge a filled hole against the intact template's own behaviour."""
+    return judge_source(
+        template_source,
+        splice(template_source, hole_id, answer),
+        stdin_samples,
+        limits=limits,
+        workdir=workdir,
+    )
+
+
+def judge_source(
+    template_source: str,
+    candidate: str,
+    stdin_samples: list[str],
+    *,
+    limits: Limits | None = None,
+    workdir: Path | None = None,
+) -> CompletionReport:
+    """Judge a whole program against the intact template's behaviour.
+
+    The editor hand-off gives the learner the complete exercise file and lets
+    them fill the hole in place, so what comes back is a full program rather
+    than a fragment. Splicing it would mean guessing which lines were theirs;
+    judging it whole is both simpler and more honest — they are responsible for
+    everything in the file they edited.
+    """
     import tempfile
 
     limits = limits or Limits()
     if not stdin_samples:
         raise ValueError("differential judging needs at least one sample input")
 
-    candidate = splice(template_source, hole_id, answer)
     reference = reference_source(template_source)
 
     with tempfile.TemporaryDirectory(prefix="dsaq-ref-") as tmp:
