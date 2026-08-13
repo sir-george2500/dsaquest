@@ -1,0 +1,441 @@
+.\" Man page for dsa-quest(7) \(em concepts behind DSA Quest.
+.\"
+.\" Hyphenation and justification are off on purpose so that every statement
+.\" survives `man 7 dsa-quest | grep <keyword>` on one unbroken line.
+.TH DSA-QUEST 7 "2026-08-13" "dsa-quest 0.1.0" "Miscellaneous Information Manual"
+.nh
+.ad l
+.
+.SH NAME
+dsa-quest \- the learning model, scheduler and content format behind dsa(1)
+.
+.SH DESCRIPTION
+This page explains why
+.BR dsa (1)
+behaves as it does.
+For how to run it, see
+.BR dsa (1).
+.PP
+The application exists to answer one question repeatedly until the answer is
+automatic:
+.RS 4
+Can I recognise this pattern when the problem does not tell me which to use?
+.RE
+.PP
+Everything below follows from that. A tool optimised for solving problems you
+already know the category of trains the wrong half of the skill.
+.
+.SH THE THREE DIMENSIONS
+Each pattern owns three independently scheduled memory states.
+.TP 18
+.B recognition
+Trained by Pattern Hunter and Pattern Duel.
+.TP
+.B recall
+Trained by Pattern Recall.
+.TP
+.B implementation
+Trained by Code Completion and Boss Fight.
+.PP
+They are separate because they decay at genuinely different rates. Recognition
+survives longest; implementation goes first. Averaging them into one number
+produces a figure that describes none of your three abilities and schedules
+you
+on it.
+.PP
+Three further numbers are
+.I derived
+from the event log and never scheduled.
+.TP 18
+.B speed
+Median solve time against par, capped at 1.0.
+.TP
+.B accuracy
+First\-attempt success rate over a rolling window.
+.TP
+.B retention
+The
+.I minimum
+retrievability across the three dimensions, not the mean. A pattern you can
+name
+but not write is not partly retained; it is one you cannot use.
+.
+.SH MASTERY
+Overall mastery blends the three scheduled dimensions only.
+.PP
+.nf
+recognition     0.30
+recall          0.25
+implementation  0.45
+.fi
+.PP
+Speed and accuracy are displayed but excluded from the blend. They already fed
+the rating rubric that produced those memory states, and folding them in again
+would count the same evidence twice.
+.PP
+Within a dimension, consolidation outweighs current recall probability:
+.PP
+.nf
+score = 0.65 * maturity + 0.35 * retrievability
+maturity = min(1, stability_days / 21)
+.fi
+.PP
+Retrievability swings between roughly 1.0 just after a review and the target
+retention just before the next one. Weighting it heavily would make mastery
+oscillate visibly from day to day and make unlocks flicker.
+.
+.SH THE IMPLEMENTATION GATE
+Two rules guard one claim: mastery means you can
+.I use
+the pattern, and you cannot use a pattern you cannot write.
+.TP 4
+1.
+Overall is capped at 0.60 until implementation has at least 3 reviews.
+Recognising a pattern in a four\-way multiple choice is not knowing it.
+.TP
+2.
+Overall may never exceed implementation's own score by more than 0.15.
+.PP
+Rule 1 alone counts
+.I attempts,
+not successes. A learner who failed six implementation reviews still clears
+it,
+and would unlock dependent patterns while unable to write a line. Rule 2
+closes
+that.
+.PP
+Observed behaviour:
+.PP
+.nf
+implementation always fails       overall 0.50   unlocks no
+implementation effortful but right overall 0.54  unlocks no
+implementation solid              overall 0.96   unlocks yes
+.fi
+.
+.SH SCHEDULING
+The scheduler is FSRS\-6 (Free Spaced Repetition Scheduler), one card per
+pattern per dimension.
+.SS Why not SM-2
+SM\-2 compresses a card's whole memory into a single ease factor. Every lapse
+ratchets that factor down and nothing lifts it back up, so difficult material
+spirals into ever\-shorter intervals \(em the documented
+.I ease hell.
+It also cannot say how likely you are to recall something right now, because
+it
+models no forgetting curve, only a multiplier.
+.SS Why FSRS
+FSRS models three quantities explicitly \(em difficulty, stability and
+retrievability \(em under a power\-law forgetting curve fitted to very large
+review
+corpora. Two consequences matter here.
+.TP 4
+\(bu
+You state a target retention and it schedules to hit it, instead of you
+guessing interval multipliers.
+.TP
+\(bu
+Retrievability is a real probability of recall right now, which is exactly the
+retention figure the mastery screen needs. It falls out of the model rather
+than
+being invented.
+.PP
+Default target retention is 0.90. Lower means longer intervals and more
+forgetting; higher means more reviews for the same material.
+.
+.SH RATINGS
+FSRS requires a grade after every review: again, hard, good or easy. In
+flashcard
+software the user supplies it. Here it is derived, because a learner grading
+their own code grades it generously.
+.TP
+.B recognition
+Being right on a four\-way choice is cheap, so speed is the evidence. Under
+0.5x
+par is easy; over 1.5x par is hard. A second guess is elimination, not recall,
+and caps at hard.
+.TP
+.B recall
+Self\-graded, with an objective floor. Missing an essential rubric point
+forces
+again regardless of what you clicked. Be generous with yourself about details,
+not about the invariant.
+.TP
+.B implementation
+A compiler judges it, so honesty is free. Not accepted is again. Hints or more
+than two tries cap at hard. Under 0.6x par with no hints is easy.
+.PP
+A judge failure produces
+.I no rating at all.
+The card is untouched and nothing is logged. Our bug must never become your
+lapse.
+.PP
+A lapse means forgetting something you had learned: an
+.I again
+on a card that had reached the review state. Failing during initial learning
+is
+not a lapse, or every new pattern would look fragile.
+.
+.SH XP AND INCENTIVES
+The design risk in gamifying a study tool is that the fun thing and the useful
+thing diverge. Grinding your favourite pattern feels good and teaches nothing.
+Two multipliers close that gap.
+.TP
+.B Diminishing returns
+The k\-th exercise on one pattern in a day is worth 0.5 to the power (k\-1),
+floored at 0.125. Breadth becomes the profitable strategy within three
+repetitions.
+.TP
+.B Due-review bonus
+Anything the scheduler marks due is worth 1.5x. Whatever FSRS most wants you
+to
+see is also the highest\-scoring thing available.
+.PP
+Measured effect on a medium solve:
+.PP
+.nf
+already done 3x today          6 XP
+fresh pattern                 50 XP
+fresh pattern, due for review 75 XP
+due plus a 30-day streak      94 XP
+.fi
+.PP
+The greedy play is therefore the correct study plan, and the application never
+has to nag.
+.PP
+XP is awarded from the
+.I outcome,
+never from the rating. If an honest
+.I again
+cost you XP, you would have a direct incentive to lie to the scheduler.
+.PP
+Nothing subtracts XP. A failed attempt on solve, boss or code completion pays
+10 percent of base, because half an hour on a Boss Fight for literally nothing
+teaches you to stop opening the application.
+.
+.SH UNLOCKS
+Worlds are presentation. The prerequisite DAG is what actually gates content,
+so
+a pattern opens the moment its own prerequisites reach 0.65 mastery \(em you
+are
+never made to grind an unrelated corner of a world.
+.PP
+Unlocks are recorded, not recomputed. A prerequisite that later decays does
+not
+re\-lock what it opened. Withdrawing access because you forgot something would
+punish honest reporting of a lapse.
+.PP
+Every locked pattern can state exactly what it is waiting for and how close
+that
+is, for example:
+.RS 4
+needs two-pointers at 48% of 65%, hashing-frequency at 12% of 65%
+.RE
+.
+.SH ANTI-MEMORISATION
+Static problems are memorised in about six weeks, after which the tool
+measures
+recall of answers rather than recognition of patterns.
+.TP 4
+\(bu
+Distractors are drawn from a per\-pattern confusion graph, not at random.
+Random
+distractors make the question trivial: graph BFS beside sliding window on an
+array problem answers itself.
+.TP
+\(bu
+Distractors are ordered by
+.I your
+history. A pattern you have personally mistaken for this one is offered first,
+so your wrong answers make later rounds harder.
+.TP
+\(bu
+A wrong answer returns the discriminator for that specific ordered pair \(em
+the
+one question that separates them \(em rather than merely naming the right
+answer.
+.TP
+\(bu
+The classic problem each statement drills is revealed only
+.I after
+you answer. Seeing a problem number above a statement gives the pattern away.
+.
+.SH DIFFERENTIAL JUDGING
+Code Completion has no authored answer key.
+.PP
+Holes are marked inline in the canonical template using comments, so the
+template remains a single source of truth: it still compiles, still runs, and
+still appears in the pattern reference, with no parallel exercise copy to
+drift
+out of sync.
+.PP
+.nf
+// >>> HOLE id=shrink prompt=Restore the invariant after admitting a[r]
+        while ((int)freq.size() > k) {
+            if (--freq[a[l]] == 0) freq.erase(a[l]);
+            ++l;
+        }
+// <<< HOLE
+.fi
+.PP
+The intact template is the oracle. It is compiled, run on the sample inputs,
+and
+its output becomes the expected output for your version. A hole can be added,
+moved or resized and no expected outputs need authoring or maintaining \(em
+and the
+answer key cannot disagree with the template, because it is derived from it.
+.PP
+Two properties are enforced for every hole in every shipped template: the
+template's own code must be accepted, and an empty answer must be rejected.
+The
+second catches a hole placed around decorative code, where the exercise would
+teach nothing.
+.
+.SH CONTENT FORMAT
+Content is versioned YAML on disk. The database holds user state only, so
+editing a problem never requires a migration and your progress survives
+content
+updates.
+.PP
+Adding a pattern file is sufficient to make it schedulable; cards are created
+idempotently at startup.
+.SS Pattern fields
+.TP 18
+.B signals
+Cues in a statement that point here. Strength 3 is near\-decisive.
+.TP
+.B anti_signals
+Cues that rule this out, and what they point to instead. Recognition is half
+elimination, and that half is what learners are never taught.
+.TP
+.B confusable_with
+Patterns this is mistaken for, each with a
+.I tell:
+the single question that discriminates them. Must be mutual \(em validation
+fails
+on a one\-way confusion.
+.TP
+.B invariant
+One sentence: the thing that must stay true.
+.TP
+.B traps
+Ways to get the pattern right and the code wrong, each with a symptom naming
+which test fails and how.
+.TP
+.B recall_rubric
+Concretely checkable points for self\-grading. Essential points cannot be
+waved
+through.
+.PP
+Validate a content tree with:
+.PP
+.nf
+python -m dsaquest.content.validate -v
+.fi
+.PP
+Cross\-file checks run at load time: unknown pattern references, one\-way
+confusions, prerequisite cycles, missing templates, duplicate world slots, and
+statements that name their own pattern.
+.
+.SH THREAT MODEL
+Submitted code is assumed hostile. It must not read the home directory, reach
+the network, exhaust the machine, or survive the judge.
+.PP
+Layer by layer, and what each catches that the others cannot:
+.TP
+.B TasksMax
+The only real fork\-bomb defence.
+.B RLIMIT_NPROC
+is deliberately not used: it is enforced per\-UID, so a fork bomb in the
+sandbox
+would exhaust the limit for your entire login session and take down the
+desktop
+running the judge.
+.TP
+.B MemoryMax
+A backstop preventing host OOM.
+.B RLIMIT_AS
+at the same value is what produces a clean attributable failure instead of an
+opaque kill.
+.TP
+.B wall clock > CPU limit
+A process blocked on a read burns wall time without burning CPU.
+.B RLIMIT_CPU
+alone would never fire on a program waiting for input that never arrives.
+.TP
+.B --new-session
+Not optional. Without a fresh session the payload can inject keystrokes into
+the
+terminal that launched the judge.
+.PP
+Resource usage is read from the cgroup rather than from
+.BR wait4 (2),
+because bwrap does not propagate its child's rusage. Measured on the
+development
+machine, a process that used 1.54 s and 67.7 MB reported as 0.00 s and 7.0 MB
+through wait4. The cgroup also accounts for the whole process tree, and its
+OOM
+counter turns memory\-kill detection from a heuristic into a fact.
+.
+.SH QUICK REFERENCE
+One fact per line, in plain text, for grepping. Bold and italic elsewhere in
+this page render as overstrike sequences and will not match a plain grep; use
+.RS 4
+man 7 dsa-quest | col -b | grep -i <term>
+.RE
+to search those, or grep this block directly.
+.PP
+.nf
+dimension recognition is trained by Pattern Hunter and Pattern Duel
+dimension recall is trained by Pattern Recall
+dimension implementation is trained by Code Completion and Boss Fight
+derived metric speed is median solve time against par capped at 1.0
+derived metric accuracy is first-attempt success over a rolling window
+derived metric retention is the minimum retrievability not the mean
+mastery weight recognition 0.30 recall 0.25 implementation 0.45
+mastery within a dimension is 0.65 maturity plus 0.35 retrievability
+mastery maturity is stability days over 21 capped at 1
+mastery gate rule 1 capped at 0.60 until 3 implementation reviews
+mastery gate rule 2 cannot exceed implementation score plus 0.15
+mastery unlock threshold is 0.65
+scheduler is FSRS 6 one card per pattern per dimension
+scheduler default target retention is 0.90
+SM-2 is rejected because a single ease factor causes ease hell
+FSRS models difficulty stability retrievability on a power-law curve
+rating recognition under 0.5x par is easy over 1.5x par is hard
+rating recall self-graded but a missed essential point forces again
+rating implementation not accepted is again hints cap at hard
+rating a judge failure produces no rating and no log entry
+lapse means again on a card that had reached the review state
+lapse does not include failing during initial learning
+XP diminishing returns 0.5 to the power k floored at 0.125
+XP due review bonus 1.5x
+XP is awarded from the outcome never from the rating
+XP is never subtracted
+unlocks are permanent and never revoked when a prerequisite decays
+unlocks follow the prerequisite DAG not the world list
+anti-memorisation distractors come from the confusion graph
+anti-memorisation distractors are weighted by your own past confusions
+anti-memorisation the classic problem reference is revealed only after
+differential judging uses the intact template as the oracle
+differential judging requires no authored expected outputs
+hole markers are comments so the template still compiles
+every hole must accept its reference body and reject an empty answer
+content is versioned YAML the database holds user state only
+adding a pattern file is enough to make it schedulable
+validate content with python -m dsaquest.content.validate -v
+threat model assumes submitted code is hostile
+TasksMax is the only real fork-bomb defence
+RLIMIT_NPROC is not used because it is enforced per-UID
+RLIMIT_AS gives a clean attributable failure instead of an opaque kill
+wall clock limit exceeds CPU limit to catch processes blocked on input
+--new-session prevents TIOCSTI keystroke injection into your terminal
+resource usage is read from the cgroup because bwrap discards rusage
+.fi
+.
+.SH SEE ALSO
+.BR dsa (1)
+.PP
+FSRS specification: https://github.com/open-spaced-repetition
+.
+.SH AUTHOR
+George S. Mulbah.

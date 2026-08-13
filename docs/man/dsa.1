@@ -1,0 +1,494 @@
+.\" Man page for dsa(1) \(em DSA Quest.
+.\"
+.\" Formatting note: hyphenation and justification are switched off on purpose.
+.\" A hyphen-broken word cannot be grepped, and padded inter-word spacing breaks
+.\" fixed-string searches. Every fact below is written to survive
+.\"     man dsa | grep <keyword>
+.\" on a single line.
+.TH DSA 1 "2026-08-13" "dsa-quest 0.1.0" "User Commands"
+.nh
+.ad l
+.
+.SH NAME
+dsa \- terminal game for training C++ DSA pattern recognition
+.
+.SH SYNOPSIS
+.B dsa
+.RI [ COMMAND ]
+.RI [ OPTIONS ]
+.PP
+.B dsa
+.RB [ --db
+.IR PATH ]
+.br
+.B dsa practice
+.RB [ --size
+.IR N ]
+.RB [ --db
+.IR PATH ]
+.br
+.B dsa review
+.RB [ --size
+.IR N ]
+.RB [ --db
+.IR PATH ]
+.br
+.B dsa stats
+.RB [ --db
+.IR PATH ]
+.br
+.B dsa patterns
+.RB [ --db
+.IR PATH ]
+.br
+.B dsa pattern
+.I PATTERN_ID
+.RB [ --template ]
+.RB [ --db
+.IR PATH ]
+.br
+.B dsa streak
+.RB [ --db
+.IR PATH ]
+.br
+.B dsa doctor
+.RB [ --db
+.IR PATH ]
+.
+.SH DESCRIPTION
+.B dsa
+trains the recognition half of competitive programming: deciding
+.I which
+pattern a problem needs when nothing tells you.
+It is a spaced\-repetition game, not a problem archive.
+.PP
+A problem statement is never shown with its pattern named.
+You commit to an answer first; only then does the program explain what gave it
+away, and which cue you missed.
+.PP
+Three abilities are tracked and scheduled independently, because they decay at
+different rates.
+You can keep recognising a pattern long after you have lost the ability to
+write
+one, and a single mastery number hides exactly that.
+.RS 4
+.TP 18
+.B recognition
+Name the pattern from an unlabelled statement.
+.TP
+.B recall
+Given the name, produce its signals, invariant, complexity and template.
+.TP
+.B implementation
+Write correct C++ under time.
+.RE
+.PP
+All C++ you submit is compiled and executed inside a sandbox.
+The application works offline; nothing is transmitted anywhere.
+.
+.SH COMMANDS
+.TP
+.B dsa
+With no command, launch the interactive campaign map.
+.TP
+.B dsa practice
+Run a session chosen by the scheduler: due reviews first, then your weakest
+started patterns, then new material.
+.TP
+.B dsa review
+Run a session containing only cards that are due.
+.TP
+.B dsa stats
+Print level, XP, streak, per\-pattern mastery, your most common confusions,
+your
+most common mistakes, and what to practise next.
+.TP
+.B dsa patterns
+Print every pattern with its mastery bar and lock state.
+.TP
+.B dsa pattern \fIPATTERN_ID\fR
+Print one pattern's signals, anti\-signals, confusions, invariant, complexity
+and common mistakes.
+.TP
+.B dsa streak
+Print the current and best daily streak.
+.TP
+.B dsa doctor
+Check the sandbox, the toolchain, the editor, the content tree and the
+database.
+Run this first if anything misbehaves.
+.
+.SH OPTIONS
+.TP
+.BI --db " PATH"
+Use an alternative progress database. Default: see \fBFILES\fR.
+.TP
+.BI --size " N" ", " -n " N"
+Number of exercises in the session. Default 8 for
+.BR practice ,
+12 for
+.BR review .
+.TP
+.B --template
+For
+.BR "dsa pattern" :
+print the pattern's canonical C++ template with syntax highlighting instead of
+its prose entry.
+.TP
+.B --help
+Show usage for the command and exit.
+.
+.SH KEY BINDINGS
+Bindings in the interactive interface.
+.SS Campaign map
+.TP 14
+.B p
+Start a practice session.
+.TP
+.B r
+Start a review session (due cards only).
+.TP
+.B q
+Quit.
+.SS During a session
+.TP 14
+.B 1 2 3 4
+Answer a Pattern Hunter question with option A, B, C or D.
+.TP
+.B space
+Advance to the next exercise after reading the feedback.
+.TP
+.B ctrl+s
+Submit a Code Completion answer for judging.
+.TP
+.B escape
+Abandon the session and return to the map.
+.TP
+.B ctrl+q
+Quit the application from anywhere.
+.
+.SH GAME MODES
+.TP
+.B Pattern Hunter
+An unlabelled statement and four patterns. Distractors are drawn from the
+correct pattern's confusion graph and ordered by how often you personally have
+made that exact mistake, so your own wrong answers make later rounds harder.
+Trains \fBrecognition\fR.
+.TP
+.B Code Completion
+A canonical template with its load\-bearing lines removed. Your answer is
+judged
+differentially against the intact template, so there is no authored answer key
+to disagree with the code. Trains \fBimplementation\fR.
+.TP
+.B Pattern Recall
+Cued recall of a pattern's structure, self\-graded against a rubric whose
+essential points cannot be waved through. Trains \fBrecall\fR. Not yet
+implemented.
+.TP
+.B Pattern Duel
+Two deliberately confusable statements to separate. Trains \fBrecognition\fR.
+Not yet implemented.
+.TP
+.B Boss Fight
+Unlabelled, multi\-pattern, explain\-then\-implement. Trains
+\fBimplementation\fR. Not yet implemented.
+.
+.SH VERDICTS
+Judge outcomes for a submission.
+.TP 8
+.B AC
+Accepted. Every test passed.
+.TP
+.B WA
+Wrong Answer. Output differs; the first divergence is reported by token index.
+.TP
+.B TLE
+Time Limit Exceeded. Wall clock or CPU budget exhausted.
+.TP
+.B MLE
+Memory Limit Exceeded. Confirmed from the cgroup's OOM counter.
+.TP
+.B RE
+Runtime Error. The likely cause is named (segfault, bad_alloc, division by
+zero,
+optimised undefined behaviour).
+.TP
+.B CE
+Compilation Error. Sandbox paths are stripped from the log.
+.TP
+.B OLE
+Output Limit Exceeded. The program produced more output than the cap allows.
+.TP
+.B IE
+Judge Error. A sandbox or harness failure. Never counted against you, and
+never
+recorded as a lapse.
+.
+.SH QUICK REFERENCE
+One fact per line, in plain text, for grepping.
+.PP
+Terms marked up as bold or italic elsewhere in this page render as overstrike
+sequences and will not match a plain grep. Everything worth searching for is
+repeated here unformatted, so
+.RS 4
+man dsa | grep MLE
+.RE
+works. To search the formatted sections too, strip the overstrikes first:
+.RS 4
+man dsa | col -b | grep -i memory
+.RE
+.PP
+.nf
+command dsa launches the interactive campaign map
+command dsa practice runs a scheduler-chosen session
+command dsa review runs due cards only
+command dsa stats prints progress mastery confusions mistakes
+command dsa patterns lists every pattern with mastery
+command dsa pattern PATTERN_ID prints one pattern in detail
+command dsa streak prints the daily streak
+command dsa doctor checks sandbox toolchain editor content database
+option --db PATH selects an alternative progress database
+option --size N or -n N sets exercises per session
+option --template prints the C++ template instead of prose
+option --help shows usage
+key p starts a practice session from the map
+key r starts a review session from the map
+key q quits from the map
+key 1 2 3 4 answer Pattern Hunter option A B C D
+key space advances to the next exercise
+key ctrl+s submits a Code Completion answer
+key escape abandons the session
+key ctrl+q quits the application
+verdict AC Accepted every test passed
+verdict WA Wrong Answer output differs at a reported token
+verdict TLE Time Limit Exceeded wall clock or CPU exhausted
+verdict MLE Memory Limit Exceeded confirmed from cgroup OOM counter
+verdict RE Runtime Error with the likely cause named
+verdict CE Compilation Error with sandbox paths stripped
+verdict OLE Output Limit Exceeded too much output
+verdict IE Judge Error never counted against you
+file progress database ~/.local/share/dsa-quest/progress.db
+file workspace ~/.local/share/dsa-quest/workspace/attempt-N/
+file patterns content/patterns/*.yaml
+file problems content/problems/*.yaml
+file templates content/templates/*.cpp
+file sample inputs content/exercises.yaml
+env EDITOR selects the editor for full solves
+env VISUAL overrides EDITOR
+env DSAQUEST_CONTENT overrides the content directory
+exit status 0 success
+exit status 1 failure unknown pattern failed doctor invalid content
+sandbox layer systemd-run --user --scope provides cgroup v2 limits
+sandbox layer bwrap provides namespace isolation and no network
+sandbox layer prlimit provides per-process rlimits
+sandbox only /usr is visible read-only no /home no /etc no network
+sandbox compilation is sandboxed as well as execution
+mode Pattern Hunter trains recognition
+mode Code Completion trains implementation
+mode Pattern Recall trains recall
+XP correct pattern recognition 10
+XP correct duel 20
+XP correct recall 20
+XP easy problem solved 25
+XP medium problem solved 50
+XP hard problem solved 100
+XP expert problem solved 150
+XP boss problem solved 250
+XP perfect boss bonus 150 flat
+multiplier due review 1.5x
+multiplier repeat same pattern same day 0.5 to the power k
+multiplier repeat floor 0.125x
+multiplier daily streak plus 1 percent per day capped at 25 percent
+XP failed attempt effort award 10 percent of base on solve boss complete
+XP failed multiple choice 0
+XP is never negative and is never removed
+level formula 52 times n to the power 1.235
+level 1 Novice
+level 5 Apprentice
+level 10 Pattern Hunter about 18 days
+level 15 Pattern Adept
+level 20 Algorithm Knight about 89 days
+level 25 Algorithm Champion
+level 30 Competitive Programmer about 224 days
+level 40 Grandmaster of Patterns
+level 50 Algorithm Master about 713 days maximum
+mastery weight recognition 0.30
+mastery weight recall 0.25
+mastery weight implementation 0.45
+mastery gate needs 3 implementation reps
+mastery gate cap 0.60 until reps are met
+mastery cannot exceed implementation by more than 0.15
+mastery unlock threshold 0.65
+mastery mature stability 21 days
+retention is the minimum retrievability across dimensions not the mean
+scheduler FSRS 6 default target retention 0.90
+default time limit 2000 ms CPU and 5000 ms wall
+default memory limit 256 MB
+default output limit 8192 KB
+default process limit 64 tasks
+C++ standard c++20
+.fi
+.
+.SH FILES
+.TP
+.I ~/.local/share/dsa-quest/progress.db
+Progress database (SQLite). Holds user state only: XP, cards, review log,
+attempts, submissions, mistakes, streaks, unlocks, achievements.
+Content is not stored here.
+.TP
+.I ~/.local/share/dsa-quest/workspace/attempt-N/
+Per\-attempt C++ project for editing in your own editor. Contains
+.IR solution.cpp ,
+.IR statement.md ,
+.I compile_commands.json
+and a
+.I tests/
+directory. Kept after the attempt so you can review what you wrote.
+.TP
+.I <install>/content/patterns/*.yaml
+Pattern definitions: signals, anti\-signals, confusions, invariant, traps,
+recall rubric.
+.TP
+.I <install>/content/problems/*.yaml
+Problem statements, one file per pattern.
+.TP
+.I <install>/content/templates/*.cpp
+Canonical C++ templates, with Code Completion holes marked inline as comments.
+.TP
+.I <install>/content/exercises.yaml
+Sample inputs for differential judging. Deliberately contains no expected
+outputs.
+.
+.SH ENVIRONMENT
+.TP
+.B EDITOR
+.TQ
+.B VISUAL
+Editor used for full solves.
+.B VISUAL
+wins if both are set. Falls back to nvim, vim, nano then vi.
+.TP
+.B DSAQUEST_CONTENT
+Override the content directory. Use this to author or test your own pattern
+set.
+.
+.SH EXIT STATUS
+.TP 6
+.B 0
+Success.
+.TP
+.B 1
+The command failed: unknown pattern, failed
+.B doctor
+check, or invalid content.
+.
+.SH EXAMPLES
+.TP
+Check the installation before anything else:
+.B dsa doctor
+.TP
+Twenty minutes of whatever the scheduler thinks you need:
+.B dsa practice
+.TP
+Clear only what is due, worth 1.5x XP:
+.B dsa review
+.TP
+See which patterns you confuse for each other:
+.B dsa stats
+.TP
+Read one pattern's discriminators before a contest:
+.B dsa pattern binary-search-answer
+.TP
+Print a template to study or copy:
+.B dsa pattern sliding-window --template
+.TP
+Keep a throwaway profile for experimenting:
+.B dsa practice --db /tmp/scratch.db
+.TP
+Author your own patterns without touching the installed set:
+.B DSAQUEST_CONTENT=~/my-patterns dsa patterns
+.
+.SH SANDBOX
+Submitted C++ is compiled and run under three layers.
+.PP
+.nf
+systemd-run --user --scope    cgroup v2: MemoryMax, MemorySwapMax, TasksMax
+  bwrap                       no network, no host filesystem, own PID
+namespace
+    prlimit                   RLIMIT_CPU, RLIMIT_AS, RLIMIT_FSIZE,
+RLIMIT_STACK
+      your program
+.fi
+.PP
+Compilation is sandboxed too, not only execution: a C++ compiler is an
+interpreter with filesystem access, and GCC's
+.B #embed
+and
+.B __has_include
+can otherwise read host files.
+.PP
+Only
+.I /usr
+is visible inside the jail, read\-only. There is no
+.IR /home ,
+no
+.IR /etc ,
+no network.
+.PP
+The application refuses to execute C++ at all if the sandbox is unavailable
+rather than falling back to unisolated execution.
+Run
+.B dsa doctor
+to see which layers your kernel supports.
+.
+.SH DIAGNOSTICS
+.TP
+.B DSA Quest will not execute C++ without isolation
+The kernel or userland is missing a required layer. On Arch:
+.B sudo pacman -S bubblewrap util-linux
+.TP
+.B the reference template does not build or run
+A content bug, not yours. The intact template failed, so no answer key could
+be
+derived. Report it.
+.TP
+.B database is at schema version N
+The database was written by a newer build. Upgrade the application; it will
+not
+downgrade a database.
+.
+.SH NOTES
+Only
+.BR practice ", " review
+and the bare
+.B dsa
+command load the interactive interface.
+.BR stats ", " patterns ", " pattern ", " streak " and " doctor
+render through a lightweight path and start in roughly a quarter of a second.
+.PP
+Unlocking a pattern is permanent. If a prerequisite later decays below the
+threshold, access already granted is not withdrawn \(em taking it back would
+punish you for honestly reporting that you had forgotten something.
+.
+.SH SEE ALSO
+.BR dsa-quest (7)
+for the mastery model, the scheduling algorithm and the content format.
+.PP
+.BR g++ (1),
+.BR bwrap (1),
+.BR systemd-run (1),
+.BR prlimit (1),
+.BR clangd (1)
+.
+.SH BUGS
+Modes Pattern Recall, Pattern Duel and Boss Fight are designed and supported
+by
+the data model but have no interface yet.
+.PP
+Six of the planned thirty\-three patterns ship with content.
+.PP
+Report issues at https://github.com/sir-george2500/dsaquest
+.
+.SH AUTHOR
+George S. Mulbah.

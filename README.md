@@ -83,12 +83,38 @@ dsa stats        # progress and weakest patterns
 dsa pattern sliding-window
 ```
 
+## Documentation
+
+```bash
+make install-man
+export MANPATH="$HOME/.local/share/man:$MANPATH"   # add to your shell profile
+
+man dsa            # commands, options, key bindings, verdicts, XP table
+man 7 dsa-quest    # mastery model, scheduler, incentives, threat model
+```
+
+Both pages are written to be **grepped**. Hyphenation and justification are
+disabled so no word breaks across a line, and every searchable fact is repeated
+unformatted in a `QUICK REFERENCE` block — bold and italic render as overstrike
+sequences that a plain `grep` cannot match.
+
+```bash
+man dsa | grep -i "verdict MLE"
+man dsa | grep -i "level 30"
+man 7 dsa-quest | grep -i fork-bomb
+man dsa | col -b | grep -i memory       # to search the formatted sections too
+```
+
+Note: OpenSSL also ships a `dsa(1ssl)` page. `make install-man` indexes ours so
+`man dsa` resolves here; `man 7 dsa-quest` is unambiguous either way.
+
 ## Test
 
 ```bash
 pytest                    # everything
 pytest -m "not slow"      # skip the ones that compile C++
 pytest tests/security     # sandbox escape attempts
+make test-fast            # same, skipping the C++ compilation tests
 ```
 
 ## Architecture
