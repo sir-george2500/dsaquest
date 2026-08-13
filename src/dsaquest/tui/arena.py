@@ -193,10 +193,18 @@ class ArenaScreen(Screen):
             for index, (label, option) in enumerate(challenge.hunter.labelled()):
                 choices.mount(Button(f"{label}.  {safe(option.name)}", id=self._option_id(index)))
         elif challenge.kind is PhaseKind.EXPLAIN:
+            # The pattern MUST be named here. An explain phase is Mode B, and
+            # Mode B is defined by naming the pattern and hiding everything
+            # else. Withholding it does not make the phase harder, it makes it
+            # unanswerable: a four-face boss picks one of its patterns at
+            # random, so the player would be reciting the invariant of
+            # something they have no way to identify, and losing health for it.
+            assert challenge.recall is not None
             self.query_one("#arena-body", Static).update(
                 head
-                + "State it from memory: the signals, the invariant that makes it\n"
-                + "correct, and what it costs.\n\n"
+                + f"[b cyan]{safe(challenge.recall.pattern.name)}[/]\n\n"
+                + "State it from memory: the signals that reveal it, the invariant\n"
+                + "that makes it correct, and what it costs.\n\n"
                 + "[dim]ctrl+s to commit[/]"
             )
             editor = code_editor("", id="arena-editor", show_line_numbers=False)

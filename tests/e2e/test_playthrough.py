@@ -170,6 +170,17 @@ async def _fight(screen, pilot, *, win: bool, limit: int = 12) -> None:
             index = correct if win else (correct + 1) % len(challenge.hunter.options)
             await pilot.press(str(index + 1))
         elif challenge.recall is not None:
+            # Regression: the explain phase MUST name its pattern. It once did
+            # not, and for THE ARRAY BEAST — whose YAML pins no `pattern:`, so
+            # the engine draws `boss.patterns[seed % 4]` — that made the phase
+            # unanswerable. The player was asked to recite the invariant of one
+            # of four patterns, chosen at random, never named, with no statement
+            # to infer it from, and lost 25 health for guessing. Asserting it
+            # here is what lets the test read `challenge.recall.pattern` below
+            # and still be a fair account of what a player can see.
+            assert challenge.recall.pattern.name in str(
+                screen.query_one("#arena-body", Static).visual
+            ), "the explain phase must name the pattern it is asking about"
             editor = screen.query_one("#arena-editor", TextArea)
             editor.text = (
                 _everything_the_rubric_accepts(challenge.recall.pattern)
