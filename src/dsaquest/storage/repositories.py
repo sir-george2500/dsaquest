@@ -970,3 +970,112 @@ def comebacks(conn: sqlite3.Connection) -> int:
         """
     ).fetchone()
     return int(row[0])
+
+
+# --------------------------------------------------------------------------
+# Boss records
+# --------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class BossRecord:
+    boss_id: str
+    attempts: int
+    defeated: bool
+    best_grade: str | None
+    best_time_ms: int | None
+    best_hp_left: int | None
+    hints_used: int | None
+    first_won_at: str | None
+    last_fought_at: str | None
+
+
+#: Victory tiers, weakest first. Order matters — a rematch may only raise it.
+VICTORY_ORDER: tuple[str, ...] = ("normal", "strong", "perfect", "legendary")
+
+
+def get_boss_record(conn: sqlite3.Connection, boss_id: str) -> BossRecord:
+    conn.execute("INSERT OR IGNORE INTO boss_record (boss_id) VALUES (?)", (boss_id,))
+    row = conn.execute("SELECT * FROM boss_record WHERE boss_id = ?", (boss_id,)).fetchone()
+    return BossRecord(
+        boss_id=row["boss_id"],
+        attempts=row["attempts"],
+        defeated=bool(row["defeated"]),
+        best_grade=row["best_grade"],
+        best_time_ms=row["best_time_ms"],
+        best_hp_left=row["best_hp_left"],
+        hints_used=row["hints_used"],
+        first_won_at=row["first_won_at"],
+        last_fought_at=row["last_fought_at"],
+    )
+
+
+def record_boss_fight(
+    conn: sqlite3.Connection,
+    boss_id: str,
+    *,
+    won: bool,
+    grade: str | None,
+    duration_ms: int,
+    hp_left: int,
+    hints_used: int,
+) -> BossRecord:
+    """Log one fight, keeping the best of everything.
+
+    Nothing here can go backwards. A scrappy rematch after a Perfect victory
+    leaves the Perfect standing, because the point of a rematch is to try for
+    more, not to risk what you already earned.
+    """
+    now = utcnow()
+    current = get_boss_record(conn, boss_id)
+
+    best_grade = current.best_grade
+    if (
+        won
+        and grade
+        and (best_grade is None or VICTORY_ORDER.index(grade) > VICTORY_ORDER.index(best_grade))
+    ):
+        best_grade = grade
+
+    best_time = current.best_time_ms
+    if won and (best_time is None or duration_ms < best_time):
+        best_time = duration_ms
+
+    best_hp = current.best_hp_left
+    if won and (best_hp is None or hp_left > best_hp):
+        best_hp = hp_left
+
+    fewest_hints = current.hints_used
+    if won and (fewest_hints is None or hints_used < fewest_hints):
+        fewest_hints = hints_used
+
+    with transaction(conn):
+        conn.execute(
+            """
+            UPDATE boss_record
+               SET attempts = attempts + 1,
+                   defeated = MAX(defeated, ?),
+                   best_grade = ?, best_time_ms = ?, best_hp_left = ?, hints_used = ?,
+                   first_won_at = COALESCE(first_won_at, CASE WHEN ? THEN ? END),
+                   last_fought_at = ?
+             WHERE boss_id = ?
+            """,
+            (
+                int(won),
+                best_grade,
+                best_time,
+                best_hp,
+                fewest_hints,
+                int(won),
+                now,
+                now,
+                boss_id,
+            ),
+        )
+    return get_boss_record(conn, boss_id)
+
+
+def bosses_defeated(conn: sqlite3.Connection) -> set[str]:
+    return {
+        row["boss_id"] for row in conn.execute("SELECT boss_id FROM boss_record WHERE defeated = 1")
+    }

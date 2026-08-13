@@ -297,11 +297,32 @@ CREATE TABLE master_progress (
 """
 
 
+_V5 = """
+-- Boss fights. Attempts are counted and the best result kept.
+--
+-- `defeated` is sticky, like a master's final test: a later rematch that goes
+-- badly does not un-prove what was proved. `best_grade` records the highest
+-- victory tier reached, so a Perfect stays Perfect after a scrappy rematch.
+CREATE TABLE boss_record (
+    boss_id       TEXT    PRIMARY KEY,
+    attempts      INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+    defeated      INTEGER NOT NULL DEFAULT 0 CHECK (defeated IN (0, 1)),
+    best_grade    TEXT,
+    best_time_ms  INTEGER,
+    best_hp_left  INTEGER,
+    hints_used    INTEGER,
+    first_won_at  TEXT,
+    last_fought_at TEXT
+);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "initial schema", _V1),
     Migration(2, "lessons, drills, respect, character memory", _V2),
     Migration(3, "phase timing and deadlines", _V3),
     Migration(4, "master final test", _V4),
+    Migration(5, "boss records", _V5),
 )
 
 LATEST_VERSION = max(m.version for m in MIGRATIONS)
