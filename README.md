@@ -69,9 +69,32 @@ sudo pacman -S bubblewrap util-linux gcc   # Arch
 ## Install
 
 ```bash
-git clone <repo> && cd dsa-quest
+git clone git@github.com:sir-george2500/dsaquest.git && cd dsaquest
+uv tool install --editable .
+```
+
+That puts `dsa` in `~/.local/bin`, so it works from any directory. `--editable`
+means edits to the source and to `content/` take effect immediately, with no
+reinstall.
+
+If `dsa: command not found` afterwards, `~/.local/bin` is not on your `PATH`:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"    # add to your shell profile
+```
+
+Verify with `dsa doctor`.
+
+### For working on the project itself
+
+A separate dev environment, needed to run the tests:
+
+```bash
 uv venv && uv pip install -e ".[dev]"
 ```
+
+Note this one does **not** put `dsa` on your `PATH` — it lives at
+`.venv/bin/dsa` and only works inside the project directory.
 
 ## Run
 

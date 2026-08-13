@@ -86,6 +86,39 @@ Write correct C++ under time.
 All C++ you submit is compiled and executed inside a sandbox.
 The application works offline; nothing is transmitted anywhere.
 .
+.SH INSTALLATION
+.PP
+.nf
+uv tool install --editable .
+.fi
+.PP
+This places
+.B dsa
+in
+.I ~/.local/bin
+so it runs from any directory.
+If the shell reports
+.BR "command not found" ,
+that directory is not on your
+.BR PATH :
+.PP
+.nf
+export PATH="$HOME/.local/bin:$PATH"
+.fi
+.PP
+A plain
+.B uv pip install -e .
+sets up a development environment for running the tests. It does
+.I not
+put
+.B dsa
+on your PATH; the executable stays at
+.I .venv/bin/dsa
+and only works inside the project directory.
+.PP
+Confirm the installation with
+.BR "dsa doctor" .
+.
 .SH COMMANDS
 .TP
 .B dsa
