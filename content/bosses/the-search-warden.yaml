@@ -1,0 +1,130 @@
+id: the-search-warden
+name: THE SEARCH WARDEN
+title: The Thing That Stands on the Line
+tier: 2
+master_id: master_search
+patterns:
+  - binary-search
+  - binary-search-answer
+
+boss_hp: 100
+player_hp: 100
+damage_taken: 25
+enrage_after: 2
+
+# Adjudicator Kol's final test proves the six secrets were held once. This gate
+# proves they are still held — retention is in here on purpose, because the
+# boundary is the first thing to decay and the last thing anyone notices.
+gate:
+  recognition: 0.55
+  understanding: 0.50
+  implementation: 0.50
+  retention: 0.40
+  master_final_test: true
+
+# Four phases, 100 damage, one health bar. No slack: every phase must land or
+# the thing is still standing at the end. The fight walks the curriculum in
+# order — probe an ordered thing, state why the probe is legal, write it, and
+# then do it again with the ordered thing taken away.
+phases:
+  - kind: recognise
+    damage: 10
+    pattern: binary-search
+    title: Which side of the line
+
+  - kind: explain
+    damage: 20
+    pattern: binary-search
+    title: State the invariant before you may halve
+
+  - kind: implement
+    damage: 30
+    pattern: binary-search
+    title: Cut
+
+  - kind: survive
+    damage: 40
+    pattern: binary-search-answer
+    title: The array is gone
+
+dialogue:
+  intro:
+    - >-
+      Adjudicator Kol taught you to be exact. Exactness is not what is tested
+      here. What is tested is whether you can be exact about the ENDS.
+    - >-
+      I stand where a thing stops being possible and starts being impossible.
+      One index wide. Tell me which side you are on. That is the only question
+      I have ever asked anyone.
+    - >-
+      Every problem here has two answers and they are one apart. One of them is
+      correct. The other passes the sample and dies on the judge. Nothing will
+      be named for you.
+
+  phase_won:
+    - The boundary held.
+    - Correct. Note that I did not say obvious.
+    - Right side of the line. Move.
+    - You did not flinch at the end of the range. Continue.
+
+  phase_lost:
+    - Off by one. Not off by much — off by everything.
+    - You answered about the middle. I asked about the edge.
+    - >-
+      Wrong side. The distance was a single index and the verdict is the same
+      as if it were a thousand.
+    - You assumed the answer was inside the range. Nothing promised you that.
+
+  enrage:
+    - >-
+      Twice. The hints stop here. Whatever bounds you are holding now, you
+      carry them to the end unassisted.
+    - >-
+      Two openings taken. I will not be generous with the ends again, and I was
+      never generous with them in the first place.
+
+  victory:
+    - It stops. The line was where you said it was.
+    - >-
+      Down. You held both ends at once. Most hold one and are merely confident
+      about the other.
+    - Beaten. Walk over it and do not look back at the interval.
+
+  perfect:
+    - >-
+      Four probes. Four boundaries. Nothing conceded, no help taken, and not
+      one guess dressed up as a decision. Adjudicator Kol will read this record
+      and say nothing at all, which from him is the entire speech.
+    - >-
+      You were never once on the wrong side. There is nothing left in this
+      thing for you — go and find something that does not tell you where its
+      edges are.
+
+  defeat:
+    - >-
+      It stands. Go back to the half-open range and decide once, permanently,
+      what hi means. It was never the loop that beat you.
+    - >-
+      Not today. Trace a search over an array of two by hand until the ends
+      stop surprising you, then return. It is patient and it holds no grudge.
+    - >-
+      You knew the technique and lost the boundary. That gap closes on
+      lower_bound and upper_bound drills, not on another attempt tonight.
+    - >-
+      The predicate you reached for flipped more than once, so there was no
+      line to find. Train monotonicity — say `raising x can only make this
+      easier` out loud before you bisect anything again.
+
+  rematch:
+    - Again. The range is different. The question never is.
+    - You have put it down before. It has moved the line since.
+    - Back at the edge. It does not remember you; it only remembers the ends.
+
+  gate_locked:
+    - >-
+      It does not fight students. Finish with Adjudicator Kol, then hold what
+      he taught long enough that it is still in your hand when you return.
+    - Not yet. {blockers}
+    - >-
+      The gate is shut on purpose. A boundary you cannot state in a quiet room
+      you will not state in front of this.

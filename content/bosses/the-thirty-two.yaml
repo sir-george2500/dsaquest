@@ -1,0 +1,111 @@
+id: the-thirty-two
+name: THE THIRTY-TWO
+title: The Width of a Word
+tier: 1
+master_id: master_bits
+patterns:
+  - bit-manipulation
+
+# 64 = 2^6, taken down in three strikes. The health here is a wound counter,
+# not a countdown: three failures leave you standing on 24. This thing cannot
+# kill you. It can only still be set when you have run out of phases — which
+# is the whole lesson of a first boss.
+boss_hp: 64
+player_hp: 96
+damage_taken: 24
+enrage_after: 2
+
+# One pattern, taught this week, fought this week. The gate is low because
+# Ragine's final test has already been passed to reach it — what is being
+# checked is that the idioms are in the hand, not that they have survived a
+# month of neglect.
+gate:
+  recognition: 0.35
+  understanding: 0.30
+  implementation: 0.35
+  retention: 0.15
+  master_final_test: true
+
+# Three phases, 64 damage, exactly. Read the state, say what the mask does,
+# then type the line.
+phases:
+  - kind: recognise
+    damage: 16
+    pattern: bit-manipulation
+    title: Read the state
+
+  - kind: explain
+    damage: 16
+    pattern: bit-manipulation
+    title: Say what the mask does
+
+  - kind: implement
+    damage: 32
+    pattern: bit-manipulation
+    title: One line
+
+dialogue:
+  intro:
+    - >-
+      THIRTY-TWO POSITIONS. Each is a yes or a no. There is no third thing
+      here, and there is nothing to feel about it.
+    - >-
+      Ragine keeps the thirty-two. I am the thirty-two. She finds decimal
+      sentimental; I find the pause where you translate it.
+    - >-
+      I will not ask you a question. I will hold a state. You read it or you
+      do not, and the reading takes no thought at all once it is yours.
+
+  phase_won:
+    - READ. Continue.
+    - Correct. Nothing about that was clever, and that is why it worked.
+    - The bit was where you said it was. Next state.
+    - Yes. Your hand moved before your mind finished. Hold that.
+
+  phase_lost:
+    - WRONG BIT.
+    - You reasoned about it. The reasoning was the delay; the mask was the answer.
+    - >-
+      Somewhere in that you wrote the number in tens. Write it in twos and the
+      answer is already visible.
+    - Off by one position. One position is a factor of two.
+
+  enrage:
+    - >-
+      TWO FAULTS. Hints off. The state does not repeat itself for anyone's
+      convenience.
+    - NO MORE HELP. Thirty-two positions and your own hand. That was always enough.
+
+  victory:
+    - ZERO. Nothing left set.
+    - Cleared. You did not translate once. That is the whole difference.
+    - Down to no bits at all. The state is yours to hold now.
+
+  perfect:
+    - >-
+      Every bit read on sight. Nothing derived, nothing hesitated over, nothing
+      asked for. Ragine keeps a count of the students who take the thirty-two
+      without a fault, and it is a short count, and you are on it.
+    - >-
+      NO FAULTS. There is no state left in me that you have not already read,
+      and I have only ever had one.
+
+  defeat:
+    - >-
+      STILL SET. Go back to Ragine and drill `n & (n - 1)` until the hand types
+      it before the mind finishes reading. Then return.
+    - >-
+      It stands, and so do you — this one takes nothing from you but the
+      attempt. Write every number in binary before you answer. Every time.
+      Come back.
+    - >-
+      You knew the idioms and lost the edges. Practise at n = 0 and at bit 31,
+      which is where all of them break. The state will still be here.
+
+  rematch:
+    - Again. Different state. Same thirty-two positions.
+    - You have cleared me before. I do not remember it. Bits do not remember.
+
+  gate_locked:
+    - NOT SET. Finish with Ragine first, then come and read me.
+    - Not yet. {blockers}

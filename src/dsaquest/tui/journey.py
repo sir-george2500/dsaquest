@@ -22,6 +22,7 @@ from ..domain.lesson import Curriculum
 from ..lessons import final_test as ft
 from ..storage import repositories as repo
 from ..world.character import Master
+from .arena import ArenaScreen
 from .master import MasterScreen, safe
 
 JOURNEY_CSS = """
@@ -100,6 +101,7 @@ class JourneyScreen(Screen):
         container = self.query_one("#masters", Vertical)
         container.remove_children()
         context = self.app.context
+        conn = context.conn
 
         self._generation += 1
         for index, master in enumerate(self.masters):
@@ -111,6 +113,16 @@ class JourneyScreen(Screen):
                     id=f"mrow-{index}-{self._generation}",
                 )
             )
+            for boss in context.bosses_of(master.id):
+                record = repo.get_boss_record(conn, boss.id)
+                mark = "defeated" if record.defeated else "waiting"
+                grade = f" · {record.best_grade}" if record.best_grade else ""
+                container.mount(
+                    Button(
+                        f"     ⚔  {boss.name}  [{mark}{grade}]",
+                        id=f"boss-{boss.id}-{self._generation}",
+                    )
+                )
 
     def _card(self, master: Master, curriculum: Curriculum) -> str:
         conn = self.app.context.conn
@@ -152,8 +164,14 @@ class JourneyScreen(Screen):
 
     @on(Button.Pressed)
     def on_button(self, event: Button.Pressed) -> None:
-        if event.button.id and event.button.id.startswith("mrow-"):
+        if not event.button.id:
+            return
+        if event.button.id.startswith("mrow-"):
             self.action_enter(int(event.button.id.split("-")[1]))
+        elif event.button.id.startswith("boss-"):
+            # Ids are boss-<boss-id>-<generation>; the id itself contains dashes.
+            boss_id = event.button.id.removeprefix("boss-").rsplit("-", 1)[0]
+            self.app.push_screen(ArenaScreen(self.app.context.bosses[boss_id]))
 
     def action_enter(self, index: int) -> None:
         found = self.masters

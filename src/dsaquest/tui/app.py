@@ -46,6 +46,7 @@ from ..judge import workspace
 from ..learning.mastery import all_mastery
 from ..learning.planner import PlannedItem, build_session
 from ..storage import repositories as repo
+from .editor import code_editor
 from .journey import JourneyScreen
 from .master import MASTER_CSS, MasterScreen, safe
 
@@ -300,7 +301,7 @@ class SessionScreen(Screen):
             "  · what usually goes wrong\n\n"
             "[dim]Nothing is checked until you commit.[/]"
         )
-        editor = TextArea("", id="editor", show_line_numbers=False)
+        editor = code_editor("", id="editor", show_line_numbers=False)
         self.query_one("#options", Vertical).mount(editor)
         self.set_timer(0.1, editor.focus)
 
@@ -388,9 +389,7 @@ class SessionScreen(Screen):
         self.query_one("#statement", Static).update(
             f"[dim]{safe(exercise_source(source, hole.id))}[/]"
         )
-        editor = TextArea(
-            "", language="cpp", id="editor", show_line_numbers=True, tab_behavior="indent"
-        )
+        editor = code_editor("", id="editor")
         self.query_one("#options", Vertical).mount(editor)
         self.set_timer(0.1, editor.focus)
 

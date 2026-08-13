@@ -8,6 +8,7 @@ license = { text = "MIT" }
 
 dependencies = [
     "textual[syntax]>=8.0",
+    "tree-sitter-cpp>=0.23",
     "rich>=14.0",
     "typer>=0.15",
     "pydantic>=2.10",
