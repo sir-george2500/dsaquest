@@ -1,0 +1,239 @@
+id: graph-traversal
+name: Visit Every Vertex Once
+world: 8
+order: 0
+tagline: >-
+  A frontier container plus a seen array. That is the whole of BFS and DFS —
+  swap the container and the algorithm changes name but not shape.
+
+signals:
+  - cue: things are connected to other things, and the question is what is reachable from where
+    strength: 3
+    note: >-
+      Reachability is the one question a plain traversal answers exactly. No
+      cost, no order, no ranking — only "can I get there from here".
+  - cue: count the groups, islands, regions, clusters or crews that have no link between them
+    strength: 3
+    note: >-
+      Connected components. Start a traversal at every unvisited vertex and the
+      number of times you had to start IS the answer.
+  - cue: a grid of cells where neighbouring cells of the same kind belong together
+    strength: 3
+    note: >-
+      A grid is a graph whose vertices are cells and whose edges are the four
+      or eight steps. Flood fill is this pattern with the adjacency written as
+      arithmetic instead of stored in a list.
+  - cue: split the people, nodes or items into two sides so that no link joins a side to itself
+    strength: 3
+    note: >-
+      Two-colouring. Colour on the tree edges as you walk; an edge to an
+      already-coloured vertex of the SAME colour is an odd cycle and proves it
+      cannot be done.
+  - cue: does a route exist at all, with nothing said about how long or how costly
+    strength: 2
+    note: >-
+      The absence of a cost is the signal. The moment a length or a price
+      appears the question changes to a shortest-path question.
+  - cue: n and m both up to 1e5 or 2e5, given as a list of pairs
+    strength: 1
+    note: >-
+      Weak alone. It says the input is a graph and that O(n*m) is dead; it does
+      not say which graph algorithm.
+  - cue: the input is a list of pairs, or a list of "a depends on b" lines
+    strength: 1
+    note: >-
+      An edge list is the universal graph input format and is consistent with
+      every pattern in this region. Read the QUESTION, not the format.
+
+anti_signals:
+  - cue: the edges carry a length, cost, time or price and the answer is a total of them
+    instead: dijkstra-weighted
+    note: >-
+      A traversal has no notion of cost. It can tell you a route exists and
+      never which route is cheapest.
+  - cue: the answer is the FEWEST steps, moves or edges
+    instead: bfs-shortest-path
+    note: >-
+      Still a traversal, but a specific one: only the queue produces distances,
+      and only because it dequeues vertices in order of distance.
+  - cue: the edges are one-way and the question is an order that respects them
+    instead: topological-order
+    note: >-
+      "b cannot start before a" is not reachability. It is an ordering
+      constraint, and the algorithm counts in-degrees rather than walking.
+  - cue: the items are ranges on a line and the question is how many fit without overlapping
+    instead: interval-scheduling
+    note: >-
+      Overlapping ranges look like a graph of conflicts and almost never are.
+      Sorting by the right endpoint solves it in one pass; building the
+      conflict graph is quadratic and unnecessary.
+  - cue: you are asked whether a value is present, and the "links" are equalities between values
+    instead: hashing-frequency
+    note: >-
+      A map answers "have I seen this" directly. Building a graph to ask the
+      same question is machinery around a lookup.
+
+confusable_with:
+  - pattern_id: bfs-shortest-path
+    tell: >-
+      Ask what the answer IS. A yes/no, a count of groups or a colouring is a
+      plain traversal and DFS would do equally well; a NUMBER OF STEPS forces
+      the queue, because only the queue leaves vertices in distance order.
+  - pattern_id: topological-order
+    tell: >-
+      Ask whether the edges are one-way and whether the answer is a SEQUENCE.
+      Reachability and components ignore direction and produce a set; an order
+      that respects "a before b" is a different algorithm with a different
+      failure mode, namely a cycle.
+
+invariant: >-
+  Every vertex is marked at the moment it is first put into the frontier, so
+  each vertex enters the frontier exactly once and each edge is examined exactly
+  twice — once from each endpoint.
+
+complexity:
+  time: O(n + m)
+  space: O(n + m)
+  note: >-
+    Linear in the SIZE OF THE GRAPH, not in n alone: the adjacency list holds
+    2m entries for an undirected graph, and the frontier holds at most n. If
+    your traversal is not O(n + m) you are re-examining edges, which is almost
+    always a missing or mistimed visited mark.
+
+data_structures:
+  - an adjacency list, vector<vector<int>>, built once from the edge list
+  - a visited array, one byte per vertex
+  - a queue for BFS, an explicit stack or recursion for DFS
+  - a component id or colour array, filled during the walk
+
+cpp_facilities:
+  - std::vector<std::vector<int>> for adjacency
+  - std::queue<int> and std::deque<int>
+  - std::vector<char> for visited, in preference to vector<bool>
+  - range-for over the neighbour list
+  - std::array<int,4> direction offsets for grid problems
+
+traps:
+  - description: >-
+      Marking a vertex visited when it is POPPED instead of when it is pushed.
+    mistake_code: INVARIANT_MISSING_VISITED_SET
+    symptom: >-
+      Correct output, then memory limit exceeded on a dense graph. Each edge
+      pushes its far endpoint once, so the frontier takes exactly m + 1 entries
+      instead of n: on the graph 1-2, 1-3, 1-4, 2-5, 3-5, 4-5 that is 7 pushes
+      for 5 vertices, and vertex 5 enters the queue three times. On the complete
+      graph of 10 vertices it is 46 pushes instead of 10.
+  - description: >-
+      No visited array at all, on a graph that has a cycle.
+    mistake_code: INVARIANT_MISSING_VISITED_SET
+    symptom: >-
+      Never terminates. A recursive version blows the stack instead, so the
+      verdict is a runtime error rather than a timeout, which sends people
+      hunting for an index bug that is not there.
+  - description: >-
+      Recursive DFS on a graph that can be one long path.
+    mistake_code: COMPLEX_RECURSION_DEPTH
+    symptom: >-
+      Segmentation fault on the large tests only. A frame costs tens of bytes,
+      so 10^6 vertices in a line needs far more than the usual 8 MB of stack.
+      Rewrite it with an explicit stack, or use BFS, which never recurses.
+  - description: >-
+      Adding only one direction of an undirected edge to the adjacency list.
+    mistake_code: INVARIANT_MISSING_VISITED_SET
+    symptom: >-
+      Components come out too numerous and reachability is asymmetric — a is
+      reachable from b but not b from a on a graph the statement called
+      undirected. The sample usually passes because the sample edges happen to
+      be listed in a walkable order.
+  - description: >-
+      Reading vertices as 1-based and indexing arrays as 0-based, or the reverse.
+    mistake_code: CPP_OUT_OF_BOUNDS
+    symptom: >-
+      Either a crash on the vertex numbered n, or a phantom extra component
+      containing only vertex 0. Size the vectors n + 1 and stop thinking about
+      it.
+  - description: >-
+      Using vector<bool> for visited inside a hot traversal.
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      Correct but two to three times slower than the reference on the largest
+      tests, because every read and write is a bit-mask operation on a proxy
+      object rather than a byte load. vector<char> costs eight times the memory
+      and is still tiny.
+
+recall_rubric:
+  - key: the-two-parts
+    prompt: Name the two pieces of state every traversal consists of.
+    essential: true
+    accepts:
+      - a frontier and a visited array
+      - queue or stack plus seen
+      - container of vertices to expand and a mark
+      - frontier plus marks
+  - key: when-to-mark
+    prompt: >-
+      Say exactly when a vertex is marked visited, and what goes wrong if it is
+      marked later.
+    essential: true
+    accepts:
+      - mark when you push
+      - mark on insertion not on removal
+      - marking on pop lets a vertex enter the queue once per edge
+      - m plus one pushes
+  - key: bfs-vs-dfs
+    prompt: State the single difference between BFS and DFS.
+    essential: true
+    accepts:
+      - the container
+      - queue versus stack
+      - fifo versus lifo
+      - which end you take the next vertex from
+  - key: components
+    prompt: Say how a traversal counts connected components.
+    essential: false
+    accepts:
+      - start a traversal at every unvisited vertex
+      - count how many times you had to start
+      - loop over all vertices
+      - one traversal per component
+  - key: complexity
+    prompt: Give the time and space complexity and say what n and m mean in it.
+    essential: false
+    accepts:
+      - o(n + m)
+      - linear in vertices plus edges
+      - each edge is seen twice
+      - adjacency holds 2m entries
+  - key: undirected-edges
+    prompt: State what must be done to the adjacency list for an undirected edge.
+    essential: false
+    accepts:
+      - push both directions
+      - add u to v and v to u
+      - twice
+      - both endpoints
+  - key: depth-limit
+    prompt: >-
+      Say what limits recursive depth-first search and what to use instead.
+    essential: false
+    accepts:
+      - stack overflow
+      - recursion depth
+      - explicit stack
+      - use bfs
+
+template_file: graph-traversal.cpp
+template_notes: >-
+  Four forms, one shape. Form 1 is iterative BFS and form 2 is iterative DFS —
+  read them side by side until you can see that only the line taking the next
+  vertex differs. Form 3 counts components by starting form 1 at every unvisited
+  vertex, which is the pattern's most common use and its cheapest. Form 4 is the
+  two-colouring, and it is the one worth memorising, because the failure case —
+  an edge joining two vertices of the same colour — is how you prove a graph is
+  NOT bipartite rather than merely failing to colour it. Every form marks on
+  push. The comment above form 1 says why.
+
+related:
+  - bfs-shortest-path
+  - topological-order
+  - dijkstra-weighted

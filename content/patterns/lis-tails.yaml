@@ -1,0 +1,232 @@
+id: lis-tails
+name: The Tails Array
+world: 9
+order: 3
+tagline: >-
+  Keep the smallest possible ending value for a chain of every length; each new
+  element replaces exactly one of them, found by lower_bound.
+
+prerequisites:
+  - linear-dp
+  - binary-search
+
+signals:
+  - cue: the longest subsequence that increases, with no requirement of contiguity
+    strength: 3
+    note: >-
+      The archetype. Skipping is allowed, so no window applies; the order of the
+      row is fixed, so no sort applies; and the answer is a length, not a set.
+  - cue: the fewest elements to remove so what remains never decreases
+    strength: 3
+    note: >-
+      n minus the longest non-decreasing subsequence. The disguise is common
+      and the translation is one subtraction.
+  - cue: the longest chain of items each of which fits inside the next
+    strength: 3
+    note: >-
+      Nested boxes, envelopes, Russian dolls, matryoshka towers: sort on the
+      first coordinate, then run this on the second. The sort makes one
+      dimension free and the tails array handles the other.
+  - cue: n up to 2e5 with an answer that reads like a quadratic double loop
+    strength: 3
+    note: >-
+      n^2 is 4 * 10^10 and dead. The inner loop of the quadratic recurrence is
+      searching an ordered array, and that search is a binary search.
+  - cue: the fewest strictly decreasing groups the row can be cut into
+    strength: 2
+    note: >-
+      Dilworth's identity — the answer equals the longest non-decreasing
+      subsequence. Reachable by the same array with the comparison relaxed.
+  - cue: strictly increasing versus non-decreasing is spelled out carefully in the statement
+    strength: 2
+    note: >-
+      Setters who state it precisely are warning you that it decides the
+      answer. On [2, 2, 2] the two readings give 1 and 3.
+
+anti_signals:
+  - cue: the subsequence must be CONTIGUOUS
+    instead: sliding-window
+    note: >-
+      Contiguity removes every skip, and with it the entire method. A longest
+      increasing RUN is a one-pass counter with no binary search anywhere.
+  - cue: two sequences are given and something common to both is wanted
+    instead: two-sequence-dp
+    note: >-
+      Two inputs need two indices. This method reads one row once and keeps a
+      single ordered array.
+  - cue: you may reorder the items freely
+    instead: sorting-by-key
+    note: >-
+      If the row may be sorted, "increasing" is free and the question is about
+      something else entirely. The order being FIXED is the premise of the whole
+      pattern.
+  - cue: each element carries a weight and the objective is the largest total, not the longest length
+    instead: linear-dp
+    note: >-
+      Maximum-sum increasing subsequence is not solved by the tails array,
+      because a longer chain is no longer automatically better. That is a
+      recurrence over values, with a Fenwick tree if it must be fast.
+  - cue: the answer is which items were chosen, not how many
+    instead: linear-dp
+    note: >-
+      The tails array is not itself a subsequence of the input and cannot be
+      printed as the answer. Reconstruction needs a parent index recorded per
+      element as it is placed.
+
+confusable_with:
+  - pattern_id: linear-dp
+    tell: >-
+      Ask what the quadratic recurrence's inner loop is doing. If it scans
+      earlier states only to find the longest chain whose last value is below
+      a[i], the scan is a lower_bound and the whole thing is O(n log n). If the
+      inner loop compares something the ordering does not capture — a weight, a
+      sum, a cost — the tails array cannot help and the recurrence stands.
+  - pattern_id: two-sequence-dp
+    tell: >-
+      Count the inputs. One row with a monotone condition is this. Two rows
+      aligned against each other is the table. LIS can be written as LCS against
+      a sorted copy, which is correct and costs O(n^2) for something O(n log n)
+      already solves.
+
+invariant: >-
+  After processing a prefix, tails[k] is the smallest value that can end an
+  increasing subsequence of length k + 1 within that prefix — so tails is
+  strictly increasing, and its length is the answer so far.
+
+complexity:
+  time: O(n log n)
+  space: O(n)
+  note: >-
+    One binary search per element over an array that never exceeds the answer's
+    length. The O(n^2) recurrence is the same algorithm with the search written
+    as a scan, and it is the version to write first when the bound allows it.
+
+data_structures:
+  - a vector holding the smallest ending value per chain length, kept sorted by construction
+  - std::lower_bound for the strict version, std::upper_bound for the non-decreasing one
+  - a parallel array of parent indices, only when the subsequence itself is wanted
+  - a preliminary sort on the other coordinate, for chain and nesting problems
+
+cpp_facilities:
+  - std::lower_bound and std::upper_bound on a vector
+  - std::vector::push_back for the extend case and assignment for the replace case
+  - std::sort with a deliberate tie-break, for the two-dimensional chain form
+  - std::distance or iterator subtraction to turn the found iterator into an index
+
+traps:
+  - description: >-
+      Using lower_bound where the statement allows equal neighbours, or
+      upper_bound where it demands strict increase.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      Off by exactly the number of repeated values. On [2, 2, 2] the strict
+      answer is 1 and the non-decreasing answer is 3, and no sample with
+      distinct values can tell the two apart.
+  - description: >-
+      Printing the tails array as the answering subsequence.
+    mistake_code: PATTERN_UNRECOGNISED
+    symptom: >-
+      The right LENGTH with a wrong sequence. On [3,1,4,1,5,9,2,6] tails ends as
+      [1,2,5,6], which is not a subsequence of the input at all — the 5 appears
+      before the 2. Only the size of the array is meaningful.
+  - description: >-
+      Sorting a two-dimensional chain problem without deciding what happens to
+      ties on the first coordinate.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      Two boxes of equal width are allowed to nest when the statement forbids
+      it. Break the tie by descending second coordinate to make the strict case
+      fall out of the same run.
+  - description: >-
+      Appending instead of assigning when lower_bound lands inside the array.
+    mistake_code: INVARIANT_WINDOW_NOT_SHRUNK
+    symptom: >-
+      A tails array that is no longer sorted, which then makes every subsequent
+      binary search meaningless. The answer grows far too large on long inputs.
+  - description: >-
+      Writing the O(n^2) recurrence when n is 2 * 10^5.
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      Correct on every sample and a time-limit verdict on the judge. The
+      quadratic form is the right thing to write first and the wrong thing to
+      submit at that bound.
+
+recall_rubric:
+  - key: the-array-means
+    prompt: >-
+      State exactly what tails[k] holds. Not "the subsequence" — the precise
+      quantity.
+    essential: true
+    accepts:
+      - the smallest value that can end an increasing subsequence of length k+1
+      - smallest possible tail for each chain length
+      - one entry per achievable length
+      - the minimum ending value per length
+  - key: the-step
+    prompt: >-
+      Describe what happens to the array when the next element arrives.
+    essential: true
+    accepts:
+      - binary search for the first entry not less than it
+      - append if it is larger than everything
+      - otherwise overwrite that one entry
+      - exactly one cell changes per element
+  - key: strict-or-not
+    prompt: >-
+      Say which search function goes with which reading of "increasing".
+    essential: true
+    accepts:
+      - lower_bound for strictly increasing
+      - upper_bound for non-decreasing
+      - lower_bound overwrites an equal value
+      - 2 2 2 gives 1 or 3
+  - key: not-a-subsequence
+    prompt: >-
+      Say what the array is NOT, and what that means for reconstruction.
+    essential: false
+    accepts:
+      - tails is not a subsequence of the input
+      - only its length is meaningful
+      - reconstruction needs parent indices
+      - the values may never co-occur in that order
+  - key: the-quadratic-form
+    prompt: >-
+      Give the O(n^2) recurrence and say which part the binary search replaces.
+    essential: false
+    accepts:
+      - dp[i] = 1 + max dp[j] over j < i with a[j] < a[i]
+      - the inner scan becomes a lower_bound
+      - longest chain ending at i
+      - the search over earlier states
+  - key: the-chain-form
+    prompt: >-
+      Say how a two-dimensional nesting problem is reduced to this.
+    essential: false
+    accepts:
+      - sort by the first coordinate then run lis on the second
+      - break ties by descending second coordinate
+      - one dimension is made free by sorting
+      - nested boxes
+  - key: complexity
+    prompt: Give the cost and say what the log factor is doing.
+    essential: false
+    accepts:
+      - o(n log n)
+      - one binary search per element
+      - the array is at most the answer's length
+      - log of the current chain length
+
+template_file: lis-tails.cpp
+template_notes: >-
+  Form 1 is the O(n^2) recurrence, and it is first on purpose: the fast version
+  is unreadable until you have seen what its inner loop replaced. Form 2 is the
+  tails array with lower_bound, with the invariant stated in a comment directly
+  above the search — reread that line rather than the code, because the code is
+  four lines and the meaning of the array is the whole pattern. Form 3 is the
+  non-decreasing variant, which differs by one function name, placed next to
+  Form 2 so the difference is visible rather than remembered.
+
+related:
+  - linear-dp
+  - two-sequence-dp
+  - binary-search

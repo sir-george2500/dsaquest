@@ -1,0 +1,239 @@
+id: linear-scan
+name: One Pass, One Running Answer
+world: 5
+order: 1
+tagline: >-
+  Whatever the previous position already knew, the next position should not have
+  to learn again — carry a running answer forward and the nested loop collapses
+  into a single walk with a handful of variables.
+
+prerequisites:
+  - constraint-budget
+
+signals:
+  - cue: the answer is one number summarising the whole row — a maximum, a total, a count, a longest run
+    strength: 3
+    note: >-
+      A single scalar answer over a row read once is the shape this pattern
+      produces. Nothing is stored, nothing is looked up again, and the row is
+      never revisited.
+  - cue: the obvious solution recomputes for position i something position i-1 had almost finished computing
+    strength: 3
+    note: >-
+      That redundancy is the pattern's whole reason to exist. Ask what the
+      previous step already knew, name it, and carry it in a variable — the
+      inner loop then has nothing left to do.
+  - cue: the largest sum of a contiguous stretch, where values may be negative
+    strength: 3
+    note: >-
+      The classic instance. The only state needed is the best stretch that ends
+      at the current position, and it is either the previous one extended or the
+      current element alone.
+  - cue: the values arrive as a stream, or n reaches 10^6 to 10^7 so storing them is itself a cost
+    strength: 2
+    note: >-
+      An algorithm that never looks back can consume the input as it reads it,
+      and O(1) memory is the reason this shape survives bounds where an array
+      would not.
+  - cue: the answer must be reported after every prefix, not only at the end
+    strength: 2
+    note: >-
+      Reporting per prefix is the running answer made visible. If the statement
+      wants n answers from one walk, the walk must already hold the answer at
+      every step.
+  - cue: a longest or largest run of positions satisfying a property of adjacent elements
+    strength: 2
+    note: >-
+      Runs are counted by a single counter that resets when the property breaks,
+      and a maximum taken over the counter. Two variables, one pass.
+
+anti_signals:
+  - cue: the stretch is constrained and elements must be dropped from the left to restore the constraint
+    instead: sliding-window
+    note: >-
+      A running answer is never taken back. The moment the left end has to move
+      to repair a violated condition, you need two indices and a shrink loop,
+      not one accumulator.
+  - cue: arbitrary ranges l..r are queried after the row is fixed
+    instead: prefix-sum
+    note: >-
+      One pass produces one answer. Many answers about many ranges need a table
+      built once and read in constant time.
+  - cue: the question is about how often values occur, and their positions do not matter
+    instead: hashing-frequency
+    note: >-
+      Counting occurrences is also one pass, but the state is a map rather than
+      a scalar, and the discriminator is whether adjacency means anything.
+  - cue: the row may be rearranged, and the answer is a subset chosen against a budget
+    instead: sorting-by-key
+    note: >-
+      This pattern reads the row in the order it was given, because the order is
+      part of the question. If reordering is legal, the order was not.
+  - cue: the answer is a number you can guess and then test for feasibility
+    instead: binary-search-answer
+    note: >-
+      One walk computes an answer directly. When there is no direct computation
+      but a candidate can be checked, you bisect the candidates instead.
+
+confusable_with:
+  - pattern_id: constraint-budget
+    tell: >-
+      Ask whether the naive nested loop was actually forbidden. If the bound
+      allows it, budgeting is the only decision and the obvious code is correct;
+      if the bound forbids it, the work is to find the quantity that makes one
+      pass sufficient, which is this pattern.
+  - pattern_id: integer-safety
+    tell: >-
+      Ask where the difficulty of the one-pass solution sits. If choosing WHAT
+      to carry is the puzzle, this is the pattern; if what to carry is obvious
+      and the only real question is whether the accumulator can hold it, the
+      difficulty is the type.
+
+invariant: >-
+  After the element at position i has been read, every carried variable holds
+  its exact value for the prefix ending at i, and the reported answer is correct
+  for that prefix — so the row is never revisited and the input is never stored.
+
+complexity:
+  time: O(n)
+  space: O(1)
+  note: >-
+    One pass, a constant number of scalars. The space bound is the part that
+    matters at the top of the range: at n = 10^7 an array of ints is 38 MB while
+    the scan itself needs nothing, so the pattern survives bounds that force any
+    storing solution out.
+
+data_structures:
+  - two or three scalars, one for the running state and one for the best seen
+  - no container at all, in the strongest form of the pattern
+  - a counter that resets, for run-length questions
+
+cpp_facilities:
+  - std::max and std::min, applied to the running state in place
+  - long long accumulators for anything summed over 10^5 elements
+  - "reading with `while (cin >> x)` so the input is consumed rather than stored"
+  - "std::numeric_limits<long long>::min() as an honest starting value"
+
+traps:
+  - description: >-
+      Starting the best-so-far at 0 rather than at the first element, on a
+      maximum where every value can be negative.
+    mistake_code: CPP_UNINITIALISED_VALUE
+    symptom: >-
+      Every mixed-sign test passes and the all-negative test returns 0 — an
+      answer that is not any stretch of the row at all. On a = [-5, -2, -9] the
+      correct answer is -2 and the code reports 0.
+  - description: >-
+      Accumulating a running total in `int` when n is 10^5 and the values reach
+      10^9.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Correct on every small test and wildly wrong, often negative, on the
+      largest. 10^5 values of 10^9 reach 10^14, which passes INT_MAX after the
+      third element.
+  - description: >-
+      Recomputing the summary of the prefix inside the loop instead of updating
+      it, so the walk is quietly quadratic.
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      A correct answer and a Time Limit Exceeded on the largest test. The tell
+      is a second loop, or a call to accumulate, sitting inside the first.
+  - description: >-
+      Taking the maximum only once, after the loop, so only the run that ends at
+      the last position is ever scored.
+    mistake_code: BOUNDS_SINGLE_ELEMENT
+    symptom: >-
+      Correct whenever the best stretch happens to reach the end of the row, and
+      wrong otherwise. Single-element and monotone samples always pass, which is
+      how it survives to the judge.
+  - description: >-
+      Reading all n values into a vector when n is 10^7 and the algorithm needs
+      only the current one.
+    mistake_code: COMPLEX_TOO_MUCH_MEMORY
+    symptom: >-
+      Memory Limit Exceeded on the largest test with an O(n) time solution that
+      should have used constant space. 10^7 ints is 38 MB; 10^7 long longs is
+      76 MB and the vector doubles while it grows.
+
+recall_rubric:
+  - key: the-shape
+    prompt: State what this pattern replaces and with what.
+    essential: true
+    accepts:
+      - recomputation with an update
+      - a nested loop with one pass
+      - carry the answer forward
+      - update instead of recompute
+  - key: the-state
+    prompt: >-
+      Say what question you must answer before writing the loop, about the
+      variables you will carry.
+    essential: true
+    accepts:
+      - what did the previous position already know
+      - what must i carry to extend in o(1)
+      - the running state
+      - best ending here
+  - key: kadane
+    prompt: >-
+      Give the update for the largest sum of a contiguous stretch, in one
+      sentence.
+    essential: true
+    accepts:
+      - extend the previous run or start fresh
+      - best ending here is max(a[i], best + a[i])
+      - cur = max(a[i], cur + a[i])
+      - reset when the run goes negative
+  - key: initial-value
+    prompt: >-
+      Say what the best-so-far must be initialised to, and what breaks if it is
+      initialised to zero.
+    essential: false
+    accepts:
+      - the first element
+      - llong_min
+      - all-negative input returns 0
+      - an answer that is not a stretch at all
+  - key: complexity
+    prompt: Give the time and space complexity, and say why the space bound matters.
+    essential: false
+    accepts:
+      - o(n) time
+      - o(1) space
+      - constant memory
+      - it survives n = 10^7
+  - key: when-it-fails
+    prompt: >-
+      Name the situation where a single running scalar is not enough, and what
+      it becomes instead.
+    essential: false
+    accepts:
+      - the left end must move back
+      - a window with a shrink loop
+      - two pointers
+      - many range queries
+  - key: overflow
+    prompt: Say which type the accumulator needs and at what input size.
+    essential: false
+    accepts:
+      - long long
+      - 10^5 values of 10^9
+      - past int at 2 * 10^9
+      - anything summed over the array
+
+template_file: linear-scan.cpp
+template_notes: >-
+  Three scans in increasing order of subtlety. Form 1 carries a total and a
+  maximum, which nobody gets wrong, and exists so the shape is visible with
+  nothing else in the way. Form 2 is the largest sum of a contiguous stretch —
+  the only line that matters is the one deciding between extending the previous
+  run and starting again at the current element, and the initial value is a trap
+  laid deliberately. Form 3 is the longest run under a property, where the state
+  is a counter that resets; note that all three take the maximum INSIDE the loop,
+  because a run that ends early must still be scored.
+
+related:
+  - constraint-budget
+  - integer-safety
+  - sliding-window
+  - prefix-sum

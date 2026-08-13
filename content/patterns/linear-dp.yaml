@@ -1,0 +1,278 @@
+id: linear-dp
+name: Say What dp[i] Means
+world: 9
+order: 0
+tagline: >-
+  One array, one index, and one sentence that says exactly what dp[i] holds —
+  write that sentence and the loop writes itself.
+
+prerequisites:
+  - prefix-sum
+
+signals:
+  - cue: the answer is built from a decision made at each position in a fixed row
+    strength: 3
+    note: >-
+      A row that may NOT be reordered, with a choice at every position, is the
+      shape this pattern was invented for. If the row could be sorted you are
+      almost certainly in a greedy region instead.
+  - cue: count the number of ways to reach the end, usually modulo 1e9+7
+    strength: 3
+    note: >-
+      A count of ways is a sum over the last step. Nothing local decides it, so
+      no ordering of the input can produce it — the count must be accumulated
+      state by state.
+  - cue: the fewest steps, smallest cost or largest total under a rule that forbids some transitions
+    strength: 3
+    note: >-
+      "No two adjacent", "you may jump at most k", "the value must not
+      decrease": a constraint on which transitions are legal is exactly what
+      the recurrence encodes and what a ranking key cannot.
+  - cue: a plausible greedy exists, is easy to write, and fails on a three-item case
+    strength: 3
+    note: >-
+      Taking the locally best step changing what is reachable afterwards is
+      the boundary of the whole greedy region. Coins {1, 3, 4} and the amount
+      6 is the smallest example, and it is a dynamic program.
+  - cue: n up to 1e5 or 1e6 and an answer that reads like "try every choice"
+    strength: 2
+    note: >-
+      2^n is dead, and the choices are per-position rather than per-item, so
+      the surviving idea is to remember one number per position.
+  - cue: the statement's own recursive phrasing — "the best ending here depends on the best ending earlier"
+    strength: 2
+    note: >-
+      Some setters write the recurrence into the statement. When they do, the
+      only work left is naming the state precisely enough to index it.
+  - cue: subsequences rather than subarrays, with no requirement of contiguity
+    strength: 1
+    note: >-
+      Weak alone: subsequence appears in this pattern, in the two-sequence
+      table and in the tails method. It only rules out windows.
+
+anti_signals:
+  - cue: the items may be reordered freely and one ranking key decides everything
+    instead: sorting-by-key
+    note: >-
+      A dynamic program that a sort would have solved is a slow correct answer
+      and an admission you did not look for the exchange argument. Ask first
+      whether some optimal answer can be forced to agree with your first
+      choice; if it can, you do not need a table.
+  - cue: every item is used and only the ARRANGEMENT costs anything
+    instead: exchange-argument
+    note: >-
+      Nothing is refused, so there is no decision per position to remember —
+      the whole answer is one comparator derived from swapping two neighbours.
+      No state is needed and none should be invented.
+  - cue: the ranges conflict pairwise, carry no values, and you want as many as possible
+    instead: interval-scheduling
+    note: >-
+      Unweighted interval selection has a safe local choice — take the range
+      that finishes soonest. Add values per range and the local choice dies and
+      this pattern takes over, which is the exact boundary between the two
+      regions.
+  - cue: the answer is a contiguous stretch and a window can grow and shrink over it
+    instead: sliding-window
+    note: >-
+      Contiguity plus a monotone admission rule is O(n) with two indices and no
+      table. Reach for a state array only once the choice at position i is not
+      determined by the window's contents.
+  - cue: you are asked whether some threshold is achievable, and feasibility is monotone in it
+    instead: binary-search-answer
+    note: >-
+      Guessing the answer and testing it is not a recurrence. Dynamic
+      programming computes the optimum directly; searching on the answer
+      computes only whether a candidate works.
+  - cue: the state would need a second axis carrying a spent resource
+    instead: knapsack-dp
+    note: >-
+      One index is not enough the moment the legality of a choice depends on
+      how much of a shared budget is already gone. That second axis is a
+      different pattern with its own loop order.
+  - cue: the state would need two indices, one into each of two different rows
+    instead: two-sequence-dp
+    note: >-
+      Two inputs being aligned against each other is a table, not an array. The
+      tell is a statement mentioning two sequences and a cost for making them
+      agree.
+
+confusable_with:
+  - pattern_id: knapsack-dp
+    tell: >-
+      Ask whether the legality of a choice depends on anything other than the
+      position. If the only thing you must remember is where you are, dp[i] is
+      enough; if you must also remember how much capacity, weight or money has
+      already been spent, the state needs a second axis.
+    mistake_code: PATTERN_DP_OVER_GREEDY
+  - pattern_id: two-sequence-dp
+    tell: >-
+      Count the inputs being walked. One row with a decision per position is
+      this; two rows being aligned against each other, with a cost for each way
+      of matching them, is a two-dimensional table over two prefixes.
+  - pattern_id: lis-tails
+    tell: >-
+      Ask what the O(n^2) recurrence spends its time doing. If the inner loop
+      exists only to find the best earlier state whose value is below a[i],
+      that search is a lower_bound over an ordered array and the whole thing
+      collapses to O(n log n).
+
+invariant: >-
+  When the loop reaches index i, dp[j] is already the exact quantity its
+  definition names for every j the transition reads — so dp[i] can be computed
+  from settled values and never revised.
+
+complexity:
+  time: O(n) to O(n * k)
+  space: O(n), often O(1) after the window of the recurrence is noticed
+  note: >-
+    One state per position, one transition per legal last decision. If the
+    recurrence only reaches back a fixed distance, two or three scalars replace
+    the array entirely — which is what turns a 10^7-state table into something
+    that fits in cache.
+
+data_structures:
+  - a vector<long long> dp of size n + 1, indexed by the definition you wrote down
+  - a sentinel for "unreachable", chosen so that sentinel + 1 does not overflow
+  - two or three rolling scalars, when the recurrence reaches back a fixed distance
+  - a parent array, only when the statement asks which choices were made
+
+cpp_facilities:
+  - std::vector with an explicit fill value rather than default initialisation
+  - std::min and std::max over a small set of candidate last decisions
+  - long long accumulators and an explicit modulus for counting problems
+  - std::exchange or a pair of scalars for the rolling form
+
+traps:
+  - description: >-
+      Writing the loop before writing the sentence that defines dp[i], so the
+      array silently means "the best answer among the first i" in one line and
+      "the best answer ending exactly at i" in the next.
+    mistake_code: PATTERN_UNRECOGNISED
+    symptom: >-
+      The recurrence looks reasonable and the answer is wrong by a small amount
+      on medium inputs. Debugging it is hopeless because there is no fact to
+      check the table against — you cannot say what any cell was supposed to
+      hold.
+  - description: >-
+      Using INT_MAX as the "unreachable" sentinel and then computing
+      `dp[i - c] + 1`.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      INT_MAX + 1 wraps to INT_MIN, which then wins every min() and floods the
+      table with a huge negative value. The answer prints as -2147483648 or as
+      a nonsense small number. Use 1e9, or guard the read.
+  - description: >-
+      Reading dp[i - k] before it has been assigned, because the loop runs in
+      an order the recurrence does not support.
+    mistake_code: CPP_UNINITIALISED_VALUE
+    symptom: >-
+      Zeros propagate through the table and the answer is far too small, or too
+      large for a minimisation. The invariant names the fix: every index the
+      transition reads must already be final.
+  - description: >-
+      Forgetting the base case, or setting dp[0] to the identity of the wrong
+      operation — 0 where 1 was needed for a product or a count of ways.
+    mistake_code: BOUNDS_EMPTY_INPUT
+    symptom: >-
+      Every answer comes out as zero, or as exactly one too few. dp[0] is the
+      answer for the empty prefix; say what that is out loud before writing it.
+  - description: >-
+      Recursing top-down over 10^6 states on the default stack.
+    mistake_code: COMPLEX_RECURSION_DEPTH
+    symptom: >-
+      A segfault with no output on the large tests and a perfect run on every
+      sample. Memoisation is correct here; the recursion depth is not. Rewrite
+      the same recurrence as a loop.
+  - description: >-
+      Accumulating a count of ways without the modulus, or applying the modulus
+      only at the end.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Correct for n below about 90 and wrong afterwards, because the true count
+      grows like a Fibonacci number and passes 2^63 long before n reaches 100.
+
+recall_rubric:
+  - key: the-definition
+    prompt: >-
+      State what dp[i] holds, as a full sentence naming what is fixed at i and
+      what is free.
+    essential: true
+    accepts:
+      - the best answer for the first i items
+      - the best answer for a subsequence ending exactly at i
+      - the number of ways to reach position i
+      - dp[i] is a sentence before it is an array
+  - key: the-transition
+    prompt: >-
+      Say how the transition is derived — what you case-split on to reach dp[i].
+    essential: true
+    accepts:
+      - split on the last decision
+      - min or max over every legal previous state
+      - dp[i] = f(dp[i-1], dp[i-2], ...)
+      - consider each possible last step
+  - key: the-base-case
+    prompt: >-
+      Say what dp[0] means and why its value is forced by the definition rather
+      than chosen.
+    essential: true
+    accepts:
+      - the answer for the empty prefix
+      - 0 for a cost, 1 for a count of ways
+      - the identity of the combining operation
+      - it is whatever the definition says about nothing
+  - key: the-order
+    prompt: >-
+      Give the rule that decides the order the states are filled in.
+    essential: false
+    accepts:
+      - every state the transition reads must already be final
+      - topological order of the dependencies
+      - increasing i when the transition looks backwards
+      - the invariant decides the loop direction
+  - key: the-greedy-boundary
+    prompt: >-
+      Say what makes a problem need this rather than a sort and a sweep.
+    essential: false
+    accepts:
+      - the local choice changes what is reachable later
+      - no exchange argument exists
+      - coins 1 3 4 and amount 6
+      - a ranking of items cannot capture the interaction
+  - key: the-sentinel
+    prompt: >-
+      Say how "unreachable" is represented and what goes wrong with the obvious
+      choice.
+    essential: false
+    accepts:
+      - a large constant like 1e9
+      - int_max overflows when you add one
+      - guard before adding
+      - infinity must survive the transition
+  - key: complexity
+    prompt: >-
+      Give the time and space cost in terms of the number of states and the
+      transitions out of each.
+    essential: false
+    accepts:
+      - states times transitions
+      - o(n) with a constant number of last decisions
+      - o(n*k) when you may jump k
+      - space collapses to o(1) for a fixed-width recurrence
+
+template_file: linear-dp.cpp
+template_notes: >-
+  Read the sentence above each array before the code under it — every form here
+  begins with a one-line definition of what the cell holds, and that is the part
+  being taught. Form 1 counts ways and shows the base case dp[0] = 1 falling out
+  of "there is exactly one way to do nothing". Form 2 is the minimum-coins
+  recurrence on an ARBITRARY system, which is the problem the Ridge of Greed
+  could not solve. Form 3 is the "no two adjacent" maximum, written twice — once
+  with the free definition and once with the forced one — so the two states can
+  be compared side by side on identical data.
+
+related:
+  - knapsack-dp
+  - two-sequence-dp
+  - lis-tails
+  - prefix-sum

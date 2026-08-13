@@ -1,0 +1,247 @@
+id: constraint-budget
+name: Read the Bound, Choose the Cost
+world: 5
+order: 0
+tagline: >-
+  The constraints are the first line of the solution: count the operations the
+  bound allows, and the shape of the algorithm you are permitted to write is
+  decided before you have thought of one.
+
+signals:
+  - cue: a bound that is small and specific — n <= 20, n <= 24, n <= 10 — with no other structure offered
+    strength: 3
+    note: >-
+      Nobody writes "at most 20" by accident. 2^20 is about 10^6 and 10! is
+      about 3.6 * 10^6; both fit in a second. The bound is the setter telling
+      you that trying everything IS the intended solution.
+  - cue: n reaches 10^5 or more and the obvious method compares every pair
+    strength: 3
+    note: >-
+      10^5 squared is 10^10, which is roughly a hundred seconds of simple work.
+      The bound has refused the double loop, so something must be precomputed,
+      sorted, or updated instead of recomputed.
+  - cue: the numbers in the statement reach 10^18 while the COUNT of numbers stays tiny
+    strength: 3
+    note: >-
+      A huge value with a tiny input size means the loop you want to write is
+      over the value, not over the input, and no loop over 10^18 finishes. The
+      answer is arithmetic, a closed form, or a halving.
+  - cue: "\"the sum of n over all test cases does not exceed ...\""
+    strength: 2
+    note: >-
+      That sentence is a licence, not a warning. It says an O(n log n) routine
+      per test is safe no matter how many tests arrive, and it exists precisely
+      because the naive reading of t * n would forbid it.
+  - cue: a memory limit stated alongside a natural two-dimensional table
+    strength: 2
+    note: >-
+      256 MB holds about 6.7 * 10^7 ints. A 10^4 by 10^4 table of ints is
+      3.8 * 10^8 bytes and does not fit, however fast the algorithm is.
+  - cue: a time limit unusually generous — three seconds, five seconds
+    strength: 1
+    note: >-
+      Weak on its own. It usually means the intended solution has a large
+      constant (a map, long long division, heavy input), not that a worse
+      complexity class has been invited in.
+
+anti_signals:
+  - cue: the answer is a contiguous stretch of the row and a shrink condition is described
+    instead: sliding-window
+    note: >-
+      Estimating tells you the double loop is dead; it does not tell you what
+      replaces it. When the statement describes a stretch that grows and
+      shrinks, the replacement is already named.
+  - cue: many range totals are asked over a row that never changes
+    instead: prefix-sum
+    note: >-
+      Same estimate, different remedy. The budget forbids re-adding a range per
+      query; a precomputed table answers each in constant time.
+  - cue: the quantity to decide is a threshold, and feasibility is monotone in it
+    instead: binary-search-answer
+    note: >-
+      When the huge bound is on the ANSWER rather than on the input, you do not
+      need a formula — you need to halve the range of possible answers.
+  - cue: the values are small integers and you need how often each occurs
+    instead: hashing-frequency
+    note: >-
+      Counting is the standard way an O(n^2) pair hunt becomes O(n), and once
+      the statement is about occurrences the estimate has stopped being the
+      interesting part.
+  - cue: the bound is small because the state is a SUBSET that must be enumerated by mask
+    instead: bit-manipulation
+    note: >-
+      n <= 20 licenses the exhaustive search; the bits master tells you how to
+      write it. Read the licence here and the enumeration there.
+
+confusable_with:
+  - pattern_id: linear-scan
+    tell: >-
+      Ask whether the naive method FITS. If the bound admits it, the estimate is
+      the whole answer and you write the obvious loop with confidence; if the
+      bound refuses it, you must find the running quantity that makes one pass
+      enough, and that is the other pattern.
+  - pattern_id: range-counting
+    tell: >-
+      Ask what the huge number is counting. If a loop over the input still fits
+      and you are choosing which loop to write, this is a budgeting decision; if
+      the quantity ranges over an interval of integers too large to walk at all,
+      you must count it by division instead of visiting it.
+  - pattern_id: integer-safety
+    tell: >-
+      Ask which way the naive solution fails: too SLOW or too LARGE. A double
+      loop over 10^5 elements is a budget failure and needs a different
+      algorithm; a single correct loop whose total passes two billion is a type
+      failure and needs a different declaration.
+
+invariant: >-
+  Before a line is written, the estimated operation count of the chosen shape
+  stays below roughly 10^8 for the largest input the constraints permit, and the
+  memory it touches stays below the stated limit.
+
+complexity:
+  time: O(1)
+  space: O(1)
+  note: >-
+    The estimate itself is free — it is arithmetic done on paper before any code
+    exists. What it produces is the complexity the solution is allowed to have:
+    n <= 10 permits O(n!), n <= 24 permits O(2^n * n), n <= 5000 permits O(n^2),
+    n <= 10^6 permits O(n log n), and n <= 10^18 permits only O(log n) or O(1).
+
+data_structures:
+  - the constraint block itself, read before the statement is re-read
+  - a rough operations-per-second figure, around 10^8 for simple work
+  - the complexity ladder, held in memory rather than looked up
+
+cpp_facilities:
+  - "ios::sync_with_stdio(false) and cin.tie(nullptr) for inputs past 10^5 lines"
+  - "'\\n' rather than std::endl, which flushes on every line"
+  - std::vector sized once, rather than a raw array sized by a guessed maximum
+  - static or heap allocation for anything above a few megabytes
+
+traps:
+  - description: >-
+      Estimating from the number of LINES of input rather than from the work
+      each line causes — t test cases each doing O(n log n) with no bound on the
+      sum of n.
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      Fast on every sample and on the first few tests, then a timeout on the
+      test built from many large cases. The tell is that your estimate used n
+      and the judge used t * n.
+  - description: >-
+      Reading n <= 10^5 and concluding that O(n^2) is "only 10^10, which is
+      probably fine".
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      A clean Time Limit Exceeded on the largest test with a correct algorithm.
+      10^10 simple operations is around a hundred seconds; there is no constant
+      factor small enough to rescue it.
+  - description: >-
+      Budgeting time and forgetting memory — a table of n by n ints when n is
+      10^4.
+    mistake_code: COMPLEX_TOO_MUCH_MEMORY
+    symptom: >-
+      Memory Limit Exceeded, or a std::bad_alloc, on the largest test only.
+      4 * 10^8 bytes is 381 MB and no limit in common use permits it.
+  - description: >-
+      Writing a recursion whose depth is the input size when n reaches 10^5 or
+      10^6.
+    mistake_code: COMPLEX_RECURSION_DEPTH
+    symptom: >-
+      A segmentation fault rather than a wrong answer, appearing only on the
+      largest test. The default stack is a few megabytes and a frame is tens of
+      bytes, so the ceiling is around 10^5 frames.
+  - description: >-
+      Leaving cin synchronised with stdio, or printing with std::endl, when the
+      input or output has 10^6 lines.
+    mistake_code: CPP_SLOW_IO
+    symptom: >-
+      A timeout on an algorithm whose complexity is provably right. Synchronised
+      streams cost roughly five to ten times, and endl flushes once per line.
+
+recall_rubric:
+  - key: operations-per-second
+    prompt: State the rule of thumb for how much simple work fits in one second.
+    essential: true
+    accepts:
+      - 10^8
+      - 1e8
+      - a hundred million
+      - 100 million operations
+  - key: the-ladder
+    prompt: >-
+      Give the largest n at which each class is still comfortable: O(n!),
+      O(2^n), O(n^2), O(n log n).
+    essential: true
+    accepts:
+      - "10 for factorial"
+      - "20 for 2^n"
+      - "5000 for n^2"
+      - "10^6 for n log n"
+      - "1e6 for n log n"
+  - key: read-before-solving
+    prompt: >-
+      Say when the estimate is made relative to the rest of the work, and why
+      that order matters.
+    essential: true
+    accepts:
+      - before writing any code
+      - the constraints are read first
+      - it decides which algorithm is allowed
+      - before choosing the approach
+  - key: small-n-is-a-licence
+    prompt: Say what a bound like n <= 20 is telling you.
+    essential: false
+    accepts:
+      - exhaustive search is intended
+      - try every subset
+      - 2^n fits
+      - brute force is the answer
+  - key: sum-over-tests
+    prompt: >-
+      Explain what "the sum of n over all test cases is bounded" permits that
+      the naive reading forbids.
+    essential: false
+    accepts:
+      - per-test o(n log n) is safe
+      - the total work is bounded by the sum
+      - t times n never happens
+      - it is a licence
+  - key: memory-budget
+    prompt: >-
+      Give the number of ints that fit in 256 MB, and name the structure that
+      most often overruns it.
+    essential: false
+    accepts:
+      - about 6.7 * 10^7
+      - 67 million ints
+      - a two-dimensional table
+      - n by n array
+  - key: constant-factors
+    prompt: >-
+      Name two things that change the running time without changing the
+      complexity class.
+    essential: false
+    accepts:
+      - synchronised io
+      - endl flushes
+      - a map instead of an array
+      - cache locality
+      - long long division
+
+template_file: constraint-budget.cpp
+template_notes: >-
+  Three questions the estimate answers, in the order a contest asks them. Form 1
+  is the ladder itself, as a function from n to the class that fits, and it is
+  the one to memorise. Form 2 is the exhaustive search the small bound licensed,
+  written the way it should be written when 2^n is the intended cost rather
+  than a failure. Form 3 is the same problem one bound larger, where the
+  estimate refuses the double loop and forces a single pass — read the two
+  together and the point of the whole region is visible in one file.
+
+related:
+  - linear-scan
+  - integer-safety
+  - range-counting
+  - bit-manipulation
+  - binary-search-answer

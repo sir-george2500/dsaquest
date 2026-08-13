@@ -647,3 +647,20 @@ Each stage ships playable. No stage requires rewriting the previous one.
   stays inside the fiction, and always arrives with a route back.
 - **No engagement metric as a goal.** If the game is fun and you are not
   measurably stronger in three months, it failed.
+
+---
+
+## Sources
+
+The curriculum is drawn from two books on this machine, mapped chapter by
+chapter (with verified PDF page offsets) in `docs/sources.md`:
+
+* **Competitive Programmer's Handbook**, Antti Laaksonen — `~/CManHandBook.pdf`
+* **An Introduction to the USA Computing Olympiad**, Darren Yao —
+  `~/Downloads/cpp.pdf`
+
+Content authors work from them rather than from memory. The books settle what
+is worth being exactly right about — the statement of a technique, its
+complexity, its worked examples. They settle nothing about the pedagogy: the
+secrets, the watch-outs, the drills and the masters' voices are this product's,
+and a curriculum that reads like a transcribed chapter has missed the point.

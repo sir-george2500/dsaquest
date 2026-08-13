@@ -1,0 +1,233 @@
+id: tree-diameter
+name: The Walk That Bends Once
+world: 7
+order: 1
+tagline: >-
+  A longest path has a highest vertex, and there it is just the two deepest
+  branches glued together — so take the best two children of every vertex.
+
+prerequisites:
+  - subtree-aggregation
+
+signals:
+  - cue: the longest, farthest or most distant pair of vertices in a structure
+      of n vertices and n-1 edges
+    strength: 3
+    note: >-
+      There is exactly one route between any two vertices, so "the distance"
+      is well defined and the longest of them all is a single number.
+  - cue: the two ends are not given — you must find them as well as the length
+    strength: 3
+    note: >-
+      A named start and end is a path query. Both ends free is what makes this
+      a maximisation over every vertex as the bend.
+  - cue: how far from the nearest vertex could an unlucky vertex be, or where
+      to place one depot so the worst journey is smallest
+    strength: 3
+    note: >-
+      The centre and the radius. Both fall directly out of the longest path:
+      the centre is its middle vertex and the radius is half its length,
+      rounded up.
+  - cue: the eccentricity of every vertex — the distance to whatever is
+      farthest from it
+    strength: 2
+    note: >-
+      Every vertex's farthest vertex is an endpoint of some longest path, so
+      two sweeps give all n eccentricities as a maximum of two distance arrays.
+  - cue: repeated growth — leaves are stripped, or a structure is extended and
+      the longest route re-reported
+    strength: 2
+    note: >-
+      Adding a leaf can only extend an existing longest path, so the new
+      answer is computable from the old endpoints in O(1) or O(log n).
+  - cue: n up to 2e5 and a question about distances
+    strength: 1
+    note: >-
+      Weak alone. It rules out an all-pairs table and nothing else.
+
+anti_signals:
+  - cue: the two endpoints of the path are given in the query
+    instead: binary-lifting
+    note: >-
+      A specific pair is answered by depths and their meeting point, in
+      O(log n) each. Nothing is being maximised over the whole structure.
+  - cue: the quantity summed over a whole subtree, not the deepest single chain
+    instead: subtree-aggregation
+    note: >-
+      Every child contributes to a sum; only the best two contribute to a
+      longest path. Reading "sum" where the statement says "longest" is the
+      commonest way to get this family wrong.
+  - cue: each vertex chooses between states and the path must obey a rule
+    instead: tree-dp
+    note: >-
+      The moment the path is constrained — at most k turns, no two chosen
+      vertices adjacent, a colour rule — the two-best fold is not enough and
+      you carry a state per vertex.
+  - cue: the graph contains a cycle
+    instead: hashing-frequency
+    note: >-
+      Both methods here rest on the uniqueness of the route between two
+      vertices. With a cycle the two-sweep argument is simply false, and the
+      longest-path problem becomes NP-hard.
+
+confusable_with:
+  - pattern_id: subtree-aggregation
+    tell: >-
+      Ask whether all the children of a vertex contribute or only the best two.
+      A total over the subtree takes every child; a longest path glues the two
+      deepest branches and ignores the rest.
+  - pattern_id: tree-dp
+    tell: >-
+      Ask whether the path is restricted. An unrestricted longest walk is the
+      two-best fold with one number per vertex; any rule about which vertices
+      or edges may be used turns it into a fold over states.
+  - pattern_id: binary-lifting
+    tell: >-
+      Ask whether the endpoints are given. Given, and it is a distance query
+      answered from depths; free, and it is a maximisation over every possible
+      bend vertex.
+
+invariant: >-
+  After a vertex is processed, down[v] is the length of the longest downward
+  chain from v, and the running best is at least the longest path whose highest
+  vertex has already been processed.
+
+complexity:
+  time: O(n)
+  space: O(n)
+  note: >-
+    One pass for the fold version, two passes for the sweep version, and both
+    are linear. The sweep costs a second traversal and buys you the actual
+    endpoints, which the fold has to be extended to report.
+
+data_structures:
+  - an adjacency list and a downward-height array
+  - two integers per vertex, the largest and second largest child height
+  - a distance array per sweep, if the endpoints are wanted
+
+cpp_facilities:
+  - std::max and a manual second-best update, which is cheaper than sorting the children
+  - std::queue for a breadth-first sweep, which avoids the recursion depth question entirely
+  - std::max_element over the distance array to find each sweep's endpoint
+
+traps:
+  - description: >-
+      Taking the two deepest branches of the ROOT only, instead of maximising
+      over every vertex as the bend.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      Correct whenever a longest path happens to run through the root and
+      short by exactly the amount it misses otherwise. On the chain 1-2 with
+      2 branching to 3 and 4, and 3-5, 4-6, rooting at 1 reports 3 where the
+      answer is 4.
+  - description: >-
+      Keeping only the single deepest child, so the fold never glues two
+      branches together.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      The answer comes back as the height of the structure rather than its
+      longest path — right on a path graph, and about half the truth on a
+      balanced one.
+  - description: >-
+      Using the two-sweep method on a structure with negative edge weights.
+    mistake_code: PATTERN_GREEDY_OVER_DP
+    symptom: >-
+      Silently short. On A-B = 1, A-C = -5, C-D = -5, C-E = 2 the sweeps report
+      1 while the true maximum is 2, between C and E. The first sweep lands on
+      a vertex that is not an endpoint of any longest path.
+  - description: >-
+      Running the second sweep from the starting vertex again, or from the
+      wrong end, rather than from the vertex the first sweep found.
+    mistake_code: BOUNDS_SINGLE_ELEMENT
+    symptom: >-
+      An answer equal to the eccentricity of vertex 1, which coincides with
+      the truth on symmetric tests and is short on lopsided ones.
+  - description: >-
+      Initialising the running best to zero and returning it on n = 1.
+    mistake_code: BOUNDS_SINGLE_ELEMENT
+    symptom: >-
+      Right, by luck, for the length in edges — and wrong by one for anybody
+      who defines the answer as a number of vertices. Decide which the
+      statement counts before you write the initialiser.
+
+recall_rubric:
+  - key: the-bend
+    prompt: >-
+      State where a longest path sits relative to a fixed root, and what that
+      buys you.
+    essential: true
+    accepts:
+      - it has a highest vertex
+      - one vertex is the top of the path
+      - the bend
+      - two branches meet at one vertex
+  - key: two-best
+    prompt: >-
+      Say what you keep per vertex and how the candidate answer is formed from it.
+    essential: true
+    accepts:
+      - the two largest child heights
+      - best and second best
+      - add the top two branches
+      - down1 + down2
+  - key: two-sweep
+    prompt: >-
+      Describe the alternative method in two sentences, including where the
+      second search starts.
+    essential: true
+    accepts:
+      - farthest from anywhere then farthest from that
+      - two breadth first searches
+      - start the second from the vertex the first found
+      - bfs twice
+  - key: when-sweeping-fails
+    prompt: >-
+      Name a condition under which the two-search method stops being correct.
+    essential: false
+    accepts:
+      - negative edge weights
+      - a cycle
+      - not a tree
+      - general graph
+  - key: centre-and-radius
+    prompt: >-
+      Say how the centre and the radius follow once the longest path is known.
+    essential: false
+    accepts:
+      - the middle of the longest path
+      - half the length rounded up
+      - ceil of the diameter over two
+      - the midpoint vertex
+  - key: complexity
+    prompt: Give the time and space complexity of both methods.
+    essential: false
+    accepts:
+      - o(n)
+      - linear
+      - two passes
+      - o(n) space
+  - key: units
+    prompt: >-
+      Say what changes if the statement counts vertices on the path rather
+      than edges.
+    essential: false
+    accepts:
+      - add one
+      - edges plus one
+      - off by one
+      - vertices = edges + 1
+
+template_file: tree-diameter.cpp
+template_notes: >-
+  Two methods, deliberately both, because they fail differently. Form 1 is the
+  one-pass fold that maximises over every vertex as the bend; it is the version
+  that survives negative edge weights and the version you extend when a state
+  appears. Form 2 is the two-sweep, which is four lines and hands you the two
+  endpoints for free — and which is wrong the moment an edge weight goes
+  negative. Form 3 reads the centre and the radius off the path found by form
+  2, since that is what "place one depot" problems actually want.
+
+related:
+  - subtree-aggregation
+  - tree-dp
+  - binary-lifting

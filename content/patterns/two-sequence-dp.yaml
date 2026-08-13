@@ -1,0 +1,251 @@
+id: two-sequence-dp
+name: Two Prefixes, One Table
+world: 9
+order: 2
+tagline: >-
+  Two inputs aligned against each other: dp[i][j] is the answer for the first i
+  of one and the first j of the other, and every cell is one of three moves.
+
+prerequisites:
+  - linear-dp
+
+signals:
+  - cue: two sequences are given and the answer measures how far apart they are
+    strength: 3
+    note: >-
+      A distance between two strings, two rows, two versions of a document. Two
+      inputs means two indices, and two indices means a table rather than an
+      array.
+  - cue: the fewest insertions, deletions and substitutions to turn one into the other
+    strength: 3
+    note: >-
+      Those three operations are the three cells the recurrence reads: from
+      above, from the left, and from the diagonal. The statement is the
+      recurrence.
+  - cue: the longest thing that appears in BOTH, without needing to be contiguous
+    strength: 3
+    note: >-
+      A common subsequence. Contiguity would make it a different problem
+      entirely; the freedom to skip in either input is what the two indices buy.
+  - cue: the fewest characters to delete from each so the remainders are equal
+    strength: 3
+    note: >-
+      That is len(a) + len(b) - 2 * LCS, which is the same table read
+      differently. Recognising the disguise is worth more than the formula.
+  - cue: both lengths are at most a few thousand, and their product is affordable
+    strength: 3
+    note: >-
+      n, m <= 5000 is 25 million cells, sized by the setter to fit a table and
+      to rule out anything exponential.
+  - cue: one sequence may be matched against the other with gaps allowed on either side
+    strength: 2
+    note: >-
+      Gaps on both sides is exactly the "skip in a, or skip in b" pair of
+      moves. Gaps on one side only is usually a simpler scan.
+  - cue: an alignment, a diff, a merge, or a similarity score
+    strength: 2
+    note: >-
+      The vocabulary of the family. All of them are this table with different
+      costs written into the same three moves.
+
+anti_signals:
+  - cue: there is only one input row and a decision at each of its positions
+    instead: linear-dp
+    note: >-
+      One sequence needs one index. Inventing a second axis costs a factor of n
+      and stores nothing any transition reads.
+  - cue: the second index would count a spent resource rather than a position
+    instead: knapsack-dp
+    note: >-
+      Capacity, money and weight are budgets, not positions. Both are tables;
+      only one of them is indexed by units of a shared bound.
+  - cue: the two sequences must match CONTIGUOUSLY, as a substring
+    instead: sliding-window
+    note: >-
+      Contiguity removes the freedom to skip, and with it the reason for two
+      independent indices. A substring search is a scan, not a table.
+  - cue: one sequence only, and you want its longest increasing subsequence
+    instead: lis-tails
+    note: >-
+      LIS is this table against a sorted copy of the same row, which is a
+      correct but wasteful way to see it. With one input the tails method is
+      O(n log n) and this is O(n^2).
+  - cue: many range totals over a static row, with nothing being aligned
+    instead: prefix-sum
+    note: >-
+      Nothing is being matched against anything. A precomputed table of totals
+      answers the question directly and no recurrence is involved.
+
+confusable_with:
+  - pattern_id: linear-dp
+    tell: >-
+      Count the inputs the recurrence must walk. One row, one index; two rows
+      being aligned against each other, two indices. The tell is whether a
+      transition ever needs to advance in one input without advancing in the
+      other.
+  - pattern_id: knapsack-dp
+    tell: >-
+      Ask what the second index means. A position in a second sequence is this;
+      an amount of a shared budget already spent is the knapsack. Both are
+      dp[i][j]; the axes are made of different stuff.
+  - pattern_id: lis-tails
+    tell: >-
+      Count the inputs the STATEMENT gives you. Two rows to align is this. One
+      row and a monotone condition on a subsequence of it is the tails method —
+      and although it can be written as this table against a sorted copy, that
+      costs O(n^2) where O(n log n) exists.
+
+invariant: >-
+  Every cell dp[i][j] is the exact answer for the pair of prefixes a[0..i) and
+  b[0..j), so a cell is final once the three cells above, left and diagonally
+  above-left of it are.
+
+complexity:
+  time: O(n * m)
+  space: O(n * m), or O(min(n, m)) when only the value is needed
+  note: >-
+    Each cell does constant work over three neighbours. The full table is only
+    required when the alignment itself must be reconstructed; if only the number
+    is wanted, two rows suffice.
+
+data_structures:
+  - a vector<vector<int>> of (n + 1) by (m + 1), with the borders filled first
+  - two rolling rows, previous and current, when only the final value is needed
+  - one saved scalar holding the diagonal, if the rolling form is a single row
+  - a traceback walk from the bottom-right corner, when the alignment is asked for
+
+cpp_facilities:
+  - std::vector<std::vector<int>> sized once with the border included
+  - std::min and std::max over exactly three candidates
+  - std::string::size() with a signed loop index chosen deliberately
+  - std::swap on two row vectors for the rolling form
+
+traps:
+  - description: >-
+      Sizing the table n by m instead of (n + 1) by (m + 1), leaving no room for
+      the empty-prefix border.
+    mistake_code: BOUNDS_PREFIX_INDEX_SHIFT
+    symptom: >-
+      Either an out-of-range write, or an off-by-one everywhere because i is
+      being used both as "the first i characters" and as "the character at i".
+      Pick the convention once: cell i covers a[0..i), so a[i - 1] is the
+      character it just consumed.
+  - description: >-
+      Forgetting the border: dp[i][0] = i and dp[0][j] = j for edit distance,
+      dp[i][0] = dp[0][j] = 0 for LCS.
+    mistake_code: BOUNDS_EMPTY_INPUT
+    symptom: >-
+      Distances that are too small by exactly the length of the shorter prefix.
+      Every test where the two inputs are the same length and similar still
+      passes.
+  - description: >-
+      Rolling the table down to a single row without saving the diagonal before
+      it is overwritten.
+    mistake_code: CPP_UNINITIALISED_VALUE
+    symptom: >-
+      The substitution case reads the CURRENT row's left-diagonal instead of the
+      previous row's, so the answer is too small on inputs with many
+      substitutions. Two full rows are the safe version; one row plus a saved
+      scalar is the fast one.
+  - description: >-
+      Comparing a[i] with b[j] instead of a[i - 1] with b[j - 1] inside the
+      one-based table.
+    mistake_code: BOUNDS_PREFIX_INDEX_SHIFT
+    symptom: >-
+      Answers shifted by one and an out-of-range read at the last cell. This is
+      the single most common bug in the family and the reason to write the
+      convention in a comment above the loop.
+  - description: >-
+      Allocating an n by m table of int when both reach 10^5.
+    mistake_code: COMPLEX_TOO_MUCH_MEMORY
+    symptom: >-
+      40 GB requested and the process killed. The bound on the product is the
+      constraint that tells you whether this pattern is intended at all.
+  - description: >-
+      Assuming the answer is at dp[n][m] when the statement asked for the best
+      alignment ending anywhere.
+    mistake_code: PATTERN_UNRECOGNISED
+    symptom: >-
+      Correct for whole-sequence questions and wrong for "longest common
+      substring", where the answer is the maximum over the entire table and the
+      recurrence itself is different.
+
+recall_rubric:
+  - key: the-definition
+    prompt: >-
+      State what dp[i][j] holds, naming both prefixes precisely.
+    essential: true
+    accepts:
+      - the answer for the first i of a and the first j of b
+      - the edit distance between the two prefixes
+      - the longest common subsequence of the prefixes
+      - a[0..i) against b[0..j)
+  - key: the-three-moves
+    prompt: >-
+      Name the three cells the recurrence reads and what each corresponds to.
+    essential: true
+    accepts:
+      - above, left and diagonal
+      - delete, insert and substitute
+      - skip in a, skip in b, match or replace
+      - dp[i-1][j], dp[i][j-1], dp[i-1][j-1]
+  - key: the-border
+    prompt: >-
+      Give the border values and say what they mean.
+    essential: true
+    accepts:
+      - dp[i][0] = i and dp[0][j] = j
+      - turning a prefix into the empty string costs one deletion per character
+      - zeros for lcs
+      - the empty prefix row and column
+  - key: the-index-convention
+    prompt: >-
+      Say which characters cell (i, j) compares and why.
+    essential: false
+    accepts:
+      - a[i-1] against b[j-1]
+      - one-based table over zero-based strings
+      - cell i covers the first i characters
+      - the character just consumed
+  - key: the-deletion-identity
+    prompt: >-
+      Give the relation between LCS and the fewest deletions making both equal.
+    essential: false
+    accepts:
+      - n + m - 2 * lcs
+      - everything not in the common subsequence is deleted
+      - twice the lcs is kept
+      - the same table read differently
+  - key: the-space
+    prompt: >-
+      Say how the table is reduced to O(min(n, m)) and what that costs you.
+    essential: false
+    accepts:
+      - keep two rows
+      - roll previous and current
+      - the traceback is no longer possible
+      - only the value survives, not the alignment
+  - key: complexity
+    prompt: Give the time and space cost and the constraint that makes it viable.
+    essential: false
+    accepts:
+      - o(n*m)
+      - the product of the lengths
+      - a few thousand each
+      - constant work per cell
+
+template_file: two-sequence-dp.cpp
+template_notes: >-
+  Form 1 is edit distance with the border filled explicitly and the three moves
+  each on their own line, named in comments — read the index convention in the
+  header before anything else, because every bug in this family is that
+  convention being broken halfway down. Form 2 is LCS, which is the same table
+  with a different rule at a match, plus the traceback that reconstructs the
+  subsequence itself. Form 3 is the rolling two-row version, included so that
+  the memory trick is learned as a rewrite of a table you already trust rather
+  than as a separate incantation.
+
+related:
+  - linear-dp
+  - knapsack-dp
+  - lis-tails

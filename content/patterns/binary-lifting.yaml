@@ -1,0 +1,244 @@
+id: binary-lifting
+name: Climb in Powers of Two
+world: 7
+order: 3
+tagline: >-
+  Precompute where each vertex lands after 1, 2, 4, 8 ... steps upwards, and any
+  climb of any length becomes at most log n jumps, because every k is a sum of
+  distinct powers of two.
+
+prerequisites:
+  - subtree-aggregation
+  - bit-manipulation
+
+signals:
+  - cue: many queries, each about the route between two given vertices
+    strength: 3
+    note: >-
+      Both endpoints named and q of them is the shape. One traversal per query
+      is O(nq); a table built once answers each in O(log n).
+  - cue: the deepest vertex that lies above both of two given vertices
+    strength: 3
+    note: >-
+      The lowest common ancestor, however the statement dresses it — the last
+      shared stop, the nearest common overseer, where two lineages meet.
+  - cue: the k-th ancestor, the k-th step of a walk, or "apply this move k times"
+    strength: 3
+    note: >-
+      Any functional graph where each element has exactly one successor. The
+      tree parent is the commonest such function, but the technique never
+      needed the tree — only the single successor.
+  - cue: the highest ancestor still satisfying some monotone condition
+    strength: 2
+    note: >-
+      Descend the powers of two from the largest, taking a jump only when it
+      keeps the condition true. That is the same loop as the ancestor climb
+      with the depth test swapped for the condition.
+  - cue: distances between arbitrary pairs, on a structure of n vertices and
+      n-1 edges
+    strength: 2
+    note: >-
+      depth[u] + depth[v] - 2*depth[meeting point]. The whole reason to find
+      the meeting point is usually this one line.
+  - cue: n and q both up to 2e5
+    strength: 1
+    note: >-
+      Weak alone. It says only that per-query traversal is dead, which many
+      precomputations could fix.
+
+anti_signals:
+  - cue: everything asked about is the set of descendants of one vertex
+    instead: subtree-aggregation
+    note: >-
+      A subtree is answered by one post-order pass and needs no table at all.
+      Ancestor jumps look upwards; a fold looks downwards.
+  - cue: both endpoints of the longest route must be discovered, not supplied
+    instead: tree-diameter
+    note: >-
+      Nothing here searches for a best pair. Given a pair it measures them; it
+      cannot maximise over all pairs without n^2 queries.
+  - cue: a decision at each vertex constrains its neighbours
+    instead: tree-dp
+    note: >-
+      Jumps measure a fixed structure. They optimise nothing, so any statement
+      that chooses between alternatives per vertex is a different pattern.
+  - cue: the container is a sorted array and the question is where a value sits
+    instead: binary-search
+    note: >-
+      Halving an index range and halving a climb both take log n steps, and
+      they are not the same technique. One needs order, the other needs a
+      successor function.
+  - cue: only one query, or a handful
+    instead: subtree-aggregation
+    note: >-
+      Building an 18-level table to answer three questions is work you did not
+      need. Walk both vertices up in step and the answer arrives in O(n).
+
+confusable_with:
+  - pattern_id: subtree-aggregation
+    tell: >-
+      Ask which direction the question points. Downwards, into everything below
+      a vertex, is a single post-order fold; upwards, towards ancestors or
+      across a route between two vertices, needs the jump table.
+  - pattern_id: tree-diameter
+    tell: >-
+      Ask whether the statement hands you both ends of the route. Handed both,
+      you measure with depths; asked to find them, you maximise over every
+      bend vertex instead.
+
+invariant: >-
+  After the table is built, up[k][v] is the ancestor of v exactly 2^k steps
+  above it, with the root as its own ancestor so that an overlong jump clamps
+  rather than reads out of bounds.
+
+complexity:
+  time: O(n log n) to build, O(log n) per query
+  space: O(n log n)
+  note: >-
+    At n = 2*10^5 the table needs 18 levels, because 2^18 = 262144 exceeds the
+    deepest possible climb of 199999. That is 3.6 million ints, about 14 MB —
+    comfortable, but worth checking against the memory limit before you write
+    it, since the obvious careless bound of 20 or 25 levels costs proportionally
+    more for nothing.
+
+data_structures:
+  - a two-dimensional table up[LOG][n], or up[n][LOG] for better locality
+  - a depth array, filled by the same traversal that fills up[0]
+  - an iterative breadth-first ordering, which avoids recursion depth entirely
+
+cpp_facilities:
+  - std::vector<std::array<int, LOG>> or a flat vector indexed by hand
+  - std::__lg, or 32 - __builtin_clz(n), to size the table exactly
+  - bit tests on the difference in depth: `if (diff >> b & 1)`
+  - std::queue for the breadth-first build, so a chain of 2e5 cannot overflow the stack
+
+traps:
+  - description: >-
+      Building the table with the level loop inside the vertex loop, so
+      up[k-1][...] is read before it has been filled for every vertex.
+    mistake_code: CPP_UNINITIALISED_VALUE
+    symptom: >-
+      Answers that are right for shallow queries and wrong for deep ones. The
+      level must be the OUTER loop: every up[k-1] entry must exist before any
+      up[k] entry is computed.
+  - description: >-
+      Mixing the two sentinel conventions: writing 0 for "no such ancestor" and
+      then feeding that 0 straight back into the table as a vertex.
+    mistake_code: CPP_OUT_OF_BOUNDS
+    symptom: >-
+      A read at row 0 that holds whatever was left there, so the answer is
+      plausible and wrong. Pick one convention and keep it. Either 0 means "off
+      the top" and EVERY use is guarded, or the root is its own parent and an
+      overlong jump saturates there — which needs no guard at all and is why it
+      is the one to prefer under a clock.
+  - description: >-
+      In the second phase of the ancestor search, jumping when up[b][u] equals
+      up[b][v].
+    mistake_code: BOUNDS_BINARY_SEARCH_OFF_BY_ONE
+    symptom: >-
+      The meeting point comes back as an ancestor of the true one, usually the
+      root, and every distance is too large by an even number. The rule is to
+      jump only while the two land on DIFFERENT vertices, then step up once
+      more at the end.
+  - description: >-
+      Forgetting to level the two vertices before the descending loop.
+    mistake_code: BOUNDS_BINARY_SEARCH_OFF_BY_ONE
+    symptom: >-
+      Correct whenever the two vertices happen to be at the same depth and
+      nonsense otherwise. The equal-depth precondition is what makes "jump
+      while they differ" mean anything.
+  - description: >-
+      Missing the case where one vertex is an ancestor of the other.
+    mistake_code: BOUNDS_SINGLE_ELEMENT
+    symptom: >-
+      A distance one or two steps too large on exactly those pairs. After
+      levelling, if the two are already equal, that vertex IS the answer and
+      the descending loop must not run.
+  - description: >-
+      Storing the table as up[n][20] of long long when int would do.
+    mistake_code: COMPLEX_TOO_MUCH_MEMORY
+    symptom: >-
+      Memory limit exceeded at n = 2*10^5, where 20 levels of 8-byte entries is
+      32 MB against 18 levels of 4-byte entries at 14 MB. A vertex index fits
+      in an int; nothing here needs more.
+
+recall_rubric:
+  - key: the-table
+    prompt: State what up[k][v] holds and give the recurrence that fills it.
+    essential: true
+    accepts:
+      - the ancestor 2^k steps above v
+      - up[k][v] = up[k-1][up[k-1][v]]
+      - half the jump twice
+      - 2^k ancestor
+  - key: loop-order
+    prompt: >-
+      Say which of the two loops must be outside the other when building, and
+      why.
+    essential: true
+    accepts:
+      - the level loop is outside
+      - k outside v
+      - every up[k-1] must exist first
+      - build level by level
+  - key: the-climb
+    prompt: >-
+      Describe how a climb of exactly k steps is performed, and what makes it
+      log n rather than k.
+    essential: true
+    accepts:
+      - test each bit of k
+      - k is a sum of powers of two
+      - jump on the set bits
+      - binary representation
+  - key: meeting-point
+    prompt: >-
+      Give the two phases of finding the deepest shared ancestor, in order.
+    essential: false
+    accepts:
+      - level the deeper one first
+      - then jump while they differ
+      - descend the powers and take the parent at the end
+      - equalise depths then descend
+  - key: the-ancestor-case
+    prompt: >-
+      Say what must be checked after levelling, before the descending loop runs.
+    essential: false
+    accepts:
+      - whether they are already equal
+      - one is an ancestor of the other
+      - return immediately if u == v
+      - the same vertex
+  - key: distance
+    prompt: Give the distance between two vertices in terms of depths.
+    essential: false
+    accepts:
+      - depth[u] + depth[v] - 2 * depth[l]
+      - d(u)+d(v)-2d(lca)
+      - subtract twice the meeting depth
+      - two times the ancestor depth
+  - key: sizing
+    prompt: >-
+      Say how many levels are needed at n = 2e5 and roughly what that costs.
+    essential: false
+    accepts:
+      - 18
+      - about 14 mb
+      - log2 of n rounded up
+      - 2^18 = 262144
+
+template_file: binary-lifting.cpp
+template_notes: >-
+  One table, three uses. Form 1 builds it breadth-first, so a chain of 2*10^5
+  vertices cannot overflow the stack while you are still learning the shape —
+  and note the root being its own parent, which is what makes every overlong
+  jump clamp instead of reading out of bounds. Form 2 is the k-th ancestor and
+  is nothing but a loop over the set bits of k. Form 3 is the meeting point and
+  the distance; the comment above its second loop explains the one thing people
+  get backwards, which is that you jump only while the two land on DIFFERENT
+  vertices.
+
+related:
+  - subtree-aggregation
+  - tree-diameter
+  - bit-manipulation

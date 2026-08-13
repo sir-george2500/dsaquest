@@ -1,0 +1,245 @@
+id: range-counting
+name: Count Without Walking
+world: 5
+order: 3
+tagline: >-
+  How many integers in an interval have a property is a subtraction, not a loop:
+  count from the beginning twice and take the difference, and an interval of
+  10^18 members is answered in a single division.
+
+prerequisites:
+  - integer-safety
+
+signals:
+  - cue: "\"how many integers between l and r\", with the endpoints stated as inclusive"
+    strength: 3
+    note: >-
+      The word "between" and a pair of endpoints is the whole announcement. What
+      follows is always the same shape: count up to r, count up to l - 1,
+      subtract.
+  - cue: the endpoints reach 10^9, 10^18 or beyond
+    strength: 3
+    note: >-
+      The interval is too large to visit. Whatever the property is, it must be
+      counted by arithmetic — usually one division per condition — because a
+      loop over the members will not finish this century.
+  - cue: multiples, every k-th day, every k-th tile, values divisible by k
+    strength: 3
+    note: >-
+      Divisibility is the property this counts most directly: the multiples of k
+      up to n number exactly n / k in integer division, and that single
+      expression is the pattern.
+  - cue: two or three properties combined with "or", with small numbers of conditions
+    strength: 2
+    note: >-
+      Counting a union means adding the counts and subtracting the overlaps, and
+      the overlap of "divisible by a" and "divisible by b" is divisibility by
+      their least common multiple.
+  - cue: how many full groups of size k, and how many are left over
+    strength: 2
+    note: >-
+      Grouping is the same arithmetic seen from the other side: n / k whole
+      groups, n % k left over, and (n + k - 1) / k groups if a partial group
+      still counts.
+  - cue: the interval may reach below zero, or start exactly at zero
+    strength: 2
+    note: >-
+      A weak cue about the answer and a strong one about the bug. C++ division
+      truncates towards zero rather than downwards, so every formula written for
+      positive endpoints is off by one somewhere below zero.
+
+anti_signals:
+  - cue: the numbers are a row of data you were given, not every integer in an interval
+    instead: prefix-sum
+    note: >-
+      Both subtract two running counts. The difference is what is being counted
+      over: a stored array is prefix sums, and the integers themselves — which
+      nobody stored, because there are 10^18 of them — is this.
+  - cue: the question is how often each value occurs in the input
+    instead: hashing-frequency
+    note: >-
+      An occurrence count needs the input examined. This pattern never examines
+      anything; it computes from the endpoints alone.
+  - cue: the quantity you want has no formula, but a candidate value can be tested
+    instead: binary-search-answer
+    note: >-
+      When counting is easy the answer is a formula; when only checking is easy
+      the answer is found by halving. "How many k work" is this, "what is the
+      smallest k that works" is the search.
+  - cue: you need the position of a value inside a sorted container
+    instead: binary-search
+    note: >-
+      Counting elements of a sorted array below a bound is a library call.
+      Counting integers below a bound with a property is arithmetic and needs no
+      container at all.
+  - cue: the huge bound is on the size of the INPUT rather than on an interval to be counted
+    instead: constraint-budget
+    note: >-
+      10^18 inputs cannot be read at all; 10^18 candidate integers can be
+      counted without being read. Check which of the two the bound is attached
+      to before deciding there is no loop.
+
+confusable_with:
+  - pattern_id: constraint-budget
+    tell: >-
+      Ask whether a loop is being CHOSEN or REFUSED. If a loop over the input
+      still fits and the question is which loop to write, that is budgeting; if
+      the interval itself is the thing too large to walk, the answer must be
+      counted rather than visited, and that is this pattern.
+  - pattern_id: integer-safety
+    tell: >-
+      Ask what the division in your line is for. A division that counts how many
+      multiples fall below a bound is this pattern; a division that keeps an
+      ordinary computation exact — an average, a halving, a rounding up — is a
+      question about types and rounding.
+
+invariant: >-
+  Every count over an interval is evaluated as F(r) - F(l - 1), where F(x) is
+  the count over the whole prefix ending at x, so each endpoint is included or
+  excluded by the formula rather than by hope.
+
+complexity:
+  time: O(1)
+  space: O(1)
+  note: >-
+    One division per condition, plus one per overlap when conditions are
+    combined: 2^c - 1 terms for c conditions under inclusion and exclusion,
+    which stays free for the two or three conditions such statements use. The
+    interval size never enters the cost, which is the entire point.
+
+data_structures:
+  - nothing at all — two endpoints and a divisor
+  - a floor-division helper, once negative endpoints are possible
+  - a least common multiple, when two divisibility conditions overlap
+
+cpp_facilities:
+  - "long long everywhere, because endpoints reach 10^18"
+  - "std::lcm and std::gcd from <numeric>"
+  - "(a + b - 1) / b for a ceiling division of non-negative integers"
+  - "a floor-division helper, because operator/ truncates towards zero"
+
+traps:
+  - description: >-
+      Counting the interval as F(r) - F(l) instead of F(r) - F(l - 1), so the
+      left endpoint is silently excluded.
+    mistake_code: BOUNDS_PREFIX_INDEX_SHIFT
+    symptom: >-
+      An answer too small by exactly one on every test where l itself has the
+      property, and exactly right on every test where it does not. Samples pick
+      one or the other at random, which is why this reaches the judge.
+  - description: >-
+      Reporting the number of integers in [l, r] as r - l.
+    mistake_code: BOUNDS_SINGLE_ELEMENT
+    symptom: >-
+      Off by one on every interval, and reported as 0 when l equals r — where
+      the answer is 1. Any test with a single-point interval catches it
+      instantly, and no sample ever contains one.
+  - description: >-
+      Using plain division when an endpoint can be negative or zero, so the
+      truncation goes towards zero instead of downwards.
+    mistake_code: BOUNDS_PREFIX_INDEX_SHIFT
+    symptom: >-
+      Correct on every interval lying strictly above zero and off by one on
+      every interval that touches or crosses it: -7 / 2 is -3 in C++ where the
+      floor is -4, and 0 / 3 is 0 where the count of multiples up to -1 should
+      be -1.
+  - description: >-
+      Forming the count by multiplying or adding the endpoints before checking
+      the range: k * (r - l + 1), or r + l, with endpoints at 10^18.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Negative or nonsensical counts on the largest tests only. r - l + 1 for
+      endpoints of magnitude 10^18 is about 2 * 10^18 and survives; multiply it
+      by anything and it does not.
+  - description: >-
+      Looping over the members of the interval to count them, because the
+      samples have small endpoints.
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      Instant on every sample, and a Time Limit Exceeded on the first real test.
+      The bound on l and r, not the bound on the number of queries, was the
+      constraint that mattered.
+
+recall_rubric:
+  - key: the-subtraction
+    prompt: >-
+      State the general recipe for counting the members of an interval with a
+      property.
+    essential: true
+    accepts:
+      - f(r) - f(l - 1)
+      - count up to r minus count up to l-1
+      - two prefix counts subtracted
+      - count from the beginning twice
+  - key: multiples
+    prompt: Give the count of multiples of k in [1, n], and then in [l, r].
+    essential: true
+    accepts:
+      - n / k
+      - r / k - (l - 1) / k
+      - floor(n/k)
+      - integer division by k
+  - key: inclusive-size
+    prompt: Give the number of integers in [l, r] and say what the +1 is for.
+    essential: true
+    accepts:
+      - r - l + 1
+      - both endpoints are included
+      - l = r gives 1
+      - the fencepost
+  - key: negatives
+    prompt: >-
+      Say what C++ integer division does with a negative numerator and what that
+      costs this pattern.
+    essential: false
+    accepts:
+      - truncates towards zero
+      - -7 / 2 is -3
+      - the floor would be -4
+      - a floor helper is needed
+  - key: ceiling
+    prompt: >-
+      Give the expression for the number of groups of size k needed to hold n
+      items.
+    essential: false
+    accepts:
+      - (n + k - 1) / k
+      - ceiling division
+      - n/k rounded up
+      - one more group for the remainder
+  - key: union
+    prompt: >-
+      Say how to count integers divisible by a OR by b, and what the overlap
+      term is.
+    essential: false
+    accepts:
+      - inclusion and exclusion
+      - add both and subtract the lcm term
+      - n/a + n/b - n/lcm(a,b)
+      - subtract the overlap
+  - key: complexity
+    prompt: >-
+      Give the cost of this pattern in terms of the interval size, and say why
+      that is the point.
+    essential: false
+    accepts:
+      - o(1)
+      - constant regardless of the interval
+      - the interval size never enters
+      - one division per condition
+
+template_file: range-counting.cpp
+template_notes: >-
+  Form 1 is the floor division that plain `/` is not, and everything else in the
+  file calls it — write it once and the whole class of below-zero bugs
+  disappears. Form 2 is the count of multiples over an inclusive interval, which
+  is the pattern in one line, with the l - 1 that everyone forgets. Form 3 is the
+  union of two divisibility conditions by inclusion and exclusion, where the
+  overlap is the least common multiple. Note that nothing here reads the
+  interval; the endpoints go in and the count comes out.
+
+related:
+  - integer-safety
+  - constraint-budget
+  - prefix-sum
+  - binary-search

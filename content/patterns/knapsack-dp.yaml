@@ -1,0 +1,251 @@
+id: knapsack-dp
+name: The Second Axis
+world: 9
+order: 1
+tagline: >-
+  When a choice spends from a shared budget, the budget belongs in the state —
+  dp[i][w] answers "using the first i items, with exactly w left to spend".
+
+prerequisites:
+  - linear-dp
+
+signals:
+  - cue: each item is taken whole or not at all, against one shared capacity, maximising VALUE
+    strength: 3
+    note: >-
+      Indivisible plus a value objective is the exact hypothesis under which no
+      ranking key exists. Capacity 50 with items (60,10), (100,20), (120,30)
+      gives 160 by value-per-weight and 220 by the table.
+  - cue: can a subset be made to sum to exactly S
+    strength: 3
+    note: >-
+      Subset sum is the knapsack with the value equal to the weight. The
+      question is reachability of a total, and reachability of totals is what
+      the second axis stores.
+  - cue: split the items into two groups whose totals are as close as possible
+    strength: 3
+    note: >-
+      Partition is subset sum against half the total: find the reachable sum
+      closest to sum/2 and the other side follows.
+  - cue: an unlimited supply of each kind, and a total to be reached or filled
+    strength: 3
+    note: >-
+      Unbounded is the same table with the capacity loop run forwards, which
+      lets a state reuse the item it has just taken. One loop direction is the
+      whole difference.
+  - cue: n items and a capacity bound that is small enough to be an array index
+    strength: 3
+    note: >-
+      The constraints are the tell. n <= 100 with W <= 100000 is 10^7 cells,
+      which is a pseudo-polynomial table the setter has sized for you on
+      purpose.
+  - cue: two numbers per item, one of them spent and one of them collected
+    strength: 2
+    note: >-
+      A weight and a value, a time and a reward, a cost and a score. One axis
+      per spent resource, and the collected quantity is what the cell holds.
+  - cue: the word "divisible" is absent where you expected it
+    strength: 2
+    note: >-
+      Its presence licenses the ratio greedy; its absence is the setter
+      declining to. Read the sentence again before choosing.
+
+anti_signals:
+  - cue: the items may be taken in fractions
+    instead: sorting-by-key
+    note: >-
+      Divisibility makes value-per-unit provably optimal by a one-line exchange
+      argument, and a table there is wasted work. That single word moves the
+      problem across the boundary, in both directions.
+  - cue: the objective is HOW MANY items fit, not how much value
+    instead: sorting-by-key
+    note: >-
+      Counting is safe greedily: k items fit only if the k cheapest fit. Build
+      a table for a count and you have written 10^7 cells to compute a sort.
+  - cue: the coin system is a canonical one — 1, 2, 5, 10, 20, 50, 100
+    instead: sorting-by-key
+    note: >-
+      A named friendly system is the setter telling you largest-first is proven
+      for these numbers, and the amount is usually far too large to index.
+  - cue: nothing is refused and only the order of the items costs anything
+    instead: exchange-argument
+    note: >-
+      No capacity is being spent, so there is no second axis to carry. The
+      whole answer is a comparator derived from swapping two neighbours.
+  - cue: a single row with a decision per position and no shared budget
+    instead: linear-dp
+    note: >-
+      One index suffices when the legality of a choice depends only on where
+      you are. Adding an axis nothing reads costs a factor of W for nothing.
+  - cue: the capacity reaches 10^18, so no array can be indexed by it
+    instead: binary-search-answer
+    note: >-
+      A pseudo-polynomial table needs the resource to fit in memory. When the
+      bound is astronomically large the intended solution is a different shape
+      entirely — a search on the answer, a greedy with a proof, or arithmetic.
+
+confusable_with:
+  - pattern_id: linear-dp
+    tell: >-
+      Ask what you must remember when you arrive at item i. If "where I am" is
+      the whole answer, one array is enough; if you must also know how much of
+      a shared capacity remains before you can say whether taking item i is
+      even legal, that remainder is a second axis.
+  - pattern_id: two-sequence-dp
+    tell: >-
+      Ask what the second index counts. A resource spent so far — capacity,
+      money, weight — is this; a position in a second input sequence being
+      aligned against the first is the other. Both are tables; only one of them
+      has a row per item and a column per unit of budget.
+
+invariant: >-
+  After item i has been processed, dp[w] is the exact optimum over subsets of
+  the first i items whose total weight is at most (or exactly) w — so no later
+  item can improve a cell without being explicitly considered against it.
+
+complexity:
+  time: O(n * W)
+  space: O(W) after the item axis is rolled away
+  note: >-
+    Pseudo-polynomial: linear in the numeric VALUE of the capacity, not in its
+    number of digits. That is why W <= 10^5 is routine and W <= 10^18 means the
+    problem is not this pattern at all.
+
+data_structures:
+  - a vector<long long> dp of size W + 1, one cell per remaining capacity
+  - a vector<char> or bitset for the reachability form, where only yes/no matters
+  - a sentinel for "this exact total is impossible", distinct from a value of zero
+  - std::bitset<N> with a shift-and-or, when the answer is reachability alone
+
+cpp_facilities:
+  - std::vector<long long> with an explicit initial fill
+  - a descending index loop for the 0/1 form
+  - std::bitset and its shift operator for subset-sum reachability
+  - std::max_element over the final row when the target is "closest to"
+
+traps:
+  - description: >-
+      Running the capacity loop forwards in the 0/1 form, so a state can take
+      the same item again through a cell the same item already updated.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      Answers that are too LARGE, and exactly right whenever every item happens
+      to be used at most once anyway. On one item of weight 1 and value 1 with
+      capacity 3, forwards gives dp = [0,1,2,3] and backwards gives [0,1,1,1].
+  - description: >-
+      Rolling the item axis away and then still writing `dp[i][w] = dp[i-1][w]`
+      by hand, or clearing the row between items.
+    mistake_code: CPP_UNINITIALISED_VALUE
+    symptom: >-
+      The "do not take this item" case is lost, so the answer only counts
+      subsets that use the last item. Small tests where the last item is
+      optimal still pass.
+  - description: >-
+      Confusing "at most w" with "exactly w" — initialising the whole row to 0
+      when the question demands an exact total.
+    mistake_code: BOUNDS_EMPTY_INPUT
+    symptom: >-
+      Every total is reported reachable. For the exact form only dp[0] starts
+      legal and everything else starts at the impossible sentinel.
+  - description: >-
+      Indexing an axis by a capacity of 10^18, or allocating n * W as a full
+      two-dimensional array when n and W are both 10^5.
+    mistake_code: COMPLEX_TOO_MUCH_MEMORY
+    symptom: >-
+      std::bad_alloc, a killed process, or a memory-limit verdict. 10^5 * 10^5
+      cells of long long is 80 GB; rolled to one row it is 800 KB.
+  - description: >-
+      Sorting the items by value per weight first, on the belief that it helps.
+    mistake_code: PATTERN_GREEDY_OVER_DP
+    symptom: >-
+      Nothing changes, because the table already considers every subset — but
+      the sort is a sign the author still believes a ranking decides this, and
+      the same author will submit the ratio greedy under time pressure.
+  - description: >-
+      Accumulating the collected value in `int` when 100 items carry 10^9 each.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      A negative maximum on the large tests only. The capacity axis is usually
+      small enough for int; the value in the cell rarely is.
+
+recall_rubric:
+  - key: the-definition
+    prompt: >-
+      State what dp[w] holds after the first i items have been processed.
+    essential: true
+    accepts:
+      - the best value using the first i items within capacity w
+      - whether a subset of the first i items sums to exactly w
+      - one cell per remaining capacity
+      - the optimum over subsets of a prefix at a given budget
+  - key: the-transition
+    prompt: >-
+      Give the recurrence, naming both cases explicitly.
+    essential: true
+    accepts:
+      - max of skipping the item and taking it
+      - dp[w] = max(dp[w], dp[w - weight] + value)
+      - take it or leave it
+      - two cases, one per decision on item i
+  - key: the-loop-direction
+    prompt: >-
+      Say which way the capacity loop runs in the 0/1 form and what the other
+      direction computes instead.
+    essential: true
+    accepts:
+      - descending for 0/1
+      - forwards gives the unbounded version
+      - from w down to the item's weight
+      - reversed so the item is not reused
+  - key: the-greedy-boundary
+    prompt: >-
+      Name the property of the statement that makes the ratio greedy wrong here.
+    essential: false
+    accepts:
+      - the items are indivisible
+      - taking a better ratio consumes capacity a better combination needed
+      - 0/1 rather than fractional
+      - 60 + 100 = 160 where 100 + 120 = 220
+  - key: the-complexity
+    prompt: >-
+      Give the cost and say why it is called pseudo-polynomial.
+    essential: false
+    accepts:
+      - o(n * w)
+      - linear in the value of the capacity, not its length
+      - fails when w is astronomically large
+      - n times capacity cells
+  - key: the-exact-form
+    prompt: >-
+      Say what changes when the question asks for an exact total rather than
+      "at most".
+    essential: false
+    accepts:
+      - only dp[0] starts legal
+      - the rest start impossible
+      - reachability instead of maximisation
+      - a distinct sentinel for unreachable
+  - key: the-space
+    prompt: >-
+      Say how the item axis is removed and what must be preserved when it is.
+    essential: false
+    accepts:
+      - keep one row and update it in place
+      - the descending loop preserves the previous row's values
+      - o(w) space
+      - the skip case is implicit in not writing the cell
+
+template_file: knapsack-dp.cpp
+template_notes: >-
+  Form 1 is the 0/1 maximisation with the descending capacity loop, and the
+  comment above it states exactly which cells the loop is protecting and from
+  what. Form 2 is the same table with the loop reversed — the unbounded version
+  — placed next to it deliberately, because the two differ by one character and
+  compute different things. Form 3 is subset-sum reachability, where the cell is
+  a yes/no rather than a number, which is the form to reach for when the
+  statement asks whether a total can be made at all.
+
+related:
+  - linear-dp
+  - two-sequence-dp
+  - sorting-by-key

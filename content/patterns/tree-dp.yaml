@@ -1,0 +1,244 @@
+id: tree-dp
+name: A State for Every Vertex
+world: 7
+order: 2
+tagline: >-
+  When taking a vertex changes what its parent may do, one number per vertex is
+  not enough — carry one number per decision and fold the children into each.
+
+prerequisites:
+  - subtree-aggregation
+
+signals:
+  - cue: chosen vertices may not be adjacent, or every edge must have a chosen
+      endpoint
+    strength: 3
+    note: >-
+      Independent set, vertex cover, matching, domination. The constraint is
+      always between a vertex and its neighbours, which on a rooted tree means
+      between a vertex and its parent — exactly one bit of information.
+  - cue: each vertex is coloured, staffed, cut or left alone, and the rule
+      involves its neighbours
+    strength: 3
+    note: >-
+      "Involves its neighbours" is the whole signal. Once the parent needs to
+      know which way the child went, the child must report one value per way.
+  - cue: count or optimise over all the ways to do something to a structure of
+      n vertices and n-1 edges
+    strength: 3
+    note: >-
+      Counting arrangements over a tree multiplies independent children
+      together instead of adding them, but it is the same fold with the same
+      states — only the operator changes.
+  - cue: a budget of k is spent across the structure and k is small
+    strength: 2
+    note: >-
+      dp[v][j] for j up to k, merged child by child. The merge is a small
+      convolution and the classic bound on its total cost is O(n*k), which is
+      why the statement bothers to tell you k is small.
+  - cue: the answer must be reported for every possible root
+    strength: 2
+    note: >-
+      Rerooting: one pass computes the answers downwards, a second pushes the
+      parent's contribution back down. It is this pattern run twice, not a new
+      technique.
+  - cue: n up to 2e5 and an exponential-looking set of choices
+    strength: 1
+    note: >-
+      Weak alone. It rules out enumeration and says nothing about whether the
+      structure branches.
+
+anti_signals:
+  - cue: the parent needs exactly one number from each child
+    instead: subtree-aggregation
+    note: >-
+      A size, a sum, a count. No decision is being made at a vertex, so there
+      is nothing for a second state to record and the fold is a plain one.
+  - cue: nothing constrains which vertices may be used, and the answer is the
+      longest route
+    instead: tree-diameter
+    note: >-
+      Unrestricted longest path is the two-best fold. A state appears only when
+      the statement forbids something.
+  - cue: the query is about ancestors or the route between two given vertices
+    instead: binary-lifting
+    note: >-
+      Nothing is being optimised over subtrees; a specific route is being
+      measured. Precompute jumps instead of states.
+  - cue: the choices are over a flat row with no branching
+    instead: prefix-sum
+    note: >-
+      A path graph is a one-dimensional dynamic program, and the tree machinery
+      buys nothing. If nothing branches, index into an array.
+  - cue: a safe local choice can be proved by an exchange argument
+    instead: exchange-argument
+    note: >-
+      If swapping your first pick into any optimal answer keeps it legal and no
+      worse, you do not need states at all. On trees that argument usually
+      fails — see the star with a heavy centre.
+
+confusable_with:
+  - pattern_id: subtree-aggregation
+    tell: >-
+      Ask what the parent must be told. One number, and it is a plain fold; two
+      or more, because the parent's legal moves depend on what the child did,
+      and it is a dynamic program.
+  - pattern_id: tree-diameter
+    tell: >-
+      Ask whether anything is forbidden. A longest path with no restriction
+      needs only the deepest two branches; add any rule about which vertices may
+      appear and you must carry the rule as a state.
+
+invariant: >-
+  When the call on v returns, dp[v][s] is the best value obtainable inside v's
+  subtree given that v itself is in state s, computed with no knowledge of
+  anything outside that subtree.
+
+complexity:
+  time: O(n * S) for S states, or O(n * k) for a budget of k
+  space: O(n * S)
+  note: >-
+    Two states per vertex is the usual case and the whole thing is linear. The
+    budget form looks like O(n * k^2) and is not: bounding each merge by the
+    sizes of the two subtrees involved makes the total O(n * k), because every
+    pair of vertices is charged exactly once at their meeting point.
+
+data_structures:
+  - a two-dimensional array indexed by vertex and state, or two parallel arrays
+  - an adjacency list and a parent argument, as in every traversal here
+  - a small vector per vertex when the state is a budget rather than a flag
+
+cpp_facilities:
+  - std::array<long long, 2> or two vectors, one per state
+  - std::max applied per state as each child returns
+  - a modulus applied at every multiplication in the counting form
+  - std::vector<long long> resized to min(subtree size, k) + 1 for the budget form
+
+traps:
+  - description: >-
+      Taking the highest-value vertices greedily instead of folding the two
+      states.
+    mistake_code: PATTERN_GREEDY_OVER_DP
+    symptom: >-
+      Correct on chains and wrong on stars. A centre worth 3 with three leaves
+      worth 2 each scores 3 greedily where 6 is available, and no tie-break on
+      the ordering repairs it.
+  - description: >-
+      Writing dp[v][0] as the sum of dp[child][0] — forgetting that a child may
+      still be taken when the parent is not.
+    mistake_code: INVARIANT_COUNTER_NOT_DECREMENTED
+    symptom: >-
+      An answer far below the truth on every branching test. dp[v][0] must add
+      max(dp[c][0], dp[c][1]) per child; only dp[v][1] is forced to use
+      dp[c][0].
+  - description: >-
+      Reading a child's dp before recursing into it.
+    mistake_code: CPP_UNINITIALISED_VALUE
+    symptom: >-
+      The answer equals the value of a single vertex or zero, depending on how
+      the arrays were initialised. Depth-one samples pass and nothing else does.
+  - description: >-
+      Initialising the maximisation with 0 when values may be negative, or with
+      0 when a state is genuinely impossible.
+    mistake_code: CPP_UNINITIALISED_VALUE
+    symptom: >-
+      An answer of 0 on all-negative inputs where the statement demanded at
+      least one vertex be chosen. Use a large negative sentinel and take care
+      that adding two of them does not overflow.
+  - description: >-
+      Applying the modulus once at the end of the counting form.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Wrong from about the fortieth vertex onwards, because the product doubles
+      per independent choice. Reduce after every multiplication, and keep the
+      operands long long so the intermediate fits.
+  - description: >-
+      Recursing on a chain-shaped input with two arrays of state and no stack
+      headroom.
+    mistake_code: COMPLEX_RECURSION_DEPTH
+    symptom: >-
+      A silent runtime error on the one test that is a path. The state arrays
+      make the frame larger than a plain traversal's, so the depth at which it
+      dies is lower than you measured elsewhere.
+
+recall_rubric:
+  - key: what-is-a-state
+    prompt: >-
+      Say what dp[v][s] means, in words, including what it may and may not know
+      about.
+    essential: true
+    accepts:
+      - the best value inside v's subtree given v is in state s
+      - knows nothing outside the subtree
+      - answer for the subtree of v with v fixed
+      - given v is taken or not taken
+  - key: the-two-lines
+    prompt: >-
+      Give both transitions for the take-or-leave case and say why they differ.
+    essential: true
+    accepts:
+      - taken sums the children's not-taken
+      - not taken sums the max over each child
+      - dp[v][1] = w[v] + sum dp[c][0]
+      - dp[v][0] = sum max(dp[c][0], dp[c][1])
+  - key: why-not-greedy
+    prompt: >-
+      Give the smallest structure on which taking the most valuable vertex
+      first is wrong.
+    essential: true
+    accepts:
+      - a star
+      - a centre worth 3 with three leaves worth 2
+      - centre versus leaves
+      - three leaves beat the middle
+  - key: the-fold
+    prompt: >-
+      Say where the combining happens relative to the recursive call, and which
+      operator is used when the question counts rather than optimises.
+    essential: false
+    accepts:
+      - after the child returns
+      - post-order
+      - multiply for counting
+      - add for optimising
+  - key: complexity
+    prompt: Give the cost in terms of n and the number of states.
+    essential: false
+    accepts:
+      - o(n * s)
+      - linear in n for two states
+      - o(nk) for a budget
+      - o(n)
+  - key: rerooting
+    prompt: >-
+      Say what a second pass buys you and roughly how it works.
+    essential: false
+    accepts:
+      - answers for every root
+      - push the parent's contribution down
+      - two passes
+      - rerooting
+  - key: hazards
+    prompt: >-
+      Name the two failure modes that only appear on large inputs.
+    essential: false
+    accepts:
+      - recursion depth on a chain
+      - overflow without a modulus
+      - stack overflow
+      - reduce after every multiplication
+
+template_file: tree-dp.cpp
+template_notes: >-
+  Three shapes over one traversal. Form 1 is take-or-leave with weights — the
+  two transitions are the thing to memorise, and the comment above them says
+  exactly why they are not symmetric. Form 2 is the same recursion counting
+  instead of maximising, so you can see that only the operator changed: max
+  becomes plus, plus becomes times, and the modulus appears. Form 3 is the
+  minimum vertex cover, which is the complement of form 1 and a good check that
+  you can read a constraint off an edge rather than off a vertex.
+
+related:
+  - subtree-aggregation
+  - tree-diameter
+  - binary-lifting

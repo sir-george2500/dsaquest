@@ -1,0 +1,248 @@
+id: subtree-aggregation
+name: One Pass Down, Every Answer Up
+world: 7
+order: 0
+tagline: >-
+  Choose a root and the tree stops being a graph: every node's answer is a fold
+  of its children's answers, so one depth-first pass computes all n of them.
+
+prerequisites:
+  - prefix-sum
+
+signals:
+  - cue: n vertices joined by exactly n-1 edges so that every vertex is reachable
+    strength: 3
+    note: >-
+      That sentence is the definition of a tree and it is almost always spelled
+      out rather than named. It buys you three things at once: no cycles, a
+      unique path between any two vertices, and the right to root it anywhere.
+  - cue: the question is asked ABOUT EVERY vertex, not about one
+    strength: 3
+    note: >-
+      "For each i, report ..." over a tree is the tell. Answering one vertex by
+      walking its part of the tree is O(n) each and O(n^2) in total; folding
+      the children into the parent answers all n in a single pass.
+  - cue: a quantity is defined over "everything below v" — its descendants, its
+      part of the tree, the vertices it commands
+    strength: 3
+    note: >-
+      "Everything below v" only means something once a root is fixed, and once
+      a root is fixed it is exactly the set the recursion on v returns from.
+  - cue: removing one edge splits the structure into two pieces and the sizes matter
+    strength: 3
+    note: >-
+      Each edge has a child side of size sz[c] and a parent side of size
+      n - sz[c], and one post-order pass hands you every such pair.
+  - cue: a value accumulates along the path from a fixed start vertex to each
+      other vertex
+    strength: 2
+    note: >-
+      A running sum carried down the recursion and undone on the way out. It is
+      a prefix sum along a path instead of along a row — same idea, branching.
+  - cue: n up to 1e5 or 2e5 with q queries that each look like a whole traversal
+    strength: 1
+    note: >-
+      Weak alone. It says only that per-query traversal is dead, which
+      precomputation, an Euler tour or an ancestor table might each fix.
+
+anti_signals:
+  - cue: each vertex makes a CHOICE that constrains its neighbours
+    instead: tree-dp
+    note: >-
+      One number per vertex is an aggregation. Two or more, because the parent
+      must know which way the child decided, is a dynamic program — the fold is
+      then over states, not over totals.
+  - cue: the question is about the PATH between two given vertices
+    instead: binary-lifting
+    note: >-
+      A subtree is a downward-closed set; a path between two vertices leaves
+      one subtree and enters another. Ancestors, not descendants.
+  - cue: the longest path anywhere in the structure
+    instead: tree-diameter
+    note: >-
+      A longest path bends at one vertex and uses its two deepest branches. A
+      sum over all children answers a different question.
+  - cue: the graph has cycles, or the edge count is not exactly n-1
+    instead: hashing-frequency
+    note: >-
+      Without acyclicity the parent guard is not enough and you need a real
+      visited set — and the recursion no longer computes disjoint pieces,
+      because a vertex can be reached along two different routes.
+  - cue: the input is a flat row and the ranges are contiguous index intervals
+    instead: prefix-sum
+    note: >-
+      A row is a path graph you were not asked to see as one. If nothing
+      branches, the table is one dimensional and no traversal is needed.
+
+confusable_with:
+  - pattern_id: tree-dp
+    tell: >-
+      Ask how many numbers the parent needs from each child. One — a size, a
+      sum, a count — is a plain fold. Two or more, because taking the child
+      forbids taking the parent, is a dynamic program over states.
+  - pattern_id: tree-diameter
+    tell: >-
+      Ask whether the answer combines ALL the children of a vertex or only the
+      best two of them. Summing every child is aggregation; taking the largest
+      two and adding them is the longest-path fold.
+  - pattern_id: binary-lifting
+    tell: >-
+      Ask which direction the question looks. Downwards into descendants is one
+      post-order pass and needs no table; upwards towards ancestors, or between
+      two arbitrary vertices, needs jumps.
+
+invariant: >-
+  When the recursive call on v returns, every vertex in v's subtree has its
+  final value and no vertex outside that subtree has been touched at all.
+
+complexity:
+  time: O(n)
+  space: O(n)
+  note: >-
+    Each vertex is entered once and each edge is looked at exactly twice, once
+    from each end. The adjacency lists are the whole memory cost, plus one
+    array per quantity being folded, plus the recursion stack.
+
+data_structures:
+  - vector<vector<int>> adjacency, built from the n-1 edge lines
+  - one array per aggregated quantity, indexed by vertex
+  - a parent array, which replaces the visited set a general graph would need
+  - an explicit stack or a post-order list when the recursion is too deep
+
+cpp_facilities:
+  - std::vector<std::vector<int>> and reserve, to avoid rehashing an adjacency list
+  - recursion with a (vertex, parent) pair rather than a visited array
+  - long long accumulators for anything that multiplies two sizes together
+  - an iterative post-order using an explicit stack, for n beyond ~1e5
+
+traps:
+  - description: >-
+      Recursing into every neighbour, including the one you arrived from, so
+      the walk goes v -> child -> v -> child forever.
+    mistake_code: INVARIANT_MISSING_VISITED_SET
+    symptom: >-
+      Immediate stack overflow on any input with at least one edge — including
+      the two-vertex sample, which makes this the one trap here that a sample
+      does catch.
+  - description: >-
+      Recursive DFS on a tree that is a long path, with no stack headroom
+      arranged.
+    mistake_code: COMPLEX_RECURSION_DEPTH
+    symptom: >-
+      Accepted on every random test and a runtime error, with no message, on
+      the one test that is a chain. A frame for a small DFS costs about 80
+      bytes under g++ -O2, so an 8 MB stack runs out near 100000 nodes and
+      says nothing about why.
+  - description: >-
+      Counting pairs across an edge as `sz[c] * (n - sz[c])` in `int`.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      A negative or absurd total on large tests only. The product peaks at
+      n^2/4, which is 10^10 at n = 2*10^5 and does not fit in 32 bits, while
+      every sample in the statement fits comfortably.
+  - description: >-
+      Adding a child's contribution to the parent BEFORE recursing into the
+      child, so the value read is the initial one.
+    mistake_code: CPP_UNINITIALISED_VALUE
+    symptom: >-
+      Every subtree size comes back as 1 plus the number of children, i.e. the
+      answer is right exactly for vertices whose children are leaves. Depth-two
+      samples pass.
+  - description: >-
+      Answering each vertex by launching a fresh traversal from it.
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      Correct output, TLE past about n = 5000. The tell is that the code
+      contains a loop over vertices with a DFS inside it, which is O(n^2) on a
+      structure whose whole point is that one pass suffices.
+  - description: >-
+      Treating the input as rooted at vertex 1 when the edges are given in
+      arbitrary order and orientation.
+    mistake_code: BOUNDS_SINGLE_ELEMENT
+    symptom: >-
+      Works whenever the setter happened to list each edge parent-first and
+      collapses when they did not. Store both directions and let the parent
+      argument decide the orientation; never trust the order of u and v.
+
+recall_rubric:
+  - key: the-shape
+    prompt: State the two steps this pattern always consists of.
+    essential: true
+    accepts:
+      - root it then one dfs
+      - fix a root and fold the children into the parent
+      - post-order pass
+      - one depth first search
+  - key: parent-guard
+    prompt: >-
+      Say what replaces the visited set on a tree, and why that replacement is
+      sound.
+    essential: true
+    accepts:
+      - the parent
+      - skip the vertex you came from
+      - to != parent
+      - no cycles so one route in
+  - key: fold-direction
+    prompt: >-
+      Say when a child's value is available to its parent, and what that
+      implies about where the combining line goes.
+    essential: true
+    accepts:
+      - after the recursive call returns
+      - post-order
+      - children finish before the parent
+      - combine after recursing
+  - key: edge-split
+    prompt: >-
+      Given sz[c] for a child c, state the sizes of the two pieces the edge
+      above c separates.
+    essential: false
+    accepts:
+      - sz[c] and n - sz[c]
+      - the child side and the rest
+      - n minus the subtree size
+      - sz and n-sz
+  - key: complexity
+    prompt: Give the time and space complexity and say why each edge costs twice.
+    essential: false
+    accepts:
+      - o(n)
+      - linear
+      - each edge seen from both ends
+      - o(n) space for the adjacency
+  - key: depth-hazard
+    prompt: >-
+      Name the input shape that breaks a recursive implementation, and one way
+      around it.
+    essential: false
+    accepts:
+      - a path or chain
+      - stack overflow
+      - iterative dfs
+      - explicit stack
+  - key: overflow
+    prompt: >-
+      Say which aggregated quantity overflows first and at roughly what size.
+    essential: false
+    accepts:
+      - products of sizes
+      - sz times n - sz
+      - long long
+      - n squared
+
+template_file: subtree-aggregation.cpp
+template_notes: >-
+  Three folds, one traversal shape. Form 1 is the size fold and the parent
+  guard, written recursively because that is the version you should be able to
+  type without thinking. Form 2 is the same tree walked iteratively, which is
+  what you reach for the moment the input might be a chain of 2*10^5 vertices.
+  Form 3 is the edge split — sz[c] * (n - sz[c]) summed over every edge — and
+  it is the single most reused line in this whole region, so read the comment
+  above it until the counting argument is automatic.
+
+related:
+  - tree-dp
+  - tree-diameter
+  - binary-lifting
+  - prefix-sum

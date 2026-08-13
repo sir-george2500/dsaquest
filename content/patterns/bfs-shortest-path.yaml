@@ -1,0 +1,232 @@
+id: bfs-shortest-path
+name: The Queue Is Already Sorted
+world: 8
+order: 1
+tagline: >-
+  When every edge costs the same, the order a queue hands vertices back IS
+  increasing distance — so the first time you see a vertex is the cheapest.
+
+prerequisites:
+  - graph-traversal
+
+signals:
+  - cue: the FEWEST moves, steps, swaps, jumps or edges
+    strength: 3
+    note: >-
+      "Fewest" with no price attached is the definition of an unweighted
+      shortest path. Every move costs one, so counting moves is counting edges.
+  - cue: every transition is described identically, with no number distinguishing them
+    strength: 3
+    note: >-
+      Uniform cost is the entire hypothesis. It is usually stated as scenery —
+      "each move takes one second" — and it is the most load-bearing sentence
+      in the statement.
+  - cue: the shortest distance from EVERY one of several starting points at once
+    strength: 3
+    note: >-
+      Multi-source BFS. Push every source at distance zero before the loop
+      begins and the single sweep answers all of them; running one BFS per
+      source is the same work multiplied by the number of sources.
+  - cue: a grid, maze or board where you may step to an adjacent cell
+    strength: 2
+    note: >-
+      Grid steps are unit edges by construction, which is why so many of these
+      problems are grids. The neighbours are arithmetic, not a stored list.
+  - cue: the states are configurations — a board, a tuple, a number you may transform
+    strength: 2
+    note: >-
+      An implicit graph. The vertices are states, the edges are legal moves,
+      and the visited set becomes a hash map because the states are not
+      numbered 0..n-1.
+  - cue: the answer is a distance and the constraints allow every vertex to be touched once
+    strength: 1
+    note: >-
+      Weak alone: it separates a linear-time answer from a quadratic one and
+      says nothing about whether the edges are weighted.
+
+anti_signals:
+  - cue: the edges carry different costs, times, tolls or lengths
+    instead: dijkstra-weighted
+    note: >-
+      This is the boundary of the whole pattern. With unequal weights the queue
+      is no longer in distance order, and BFS returns a real path that is not
+      the cheapest one — an answer that looks right and is not.
+  - cue: nothing is being measured — only whether a route exists, or how many groups there are
+    instead: graph-traversal
+    note: >-
+      If no distance is reported, the queue buys you nothing over a stack and
+      the distance array is dead weight.
+  - cue: the edges are one-way constraints and the answer is a valid sequence
+    instead: topological-order
+    note: >-
+      An order is not a distance. Counting in-degrees produces the sequence;
+      a queue used there is a detail of Kahn's algorithm, not this pattern.
+  - cue: the smallest capacity, speed or threshold that makes something possible
+    instead: binary-search-answer
+    note: >-
+      When the number being minimised is not a count of edges but a parameter
+      you invent, guess it and test feasibility. Very often the feasibility
+      test is itself a traversal.
+
+confusable_with:
+  - pattern_id: dijkstra-weighted
+    tell: >-
+      Ask whether every edge costs the same. If they do, the queue is already
+      sorted and BFS is correct and faster; if a single edge costs anything
+      different, BFS still returns a path, it is simply not the cheapest one,
+      and nothing in the output tells you so.
+  - pattern_id: graph-traversal
+    tell: >-
+      Ask whether the answer is a NUMBER OF STEPS. If it is, the container must
+      be a queue and the distance array is the point; if it is a yes/no, a count
+      of components or a colouring, any container works and there is no
+      distance to keep.
+
+invariant: >-
+  Vertices leave the queue in non-decreasing order of distance, so the value
+  written into dist[v] the first time v is pushed is already final and is never
+  updated again.
+
+complexity:
+  time: O(n + m)
+  space: O(n)
+  note: >-
+    One pass over every edge, with no heap and no log factor. On a grid with r
+    rows and c columns that is O(r*c), because a cell has at most four
+    neighbours. This is why proving the weights are uniform is worth the
+    trouble: it removes the log that Dijkstra pays.
+
+data_structures:
+  - std::queue<int> holding the frontier
+  - a dist array initialised to -1, which doubles as the visited mark
+  - a parent array, only if the path itself must be printed
+  - a hash map from state to distance, when the vertices are configurations
+
+cpp_facilities:
+  - std::queue<int> and std::deque
+  - std::vector<int> dist(n, -1)
+  - std::unordered_map for implicit state graphs
+  - std::array<int,4> dr, dc for grid neighbours
+  - std::reverse for rebuilding a path from parents
+
+traps:
+  - description: >-
+      Overwriting dist[v] on a later, longer route because the visited check was
+      omitted or written as `if (dist[u] + 1 < dist[v])`.
+    mistake_code: INVARIANT_MISSING_VISITED_SET
+    symptom: >-
+      Correct distances and a time limit exceeded, because a vertex is re-pushed
+      every time a longer route reaches it. In an unweighted graph a later route
+      is never shorter, so the only correct test is "have I seen it at all".
+  - description: >-
+      Setting dist[v] when v is popped rather than when it is pushed.
+    mistake_code: INVARIANT_MISSING_VISITED_SET
+    symptom: >-
+      Distances are still right, but the queue holds m + 1 entries instead of n
+      and the memory limit is hit on the dense tests. The two bugs are the same
+      bug: the mark and the distance must be written together, on push.
+  - description: >-
+      Taking the next vertex from the back of a deque, so the frontier behaves
+      as a stack.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      Every vertex is still reached and every distance is too large — a
+      depth-first walk records the length of the route it happened to take. The
+      output is a plausible set of distances with no crash and no timeout, which
+      is the hardest kind of wrong to see.
+  - description: >-
+      Running a separate BFS from each of k sources instead of seeding the queue
+      with all k of them.
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      Accepted on the samples, timeout at k = 10^5: the work is k*(n + m) rather
+      than n + m. Multi-source costs nothing extra — push every source at
+      distance zero before the loop starts.
+  - description: >-
+      Forgetting that a distance of 0 is a real distance when -1 is the "unseen"
+      marker and 0 is used instead.
+    mistake_code: BOUNDS_SINGLE_ELEMENT
+    symptom: >-
+      The source is re-expanded, or an unreachable vertex reports 0 rather than
+      the required -1. Initialise to -1, never to 0, and let dist[v] == -1 be
+      the visited test.
+
+recall_rubric:
+  - key: the-hypothesis
+    prompt: >-
+      State the property of the graph that makes this pattern correct, in one
+      sentence.
+    essential: true
+    accepts:
+      - every edge costs the same
+      - unit weights
+      - unweighted
+      - all edges have equal cost
+  - key: when-dist-is-set
+    prompt: >-
+      Say at which moment dist[v] is written, and why it is never written a
+      second time.
+    essential: true
+    accepts:
+      - when v is pushed
+      - the first time it is seen
+      - first time is final
+      - never updated again
+  - key: why-the-queue
+    prompt: >-
+      Explain why a queue produces distances when a stack does not.
+    essential: true
+    accepts:
+      - vertices leave in non-decreasing distance order
+      - layer by layer
+      - fifo keeps the frontier sorted
+      - the queue is already sorted
+  - key: multi-source
+    prompt: Say how to answer the same question from many starting points at once.
+    essential: false
+    accepts:
+      - push every source at distance zero
+      - seed the queue with all of them
+      - multi-source
+      - one sweep for all sources
+  - key: complexity
+    prompt: Give the complexity and say what it does NOT contain.
+    essential: false
+    accepts:
+      - o(n + m)
+      - no log factor
+      - no heap
+      - linear
+  - key: the-boundary
+    prompt: >-
+      Say what BFS returns when the edges are not all the same cost.
+    essential: false
+    accepts:
+      - a real path that is not the cheapest
+      - the fewest edges not the least cost
+      - a wrong answer that looks like a path
+      - silently wrong
+  - key: reconstruct
+    prompt: Say how the path itself is recovered, not just its length.
+    essential: false
+    accepts:
+      - a parent array
+      - store where each vertex was reached from
+      - walk parents back and reverse
+      - predecessor
+
+template_file: bfs-shortest-path.cpp
+template_notes: >-
+  Form 1 is the plain single-source distance sweep and is the one to memorise;
+  note that dist doubles as visited, so there is no second array to keep in
+  step. Form 2 is the same loop seeded with every source, which is the cheapest
+  trick in this region — read the two loops together and see that only the
+  initialisation differs. Form 3 is a grid, written with direction arrays so the
+  neighbour code is four lines rather than four blocks. Form 4 rebuilds the path
+  from a parent array, and exists so that "how long" and "which route" never get
+  confused with each other.
+
+related:
+  - graph-traversal
+  - dijkstra-weighted
+  - topological-order

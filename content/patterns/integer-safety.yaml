@@ -1,0 +1,250 @@
+id: integer-safety
+name: The Type Is Part of the Algorithm
+world: 5
+order: 2
+tagline: >-
+  Multiply the largest input by the most it can be multiplied by, and choose the
+  type before you write the line — a correct algorithm in the wrong integer type
+  is a wrong answer that looks like a correct answer.
+
+prerequisites:
+  - constraint-budget
+
+signals:
+  - cue: values up to 10^9 that will be summed, multiplied, or squared
+    strength: 3
+    note: >-
+      10^9 fits in int with room to spare and 2 * 10^9 does not. Any operation
+      that combines two of them leaves the 32-bit range immediately, so the
+      declaration decides the answer before the algorithm does.
+  - cue: the answer counts PAIRS, and n reaches 10^5 or more
+    strength: 3
+    note: >-
+      n(n-1)/2 at n = 2 * 10^5 is 19999900000, about 2 * 10^10. The input is
+      small, the loop is short, the count is nine times INT_MAX, and nothing in
+      the statement warns you.
+  - cue: coordinates up to 10^9 with distances, areas or cross products compared
+    strength: 3
+    note: >-
+      A product of two coordinates reaches 10^18, which fits in a signed 64-bit
+      type with an eighth of the range to spare. A product of three does not,
+      and needs __int128 or a rearrangement.
+  - cue: a bound written as 10^18, or as 2 * 10^18
+    strength: 2
+    note: >-
+      That is the setter telling you the value only just fits in a long long:
+      9223372036854775807 is about 9.2 * 10^18. Adding two such values overflows
+      and the intended solution must avoid ever forming the sum.
+  - cue: an average, a ratio or a "closest to" comparison
+    strength: 2
+    note: >-
+      The moment a division appears the question is whether it is exact. Integer
+      division truncates and doubles stop being exact above 2^53, which is about
+      9 * 10^15.
+  - cue: the statement offers an answer that "may not fit in a 32-bit integer"
+    strength: 3
+    note: >-
+      Rare, explicit, and decisive. When a setter spends a sentence on it, the
+      test that catches the wrong type is definitely present.
+
+anti_signals:
+  - cue: the values are small and it is the OPERATION COUNT that looks impossible
+    instead: constraint-budget
+    note: >-
+      Magnitude and cost are different failures. A total that passes two billion
+      is a declaration problem; 10^10 operations is an algorithm problem, and no
+      type fixes it.
+  - cue: two items must be ordered by a ratio of their fields
+    instead: sorting-by-key
+    note: >-
+      Comparing ratios exactly by cross multiplication is a comparator question,
+      taught where the comparator lives. Here the arithmetic is not being
+      compared, it is being computed and printed.
+  - cue: the quantity is how many integers in a huge interval satisfy a property
+    instead: range-counting
+    note: >-
+      A bound of 10^18 that is being COUNTED OVER rather than stored asks for a
+      formula, and choosing the type is then the easy half of the work.
+  - cue: many range totals over a row that never changes
+    instead: prefix-sum
+    note: >-
+      Prefix sums also demand long long — but the recognisable idea there is the
+      precomputed table, not the width of the accumulator.
+  - cue: the numbers are bounded by a small constant and only their frequencies matter
+    instead: hashing-frequency
+    note: >-
+      Nothing overflows when the values are at most 100 and the counts are at
+      most n. If a count is the answer, check whether the count itself is large
+      before reaching for this.
+
+confusable_with:
+  - pattern_id: constraint-budget
+    tell: >-
+      Ask how the naive solution fails on the largest test: a Time Limit means
+      the shape of the algorithm is wrong, and a Wrong Answer with a plausible
+      but too-small or negative number means the shape was right and the type
+      was not.
+  - pattern_id: linear-scan
+    tell: >-
+      Ask what the puzzle in the one-pass solution actually is. Deciding what to
+      carry forward is the scanning pattern; already knowing what to carry and
+      needing to decide what can hold it is this one.
+  - pattern_id: range-counting
+    tell: >-
+      Ask what the division in your solution is doing. Counting how many
+      multiples fall inside an interval is range counting; keeping an ordinary
+      computation exact — an average, a halving, a rounding up — is this.
+
+invariant: >-
+  Every intermediate value produced by the solution, not merely the answer that
+  is printed, stays inside the range of the type it is computed in — and each
+  division either divides exactly or has had its rounding direction chosen on
+  purpose.
+
+complexity:
+  time: O(1)
+  space: O(1)
+  note: >-
+    The pattern costs nothing at run time; it is a decision made while typing.
+    A long long is the same speed as an int for addition and comparison on any
+    64-bit judge, so the honest cost of using it everywhere is memory, which
+    matters only for arrays of 10^7 or more.
+
+data_structures:
+  - "`long long` as the default for anything accumulated or multiplied"
+  - "`__int128` for a product of three values near 10^9, printed by hand"
+  - "`std::numeric_limits<T>::max()` rather than a remembered constant"
+  - "a division whose rounding direction was chosen, not inherited"
+
+cpp_facilities:
+  - "using ll = long long, the first line of the starter template"
+  - "1LL * a * b to force a 64-bit multiplication of two ints"
+  - "std::llabs, and std::abs from <cmath> — never ::abs on a long long"
+  - "(a + b - 1) / b for a ceiling division of non-negative integers"
+  - "static_cast<int>(v.size()) before subtracting from a size"
+
+traps:
+  - description: >-
+      Summing values of 10^9 into an `int`, or an `int` counter of pairs when n
+      is 10^5.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Small tests pass and the largest test returns a negative or absurdly small
+      number. Signed overflow is undefined behaviour, so with -O2 the result is
+      not even reliably the wrapped value.
+  - description: >-
+      Writing `long long total = a * b;` where a and b are ints — the
+      multiplication happens in int and the widening comes too late.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      A wrong answer that survives every review, because the declaration on the
+      left looks correct. 50000 * 50000 is 2500000000, which lands as
+      -1794967296 before it is ever widened.
+  - description: >-
+      Guarding an overflow with the overflowing expression itself:
+      `if (a * b > limit)`.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      The guard passes exactly when it should have fired, because the product it
+      tests has already wrapped. The correct form divides instead:
+      `if (a > limit / b)`.
+  - description: >-
+      Subtracting from `v.size()`, which is unsigned, when the vector may be
+      empty or the result may be negative.
+    mistake_code: CPP_OUT_OF_BOUNDS
+    symptom: >-
+      `v.size() - 1` on an empty vector is 18446744073709551615, so a loop
+      written `for (size_t i = 0; i < v.size() - 1; ++i)` runs off the end
+      instead of not running at all. Crash or garbage, on the empty case only.
+  - description: >-
+      Holding large integers in a `double` — reading them, summing them, or
+      comparing them.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Answers that are right to fifteen digits and wrong in the last one, on
+      large tests only. A double represents every integer exactly up to
+      2^53 = 9007199254740992 and no further; above that, adding 1 can change
+      nothing at all.
+
+recall_rubric:
+  - key: the-ranges
+    prompt: Give the largest value an int holds, and the largest a long long holds.
+    essential: true
+    accepts:
+      - "2147483647"
+      - about 2 * 10^9
+      - "9223372036854775807"
+      - about 9.2 * 10^18
+  - key: the-question
+    prompt: >-
+      State the question to ask about every line that multiplies or accumulates.
+    essential: true
+    accepts:
+      - how large can this get on the largest input
+      - the largest input times the most it can be multiplied by
+      - what is the maximum intermediate value
+      - can this exceed 2 * 10^9
+  - key: the-pair-count
+    prompt: >-
+      Say how large the number of pairs is when n is 2 * 10^5, and why that
+      surprises people.
+    essential: true
+    accepts:
+      - about 2 * 10^10
+      - "19999900000"
+      - nine times int_max
+      - the input is small and the count is not
+  - key: promotion
+    prompt: >-
+      Explain why `long long x = a * b;` with int a and b does not save you, and
+      give the fix.
+    essential: false
+    accepts:
+      - the multiplication happens in int
+      - the widening is after the overflow
+      - "1ll * a * b"
+      - cast one operand first
+  - key: unsigned-sizes
+    prompt: Say what goes wrong when you subtract from .size().
+    essential: false
+    accepts:
+      - size() is unsigned
+      - it wraps to a huge number
+      - empty vector gives 18446744073709551615
+      - cast to int first
+  - key: exactness
+    prompt: >-
+      Give the largest integer a double represents exactly, and say what integer
+      division does to a negative numerator.
+    essential: false
+    accepts:
+      - 2^53
+      - about 9 * 10^15
+      - truncates towards zero
+      - -7 / 2 is -3
+  - key: the-checked-guard
+    prompt: >-
+      Write the safe way to test whether a * b would exceed a limit, without
+      forming a * b.
+    essential: false
+    accepts:
+      - a > limit / b
+      - divide instead of multiply
+      - compare against limit / b
+      - use __int128 for the product
+
+template_file: integer-safety.cpp
+template_notes: >-
+  Three failures, each printed beside the correct value so the size of the
+  damage is visible rather than described. Form 1 is the accumulator: the same
+  sum in int and in long long, on input chosen so that they differ. Form 2 is
+  the promotion trap — the product of two ints assigned to a long long — with
+  the 1LL fix beside it. Form 3 is the guard that must not overflow while
+  guarding, written as a division. Run it once with the samples and the numbers
+  are more convincing than any warning.
+
+related:
+  - constraint-budget
+  - linear-scan
+  - range-counting
+  - sorting-by-key
