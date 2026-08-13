@@ -284,3 +284,54 @@ def train(
         application.run()
     finally:
         context.close()
+
+
+@app.command()
+def strength(db: DbOption = None) -> None:
+    """The warrior's seven dimensions, and which one is holding you back."""
+    from ..analytics import compute, rank_title
+    from .render import console
+
+    context = _context(db)
+    try:
+        report = compute(context.conn, context.library, scheduler=context.scheduler)
+
+        console.print()
+        console.print(f"  [bold cyan]WARRIOR STRENGTH[/]   [bold]{report.score}[/]")
+        console.print(f"  [cyan]{rank_title(report.score)}[/]")
+        console.print()
+
+        for dimension in report.dimensions:
+            if dimension.known:
+                colour = (
+                    "green"
+                    if dimension.value and dimension.value >= 0.7
+                    else "yellow"
+                    if dimension.value and dimension.value >= 0.4
+                    else "red"
+                )
+                value = f"[{colour}]{dimension.percent:>3}[/]"
+                bar = f"[{colour}]{dimension.bar()}[/]"
+            else:
+                value = "[bright_black]  —[/]"
+                bar = f"[bright_black]{dimension.bar()}[/]"
+            console.print(
+                f"  {dimension.label:<26}{bar} {value}   [bright_black]{dimension.detail}[/]"
+            )
+
+        console.print()
+        if not report.started:
+            console.print("  [bright_black]Nothing measured yet. Train with a master.[/]")
+            return
+
+        console.print(
+            f"  [bright_black]{report.patterns_started} of {report.patterns_total} "
+            f"patterns started[/]"
+        )
+        weakest, strongest = report.weakest, report.strongest
+        if weakest is not None:
+            console.print(f"  [bold]Holding you back[/]  {weakest.label} ({weakest.percent})")
+        if strongest is not None and strongest is not weakest:
+            console.print(f"  [bold]Strongest[/]         {strongest.label} ({strongest.percent})")
+    finally:
+        context.close()

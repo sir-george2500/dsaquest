@@ -313,7 +313,22 @@ def test_retention_is_the_weakest_dimension_not_the_average(conn, scheduler):
 
     far_future = at + timedelta(days=400)
     mastery = pattern_mastery(conn, "two-pointers", scheduler=scheduler, now=far_future)
-    assert mastery.retention == min(d.retrievability for d in mastery.dimensions if d.seen)
+    assert mastery.retention == min(d.retrievability for d in mastery.dimensions)
+
+
+def test_an_untrained_dimension_makes_retention_zero(conn, scheduler):
+    """Recognition alone is not retention of the pattern.
+
+    Counting only trained dimensions flattered the learner: drilling
+    recognition and nothing else reported 100% retention while two thirds of
+    the pattern did not exist.
+    """
+    _drill(conn, scheduler, "two-pointers", Dimension.RECOGNITION, 5)
+    mastery = pattern_mastery(conn, "two-pointers", scheduler=scheduler, now=T0)
+
+    assert mastery.recognition.seen
+    assert not mastery.implementation.seen
+    assert mastery.retention == 0.0
 
 
 def test_maturity_is_capped_so_ancient_cards_do_not_exceed_one(conn, scheduler):

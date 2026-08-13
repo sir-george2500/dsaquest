@@ -118,11 +118,16 @@ class PatternMastery:
     def retention(self) -> float:
         """Recall probability of the *weakest* dimension right now.
 
-        The minimum rather than the mean: a pattern you can recognise but no
-        longer implement is not 70% retained, it is a pattern you cannot use.
+        The minimum across **all three**, counting a dimension you have never
+        trained as zero.
+
+        Excluding untrained dimensions was wrong, and wrong in the direction
+        that flatters: a learner who had drilled recognition alone was shown
+        "Retention 100%" while two thirds of the pattern did not exist. That
+        contradicts the reason the minimum is used at all — a pattern you can
+        name but not write is not partly retained, it is one you cannot use.
         """
-        seen = [d.retrievability for d in self.dimensions if d.seen]
-        return min(seen) if seen else 0.0
+        return min((d.retrievability if d.seen else 0.0) for d in self.dimensions)
 
     @property
     def started(self) -> bool:

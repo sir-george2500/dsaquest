@@ -901,3 +901,72 @@ def record_final_test(
             (int(passed), score, score, total, int(passed), now, now, master_id),
         )
     return get_master_progress(conn, master_id)
+
+
+# --------------------------------------------------------------------------
+# Consistency and unaided performance
+# --------------------------------------------------------------------------
+
+
+def active_days(conn: sqlite3.Connection, *, within: int = 28) -> int:
+    """Distinct local days with a finished attempt in the last ``within`` days.
+
+    Local, not UTC: a session at 23:00 and one at 01:00 are different days to
+    the learner, and consistency is a claim about their habit, not about UTC.
+    """
+    row = conn.execute(
+        """
+        SELECT COUNT(DISTINCT date(started_at, 'localtime')) FROM attempt
+         WHERE finished_at IS NOT NULL
+           AND date(started_at, 'localtime') >= date('now', 'localtime', ?)
+        """,
+        (f"-{within} days",),
+    ).fetchone()
+    return int(row[0])
+
+
+def unaided_accuracy(conn: sqlite3.Connection, *, window: int = 40) -> float | None:
+    """First-attempt success where the pattern was NOT named.
+
+    Measured only on trials and final tests — pressure stage 4 and above. An
+    exercise that names its pattern tests fluency, not problem solving, and
+    counting it here would let drilling inflate the number.
+    """
+    rows = conn.execute(
+        """
+        SELECT correct FROM attempt
+         WHERE finished_at IS NOT NULL
+           AND pressure_stage IS NOT NULL AND pressure_stage >= 4
+         ORDER BY started_at DESC LIMIT ?
+        """,
+        (window,),
+    ).fetchall()
+    if not rows:
+        return None
+    return sum(r["correct"] for r in rows) / len(rows)
+
+
+def comebacks(conn: sqlite3.Connection) -> int:
+    """Patterns failed at least once and later got right.
+
+    The behaviour worth rewarding, because the alternative is quietly
+    abandoning anything that went badly.
+
+    Ordered by row id rather than timestamp: timestamps have second resolution,
+    so two attempts inside the same second compare equal and a genuine comeback
+    goes uncounted.
+    """
+    row = conn.execute(
+        """
+        SELECT COUNT(*) FROM (
+            SELECT pattern_id
+              FROM attempt
+             WHERE finished_at IS NOT NULL
+             GROUP BY pattern_id
+            HAVING SUM(CASE WHEN correct = 0 THEN 1 ELSE 0 END) > 0
+               AND MAX(CASE WHEN correct = 1 THEN id END) >
+                   MIN(CASE WHEN correct = 0 THEN id END)
+        )
+        """
+    ).fetchone()
+    return int(row[0])
