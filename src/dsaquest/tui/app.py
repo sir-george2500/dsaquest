@@ -46,8 +46,10 @@ from ..judge import workspace
 from ..learning.mastery import all_mastery
 from ..learning.planner import PlannedItem, build_session
 from ..storage import repositories as repo
+from .arena import ARENA_CSS
+from .duel import DUEL_CSS, DuelScreen
 from .editor import code_editor
-from .journey import JourneyScreen
+from .journey import JOURNEY_CSS, JourneyScreen
 from .master import MASTER_CSS, MasterScreen, safe
 
 CSS = (
@@ -86,6 +88,9 @@ Screen { background: $surface; }
 .bad { color: $error; text-style: bold; }
 """
     + MASTER_CSS
+    + JOURNEY_CSS
+    + ARENA_CSS
+    + DUEL_CSS
 )
 
 
@@ -94,6 +99,7 @@ class HomeScreen(Screen):
         Binding("p", "practice", "Practice"),
         Binding("r", "review", "Review due"),
         Binding("t", "train", "Train under a master"),
+        Binding("d", "duel", "Duel"),
         Binding("q", "quit", "Quit"),
     ]
 
@@ -153,6 +159,9 @@ class HomeScreen(Screen):
 
     def action_practice(self) -> None:
         self.app.push_screen(SessionScreen(review_only=False))
+
+    def action_duel(self) -> None:
+        self.app.push_screen(DuelScreen())
 
     def action_review(self) -> None:
         self.app.push_screen(SessionScreen(review_only=True))
