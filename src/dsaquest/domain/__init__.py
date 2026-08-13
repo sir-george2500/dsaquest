@@ -10,6 +10,7 @@ from .judging import (
     TestCase,
     TestOutcome,
 )
+from .lesson import Curriculum, Demonstration, Drill, DrillKind, Secret, Stage, WatchOut
 from .pattern import (
     AntiSignal,
     Complexity,
@@ -21,6 +22,13 @@ from .pattern import (
 )
 
 __all__ = [
+    "WatchOut",
+    "Stage",
+    "Secret",
+    "DrillKind",
+    "Drill",
+    "Demonstration",
+    "Curriculum",
     "AntiSignal",
     "CheckerKind",
     "Complexity",
