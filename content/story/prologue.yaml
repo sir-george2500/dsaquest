@@ -1,0 +1,75 @@
+id: prologue
+title: The Long Road
+beats:
+  - id: the-complaint
+    title: What brings you
+    art: master-arrays
+    text: >-
+      You can solve problems. That is not in question, and nobody here will
+      insult you by pretending otherwise. You sit down, you think, and often
+      enough you get there.
+
+      What you cannot do is look at a statement you have never seen and know,
+      before you have written anything, what shape it is. You have solved the
+      sliding window problem. You did not recognise the next one as a sliding
+      window problem. That gap is the whole reason this place exists.
+
+  - id: the-masters
+    title: Eleven who will not flatter you
+    art: master-bits
+    text: >-
+      There are eleven masters between here and the end of the road, and each
+      governs a handful of patterns and nothing else. They are not lecturers.
+      A master teaches you one secret at a time, drills you on it until you
+      are fluent, and only then puts a statement in front of you with the
+      technique's name removed.
+
+      They will praise you. They will not praise you cheaply — praise that is
+      given for turning up is worth what it costs, which is nothing.
+
+  - id: the-secrets
+    title: A secret is small
+    text: >-
+      A secret is not a topic. It is one line you can hold in your head and
+      recognise on sight — `n & 1` for the low bit, `while` and not `if` when
+      a window must shrink, the query that must come before the insert.
+
+      You will watch each one happen, step by step, before anyone tests you on
+      it. Then you will drill it until it is reflex. Then, and only then, the
+      name is taken away.
+
+  - id: the-wardens
+    title: What guards each region
+    art: the-array-beast
+    text: >-
+      At the edge of every region something waits, and it will not fight a
+      student. Its gate reads your record: whether you still recognise the
+      patterns, whether you can still write them, whether what you learned
+      weeks ago is still there.
+
+      That last one is the point. A warden is fought long after the lesson,
+      because a technique you held for an afternoon is not a technique you
+      have.
+
+  - id: the-elite
+    title: And at the end
+    art: the-elite-coder
+    text: >-
+      Past the last region there is one opponent who is not a creature or a
+      construct. He is simply better than you, and knows it without needing to
+      say so.
+
+      Nothing he sets will be familiar. Every other fight draws on problems you
+      have met; his are held back, and have been from the beginning, precisely
+      so that the last thing you face cannot be answered from memory.
+
+  - id: begin
+    title: Begin
+    text: >-
+      Nothing here is timed cruelly. The clock is generous and it is not the
+      grade — it is a note in the margin, and it only starts mattering once
+      you are right.
+
+      Warden Ilsa Korrin is waiting on the Plains of Arrays. She thinks most
+      problems are simpler than the student wants them to be, and she is
+      usually right.

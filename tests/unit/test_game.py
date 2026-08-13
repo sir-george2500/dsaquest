@@ -387,6 +387,15 @@ def test_a_wrong_recognition_answer_records_what_was_chosen(conn, library, sched
 
 
 def test_repeating_a_pattern_in_one_day_earns_less_each_time(conn, library, scheduler):
+    """The repeat decay, counted against the day the attempts were actually written.
+
+    `today` is taken from the clock rather than pinned. `begin_exercise` stamps
+    `started_at` with the real time and takes no `now`, so a pinned TODAY only
+    agrees with the rows on the one day it happens to name — this asserted
+    nothing at all from the moment that date passed, and said so by failing at
+    midnight rather than the day the mistake was made.
+    """
+    today = datetime.now(UTC).astimezone().date()
     totals = []
     for i in range(3):
         attempt_id = begin_exercise(conn, pattern_id="two-pointers", mode=GameMode.HUNTER, seed=i)
@@ -399,7 +408,7 @@ def test_repeating_a_pattern_in_one_day_earns_less_each_time(conn, library, sche
             pattern_id="two-pointers",
             mode=GameMode.HUNTER,
             now=T0,
-            today=TODAY,
+            today=today,
         )
         totals.append(outcome.xp.total)
     assert totals[0] > totals[1] > totals[2]

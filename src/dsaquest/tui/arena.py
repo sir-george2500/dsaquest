@@ -16,11 +16,11 @@ from datetime import UTC, datetime
 from textual import on, work
 from textual.app import ComposeResult
 from textual.binding import Binding
-from textual.containers import Vertical, VerticalScroll
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Static, TextArea
 
-from ..art.sprite import load_sprite, sprite_text
+from ..art.sprite import load_sprite
 from ..boss import conclude, gate_status, next_challenge, open_fight, resolve
 from ..boss.fight import Fight
 from ..content.exercises import samples_for
@@ -35,12 +35,17 @@ from ..storage import repositories as repo
 from .card import accent_for
 from .editor import code_editor
 from .master import safe
+from .stage import stage_text
 from .understanding import UnderstandingPanel
 
 ARENA_CSS = """
 #arena-title { padding: 1 2 0 2; text-style: bold; }
 #bars { padding: 0 2 1 2; height: auto; }
-#arena-portrait { padding: 0 2 1 2; height: auto; content-align: center middle; }
+#arena-mid { layout: horizontal; height: 18; padding: 0 1; }
+#arena-left, #arena-right { width: 30; height: 18; padding: 0 1; }
+.arena-panel { border: round #2b2822; padding: 0 1; height: 18; }
+.panel-head { color: #8a7f6d; text-style: bold; }
+#arena-stage { width: 1fr; height: 18; }
 #boss-say { padding: 1 2; margin: 0 2; border: round $error; height: auto; }
 #arena-clock { padding: 0 2; text-style: bold; }
 #arena-clock.urgent { color: $error; }
@@ -88,7 +93,12 @@ class ArenaScreen(Screen):
         yield Header(show_clock=False)
         yield Static(id="arena-title")
         yield Static(id="bars")
-        yield Static(id="arena-portrait")
+        with Horizontal(id="arena-mid"):
+            with Vertical(id="arena-left", classes="arena-panel"):
+                yield Static(id="trial-panel")
+            yield Static(id="arena-stage")
+            with Vertical(id="arena-right", classes="arena-panel"):
+                yield Static(id="blows-panel")
         yield Static(id="boss-say")
         yield Static(id="arena-clock")
         yield VerticalScroll(Static(id="arena-body"))
@@ -195,17 +205,53 @@ class ArenaScreen(Screen):
         )
         self.refresh_portrait()
 
+    def on_resize(self, event) -> None:
+        """The stage is painted to the widget's size, so it must be repainted."""
+        self.refresh_portrait()
+
     def refresh_portrait(self) -> None:
-        """The boss, large and centred. Scale 2, so a 24x24 sprite fills 48x24."""
+        """The room, with the boss standing in it."""
         from ..tui.roster import sprite_for
 
+        stage = self.query_one("#arena-stage", Static)
         path = sprite_for(self.boss.id)
-        panel = self.query_one("#arena-portrait", Static)
-        if not path.is_file():
-            panel.display = False
-            return
-        panel.display = True
-        panel.update(sprite_text(load_sprite(path), scale=2))
+        sprite = load_sprite(path) if path.is_file() else None
+        size = stage.size
+        beaten = self.fight is not None and self.fight.boss_hp <= 0
+        stage.update(
+            stage_text(
+                sprite,
+                width=max(40, size.width or 60),
+                height=max(16, size.height or 18),
+                lit=not beaten,
+            )
+        )
+        self.refresh_panels()
+
+    def refresh_panels(self) -> None:
+        """The two side panels: what is being asked, and what has landed."""
+        accent = accent_for(self.boss.id)
+        challenge = self.fight.current if self.fight else None
+
+        trial = ["[#8a7f6d]THE TRIAL[/]", ""]
+        if challenge is not None:
+            trial.append(f"[b #ece5d6]{safe(challenge.phase.title)}[/]")
+            trial.append("")
+            trial.append(f"[#a89e8d]{safe(challenge.phase.kind.label)}[/]")
+            trial.append("")
+            trial.append(f"[#6b6459]phase[/]   {challenge.number} of {challenge.total}")
+        else:
+            trial.append(f"[#a89e8d]{safe(self.boss.title)}[/]")
+        self.query_one("#trial-panel", Static).update("\n".join(trial))
+
+        blows = ["[#8a7f6d]SCROLL OF BLOWS[/]", ""]
+        outcomes = list(self.fight.outcomes) if self.fight else []
+        if not outcomes:
+            blows.append("[#6b6459]The ring is drawn; no blow has landed.[/]")
+        for outcome in outcomes[-6:]:
+            mark = f"[{accent}]landed[/]" if outcome.cleared else "[#c04a3a]taken[/]"
+            blows.append(f"{mark}  [#a89e8d]{safe(outcome.challenge.phase.title)}[/]")
+        self.query_one("#blows-panel", Static).update("\n".join(blows))
 
     def next_phase(self) -> None:
         assert self.fight is not None

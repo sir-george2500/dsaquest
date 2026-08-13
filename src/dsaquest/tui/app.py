@@ -52,6 +52,7 @@ from .editor import code_editor
 from .journey import JOURNEY_CSS, JourneyScreen
 from .master import MASTER_CSS, MasterScreen, safe
 from .roster import ROSTER_CSS, RosterScreen
+from .story import STORY_CSS, StoryScreen, load_story
 from .theatre import THEATRE_CSS
 from .understanding import UNDERSTANDING_CSS
 
@@ -97,6 +98,7 @@ Screen { background: $surface; }
     + UNDERSTANDING_CSS
     + ROSTER_CSS
     + THEATRE_CSS
+    + STORY_CSS
 )
 
 
@@ -107,6 +109,7 @@ class HomeScreen(Screen):
         Binding("t", "train", "Train under a master"),
         Binding("d", "duel", "Duel"),
         Binding("c", "roster", "The roster"),
+        Binding("s", "story", "Story"),
         Binding("q", "quit", "Quit"),
     ]
 
@@ -172,6 +175,11 @@ class HomeScreen(Screen):
 
     def action_roster(self) -> None:
         self.app.push_screen(RosterScreen())
+
+    def action_story(self) -> None:
+        story = load_story()
+        if story is not None:
+            self.app.push_screen(StoryScreen(story))
 
     def action_review(self) -> None:
         self.app.push_screen(SessionScreen(review_only=True))
@@ -663,3 +671,25 @@ class DsaQuestApp(App):
             self.push_screen(self.pending_screen)
         elif self.review_only:
             self.push_screen(SessionScreen(review_only=True))
+        elif self.auto_story and self.first_run():
+            # A profile with nothing recorded has never been played. Read the
+            # premise once, unasked; afterwards it is on `s` for anyone who
+            # comes back after a month and wants reminding what this is.
+            story = load_story()
+            if story is not None:
+                self.push_screen(StoryScreen(story))
+
+    #: Whether a never-played profile is shown the prologue unasked. True for
+    #: real players. The test suite turns it off in conftest, because every
+    #: test builds a fresh database and would otherwise land on the prologue
+    #: instead of the screen it came to exercise — the tests that are ABOUT the
+    #: prologue turn it back on for themselves.
+    auto_story = True
+
+    def first_run(self) -> bool:
+        """True when this profile has never answered anything."""
+        try:
+            row = self.context.conn.execute("SELECT COUNT(*) FROM attempt").fetchone()
+        except Exception:
+            return False
+        return bool(row) and row[0] == 0
