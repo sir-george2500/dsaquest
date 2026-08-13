@@ -18,6 +18,7 @@ from pathlib import Path
 
 from fsrs import Scheduler
 
+from .boss.loader import BossSet, load_bosses
 from .content.lessons import CurriculumSet, load_curricula
 from .content.loader import PatternLibrary, load_library
 from .content.problems import ProblemBank, load_problems
@@ -36,6 +37,11 @@ class AppContext:
     db_path: str
     curricula: CurriculumSet | None = None
     masters: dict[str, Master] = field(default_factory=dict)
+    bosses: BossSet | None = None
+
+    def bosses_of(self, master_id: str):
+        """Bosses guarding a master's region, weakest tier first."""
+        return self.bosses.for_master(master_id) if self.bosses else ()
 
     def master_for(self, pattern_id: str):
         """The master who teaches this pattern, with his curriculum, or None.
@@ -76,12 +82,15 @@ def build(db_path: Path | str | None = None, *, fuzz: bool = True) -> AppContext
     # Idempotent: new content becomes schedulable simply by existing.
     repo.ensure_cards(conn, [pattern.id for pattern in library])
 
+    curricula = load_curricula(library, bank)
+
     return AppContext(
         conn=conn,
         library=library,
         bank=bank,
         scheduler=make_scheduler(profile.target_retention, fuzz=fuzz),
         db_path=str(db_path) if db_path else "",
-        curricula=load_curricula(library, bank),
+        curricula=curricula,
+        bosses=load_bosses(library, curricula, bank),
         masters=load_masters(),
     )

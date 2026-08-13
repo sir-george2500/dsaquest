@@ -1,0 +1,110 @@
+id: the-array-beast
+name: THE ARRAY BEAST
+title: The Thing That Waits in the Straight Line
+tier: 2
+master_id: master_arrays
+patterns:
+  - hashing-frequency
+  - prefix-sum
+  - two-pointers
+  - sliding-window
+
+boss_hp: 100
+player_hp: 100
+damage_taken: 25
+enrage_after: 2
+
+# Ilsa Korrin's final test proves the secrets are held. This gate proves they
+# have *stayed* held — retention is in here on purpose, because the beast is
+# fought weeks after the training, not the same afternoon.
+gate:
+  recognition: 0.55
+  understanding: 0.45
+  implementation: 0.50
+  retention: 0.40
+  master_final_test: true
+
+# Four phases, 100 damage, one health bar. Clearing everything is exactly
+# enough — there is no slack, so no phase is decorative.
+phases:
+  - kind: recognise
+    damage: 10
+    title: Sense the shape of it
+
+  - kind: explain
+    damage: 15
+    title: Name what holds it together
+
+  - kind: implement
+    damage: 35
+    title: Strike
+
+  - kind: survive
+    damage: 40
+    title: It changes
+
+dialogue:
+  intro:
+    - >-
+      It has been in the straight line since before your master stood here. It
+      does not know four techniques. It knows one thing, and wears four faces.
+    - >-
+      Warden Korrin taught you to see simply. The beast is what happens when
+      simple is not obvious. Nothing will be named.
+    - >-
+      You have counted. You have summed. You have converged and you have
+      shrunk. Now do it without being told which.
+
+  phase_won:
+    - It moves back.
+    - Correct. It has three faces left.
+    - You saw it. Continue.
+    - That one was cheap. The next is not.
+
+  phase_lost:
+    - It was not that.
+    - You reached for the wrong tool and it noticed.
+    - Wrong. It costs you.
+    - You read what you expected instead of what was written.
+
+  enrage:
+    - >-
+      It has your measure now. No more help. Whatever you have left, that is
+      what you fight with.
+    - >-
+      Twice. It will not offer you a third opening quietly.
+
+  victory:
+    - It stops. That is all a thing like this does when it is beaten.
+    - >-
+      Down. You will meet it again in a harder shape, and you will be readier.
+    - The straight line is yours to walk. Go on.
+
+  perfect:
+    - >-
+      Not one opening given. Warden Korrin will hear about this, and she will
+      say "acceptable", and she will mean something else.
+    - >-
+      Four faces, no mistakes, no help. There is nothing left in it for you
+      here.
+
+  defeat:
+    - >-
+      It stands. You do not. Go back to the straight line and read the
+      statements again — the signals were in the constraints.
+    - >-
+      Not today. Nothing you learned is gone; you simply have not learned
+      enough of it yet. Return.
+    - >-
+      You knew the techniques. You did not know which. That is the whole gap,
+      and it is closed by training, not by trying again immediately.
+
+  rematch:
+    - Again, then. It remembers you.
+    - You have beaten it before. It is not the same shape twice.
+
+  gate_locked:
+    - >-
+      It does not fight students. Finish with Warden Korrin, then hold what she
+      taught you long enough that it is still there when you return.
+    - Not yet. {blockers}
