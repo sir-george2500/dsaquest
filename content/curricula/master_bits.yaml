@@ -20,7 +20,7 @@ stages:
   # ---------------------------------------------------------------- stage 0
   - id: stage-lowest-bit
     order: 0
-    trial_problem_ids: []
+    trial_problem_ids: [bit-parity-lanterns]
     secret:
       id: lowest-bit
       name: The Lowest Bit
@@ -648,7 +648,7 @@ stages:
   # ---------------------------------------------------------------- stage 4
   - id: stage-xor-cancellation
     order: 4
-    trial_problem_ids: [bit-xor-relic, bit-parity-lanterns]
+    trial_problem_ids: [bit-xor-relic]
     secret:
       id: xor-cancellation
       name: Cancellation

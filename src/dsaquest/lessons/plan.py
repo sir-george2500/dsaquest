@@ -72,9 +72,7 @@ def ceiling_attempts(secret: Secret) -> int:
     )
 
 
-def assess(
-    secret: Secret, progress: SecretProgress, kinds_passed: frozenset[str]
-) -> DrillVerdict:
+def assess(secret: Secret, progress: SecretProgress, kinds_passed: frozenset[str]) -> DrillVerdict:
     """Decide whether this secret is drilled enough."""
     needed_kinds = required_kinds(secret)
     floor = floor_attempts(secret)
@@ -90,8 +88,7 @@ def assess(
             exhausted=False,
             remaining_estimate=0,
             reason=(
-                f"{progress.consecutive_correct} in a row across "
-                f"{len(kinds_passed)} kinds of drill"
+                f"{progress.consecutive_correct} in a row across {len(kinds_passed)} kinds of drill"
             ),
         )
 
@@ -106,7 +103,9 @@ def assess(
         )
 
     accuracy = progress.accuracy
-    struggling = accuracy is not None and accuracy < STRUGGLING_ACCURACY and progress.drills_seen >= 3
+    struggling = (
+        accuracy is not None and accuracy < STRUGGLING_ACCURACY and progress.drills_seen >= 3
+    )
 
     if struggling:
         remaining = max(2, secret.baseline_drills - progress.drills_seen + 2)
@@ -121,9 +120,7 @@ def assess(
         remaining = max(1, floor - progress.drills_seen)
         reason = "a few more to be sure"
 
-    return DrillVerdict(
-        fluent=False, exhausted=False, remaining_estimate=remaining, reason=reason
-    )
+    return DrillVerdict(fluent=False, exhausted=False, remaining_estimate=remaining, reason=reason)
 
 
 def next_drill(

@@ -1,0 +1,190 @@
+# Problems that are really Bit Manipulation.
+#
+# Nothing in a statement may say so. The whole exercise is seeing an integer
+# used as a set, or a pairing that cancels, inside an ordinary story — so the
+# giveaway is always in `constraints`, never in the prose. `decoy_signals`
+# records what makes each one hard, which is what the post-answer feedback
+# quotes back; most of them point at a tally, because a tally is the tempting
+# and slightly-too-expensive answer to nearly all of these.
+
+- id: bit-parity-lanterns
+  pattern: bit-manipulation
+  title: Lanterns on the Promenade
+  difficulty: easy
+  statement: >-
+    The harbour promenade strings n paper lanterns along one wire, and at dusk
+    every lantern is dark. Through the night the wind tugs each lantern's cord
+    some number of times; one tug flips that lantern from dark to lit or from
+    lit to dark, and touches nothing else. At dawn the caretaker is handed the
+    tug count for each lantern and must report how many lanterns are burning.
+    The counts run into the hundreds of millions and the caretaker's slate
+    holds only a couple of running totals.
+  constraints: |
+    1 <= n <= 200000
+    0 <= tugs[i] <= 10^9
+    O(1) extra memory beyond the input
+  signals_present:
+    - a huge count where only "how many times, modulo two" survives
+    - an operation that undoes itself when applied twice
+    - O(1) extra memory over values that are not small
+  decoy_signals:
+    - "\"how many lanterns are burning\" reads like a tally to accumulate in a map"
+    - the counts look like values worth grouping or sorting
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        A cord tugged 1000 times and a cord tugged twice end the night in
+        exactly the same state. What is the only thing about a count that
+        survives to dawn?
+    - text: >-
+        Whether it is odd. You never need the count itself, and you never need
+        to store one — the answer is a single running total over one pass.
+    - text: >-
+        Test the lowest position of each count against 1 with `&` and add up the
+        ones that come back set. No container, one sweep.
+      reveals_pattern: true
+  why: >-
+    Two tugs cancel, so the count collapses to its last position written in base
+    two. That is the cheapest instance of the pattern: a self-inverse operation
+    means only parity matters, and parity lives in one place.
+  classic_ref: parity / low-bit test; the "odd occurrence" warm-up family
+
+- id: bit-mask-crew
+  pattern: bit-manipulation
+  title: Night Crew at the Hatchery
+  difficulty: medium
+  statement: >-
+    The Kelp Line hatchery has to staff one night shift, and the shift only
+    counts as covered if every single one of the m listed maintenance jobs has
+    somebody on duty who is certified for it. You hold a roster of n divers.
+    Diver i asks a fee for the night and is certified for a listed handful of
+    the jobs; hiring that diver covers all of their jobs at once, and two
+    divers certified for the same job is allowed, merely wasteful. Report the
+    smallest total fee for a crew that covers every job, or state that no crew
+    on the roster can.
+  constraints: |
+    1 <= m <= 16
+    1 <= n <= 60
+    1 <= fee[i] <= 10^6
+    every certification list is a subset of the m jobs
+  signals_present:
+    - a universe of at most 16 jobs, small enough to index by position
+    - the state of a partial crew is "which jobs are covered so far", a set
+    - each diver contributes a whole set at once, not one element
+  decoy_signals:
+    - grouping divers by which jobs they cover invites a map from job to divers
+    - "\"cheapest crew\" invites a greedy pick of the best fee-per-new-job ratio"
+  expected_complexity: O(n * 2^m)
+  hints:
+    - text: >-
+        Sixteen is a suspiciously small ceiling for something you are told to
+        list. What is the complete state of a half-built crew — what do you
+        actually need to remember about the divers already hired?
+    - text: >-
+        Only which jobs are already covered. Not who you hired, not how many.
+        That is one subset of at most sixteen things, so there are fewer than
+        70000 distinct states in the entire problem.
+    - text: >-
+        Number the jobs 0..m-1 and turn each diver's certification list into an
+        integer with one position set per job. Keep best[s] for each of the 1<<m
+        coverage states and relax best[s | diver] = best[s] + fee.
+      reveals_pattern: true
+  why: >-
+    The bound m <= 16 is the entire signal, and it is in the constraints rather
+    than the prose. A state that is "which members of a fixed tiny universe do I
+    have" is an integer, and once it is an integer it can index a table.
+  classic_ref: subset-cover DP over states (LeetCode 1125 "Smallest Sufficient Team" family)
+
+- id: bit-count-signals
+  pattern: bit-manipulation
+  title: The Lamp Rack at Vela
+  difficulty: medium
+  statement: >-
+    Coastal station Vela signals its neighbours with a rack of thirty lamps. To
+    show a number s the keeper follows the standing order: light the rightmost
+    lamp if s is odd and leave it dark otherwise, then halve s discarding any
+    remainder, step one lamp to the left, and repeat until all thirty lamps are
+    set. When two keepers compare racks they call their disagreement the number
+    of lamp positions where one rack is lit and the other is dark. Tonight's log
+    lists n signalled numbers. Report the total disagreement summed over every
+    unordered pair of entries in the log.
+  constraints: |
+    2 <= n <= 100000
+    0 <= s[i] < 2^30
+    the answer does not fit in 32 bits
+  signals_present:
+    - a cost defined as the number of positions where two things differ
+    - the thirty positions never interact, so they can be counted separately
+    - "n^2 pairs is 10^10, so the pairs must be counted rather than enumerated"
+  decoy_signals:
+    - "\"over every pair\" invites grouping equal values in a map and counting pairs"
+    - the halving procedure reads like arithmetic, not like structure
+  expected_complexity: O(30 n)
+  hints:
+    - text: >-
+        Ten billion pairs is out of reach, so nobody expects you to visit them.
+        But a pair's disagreement is a sum of thirty independent yes-or-no
+        answers, and those thirty questions do not talk to each other.
+    - text: >-
+        So fix one lamp position and forget the rest. If c of the n racks are
+        lit at that position, how many of the pairs disagree there?
+    - text: >-
+        Exactly c * (n - c). Loop over the thirty positions, count how many
+        values have that position set with `s >> j & 1`, and add c * (n - c)
+        into a 64-bit accumulator.
+      reveals_pattern: true
+  why: >-
+    "Halve and note the remainder" is the base-two expansion described the long
+    way round, and a cost counted over independent two-state positions splits
+    into one independent count per position. Columns, not pairs.
+  classic_ref: Total Hamming Distance (LeetCode 477) / per-position counting
+
+- id: bit-xor-relic
+  pattern: bit-manipulation
+  title: The Ashgate Reliquary
+  difficulty: hard
+  statement: >-
+    The Ashgate reliquary writes one line into its ledger every time a piece
+    crosses the threshold — the piece's engraved serial and nothing else — and
+    writes the same serial again when that piece is carried back out. The night
+    the roof came down the ledger survived and the shelves did not. The curator
+    knows that exactly two pieces never came back out, so every other serial in
+    the ledger appears exactly twice. The ledger runs to millions of lines and
+    the duty terminal has room for a handful of running totals and nothing
+    else: you may not keep a copy of the ledger or any store that grows with
+    it. Name the two serials still inside.
+  constraints: |
+    2 <= lines <= 2 * 10^6
+    1 <= serial <= 10^9
+    exactly two serials appear once; every other appears exactly twice
+    O(1) extra memory; the ledger streams past once or twice, never stored
+  signals_present:
+    - "\"every serial appears twice except two\" — the data is told to cancel"
+    - O(1) extra memory demanded while the serials themselves are unbounded
+    - the answer is two survivors of a pairing, not a count of anything
+  decoy_signals:
+    - a tally of serials answers this instantly, and only the memory clause forbids it
+    - sorting the ledger and scanning for lonely values is the other tempting answer
+    - "\"appears exactly twice\" is also the classic advertisement for a seen-set"
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        The memory clause is the whole problem — it exists to delete the obvious
+        solution. Is there a way to fold two equal numbers together so that they
+        annihilate and leave nothing behind?
+    - text: >-
+        Fold the whole ledger that way and every returned piece vanishes,
+        leaving the two survivors fused into one number. They are different
+        serials, so somewhere in that fused number they must disagree.
+    - text: >-
+        XOR the ledger to get a ^ b, isolate its lowest set position with
+        `t & -t`, then stream the ledger a second time into two accumulators
+        chosen by whether that position is set. Each accumulator ends holding
+        one survivor.
+      reveals_pattern: true
+  why: >-
+    Two clauses in the constraints do all the work: values pair off, and you may
+    not store anything. Pairing that cancels plus no memory leaves exactly one
+    tool, and the second half — splitting on a position where the two survivors
+    must differ — is the same lowest-set-bit idiom used to isolate a member.
+  classic_ref: Single Number III (LeetCode 260) / the two-survivor cancellation split
