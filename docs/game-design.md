@@ -619,9 +619,11 @@ for every character; images are always optional.
 
 ## 20. Build order
 
-1. **`lessons/`** — the teach → drill → test spine, with the Master of Bits as
-   the first full vertical slice. Without this the masters are not teachers.
-2. **`timing/`** — generous limits, phase instrumentation, timeout semantics.
+1. ~~**`lessons/`** — the teach → drill → test spine.~~ **DONE** — Grandmaster
+   Ragine teaches five secrets across 40 drills.
+2. ~~**`timing/`** — generous limits, phase instrumentation, timeout semantics.~~
+   **DONE** — five pressure stages, deadlines at 2x par, clamped personal
+   factor, four-phase diagnosis.
 3. **`world/`** — characters, dialogue, respect, master memory, regions, arcs.
 4. **`boss/`** — phases, HP, gates, enrage, rematch, variants.
 5. **Curriculum** — the 26 missing chapters, region by region in campaign order.

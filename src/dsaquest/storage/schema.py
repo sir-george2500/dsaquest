@@ -252,9 +252,37 @@ CREATE TABLE character_memory (
 """
 
 
+_V3 = """
+-- Where the time went, per attempt. One total duration says a student was slow;
+-- this says which part was slow, which is the only part that can be trained.
+--
+-- Rows exist only for the phases actually entered. `debug` in particular is
+-- absent unless a submission failed, which is what makes its presence such a
+-- sharp signal.
+CREATE TABLE phase_timing (
+    id         INTEGER PRIMARY KEY,
+    attempt_id INTEGER NOT NULL REFERENCES attempt (id) ON DELETE CASCADE,
+    phase      TEXT    NOT NULL
+                       CHECK (phase IN ('recognise', 'plan', 'implement', 'debug')),
+    duration_ms INTEGER NOT NULL CHECK (duration_ms >= 0),
+    UNIQUE (attempt_id, phase)
+);
+
+CREATE INDEX idx_phase_attempt ON phase_timing (attempt_id);
+
+-- The deadline in force and whether it was reached. Stored on the attempt so a
+-- later change to the par table cannot retroactively rewrite whether a past
+-- attempt timed out.
+ALTER TABLE attempt ADD COLUMN limit_ms INTEGER;
+ALTER TABLE attempt ADD COLUMN timed_out INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE attempt ADD COLUMN pressure_stage INTEGER;
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "initial schema", _V1),
     Migration(2, "lessons, drills, respect, character memory", _V2),
+    Migration(3, "phase timing and deadlines", _V3),
 )
 
 LATEST_VERSION = max(m.version for m in MIGRATIONS)

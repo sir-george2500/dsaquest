@@ -1,13 +1,16 @@
-"""Par times — how long an exercise *should* take.
+"""Par times — how long a task *should* take.
 
-Par is what makes "speed" measurable and what lets the rating rubric tell
-fluency from mere correctness. The numbers are calibrated to a competent
-learner working without hints, not to a red coder: par is a target you can hit
-routinely once the pattern is internalised, not a stretch goal.
+Two different numbers, and conflating them is the mistake the first draft made:
 
-They are deliberately generous for recognition (reading a statement takes as
-long as it takes) and tight for code completion (a cloze hole in a template you
-know should be near-instant).
+**Par** is a target. Beating it is fluency, missing it is a diagnosis. Nothing
+bad happens when you exceed par.
+
+**The limit** is a deadline, and it lives in ``timing.limits``. It is roughly
+double par, because a student must never lose to an artificially short clock.
+
+Calibrated to the generous table in ``docs/game-design.md`` section 4: a
+competent learner working without hints should hit par routinely once the
+pattern is internalised, and should never feel hurried before then.
 """
 
 from __future__ import annotations
@@ -17,17 +20,23 @@ from ..domain.enums import Difficulty, GameMode
 _SECOND = 1000
 _MINUTE = 60 * _SECOND
 
-#: Base par per mode, at MEDIUM difficulty.
+#: Par per mode at MEDIUM difficulty.
+#:
+#: Recognition is generous on purpose — reading a statement takes as long as it
+#: takes, and rushing that trains skimming rather than recognition. Code
+#: completion is tighter because a cloze hole in a template you know should be
+#: near-automatic.
 _BASE_MS: dict[GameMode, int] = {
-    GameMode.HUNTER: 45 * _SECOND,
-    GameMode.DUEL: 75 * _SECOND,
-    GameMode.RECALL: 3 * _MINUTE,
-    GameMode.COMPLETE: 4 * _MINUTE,
-    GameMode.SOLVE: 15 * _MINUTE,
-    GameMode.BOSS: 30 * _MINUTE,
+    GameMode.HUNTER: 90 * _SECOND,
+    GameMode.DUEL: 2 * _MINUTE,
+    GameMode.RECALL: 2 * _MINUTE,
+    GameMode.COMPLETE: 6 * _MINUTE,
+    GameMode.SOLVE: 20 * _MINUTE,
+    GameMode.BOSS: 60 * _MINUTE,
 }
 
-#: Multiplier applied to the base for each difficulty.
+#: Multiplier per difficulty. Easy solve lands at 12 min, hard at 36, expert at
+#: 56 — inside the 8-15 / 30-60 bands the design calls for.
 _DIFFICULTY_SCALE: dict[Difficulty, float] = {
     Difficulty.EASY: 0.6,
     Difficulty.MEDIUM: 1.0,
@@ -36,14 +45,30 @@ _DIFFICULTY_SCALE: dict[Difficulty, float] = {
     Difficulty.BOSS: 4.0,
 }
 
+#: How par divides across the phases of a solve. Implementation dominates
+#: because that is where the time actually goes; debugging gets a real share
+#: because pretending it takes no time is how targets become dishonest.
+PHASE_SHARE: dict[str, float] = {
+    "recognise": 0.12,
+    "plan": 0.18,
+    "implement": 0.55,
+    "debug": 0.15,
+}
+
 
 def par_ms(mode: GameMode, difficulty: Difficulty = Difficulty.MEDIUM) -> int:
-    """Target duration in milliseconds for one exercise."""
+    """Target duration in milliseconds. Not a deadline — see ``timing.limits``."""
     return int(_BASE_MS[mode] * _DIFFICULTY_SCALE[difficulty])
 
 
+def phase_targets(mode: GameMode, difficulty: Difficulty = Difficulty.MEDIUM) -> dict[str, int]:
+    """Par split across phases, for the time-analysis report."""
+    total = par_ms(mode, difficulty)
+    return {phase: int(total * share) for phase, share in PHASE_SHARE.items()}
+
+
 def pace_label(duration_ms: int, target_ms: int) -> str:
-    """Human phrasing for how the attempt compared with par."""
+    """How the attempt compared with par. Deliberately non-judgemental wording."""
     if target_ms <= 0:
         return ""
     ratio = duration_ms / target_ms
@@ -54,3 +79,11 @@ def pace_label(duration_ms: int, target_ms: int) -> str:
     if ratio <= 2.0:
         return "slow"
     return "very slow"
+
+
+def format_duration(ms: int) -> str:
+    """``6:49`` for a solve, ``0:31`` for a recognition. Always m:ss."""
+    if ms < 0:
+        ms = 0
+    total_seconds = ms // 1000
+    return f"{total_seconds // 60}:{total_seconds % 60:02d}"

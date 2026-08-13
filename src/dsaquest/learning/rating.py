@@ -52,6 +52,8 @@ class ReviewOutcome:
     """Mode B only: what the learner clicked after seeing the canonical answer."""
     essential_missed: bool = False
     """Mode B only: an essential rubric point was not hit. Caps the self-grade."""
+    timed_out: bool = False
+    """The deadline passed. A speed result, never a knowledge result."""
 
     @property
     def dimension(self) -> Dimension:
@@ -74,6 +76,14 @@ def rate(outcome: ReviewOutcome) -> Rating | None:
     """
     if outcome.verdict is Verdict.INTERNAL_ERROR:
         return None
+
+    if outcome.timed_out:
+        # Load-bearing. A timeout means the learner was slow, not that they have
+        # forgotten the pattern. Rating it AGAIN would tell the scheduler a
+        # memory was lost that is in fact intact, shortening every future
+        # interval for material they actually hold. Timeouts are paid for in
+        # respect and score, never in the memory model.
+        return Rating.HARD
 
     match outcome.dimension:
         case Dimension.RECOGNITION:
