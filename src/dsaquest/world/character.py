@@ -98,11 +98,28 @@ class Master:
 
     @cached_property
     def portrait(self) -> str:
-        """ASCII portrait. Mandatory — the game must work with no image support."""
+        """ASCII portrait, or empty if the master only has a pixel sprite.
+
+        This was mandatory when it was the only art there was. The screens now
+        draw the 24x24 pixel sprite, so the ASCII block is a fallback rather
+        than the thing anyone sees, and refusing to load a master over a
+        missing fallback is stricter than the game needs. What must be true is
+        that a master has *some* art, which is asserted over the roster rather
+        than enforced per file here.
+        """
         path = assets_dir() / self.id / "portrait.txt"
         if not path.is_file():
-            raise CharacterError(f"{self.id}: missing {path}")
+            return ""
         return path.read_text(encoding="utf-8").rstrip("\n")
+
+    def sprite_path(self) -> Path | None:
+        """The pixel portrait, which is the art the screens actually draw."""
+        path = content_root().parent / "assets" / "sprites" / f"{self.id.replace('_', '-')}.px"
+        return path if path.is_file() else None
+
+    @property
+    def has_art(self) -> bool:
+        return bool(self.portrait.strip()) or self.sprite_path() is not None
 
     def image_path(self) -> Path | None:
         """Optional bitmap portrait, for terminals that can draw one."""

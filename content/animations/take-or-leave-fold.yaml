@@ -1,0 +1,120 @@
+id: take-or-leave-fold
+title: Why one number per glade is not enough
+secret: take-or-leave
+pattern: tree-dp
+summary: >-
+  A centre worth 3 joined to three leaves worth 2 each — the smallest wood on
+  which taking the most valuable glade first is refuted. Two numbers per glade,
+  and watch which of the two transitions uses a max.
+kind: table
+rows:
+  - [".", ".", ".", "."]
+  - [".", ".", ".", "."]
+row_labels: ["skip   v left empty", "take   v chosen"]
+column_labels: ["1  w=3", "2  w=2", "3  w=2", "4  w=2"]
+idiom: "skip[v] += max(skip[to], take[to]);"
+note: "glade 1 is the centre; glades 2, 3 and 4 hang off it. No two chosen glades may be joined."
+
+steps:
+  - say: >-
+      Four glades, three paths, and one rule — two chosen glades may not be
+      joined. The instinct says take the most valuable glade first. That is
+      glade 1, worth 3. Take it, and every other glade is now illegal. Total 3.
+    note: "greedy: glade 1 alone, total 3"
+
+  - say: >-
+      But 2 + 2 + 2 is six, and the three leaves are joined to nothing but the
+      centre. So the instinct is not slightly off, it is beaten by a factor of
+      two on four glades. Ask what taking the centre actually cost. Not value —
+      it cost the LEGALITY of three other glades.
+    note: "truth: glades 2, 3 and 4, total 6"
+
+  - say: >-
+      So each glade must report two numbers upwards, because its parent cannot
+      use one without knowing which way the glade went. Start with the leaves.
+      Glade 2 skipped contributes 0; glade 2 chosen contributes its own 2.
+    cursor: [1, 1]
+    set:
+      "0,1": "0"
+      "1,1": "2"
+    mark:
+      "0,1": "settled"
+      "1,1": "settled"
+    note: "leaves finish before the centre begins"
+
+  - say: >-
+      Glades 3 and 4 are the same shape and the same two numbers. Every leaf in
+      any wood looks like this.
+    set:
+      "0,2": "0"
+      "1,2": "2"
+      "0,3": "0"
+      "1,3": "2"
+    mark:
+      "0,2": "settled"
+      "1,2": "settled"
+      "0,3": "settled"
+      "1,3": "settled"
+    cursor: null
+    note: "all three leaves reported"
+
+  - say: >-
+      Now the centre, chosen. Choosing it forbids every child, so each child has
+      exactly one number available — its skipped one. Three zeroes.
+    cursor: [1, 0]
+    mark:
+      "0,1": "active"
+      "0,2": "active"
+      "0,3": "active"
+    note: "take[1] = 3 + skip[2] + skip[3] + skip[4]"
+
+  - say: >-
+      3 + 0 + 0 + 0 = 3. That is the greedy answer, and here it is as one branch
+      of the fold rather than as the whole method.
+    set:
+      "1,0": "3"
+    mark:
+      "0,1": "settled"
+      "0,2": "settled"
+      "0,3": "settled"
+      "1,0": "settled"
+    note: "take[1] = 3"
+
+  - say: >-
+      And the centre left empty. Now nothing is forbidden, so each child picks
+      whichever of its own two numbers is larger — max(0, 2) three times. This
+      is the line people write as a plain sum, and it is the whole difference.
+    cursor: [0, 0]
+    mark:
+      "0,1": "active"
+      "1,1": "active"
+      "0,2": "active"
+      "1,2": "active"
+      "0,3": "active"
+      "1,3": "active"
+    note: "skip[1] = max(0,2) + max(0,2) + max(0,2)"
+
+  - say: >-
+      Six. The answer is the larger of the centre's two numbers, and it is the
+      one that leaves the centre empty. Had the leaves been worth 1 each, take
+      would have won instead — which is why there is no rule about centres,
+      only the fold.
+    set:
+      "0,0": "6"
+    mark:
+      "0,1": "settled"
+      "1,1": "settled"
+      "0,2": "settled"
+      "1,2": "settled"
+      "0,3": "settled"
+      "1,3": "settled"
+      "0,0": "answer"
+    cursor: null
+    note: "answer = max(skip[1], take[1]) = max(6, 3) = 6"
+
+  - say: >-
+      Read the two rows once more before you leave. The take row added only
+      skip values; the skip row added a max over both. That asymmetry is the
+      secret. Write the skip row as a sum of skips and this wood still answers
+      3 — quietly, with no crash.
+    note: "take forbids the children; skip forbids nothing"

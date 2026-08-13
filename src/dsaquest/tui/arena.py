@@ -20,6 +20,7 @@ from textual.containers import Vertical, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Static, TextArea
 
+from ..art.sprite import load_sprite, sprite_text
 from ..boss import conclude, gate_status, next_challenge, open_fight, resolve
 from ..boss.fight import Fight
 from ..content.exercises import samples_for
@@ -31,6 +32,7 @@ from ..game.understanding import grade_understanding, remark
 from ..learning.mastery import all_mastery
 from ..learning.par import format_duration
 from ..storage import repositories as repo
+from .card import accent_for
 from .editor import code_editor
 from .master import safe
 from .understanding import UnderstandingPanel
@@ -38,6 +40,7 @@ from .understanding import UnderstandingPanel
 ARENA_CSS = """
 #arena-title { padding: 1 2 0 2; text-style: bold; }
 #bars { padding: 0 2 1 2; height: auto; }
+#arena-portrait { padding: 0 2 1 2; height: auto; content-align: center middle; }
 #boss-say { padding: 1 2; margin: 0 2; border: round $error; height: auto; }
 #arena-clock { padding: 0 2; text-style: bold; }
 #arena-clock.urgent { color: $error; }
@@ -85,6 +88,7 @@ class ArenaScreen(Screen):
         yield Header(show_clock=False)
         yield Static(id="arena-title")
         yield Static(id="bars")
+        yield Static(id="arena-portrait")
         yield Static(id="boss-say")
         yield Static(id="arena-clock")
         yield VerticalScroll(Static(id="arena-body"))
@@ -100,10 +104,7 @@ class ArenaScreen(Screen):
         self.query_one("#arena-clock", Static).display = False
         self.query_one("#arena-verdict", Static).display = False
 
-        self.query_one("#arena-title", Static).update(
-            f"[b red]{safe(self.boss.name)}[/]\n[i]{safe(self.boss.title)}[/]   "
-            f"[dim]{self.boss.tier.label}[/]"
-        )
+        self.refresh_bars()
 
         context = self.app.context
         mastery = all_mastery(context.conn, context.library, scheduler=context.scheduler)
@@ -158,15 +159,53 @@ class ArenaScreen(Screen):
     # ------------------------------------------------------------ rendering
 
     def refresh_bars(self) -> None:
+        """The boss's health as one wide bar, and yours as the blows you have left.
+
+        A second bar for the player would be symmetrical and less useful. What
+        a player needs to know is not a percentage but a count: how many more
+        times can I be wrong. Blows are exactly that — player health divided by
+        what a mistake costs — and three ticks going to two is legible at a
+        glance in a way 75 going to 50 is not.
+        """
         fight = self.fight
         boss_hp = fight.boss_hp if fight else self.boss.boss_hp
         player_hp = fight.player_hp if fight else self.boss.player_hp
+        width = max(20, self.size.width - 6)
+
+        filled = int(round(boss_hp / self.boss.boss_hp * width)) if self.boss.boss_hp else 0
+        accent = accent_for(self.boss.id)
         enraged = "   [b red]ENRAGED[/]" if fight and fight.enraged else ""
-        self.query_one("#bars", Static).update(
-            f"[red]{_bar(boss_hp, self.boss.boss_hp)}[/] {boss_hp:>3}   "
-            f"{safe(self.boss.name)}{enraged}\n"
-            f"[green]{_bar(player_hp, self.boss.player_hp)}[/] {player_hp:>3}   you"
+
+        # Name left, health right, on one line — the reference's arrangement,
+        # and the two things you look at first.
+        count = f"{boss_hp} / {self.boss.boss_hp}"
+        gap = max(1, width - len(self.boss.name) - len(count))
+        self.query_one("#arena-title", Static).update(
+            f"[b #ece5d6]{safe(self.boss.name)}[/]{' ' * gap}[#8a7f6d]{count}[/]{enraged}\n"
+            f"[{accent}]{safe(self.boss.title)}[/]   [dim]TIER {self.boss.tier.name}[/]"
         )
+
+        blows = max(0, -(-player_hp // self.boss.damage_taken))
+        total_blows = max(1, -(-self.boss.player_hp // self.boss.damage_taken))
+        ticks = " ".join(
+            f"[{accent}]▬▬▬[/]" if i < blows else "[#3a352c]▬▬▬[/]" for i in range(total_blows)
+        )
+        self.query_one("#bars", Static).update(
+            f"[#c04a3a]{'█' * filled}[/][#2b2822]{'░' * (width - filled)}[/]\n{ticks}"
+        )
+        self.refresh_portrait()
+
+    def refresh_portrait(self) -> None:
+        """The boss, large and centred. Scale 2, so a 24x24 sprite fills 48x24."""
+        from ..tui.roster import sprite_for
+
+        path = sprite_for(self.boss.id)
+        panel = self.query_one("#arena-portrait", Static)
+        if not path.is_file():
+            panel.display = False
+            return
+        panel.display = True
+        panel.update(sprite_text(load_sprite(path), scale=2))
 
     def next_phase(self) -> None:
         assert self.fight is not None

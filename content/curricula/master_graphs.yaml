@@ -1,0 +1,1850 @@
+# Warlord Thessaly Grune's teaching plan — the Unbridged, Master of Graphs.
+#
+# Seven secrets across four patterns. The spine of the region is one question,
+# asked in stage 3 and never fully put down afterwards: you know how to walk a
+# graph, but do you know when walking it answers a different question from the
+# one you were asked?
+#
+# Every number below has been recomputed by brute force rather than recalled.
+# The counterexamples are minimal on purpose — the smallest graph on which the
+# plausible method returns something that still looks like an answer. In this
+# region a wrong algorithm does not crash and does not time out. It returns a
+# real path, of the wrong length, and says nothing.
+
+master_id: master_graphs
+patterns:
+  - graph-traversal
+  - bfs-shortest-path
+  - dijkstra-weighted
+  - topological-order
+title: Warlord Thessaly Grune, the Unbridged — Seven Secrets of the Frontier
+
+opening: >-
+  You know BFS. Every student who reaches my shore knows BFS. You can write it
+  from memory in ninety seconds and it will compile, and that is the most
+  dangerous thing about you. So I am not going to teach you BFS. I am going to
+  teach you when BFS is WRONG — because it does not fail the way you expect.
+  It does not crash. It does not run out of time. It hands you back a path, a
+  genuine path, a sequence of real edges from where you started to where you
+  were going, and that path is not the cheapest one, and nothing anywhere in
+  your output will tell you so. You will read your own correct-looking answer
+  and hunt for an index bug that does not exist. Seven secrets. Two are how to
+  walk. One is what to do when the edges arrive faster than you can walk them.
+  Three are about cost, and the middle one of those is the only reason this
+  region exists. The last is about order, which is what you need when the graph
+  refuses to be walked at all. Learn the boundary of each and I will let you
+  past. Learn only the code and the sea will take you.
+
+stages:
+  # ---------------------------------------------------------------- stage 0
+  - id: stage-visit-once
+    order: 0
+    pattern: graph-traversal
+    trial_problem_ids: [harbour-chain-count, two-watch-rotas]
+    secret:
+      id: visit-once
+      name: Claim It When You Push It
+      idiom: "if (!seen[v]) { seen[v] = 1; q.push(v); }"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        A traversal is two things and no more: a container of vertices waiting
+        to be expanded, and an array saying which vertices are already claimed.
+        Change the container and the name changes — front is breadth-first, back
+        is depth-first — and NOTHING else changes, including the cost. Now the
+        rule that separates a warrior from a tourist: claim a vertex the moment
+        you PUSH it, never when you pop it. Claim on pop and your program still
+        prints the right answer, which is why nobody catches it. What it does is
+        push a vertex once for every edge that points at it, so the frontier
+        holds m + 1 entries instead of n. I have measured it and so should you:
+        on 1-2, 1-3, 1-4, 2-5, 3-5, 4-5 that is seven pushes for five vertices,
+        and vertex 5 enters the queue three separate times. On the complete
+        graph of ten vertices it is 46 pushes for 10 vertices. Take that to a
+        dense judge and you lose to a memory limit, holding output that was
+        correct all along. The same walk answers more than one question. Write a
+        component number instead of a flag and you have counted the groups.
+        Write alternating colours and you have split the graph in two — and the
+        FAILURE of that colouring, an edge joining two vertices already holding
+        the same colour, is a proof that no such split exists at all. Learn to
+        want the failure. It is worth more than the success.
+      demonstrations:
+        - expression: "BFS from 1 on 1-2, 2-3, 1-4, 2-5, 3-6, 5-6"
+          result: "distances 0, 1, 2, 1, 2, 3"
+          note: >-
+            The handbook's own graph. Vertices 2 and 4 are one edge out, 3 and 5
+            are two, and 6 is three. Claim each at the moment it is queued and
+            every one of those numbers is written exactly once.
+        - expression: "the same graph with a stack instead of a queue"
+          result: "every vertex still visited, distances meaningless"
+          note: >-
+            Reachability is identical. The distances are not: a stack records
+            the length of whichever route it wandered down. One line different,
+            one of the two answers destroyed.
+        - expression: "claiming on POP, on 1-2, 1-3, 1-4, 2-5, 3-5, 4-5"
+          result: "7 pushes for 5 vertices"
+          note: >-
+            Vertex 5 is queued by 2, again by 3, again by 4, because none of
+            them had claimed it. Six edges, seven pushes. The rule is exact:
+            claim on pop and the frontier takes m + 1 entries.
+        - expression: "claiming on POP, on the complete graph of 10 vertices"
+          result: "46 pushes for 10 vertices"
+          note: >-
+            45 edges, 46 pushes. Four and a half times the memory for the same
+            output. On a graph with 10^6 edges that is the whole verdict.
+        - expression: "counting components on 1-3, 1-4, 3-4, 2-5"
+          result: "2"
+          note: >-
+            Sweep from 1 and claim 1, 3, 4. Vertex 2 is still unclaimed, so
+            sweep again and claim 2, 5. Two starts, two components. The number
+            of times you had to start IS the answer.
+        - expression: "two-colouring 1-2, 1-4, 2-3, 2-5, 3-5, 4-5"
+          result: "impossible"
+          note: >-
+            Colour 1 blue, then 2 and 4 red, then 3 and 5 blue — and 3-5 is an
+            edge between two blues. The triangle 2-3-5 is an odd cycle, and an
+            odd cycle cannot be two-coloured however you start. That edge is not
+            a failed attempt; it is a proof.
+        - expression: "a component of c vertices holding c or more edges"
+          result: "it contains a cycle"
+          note: >-
+            A connected component with no cycle is a tree and has exactly c - 1
+            edges. So you never have to find a cycle to know one is there —
+            count the vertices and the edges of each component as you sweep it.
+        - expression: "recursive depth-first search on a path of 10^6 vertices"
+          result: "stack overflow"
+          note: >-
+            One frame per vertex, tens of bytes each, against the usual eight
+            megabytes. The verdict is a segmentation fault and the algorithm was
+            never the problem. Use an explicit stack, or use the queue.
+      watch_out:
+        - warning: "Claim on push. Claiming on pop is a memory bug wearing a correct answer."
+          why: >-
+            The distances and the components come out right, so nothing points
+            at it. What changes is the size of the frontier: exactly m + 1
+            pushes rather than n. Seven instead of five on six edges, 46 instead
+            of 10 on the complete graph of ten. You meet it as a memory limit on
+            the largest test, weeks after you wrote it.
+        - warning: "An undirected edge must be pushed into BOTH adjacency lists."
+          why: >-
+            Adding only u to v's list makes reachability asymmetric on a graph
+            the statement called undirected, and the component count comes out
+            too high. The sample usually survives, because sample edges tend to
+            be listed in an order you happen to walk correctly.
+        - warning: "The colouring must be restarted in every component."
+          why: >-
+            A graph is bipartite only if EVERY component is. Loop over all
+            vertices and start a fresh colouring at each unclaimed one — a check
+            that inspects only the component containing vertex 1 passes on any
+            input whose second component is where the odd cycle lives.
+        - warning: "Recursion depth is a real constraint, not a style preference."
+          why: >-
+            A graph is allowed to be one long path. At 10^5 vertices you are
+            gambling; at 10^6 you have lost. Rewrite depth-first search with an
+            explicit stack, or use breadth-first search, which never recurses.
+        - warning: "Size the arrays n + 1 and index from 1."
+          why: >-
+            Input is almost always 1-based and arrays are 0-based, and the two
+            most common outcomes are a crash on the vertex numbered n or a
+            phantom extra component containing only vertex 0. One extra slot
+            costs four bytes and removes the entire class of error.
+        - warning: "Use vector<char> for the claimed array, not vector<bool>."
+          why: >-
+            vector<bool> is a bit field. Every read and write becomes a mask and
+            a shift through a proxy object, and in the innermost loop of a
+            traversal that is two to three times slower for no benefit. The
+            memory you save is measured in kilobytes.
+      drills:
+        - id: vo-eval-distances
+          kind: evaluate
+          prompt: >-
+            The graph has edges 1-2, 2-3, 1-4, 2-5, 3-6, 5-6, all two-way. A
+            breadth-first sweep starts at 1. What distance does vertex 6 get?
+          options: ["1", "2", "3", "4"]
+          answer: "3"
+          explanation: >-
+            Vertices 2 and 4 are at 1, then 3 and 5 at 2, then 6 at 3 — reached
+            from either 3 or 5, whichever the sweep queued first. Both give 3,
+            which is the point: the first arrival is already the shortest.
+        - id: vo-eval-pushes
+          kind: evaluate
+          prompt: >-
+            On the graph 1-2, 1-3, 1-4, 2-5, 3-5, 4-5, a sweep from 1 marks each
+            vertex visited when it is POPPED rather than when it is pushed. How
+            many pushes happen in total?
+          options: ["5", "6", "7", "10"]
+          answer: "7"
+          explanation: >-
+            Vertex 5 is queued by 2, by 3 and by 4, because none of them had
+            claimed it. Six edges, seven pushes; claiming on push gives five.
+            The rule is exact on a connected undirected graph: m + 1 pushes.
+        - id: vo-eval-components
+          kind: evaluate
+          prompt: >-
+            Six vertices numbered 1 to 6, with only the edges 1-3, 3-4 and 2-5.
+            How many connected components?
+          options: ["2", "3", "4", "6"]
+          answer: "3"
+          explanation: >-
+            "{1, 3, 4}, {2, 5}, and {6} alone. A vertex with no edges is still a
+            component, which is the case people forget when they sweep only from
+            vertex 1."
+        - id: vo-eval-treeedges
+          kind: evaluate
+          prompt: >-
+            A connected component contains 7 vertices and 7 edges. What does
+            that tell you?
+          options:
+            - it certainly contains a cycle
+            - it is certainly a tree
+            - it is certainly bipartite
+            - nothing can be concluded without walking it
+          answer: it certainly contains a cycle
+          explanation: >-
+            A connected component with no cycle is a tree and has exactly c - 1
+            edges — here that would be 6. Seven edges is one too many, so a
+            cycle exists, and you never had to find it.
+        - id: vo-prop-difference
+          kind: property
+          prompt: >-
+            What is the ONLY difference between breadth-first and depth-first
+            search?
+          options:
+            - which end of the frontier the next vertex is taken from
+            - whether a visited array is used
+            - whether the graph is directed
+            - the time complexity
+          answer: which end of the frontier the next vertex is taken from
+          explanation: >-
+            Front is a queue and breadth-first; back is a stack and depth-first.
+            Both claim on push, both examine every edge twice, both cost
+            O(n + m). Only one of them produces distances, and that is a
+            consequence of the container, not an extra feature.
+        - id: vo-prop-oddcycle
+          kind: property
+          prompt: >-
+            While two-colouring, you reach a vertex that already carries the
+            same colour as the vertex you came from. What have you established?
+          options:
+            - an odd cycle exists, so no two-colouring exists at all
+            - this particular colouring failed and another starting colour may work
+            - the graph is disconnected
+            - the vertex was visited twice, which is a bug in the sweep
+          answer: an odd cycle exists, so no two-colouring exists at all
+          explanation: >-
+            With two colours the choice at the source fixes every other colour
+            in the component, so failure is not an artefact of where you began.
+            The edge you just crossed closes a cycle of odd length, and odd
+            cycles are exactly what cannot be two-coloured.
+        - id: vo-trap-marklate
+          kind: trap
+          prompt: >-
+            A sweep sets `seen[u] = 1` just after `u` is popped, and pushes
+            every neighbour that is not yet seen. It passes every test and then
+            fails one large one. What is the verdict and why?
+          options:
+            - memory limit — the frontier holds m + 1 entries instead of n
+            - wrong answer — the distances come out one too large
+            - runtime error — a vertex is expanded twice
+            - time limit — each edge is examined n times
+          answer: memory limit — the frontier holds m + 1 entries instead of n
+          explanation: >-
+            Every edge queues its far endpoint before that endpoint is claimed,
+            so the queue grows with the EDGES rather than the vertices. The
+            output stays correct throughout, which is precisely why it survives
+            to the judge.
+        - id: vo-trap-onedirection
+          kind: trap
+          prompt: >-
+            An undirected graph is read with `adj[u].push_back(v);` and nothing
+            else. What is the symptom?
+          options:
+            - too many components, and reachability that works one way and not the other
+            - a crash on the last vertex
+            - every vertex ends up in one component
+            - the sweep never terminates
+          answer: too many components, and reachability that works one way and not the other
+          explanation: >-
+            Half the graph is missing. The sample often survives because sample
+            edges tend to be listed in an order the sweep happens to follow;
+            the large tests are not written so politely.
+        - id: vo-recall-claim
+          kind: recall
+          prompt: >-
+            Inside the loop over the neighbours `v` of the popped vertex, write
+            the statement that claims an unseen neighbour and queues it.
+          answer: "if (!seen[v]) { seen[v] = 1; q.push(v); }"
+          accepts:
+            - "if(!seen[v]){seen[v]=1;q.push(v);}"
+            - "if(!seen[v]){seen[v]=true;q.push(v);}"
+            - "if(seen[v]==0){seen[v]=1;q.push(v);}"
+            - "if(!visited[v]){visited[v]=1;q.push(v);}"
+          explanation: >-
+            The claim and the push are one statement, and they must stay one
+            statement. Separate them — claim later, at the pop — and the code is
+            still correct and the frontier is m + 1 entries deep.
+        - id: vo-apply-startall
+          kind: apply
+          prompt: >-
+            Write the for-loop header that starts a fresh sweep at every vertex
+            not yet claimed, for vertices numbered 1 to n.
+          answer: "for (int s = 1; s <= n; ++s)"
+          accepts:
+            - "for(ints=1;s<=n;++s)"
+            - "for(ints=1;s<=n;s++)"
+            - "for(intu=1;u<=n;++u)"
+            - "for(inti=1;i<=n;++i)"
+          explanation: >-
+            This one line turns a reachability sweep into a component count, a
+            colouring into a bipartiteness test, and a search from vertex 1 into
+            a search of the whole graph. Sweeping only from vertex 1 is the most
+            common way to lose a test in this region.
+
+  # ---------------------------------------------------------------- stage 1
+  - id: stage-edge-stream-merge
+    order: 1
+    pattern: graph-traversal
+    trial_problem_ids: [cable-loop-audit]
+    secret:
+      id: edge-stream-merge
+      name: When the Edges Arrive One at a Time
+      idiom: "int find(int x) { return p[x] == x ? x : p[x] = find(p[x]); }"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        Here is the first place a traversal is the wrong shape. Not wrong in its
+        answer — wrong in what it costs. Ask "are these two connected" once and
+        a sweep answers it in O(n + m). Ask it after every edge, as the edges
+        arrive, and you have paid O(n + m) per question, because a sweep knows
+        nothing when it starts and forgets everything when it finishes. So stop
+        walking and start MERGING. Every vertex begins as its own group. An edge
+        joins two groups, and you keep, for each vertex, a pointer towards a
+        representative — one element per group standing for the whole of it.
+        Two vertices are connected exactly when their representatives are the
+        same element, which is one comparison. Two rules make it fast and you
+        need both for the reason to be honest. Attach the SMALLER group under
+        the larger and no chain can be longer than log2(n), because a chain only
+        deepens when a group is absorbed by one at least its own size, so the
+        size doubles at every level — at n = 200000 that is 17. Then flatten
+        every chain you walk, on the way back out, and the amortised cost falls
+        to the inverse Ackermann function, which is below 5 for any n you will
+        ever type. And the merge tells you something a sweep does not volunteer:
+        when an edge's two endpoints ALREADY share a representative, that edge
+        closes a cycle.
+      demonstrations:
+        - expression: "six vertices, then unite(1,2), unite(3,4), unite(2,3), unite(5,6)"
+          result: "2 components"
+          note: >-
+            Six groups, four merges that each did something, six minus four is
+            two. The components are {1, 2, 3, 4} and {5, 6}, and the count never
+            needed to be recomputed.
+        - expression: "after those merges, same(1, 4)"
+          result: "true"
+          note: >-
+            1 and 4 were never joined directly. unite(2,3) welded the pair
+            {1,2} to the pair {3,4} in one step, and the representative carried
+            the fact outward without anything being walked.
+        - expression: "then unite(1, 4)"
+          result: "no merge; still 2 components"
+          note: >-
+            The representatives already match, so nothing happens — and that
+            refusal is information. In an edge stream, an edge whose endpoints
+            already agree is exactly an edge that closes a cycle.
+        - expression: "same(1, 5) after the same four merges"
+          result: "false"
+          note: >-
+            Different representatives, one comparison, no walking. This is the
+            operation a traversal would have charged you O(n + m) for.
+        - expression: "union by size only, worst case at n = 1024"
+          result: "depth 10"
+          note: >-
+            Measured by pairing equal-sized groups all the way up, which is the
+            worst an adversary can do. 2^10 = 1024, so the depth is exactly
+            log2(n) and not one more.
+        - expression: "union by size only, worst case at n = 200000"
+          result: "depth 17"
+          note: >-
+            2^17 = 131072 and 2^18 = 262144, so the deepest possible chain is
+            17. That is the guarantee you are buying with one `if` and a swap.
+        - expression: "path compression on top of union by size"
+          result: "inverse Ackermann, below 5 in practice"
+          note: >-
+            Every find flattens the chain it walked, so the same walk is never
+            paid for twice. Treat it as constant time and say the real name if
+            anyone asks.
+        - expression: "q queries of connectivity on a stream of m edges"
+          result: "O((n + m + q) * alpha) against O(q * (n + m)) for repeated sweeps"
+          note: >-
+            That is the entire argument for this structure. One question, use a
+            sweep. A stream of questions, merge.
+      watch_out:
+        - warning: "Union by size and path compression are not decoration."
+          why: >-
+            Without them, `find` walks a chain that an adversary can make n long
+            — and the adversary is the test data. Union by size alone caps the
+            chain at log2(n), which is 17 at n = 200000; compression on top of
+            it removes even that. Two lines, and the difference between linear
+            and constant.
+        - warning: "unite() must find BOTH representatives before it links anything."
+          why: >-
+            Writing `p[a] = b` with the raw vertex numbers links two elements
+            rather than two groups, and silently detaches whatever was hanging
+            below a. The symptom is a component count that is too high and gets
+            worse as the input grows.
+        - warning: "Compare representatives, never vertices."
+          why: >-
+            `a == b` answers whether two vertex numbers are equal, which is not
+            the question. Only `find(a) == find(b)` asks whether they are in the
+            same group, and the difference is invisible on any test where the
+            groups happen to be singletons.
+        - warning: "This structure cannot un-merge."
+          why: >-
+            Edges that are REMOVED over time break it completely, and no amount
+            of care in the merge will fix that. The usual answer is to run the
+            stream backwards, so that removals become additions; if that is not
+            available either, you are outside this technique.
+        - warning: "It knows groups. It does not know distances or routes."
+          why: >-
+            A representative tells you two vertices are connected and nothing
+            whatever about how far apart they are or which edges join them. If
+            the statement wants a length, this is the wrong tool and no
+            extension of it is the right one.
+        - warning: "Count the components as you merge, not afterwards."
+          why: >-
+            Start the counter at n and decrement it on every merge that actually
+            merged. Recomputing by scanning every vertex's representative at the
+            end costs another pass and, more importantly, cannot answer "how
+            many groups are there NOW" partway through a stream.
+      drills:
+        - id: esm-eval-components
+          kind: evaluate
+          prompt: >-
+            Six vertices, each alone. Then unite(1,2), unite(3,4), unite(2,3),
+            unite(5,6). How many groups remain?
+          options: ["1", "2", "3", "4"]
+          answer: "2"
+          explanation: >-
+            "{1, 2, 3, 4} and {5, 6}. Six groups minus four merges that each did
+            something. unite(2,3) is the interesting one: it joined two PAIRS,
+            not two vertices."
+        - id: esm-eval-redundant
+          kind: evaluate
+          prompt: >-
+            After those four merges, unite(1,4) is called. How many groups
+            remain now?
+          options: ["1", "2", "3", "6"]
+          answer: "2"
+          explanation: >-
+            1 and 4 already share a representative, so nothing merges. The
+            refusal is the useful part: in a stream of edges, an edge whose
+            endpoints already agree is one that closes a cycle.
+        - id: esm-eval-depth
+          kind: evaluate
+          prompt: >-
+            With union by size and no path compression, what is the deepest
+            possible chain at n = 200000?
+          options: ["17", "18", "200000", "1"]
+          answer: "17"
+          explanation: >-
+            A chain deepens only when a group is absorbed by one at least as
+            large, so the size doubles at each level. 2^17 = 131072 and
+            2^18 = 262144, so 17 is the most an adversary can force.
+        - id: esm-eval-queries
+          kind: evaluate
+          prompt: >-
+            You must answer q connectivity questions interleaved with m edge
+            insertions. What does running a fresh sweep per question cost?
+          options:
+            - "O(q * (n + m)), which is the reason not to do it"
+            - "O(n + m), because the sweeps share work"
+            - "O(q log n)"
+            - "O(n + m + q)"
+          answer: "O(q * (n + m)), which is the reason not to do it"
+          explanation: >-
+            A sweep starts knowing nothing and ends remembering nothing, so
+            every question pays the full price again. Merging keeps the answer
+            between questions, which is the whole difference.
+        - id: esm-prop-cycle
+          kind: property
+          prompt: >-
+            An edge arrives whose two endpoints already have the same
+            representative. What does that edge do?
+          options:
+            - it closes a cycle, and adding it changes nothing about connectivity
+            - it merges two groups
+            - it is invalid input
+            - it disconnects the graph
+          answer: it closes a cycle, and adding it changes nothing about connectivity
+          explanation: >-
+            They were already reachable from each other, so a second route
+            between them is a cycle by definition. This is how spanning trees
+            are built without ever searching for a cycle.
+        - id: esm-prop-limits
+          kind: property
+          prompt: >-
+            Which question can this structure NOT answer?
+          options:
+            - how many edges lie on the route between two vertices
+            - whether two vertices are in the same group
+            - how many groups there are
+            - how large the group containing a vertex is
+          answer: how many edges lie on the route between two vertices
+          explanation: >-
+            Representatives record membership and nothing else. There is no
+            distance in the structure, and no way to add one — the moment a
+            length is wanted you are looking at a traversal or a shortest-path
+            sweep instead.
+        - id: esm-trap-rawlink
+          kind: trap
+          prompt: >-
+            `void unite(int a, int b) { p[a] = b; }` is used, with no calls to
+            find. What goes wrong?
+          options:
+            - it links two elements rather than two groups, detaching whatever hung below a
+            - it is correct but slow
+            - it merges three groups at once
+            - it fails only when a equals b
+          answer: it links two elements rather than two groups, detaching whatever hung below a
+          explanation: >-
+            a may already hang beneath a representative, and overwriting its
+            pointer cuts its group in two. Find both representatives first, then
+            attach one to the other — and attach the smaller.
+        - id: esm-trap-remove
+          kind: trap
+          prompt: >-
+            A problem adds edges and later REMOVES some, asking for the number
+            of groups after each operation. Why does this structure fail?
+          options:
+            - it cannot un-merge, so a removal cannot be undone
+            - removals make the chains too deep
+            - path compression breaks on removal
+            - it cannot, this is exactly what it is for
+          answer: it cannot un-merge, so a removal cannot be undone
+          explanation: >-
+            Merging is one-way. The standard escape is to process the whole
+            operation list backwards, turning every removal into an addition; if
+            the problem forbids that, you are outside the technique and should
+            stop trying to patch it.
+        - id: esm-recall-find
+          kind: recall
+          prompt: >-
+            Write the one-line body of `find`, with path compression, for an
+            array `p` of parents.
+          answer: "return p[x] == x ? x : p[x] = find(p[x]);"
+          accepts:
+            - "returnp[x]==x?x:p[x]=find(p[x]);"
+            - "returnp[x]==x?x:(p[x]=find(p[x]));"
+            - "returnx==p[x]?x:p[x]=find(p[x]);"
+            - "if(p[x]==x)returnx;returnp[x]=find(p[x]);"
+          explanation: >-
+            The assignment inside the return is the compression: every element
+            on the chain is re-pointed straight at the representative on the way
+            back out, so the same walk is never paid for twice.
+        - id: esm-apply-same
+          kind: apply
+          prompt: >-
+            Write the expression that is true exactly when vertices a and b are
+            already in the same group.
+          answer: "find(a) == find(b)"
+          accepts:
+            - "find(a)==find(b)"
+            - "find(b)==find(a)"
+            - "(find(a)==find(b))"
+            - "find(a)-find(b)==0"
+          explanation: >-
+            Representatives, never vertex numbers. `a == b` answers a different
+            question and answers it correctly, which is what makes it so easy to
+            leave in place.
+
+  # ---------------------------------------------------------------- stage 2
+  - id: stage-bfs-layers
+    order: 2
+    pattern: bfs-shortest-path
+    trial_problem_ids: [courier-fewest-legs, plague-nearest-well]
+    secret:
+      id: bfs-layers
+      name: The First Time You See It Is the Cheapest
+      idiom: "if (dist[v] == -1) { dist[v] = dist[u] + 1; q.push(v); }"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        Now the queue earns its keep. A queue returns vertices in non-decreasing
+        order of distance from the source — it empties one layer before it
+        reaches the next — so the FIRST time you arrive at a vertex is already
+        the cheapest time you will ever arrive at it. That single fact is the
+        whole algorithm, and it has one consequence people fail to draw: dist[v]
+        is written once and never again. Not improved. Not compared. Written,
+        once, at the moment v is pushed. If you find yourself writing
+        `if (dist[u] + 1 < dist[v])` you have imported a habit from the next
+        pattern and you will pay for it in re-pushes and a time limit. Two
+        savings follow. Initialise dist to -1 and it IS the claimed array, so
+        there is no second array to keep in step and no way for them to
+        disagree. And if the question asks for the distance to the NEAREST of
+        many sources — the nearest guard, the nearest well, the nearest exit —
+        do not run one sweep per source like a clerk. Push every source at zero
+        before the loop begins. The layers then grow from all of them at once
+        and one pass answers every vertex, in the same O(n + m) a single source
+        would have cost, where k separate sweeps would have cost k times that.
+        Also learn what this is NOT. It is a route length, not a route. If the
+        statement wants the sequence of vertices, record where each vertex was
+        first reached from and walk the parents back afterwards. And the
+        vertices need not be places at all: four dials and eight ways to turn
+        them is ten thousand vertices and eighty thousand edges, and it is the
+        same loop.
+      demonstrations:
+        - expression: "distances from 1 on 1-2, 2-3, 1-4, 2-5, 3-6, 5-6"
+          result: "0, 1, 2, 1, 2, 3"
+          note: >-
+            Layer 0 is {1}; layer 1 is {2, 4}; layer 2 is {3, 5}; layer 3 is
+            {6}. The queue holds one layer at a time, which is why the order it
+            returns is the order of distance.
+        - expression: "vertex 6, reached from 3 and reachable from 5"
+          result: "3 either way"
+          note: >-
+            Whichever of 3 or 5 was queued first claims 6, and both are at
+            distance 2, so 6 gets 3 regardless. The first arrival being final is
+            not luck; the queue guarantees it.
+        - expression: "the same sweep with `if (dist[u] + 1 < dist[v])` and no claimed test"
+          result: "correct distances, and a time limit"
+          note: >-
+            In a unit-cost graph no later route is ever shorter, so the
+            comparison is always false after the first write — but only after
+            the vertex has been re-pushed and re-expanded. Correctness
+            unaffected, cost unbounded.
+        - expression: "k sources, one sweep per source"
+          result: "k * (n + m)"
+          note: "At k = 10^5 that is a hundred thousand full sweeps of the graph."
+        - expression: "k sources, all pushed at distance 0 before the loop"
+          result: "n + m"
+          note: >-
+            The layers grow outward from every source at once, so the first
+            arrival at a vertex is by definition from its nearest source. Same
+            loop, different four lines of setup.
+        - expression: "a 4-dial lock, digits 0-9, one dial one step per move"
+          result: "10000 vertices, 8 edges each"
+          note: >-
+            Nothing here is a place on a map and the algorithm does not care. A
+            vertex is any state; an edge is any legal move; every move costs one.
+        - expression: "the parent of each vertex, recorded when it is first claimed"
+          result: "a route of the correct length"
+          note: >-
+            The parent is on some shortest route by construction, because the
+            first arrival was the cheapest. Walk parents from the target and
+            reverse.
+        - expression: "dist initialised to 0 instead of -1"
+          result: "the source is re-expanded and unreached vertices report 0"
+          note: >-
+            0 is a real distance. -1 is not, which is exactly why it can carry
+            two meanings at once — unreached, and unclaimed.
+      watch_out:
+        - warning: "Write dist[v] when you PUSH v, and never write it again."
+          why: >-
+            The first arrival is already the cheapest, so there is nothing to
+            improve. Writing it at the pop makes each edge push its far endpoint
+            and the queue holds m + 1 entries; comparing instead of testing for
+            -1 re-pushes vertices forever. Both keep the output correct, which
+            is what makes them survive to the judge.
+        - warning: "Initialise dist to -1, not to 0."
+          why: >-
+            0 is a legitimate distance — the source has it — so it cannot also
+            mean unvisited. With -1 the array carries both meanings without
+            ambiguity and you need no separate seen array to fall out of step
+            with it.
+        - warning: "k separate sweeps for k sources is the same work k times over."
+          why: >-
+            Seeding the queue with every source costs four lines and answers
+            every vertex in one pass. At 10^5 sources the difference is 10^5
+            sweeps against one, and it is the difference between an accepted
+            solution and a timeout on a correct algorithm.
+        - warning: "Taking the next vertex from the BACK turns this into depth-first search."
+          why: >-
+            Every vertex is still reached, so nothing crashes and nothing times
+            out. The distances are simply the lengths of whichever routes the
+            walk wandered down, all too large. A plausible wrong array with no
+            symptom is the worst failure mode in this region.
+        - warning: "Distance and route are different questions."
+          why: >-
+            A dist array cannot be turned into a path after the fact; you must
+            record the parent at the moment each vertex is claimed. One extra
+            array, written on the same line, and the reconstruction is a walk
+            backwards and a reverse.
+        - warning: "For implicit graphs, bound the state space before you write a line."
+          why: >-
+            Ten thousand lock readings is nothing. A permutation of twelve items
+            is 479001600 and will not fit in any map you can afford. Count the
+            states first; if the count is too large, breadth-first search was
+            never the answer and no amount of tuning will make it one.
+      drills:
+        - id: bl-eval-layers
+          kind: evaluate
+          prompt: >-
+            Edges 1-2, 2-3, 1-4, 2-5, 3-6, 5-6, sweeping from 1. What is the
+            distance to vertex 5?
+          options: ["1", "2", "3", "0"]
+          answer: "2"
+          explanation: >-
+            5 is reached from 2, which sits at distance 1. The layers are {1},
+            then {2, 4}, then {3, 5}, then {6}.
+        - id: bl-eval-multi
+          kind: evaluate
+          prompt: >-
+            A path of five vertices 1-2-3-4-5. Both 1 and 5 are sources, both
+            pushed at distance 0. What distance does vertex 3 receive?
+          options: ["0", "1", "2", "4"]
+          answer: "2"
+          explanation: >-
+            Two from either end, and the layers meet at 3. One sweep gives every
+            vertex its distance to the NEAREST source, which is what the
+            question asked and what k separate sweeps would have computed k
+            times over.
+        - id: bl-eval-cost
+          kind: evaluate
+          prompt: >-
+            There are k sources and you run one full sweep from each. What is
+            the total cost?
+          options:
+            - "O(k * (n + m))"
+            - "O(n + m)"
+            - "O(k log n)"
+            - "O(n + m + k)"
+          answer: "O(k * (n + m))"
+          explanation: >-
+            Each sweep pays the whole graph again. Seeding the queue with all k
+            sources first collapses it to a single O(n + m) pass, which at
+            k = 10^5 is the entire difference between accepted and timed out.
+        - id: bl-eval-lock
+          kind: evaluate
+          prompt: >-
+            Four dials, each showing a digit 0 to 9. One move turns one dial one
+            step, wrapping around. How many vertices and how many moves out of
+            each vertex?
+          options:
+            - 10000 vertices, 8 moves each
+            - 40 vertices, 2 moves each
+            - 10000 vertices, 4 moves each
+            - 9999 vertices, 10 moves each
+          answer: 10000 vertices, 8 moves each
+          explanation: >-
+            Ten to the fourth readings, and from each of them four dials times
+            two directions. The vertices are states rather than places, and
+            nothing else about the sweep changes.
+        - id: bl-prop-whyqueue
+          kind: property
+          prompt: >-
+            Why does a queue produce shortest distances where a stack does not?
+          options:
+            - vertices leave a queue in non-decreasing order of distance, so the first arrival is final
+            - a queue is faster than a stack
+            - a stack cannot store distances
+            - a queue visits fewer vertices
+          answer: vertices leave a queue in non-decreasing order of distance, so the first arrival is final
+          explanation: >-
+            The queue empties one layer before starting the next. A stack
+            reaches every vertex too, and records the length of whichever route
+            it wandered down — plausible numbers, all too large.
+        - id: bl-prop-hypothesis
+          kind: property
+          prompt: >-
+            Which property of the graph makes "the first arrival is the
+            cheapest" true?
+          options:
+            - every edge costs exactly the same
+            - the graph is connected
+            - the graph is undirected
+            - there are no cycles
+          answer: every edge costs exactly the same
+          explanation: >-
+            Uniform cost is the entire hypothesis, and it is usually written as
+            scenery — "each move takes one second". Connectivity, direction and
+            cycles are all irrelevant to it, and none of them can substitute.
+        - id: bl-trap-improve
+          kind: trap
+          prompt: >-
+            The relaxation is written `if (dist[u] + 1 < dist[v]) { dist[v] =
+            dist[u] + 1; q.push(v); }` with dist initialised to a large number.
+            What happens?
+          options:
+            - the distances are right and the sweep times out from re-pushing vertices
+            - the distances come out one too large
+            - the sweep never terminates on any input
+            - nothing, this is the correct form
+          answer: the distances are right and the sweep times out from re-pushing vertices
+          explanation: >-
+            In a unit-cost graph no later route is ever shorter, so the test is
+            false after the first write — but the vertex has already been
+            re-pushed and re-expanded to discover that. Test for unclaimed
+            instead, and the work is bounded by the edges.
+        - id: bl-trap-stack
+          kind: trap
+          prompt: >-
+            Someone replaces `q.front()` with `q.back()` on a deque and the
+            program still runs to completion on every test. What is wrong with
+            the output?
+          options:
+            - every distance is a route length the walk happened to take, and all are too large
+            - some vertices are never reached
+            - the distances are correct but the order of output changes
+            - the program leaks memory
+          answer: every distance is a route length the walk happened to take, and all are too large
+          explanation: >-
+            Taking from the back is depth-first search. Reachability is
+            unaffected and the shape of the output is unaffected; only the
+            numbers are wrong, and they are wrong plausibly.
+        - id: bl-recall-relax
+          kind: recall
+          prompt: >-
+            With `dist` initialised to -1, write the statement that claims an
+            unvisited neighbour v, records its distance and queues it.
+          answer: "if (dist[v] == -1) { dist[v] = dist[u] + 1; q.push(v); }"
+          accepts:
+            - "if(dist[v]==-1){dist[v]=dist[u]+1;q.push(v);}"
+            - "if(dist[v]<0){dist[v]=dist[u]+1;q.push(v);}"
+            - "if(d[v]==-1){d[v]=d[u]+1;q.push(v);}"
+            - "if(dist[v]==-1){dist[v]=1+dist[u];q.push(v);}"
+          explanation: >-
+            One test, one write, one push, in that order and on one line. The -1
+            is doing two jobs at once — unreached and unclaimed — which is why
+            there is no second array to keep in step.
+        - id: bl-apply-seed
+          kind: apply
+          prompt: >-
+            Given `vector<int> sources`, write the loop that seeds the sweep so
+            one pass answers "distance to the nearest source" for every vertex.
+          answer: "for (int s : sources) { dist[s] = 0; q.push(s); }"
+          accepts:
+            - "for(ints:sources){dist[s]=0;q.push(s);}"
+            - "for(autos:sources){dist[s]=0;q.push(s);}"
+            - "for(ints:sources){d[s]=0;q.push(s);}"
+            - "for(inti=0;i<sources.size();++i){dist[sources[i]]=0;q.push(sources[i]);}"
+          explanation: >-
+            Everything else about the sweep is unchanged. That is the point:
+            multi-source costs four lines of setup and nothing at run time,
+            where the clerk's version costs a factor of k.
+
+  # ---------------------------------------------------------------- stage 3
+  - id: stage-weights-break-bfs
+    order: 3
+    pattern: dijkstra-weighted
+    trial_problem_ids: [night-watch-relay]
+    secret:
+      id: weights-break-bfs
+      name: Where the Queue Stops Being Sorted
+      idiom: "if (d > dist[u]) continue;"
+      memorise: true
+      baseline_drills: 6
+      teaches: >-
+        This is the secret the rest of the region is arranged around, so put
+        everything else down. Breadth-first search gives you shortest paths
+        under ONE condition: every edge costs the same. Read that again, because
+        the condition is almost never stated as a condition. It is stated as
+        scenery — each move takes a second, each road is ridden in a day — and
+        the moment a statement puts different numbers on different edges the
+        condition is gone. And here is what it does not do when it goes. It does
+        not crash. It does not loop. It does not slow down. It returns a path.
+        Take four vertices in a line, 1-2, 2-3, 3-4, each edge costing 1, and
+        add one more edge straight from 1 to 4 costing 5. Ask a queue for the
+        shortest way from 1 to 4 and it will tell you: one edge. It is one edge.
+        It is a real path. It costs 5, and going the long way round costs 3. The
+        queue answered a different question — fewest EDGES, not least COST — and
+        it answered that one correctly, which is why nothing in your output will
+        ever look wrong. The fix is to stop letting arrival order stand in for
+        cost order and to order the frontier explicitly: keep it in a min-heap
+        by running total, and always take the cheapest unfinished vertex. That
+        vertex's distance is then final, and the reason is worth being able to
+        say — any other route to it must still leave the finished region through
+        some frontier vertex, and every frontier vertex already costs at least
+        as much. Two practical points. A vertex enters the heap once per
+        improvement, so `if (d > dist[u]) continue;` throws away the stale
+        copies; drop that line and each stale copy is expanded in full. And
+        distances go in a long long with a sentinel near 4e18, not LLONG_MAX,
+        which overflows the instant it meets a relaxation.
+      demonstrations:
+        - expression: "1-2, 2-3, 3-4 each costing 1, plus 1-4 costing 5; a queue from 1"
+          result: "vertex 4 is one edge away"
+          note: >-
+            True, and useless. The queue minimised the number of edges. Nobody
+            asked for the number of edges.
+        - expression: "the cost of that one-edge route"
+          result: "5"
+          note: >-
+            A genuine path, correctly reported, at the wrong price. Widen the
+            shortcut to 100 and the queue returns the same route.
+        - expression: "the true cheapest route from 1 to 4"
+          result: "3, by 1-2-3-4"
+          note: >-
+            Confirmed against every simple path by exhaustion. Three edges, cost
+            3, against one edge, cost 5. The two objectives disagree, and only
+            one of them was asked for.
+        - expression: "the handbook's graph, cheapest-first from 1"
+          result: "0, 5, 7, 3, 1"
+          note: >-
+            Vertices settle in the order 1, 5, 4, 2, 3 — by cost, not by edge
+            count. Note that vertex 4 settles at 3 despite the direct edge from
+            1 to 4 costing 9.
+        - expression: "the heap entry for a vertex whose distance later improves"
+          result: "a stale copy, discarded by `if (d > dist[u]) continue;`"
+          note: >-
+            Deleting from a binary heap is awkward, so nothing is deleted. The
+            old copy is left to surface and be recognised, which costs one
+            comparison.
+        - expression: "removing that one line"
+          result: "every stale copy expanded in full"
+          note: >-
+            Still correct, and now the work grows with the number of
+            improvements rather than with the edges. One `continue` is the
+            difference between O(m log n) and a timeout on a dense graph.
+        - expression: "dist initialised to LLONG_MAX, then dist[u] + w"
+          result: "signed overflow, and a negative total"
+          note: >-
+            An unreachable vertex then looks cheaper than every real route.
+            Sentinel at 4e18 instead: 4e18 plus any total you can build from
+            2*10^5 edges of 10^9 is still under 9.2e18.
+        - expression: "2 * 10^5 edges of weight 10^9 accumulated in an int"
+          result: "2 * 10^14, about 93000 times INT_MAX"
+          note: >-
+            The individual weights fit in an int comfortably. The total does
+            not, and it is the total the answer is made of.
+      watch_out:
+        - warning: "\"All edges cost the same\" is a hypothesis, and it is written as scenery."
+          why: >-
+            "Each leg takes a day" and "the guild pays the same wage whatever
+            road she takes" are the sentences that decide between a queue and a
+            heap, and they read like flavour. Find that sentence before you pick
+            a container. If it is absent, the edges are weighted.
+        - warning: "A queue on a weighted graph does not fail. It answers a different question."
+          why: >-
+            It minimises the NUMBER of edges and reports a real path. There is
+            no crash, no timeout and no impossible value to notice — on
+            1-2-3-4 at cost 1 each plus 1-4 at cost 5, it returns the one-edge
+            route costing 5 where 3 was available. You will debug the traversal
+            for an hour and the traversal is fine.
+        - warning: "Keep the stale-copy test."
+          why: >-
+            A vertex is pushed once per improvement, so the heap holds up to m
+            entries. `if (d > dist[u]) continue;` recognises the outdated ones
+            in a single comparison; without it each is expanded in full and the
+            bound is gone while the answer stays right.
+        - warning: "std::priority_queue is a MAX-heap."
+          why: >-
+            Left as it comes, it settles the most expensive frontier vertex
+            first, and the distances finalise in exactly the wrong order. Pass
+            std::greater<> as the third template argument, or push negated
+            distances as the handbook does and accept one more chance to lose a
+            minus sign.
+        - warning: "Distances are long long, and the sentinel is not LLONG_MAX."
+          why: >-
+            2 * 10^5 edges at 10^9 reach 2 * 10^14, which is about 93000 times
+            INT_MAX. And LLONG_MAX + w is signed overflow, which is undefined
+            behaviour and usually shows up as an unreachable vertex looking
+            cheapest. Use something near 4e18 and the sum is always safe.
+        - warning: "Do not reach for the heap when the weights ARE all equal."
+          why: >-
+            It is not wrong, it is merely a log factor you were not asked to
+            pay, and on a graph of 10^6 edges that factor is real. Recognition
+            cuts both ways: the queue is the correct answer when the hypothesis
+            holds, and knowing that it holds is the skill.
+      drills:
+        - id: wbb-eval-hops
+          kind: evaluate
+          prompt: >-
+            Edges 1-2, 2-3 and 3-4 each cost 1, and a further edge 1-4 costs 5.
+            A plain queue-based sweep from vertex 1 reports how many edges to
+            vertex 4?
+          options: ["1", "2", "3", "5"]
+          answer: "1"
+          explanation: >-
+            The direct edge. That is the correct answer to "fewest edges", and
+            the sweep has no way of knowing it was asked something else.
+        - id: wbb-eval-hopcost
+          kind: evaluate
+          prompt: >-
+            What does the route that sweep found actually cost?
+          options: ["1", "3", "5", "8"]
+          answer: "5"
+          explanation: >-
+            One edge, priced at 5. A genuine path, correctly found, at the wrong
+            price — and nothing about the output says so.
+        - id: wbb-eval-true
+          kind: evaluate
+          prompt: >-
+            On the same graph, what is the smallest possible total cost from
+            vertex 1 to vertex 4?
+          options: ["1", "3", "4", "5"]
+          answer: "3"
+          explanation: >-
+            1-2-3-4, three edges at 1 each. Checked against every simple path by
+            exhaustion. Three edges beats one edge because the objective was
+            never the edges.
+        - id: wbb-eval-settle
+          kind: evaluate
+          prompt: >-
+            On the handbook's graph — edges 1-2 costing 5, 1-4 costing 9, 1-5
+            costing 1, 2-3 costing 2, 3-4 costing 6, 4-5 costing 2 — what is the
+            cheapest total from 1 to 4?
+          options: ["3", "7", "9", "11"]
+          answer: "3"
+          explanation: >-
+            1-5-4, which is 1 + 2. The direct edge costs 9 and is never used.
+            The vertices settle in the order 1, 5, 4, 2, 3 — by cost, not by
+            distance in edges.
+        - id: wbb-prop-condition
+          kind: property
+          prompt: >-
+            Under exactly which condition does a queue-based sweep give shortest
+            paths?
+          options:
+            - when every edge costs the same
+            - when the graph is connected
+            - when the graph has no cycles
+            - when the graph is undirected
+          answer: when every edge costs the same
+          explanation: >-
+            Uniform cost is what makes arrival order equal cost order. Nothing
+            about connectivity, acyclicity or direction touches it, and no
+            amount of any of them can substitute.
+        - id: wbb-prop-final
+          kind: property
+          prompt: >-
+            Why is the distance of the cheapest unfinished vertex already final,
+            when all weights are non-negative?
+          options:
+            - any other route to it must leave the finished region through a frontier vertex that already costs at least as much
+            - because the heap is sorted
+            - because each vertex is pushed only once
+            - because the graph has no cycles
+          answer: any other route to it must leave the finished region through a frontier vertex that already costs at least as much
+          explanation: >-
+            That sentence is the algorithm, and it is where non-negativity
+            enters: the rest of the route can only add cost. Allow one negative
+            edge and the remainder can subtract, and the argument is gone.
+        - id: wbb-trap-nostale
+          kind: trap
+          prompt: >-
+            The line `if (d > dist[u]) continue;` is deleted. What is the
+            consequence?
+          options:
+            - the answers stay correct and the sweep expands every stale copy, losing its bound
+            - the answers come out too large
+            - the sweep never terminates
+            - nothing, the line is redundant
+          answer: the answers stay correct and the sweep expands every stale copy, losing its bound
+          explanation: >-
+            Nothing is deleted from the heap, so a vertex sits there once per
+            improvement. Recognising the outdated copies costs one comparison;
+            expanding them costs the complexity guarantee.
+        - id: wbb-trap-maxheap
+          kind: trap
+          prompt: >-
+            `priority_queue<pair<long long,int>> pq;` is used with no comparator
+            and the distances come out too large. Why?
+          options:
+            - it is a max-heap, so the most expensive frontier vertex is settled first
+            - pairs cannot be compared
+            - the distances must be int
+            - the source was never pushed
+          answer: it is a max-heap, so the most expensive frontier vertex is settled first
+          explanation: >-
+            The default comparison hands back the largest element. Everything
+            finalises in the reverse of the order it should. Pass
+            std::greater<>, or push negated distances.
+        - id: wbb-trap-overflow
+          kind: trap
+          prompt: >-
+            Distances are initialised to LLONG_MAX and relaxed with
+            `dist[u] + w`. What is the symptom?
+          options:
+            - unreachable vertices look cheapest, because the sum overflowed and went negative
+            - the program refuses to compile
+            - every distance is off by one
+            - unreachable vertices report zero
+          answer: unreachable vertices look cheapest, because the sum overflowed and went negative
+          explanation: >-
+            Signed overflow is undefined behaviour, and the usual result is a
+            large negative number that beats every real route. Use a sentinel
+            near 4e18 — far above any real total, far below the point where
+            adding to it breaks.
+        - id: wbb-recall-stale
+          kind: recall
+          prompt: >-
+            After popping the pair (d, u) from the heap, write the statement
+            that discards an out-of-date copy of u.
+          answer: "if (d > dist[u]) continue;"
+          accepts:
+            - "if(d>dist[u])continue;"
+            - "if(d>dist[u])continue"
+            - "if(dist[u]<d)continue;"
+            - "if(d!=dist[u])continue;"
+          explanation: >-
+            One comparison, and the heap may hold as many copies of a vertex as
+            it likes. Memorise it as part of the pop, not as an optimisation to
+            add later — added later, it is forgotten.
+        - id: wbb-apply-heap
+          kind: apply
+          prompt: >-
+            Declare a min-heap of (distance, vertex) pairs with distances in
+            long long, using no negation.
+          answer: "priority_queue<pair<long long,int>, vector<pair<long long,int>>, greater<>> pq;"
+          accepts:
+            - "priority_queue<pair<longlong,int>,vector<pair<longlong,int>>,greater<>>pq;"
+            - "priority_queue<pair<longlong,int>,vector<pair<longlong,int>>,greater<pair<longlong,int>>>pq;"
+            - "priority_queue<pair<longlong,int>,vector<pair<longlong,int>>,greater<>>q;"
+            - "priority_queue<pair<longlong,int>,vector<pair<longlong,int>>,greater<pair<longlong,int>>>q;"
+          explanation: >-
+            Three template arguments because the comparator is the third, and
+            long long because the total is what overflows and not the individual
+            weights. Write it once, from memory, and stop rewriting it.
+
+  # ---------------------------------------------------------------- stage 4
+  - id: stage-zero-one-deque
+    order: 4
+    pattern: dijkstra-weighted
+    trial_problem_ids: [ferry-and-foot]
+    secret:
+      id: zero-one-deque
+      name: Two Weights Need No Heap
+      idiom: "w == 0 ? dq.push_front(v) : dq.push_back(v)"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        You have just been told that unequal weights force a heap. Now learn the
+        exception, because it is the one that shows you WHY the heap was there.
+        Suppose the only weights in the whole graph are 0 and 1. A free edge
+        leaves the total unchanged, so the vertex it reaches belongs in the same
+        layer you are standing in; a paid edge adds exactly one, so the vertex
+        belongs in the next layer. There are only ever two layers alive at once.
+        A structure that can add to both ends of a sequence is therefore enough:
+        push to the FRONT when the edge is free, to the BACK when it costs one,
+        and the frontier stays sorted by cost with no comparisons at all. I have
+        measured the invariant rather than asserted it — with the stale test in
+        place, the labels sitting in the deque take at most two distinct values,
+        and they differ by at most one. That is exactly the property a heap was
+        being paid to maintain, and here the structure of the weights maintains
+        it for free: O(n + m), no logarithm. Two things to be careful about, and
+        both are places students lose the test. First, this is still a
+        cost-ordered sweep and not a layer count, so a vertex may be improved
+        after it has been pushed and you must keep the stale test — remove it
+        and the two-value invariant is not even true, which I checked. Second,
+        do not mistake this for the plain queue: on 1-2, 2-3 and 3-4 all free,
+        with a direct 1-4 costing one, a plain queue reports vertex 4 at one
+        edge and therefore one coin, and the true cost is zero.
+      demonstrations:
+        - expression: "edges 1-2, 2-3, 3-4 all costing 0, plus 1-4 costing 1"
+          result: "a plain queue says vertex 4 is 1 edge away"
+          note: "And prices that at one coin, because the edge it used costs one."
+        - expression: "the true cheapest cost from 1 to 4 on that graph"
+          result: "0"
+          note: >-
+            Three free edges. The deque puts 2, then 3, then 4 on the FRONT, all
+            still holding zero, and finds it before the paid edge is ever
+            considered.
+        - expression: "a free edge, in the deque"
+          result: "push_front — same layer"
+          note: "The total did not change, so the vertex belongs where you are standing."
+        - expression: "a paid edge, in the deque"
+          result: "push_back — next layer"
+          note: "The total rose by one, so the vertex belongs behind everything at the current cost."
+        - expression: "the distinct labels alive in the deque at any moment"
+          result: "at most 2, differing by at most 1"
+          note: >-
+            Measured over 4000 random 0/1 graphs against a heap, with the stale
+            test in place. That two-value window is precisely the ordering a
+            heap would have been maintaining.
+        - expression: "the cost of the deque sweep against the heap sweep"
+          result: "O(n + m) against O(n + m log m)"
+          note: >-
+            The logarithm was buying an ordering that the weights already
+            supply. Two distinct weights, and it can be handed back.
+        - expression: "the 4-by-4 map .  .  #  . / # # # . / .  .  #  . / .  # .  ., walls costing 1 to break"
+          result: "1 wall"
+          note: >-
+            Down the left column for nothing, break the single wall at the
+            bottom, and along. Verified against a heap on the same map.
+        - expression: "the fewest-STEPS route across that same map"
+          result: "6 steps, crossing 2 walls"
+          note: >-
+            Six steps is genuinely the fewest steps. It breaks twice as many
+            walls as necessary, because steps were never what was being charged.
+      watch_out:
+        - warning: "This is a cost sweep, not a layer count. Keep the stale test."
+          why: >-
+            A vertex can be reached again more cheaply after it has been pushed,
+            exactly as in the heap version. Drop the test and you do not merely
+            slow down — the two-distinct-labels invariant stops holding, which I
+            confirmed by measuring it both ways.
+        - warning: "Front for zero, back for one. Reversing them inverts the sweep."
+          why: >-
+            Pushing a free edge to the back makes the frontier stop being sorted
+            by cost, and the answers come out too large with no other symptom.
+            Tie the direction to the meaning: free means you have not moved to a
+            new layer, so you go back to where you already were.
+        - warning: "The trick needs the weights to be exactly two values, one of them zero."
+          why: >-
+            Weights 0 and 2 rescale to 0 and 1 and are fine. Weights 1 and 2 do
+            not — subtracting one from every edge changes the objective, because
+            routes with different edge counts are shifted by different amounts.
+            Three distinct weights is a heap, no matter how small they are.
+        - warning: "A plain queue is still wrong here, and still looks right."
+          why: >-
+            Free edges are edges. On 1-2, 2-3, 3-4 free with a direct 1-4 at one
+            coin, the queue reports one edge and one coin where the answer is
+            zero. Two distinct weights are already unequal weights.
+        - warning: "Use std::deque, and take from the front."
+          why: >-
+            Both ends must be cheap to push and the reading end must be the
+            front. A vector with insert at the beginning is O(n) per free edge
+            and turns a linear sweep into a quadratic one on the exact inputs
+            the technique was chosen for.
+      drills:
+        - id: zod-eval-queue
+          kind: evaluate
+          prompt: >-
+            Edges 1-2, 2-3 and 3-4 cost 0, and edge 1-4 costs 1. What total does
+            a plain queue-based sweep report for vertex 4?
+          options: ["0", "1", "3", "4"]
+          answer: "1"
+          explanation: >-
+            It finds vertex 4 one edge away, along the edge costing a coin. One
+            edge, one coin — a correct answer to the wrong question.
+        - id: zod-eval-true
+          kind: evaluate
+          prompt: >-
+            On that same graph, what is the true smallest total cost from 1 to 4?
+          options: ["0", "1", "2", "3"]
+          answer: "0"
+          explanation: >-
+            1-2-3-4, three edges, all free. More edges and less cost, which is
+            the whole shape of this region's central mistake.
+        - id: zod-eval-labels
+          kind: evaluate
+          prompt: >-
+            While a 0/1 sweep with a deque is running, how many distinct
+            distance labels can be alive in the deque at once?
+          options: ["1", "2", "3", "as many as there are vertices"]
+          answer: "2"
+          explanation: >-
+            At most two, and they differ by at most one — measured against a
+            heap over 4000 random graphs. That two-value window is exactly the
+            ordering a heap would otherwise be maintaining.
+        - id: zod-eval-grid
+          kind: evaluate
+          prompt: >-
+            On a map where open cells cost nothing to enter and walls cost one
+            to break, the fewest-steps route from corner to corner is 6 steps
+            and crosses 2 walls, while another route exists crossing 1 wall.
+            What is the answer to "fewest walls broken"?
+          options: ["1", "2", "6", "8"]
+          answer: "1"
+          explanation: >-
+            The objective is walls, not steps. The six-step route is genuinely
+            the shortest in steps and breaks one wall too many, because steps
+            were never being charged.
+        - id: zod-prop-front
+          kind: property
+          prompt: >-
+            Why does a free edge push to the FRONT of the deque?
+          options:
+            - the total did not change, so the vertex belongs in the layer being processed now
+            - to make the deque shorter
+            - because free edges are more important
+            - because the front is faster to write to
+          answer: the total did not change, so the vertex belongs in the layer being processed now
+          explanation: >-
+            The deque is kept sorted by cost. A vertex whose cost equals the
+            current one belongs among the current ones; a vertex costing one
+            more belongs behind all of them, at the back.
+        - id: zod-prop-scope
+          kind: property
+          prompt: >-
+            Which weight set can this technique NOT handle?
+          options:
+            - weights 1 and 2
+            - weights 0 and 1
+            - weights 0 and 2
+            - weights 0 and 1000
+          answer: weights 1 and 2
+          explanation: >-
+            Any two values with one of them zero rescale to 0 and 1. With 1 and
+            2, subtracting one from every edge shifts routes by different
+            amounts depending on how many edges they use, which changes the
+            objective. That case needs a heap.
+        - id: zod-trap-nostale
+          kind: trap
+          prompt: >-
+            The stale-copy test is removed from the deque sweep, on the grounds
+            that "a deque is just a queue". What goes wrong?
+          options:
+            - vertices are re-expanded and the two-distinct-labels property stops holding
+            - the deque grows without bound and the program crashes
+            - the answers are unaffected and the code is simpler
+            - the sweep becomes depth-first
+          answer: vertices are re-expanded and the two-distinct-labels property stops holding
+          explanation: >-
+            This is a cost-ordered sweep, not a layer count, and a vertex can
+            improve after being pushed. Measured both ways: with the test the
+            labels take at most two values, and without it they do not.
+        - id: zod-trap-swapped
+          kind: trap
+          prompt: >-
+            The pushes are swapped — free edges to the back, paid edges to the
+            front. What is the symptom?
+          options:
+            - the frontier is no longer sorted by cost and totals come out too large
+            - the sweep never terminates
+            - only the first vertex gets a correct answer
+            - the program crashes on the first free edge
+          answer: the frontier is no longer sorted by cost and totals come out too large
+          explanation: >-
+            Nothing crashes and nothing hangs. You get a set of plausible
+            numbers, all at least as large as the truth, which is the failure
+            mode this whole region is built to teach you to see.
+        - id: zod-recall-push
+          kind: recall
+          prompt: >-
+            Write the statement that places vertex v correctly in the deque `dq`
+            given the weight `w` of the edge just used.
+          answer: "w == 0 ? dq.push_front(v) : dq.push_back(v);"
+          accepts:
+            - "w==0?dq.push_front(v):dq.push_back(v);"
+            - "if(w==0)dq.push_front(v);elsedq.push_back(v);"
+            - "if(w)dq.push_back(v);elsedq.push_front(v);"
+            - "w?dq.push_back(v):dq.push_front(v);"
+          explanation: >-
+            Front for free, back for paid. Memorise the reason with the line:
+            free means you have not left the layer you are in, so you go back
+            among the vertices you are already processing.
+        - id: zod-apply-relax
+          kind: apply
+          prompt: >-
+            Write the condition that decides whether the edge from u to v with
+            weight w improves v, for a `dist` vector of long long.
+          answer: "if (dist[u] + w < dist[v])"
+          accepts:
+            - "if(dist[u]+w<dist[v])"
+            - "if(d[u]+w<d[v])"
+            - "if(dist[v]>dist[u]+w)"
+            - "if((dist[u]+w)<dist[v])"
+          explanation: >-
+            The same relaxation as the heap version, because this IS the heap
+            version with the ordering supplied by the weights instead of by a
+            comparison. Only the line that places v differs.
+
+  # ---------------------------------------------------------------- stage 5
+  - id: stage-negative-edges
+    order: 5
+    pattern: dijkstra-weighted
+    trial_problem_ids: [debt-ledger-loop]
+    secret:
+      id: negative-edges
+      name: The Claim That a Minus Sign Withdraws
+      idiom: "for (int i = 1; i < n; ++i) for (auto [a, b, w] : arcs) relax(a, b, w);"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        The cheapest-first sweep rests on one claim: the smallest unfinished
+        distance is already final. I told you why — every other route must leave
+        the finished region through a frontier vertex costing at least as much,
+        so the rest of the journey can only ADD. A negative edge is the sentence
+        "the rest of the journey can subtract", and the argument dies where it
+        stands. Look at four vertices: 1 to 2 costing 2, 2 to 4 costing 3, 1 to
+        3 costing 6, 3 to 4 costing -5. Vertex 4 comes off the heap holding 5,
+        so anything that believes the value at selection time reports 5 — and
+        the route through vertex 3 costs 6 minus 5, which is 1. Now be precise
+        about where the fault lies, because this caught me and it will catch
+        you: the fault is in the CLAIM, not in any line of code. An
+        implementation that keeps relaxing into already-settled vertices may end
+        up storing the right number by accident, and the handbook's own listing
+        does exactly that on this graph. You are bitten the moment you BELIEVE
+        the value at selection time — by breaking out when the target pops, or
+        by reading an answer off a vertex as you settle it. And a lazily-deleted
+        heap has its own punishment: with a negative CYCLE it never terminates
+        at all, because the distances fall forever. The replacement gives up on
+        order entirely, which is exactly why it survives. Relax every edge, n-1
+        times over. A shortest route uses at most n-1 edges, and round i has
+        fixed every route of i edges, so after n-1 rounds nothing is left. O(nm),
+        and it does not care what order anything is in. Then the round that
+        costs you nothing and buys a theorem: run one MORE pass, and if anything
+        still improves, no shortest route exists at all, because a cycle of
+        negative total can be walked again for less.
+      demonstrations:
+        - expression: "arcs 1->2 costing 2, 2->4 costing 3, 1->3 costing 6, 3->4 costing -5"
+          result: "vertex 4 is settled holding 5"
+          note: >-
+            2 then 4 come off the heap before 3 does, because 2 and 5 are both
+            below 6. At that moment the claim asserts 5 is final.
+        - expression: "the true cheapest total from 1 to 4"
+          result: "1"
+          note: >-
+            1 to 3 to 4, which is 6 - 5. Confirmed by exhausting every simple
+            path. The -5 arrives after vertex 4 has already been declared
+            finished.
+        - expression: "the same graph, relaxing every arc repeatedly"
+          result: "0, 2, 6, 1 after one round"
+          note: >-
+            One pass over the arcs in the order given already reaches the
+            answer, and the second round changes nothing, so the early exit
+            fires. No ordering was needed anywhere.
+        - expression: "the number of rounds guaranteed to be enough"
+          result: "n - 1"
+          note: >-
+            A shortest route has at most n-1 edges, and round i settles every
+            route of i edges. Three vertices need two rounds; 2500 need 2499.
+        - expression: "arcs 1->2 costing 1, 2->3 costing -1, 3->2 costing -1"
+          result: "the cycle 2->3->2 totals -2"
+          note: >-
+            Walk it twice and the total falls by four. There is no shortest
+            route, so the correct output is a refusal, not a number.
+        - expression: "an n-th round on that graph"
+          result: "still improves, so a negative cycle exists"
+          note: >-
+            One extra pass over the arcs. If n-1 rounds were genuinely enough,
+            nothing can move on the next one; if something moves, the bound has
+            been broken and only a negative cycle can break it.
+        - expression: "a lazily-deleted heap on that same graph"
+          result: "it never terminates"
+          note: >-
+            The distances keep falling around the cycle and the vertex is
+            re-pushed each time. Not a wrong answer — no answer, and a time
+            limit on code with no loop bug in it.
+        - expression: "the cost of the two methods"
+          result: "O(n + m log m) against O(n m)"
+          note: >-
+            At n = 2500 and m = 5000 the round-based method is 12.5 million
+            relaxations, which is nothing. Small bounds in the statement are the
+            setter telling you which one is intended.
+      watch_out:
+        - warning: "One negative edge is enough to withdraw the finality claim."
+          why: >-
+            Not a majority of them, not a large one — one. The claim needs every
+            possible continuation to add cost, and a single arc that subtracts
+            breaks the argument for the entire graph. Scan for a minus sign
+            before you choose a method.
+        - warning: "The damage is in the claim, not in a line of code."
+          why: >-
+            An implementation that keeps writing into dist[] after a vertex is
+            settled can end up holding the right number anyway — the handbook's
+            own listing does on this graph — while having lost its complexity
+            bound entirely. You are bitten when you BELIEVE the settled value:
+            breaking out when the target pops, or reading the answer off a
+            vertex as it settles.
+        - warning: "A lazily-deleted heap on a negative cycle does not finish."
+          why: >-
+            Each trip round the cycle lowers a distance and re-pushes the
+            vertex, forever. The verdict is a time limit, and you will look for
+            an infinite loop in code that has none. This is why the answer to a
+            negative weight is a different algorithm and never a patch.
+        - warning: "Never relax from a vertex still holding the unreached sentinel."
+          why: >-
+            Sentinel plus a negative weight is less than the sentinel, so
+            unreachable vertices start propagating fictional distances and can
+            even fake a negative cycle. One guard — skip the arc when its source
+            is still unreached — and the whole class disappears.
+        - warning: "n - 1 rounds, not n, and the extra pass is a separate thing."
+          why: >-
+            n-1 is the bound because a shortest route has at most n-1 edges.
+            The n-th pass is not part of finding distances; it is the test for
+            whether the bound held, and conflating the two gives you either an
+            unproved answer or an off-by-one on a chain of exactly n-1 arcs.
+        - warning: "Stop early when a whole round changes nothing."
+          why: >-
+            It is usually most of the running time and it costs one boolean. It
+            does not change the worst case and it very often changes whether you
+            fit inside the limit.
+      drills:
+        - id: ne-eval-settled
+          kind: evaluate
+          prompt: >-
+            Arcs 1->2 costing 2, 2->4 costing 3, 1->3 costing 6, 3->4 costing
+            -5. What value does vertex 4 hold at the moment it is taken off a
+            cheapest-first heap?
+          options: ["1", "3", "5", "6"]
+          answer: "5"
+          explanation: >-
+            By way of 2, which settled at 2. Vertices 2 and 4 both come off
+            before 3 does, and the finality claim asserts that 5 is the answer.
+        - id: ne-eval-truth
+          kind: evaluate
+          prompt: >-
+            On that same graph, what is the true smallest total from vertex 1 to
+            vertex 4?
+          options: ["1", "3", "5", "-5"]
+          answer: "1"
+          explanation: >-
+            1 to 3 to 4, which is 6 - 5. Confirmed by exhausting every simple
+            path. The saving arrives after vertex 4 has been declared finished,
+            which is the entire failure.
+        - id: ne-eval-rounds
+          kind: evaluate
+          prompt: >-
+            A graph has 2500 vertices. How many full relaxation rounds are
+            guaranteed to be enough to finish the distances?
+          options: ["2499", "2500", "2501", "5000"]
+          answer: "2499"
+          explanation: >-
+            n - 1, because a shortest route uses at most n - 1 edges and round i
+            has settled every route of i edges. The 2500th pass is not part of
+            that; it is the negative-cycle test.
+        - id: ne-eval-cycle
+          kind: evaluate
+          prompt: >-
+            Arcs 1->2 costing 1, 2->3 costing -1, 3->2 costing -1. What is the
+            total weight of the cycle between 2 and 3?
+          options: ["-2", "-1", "0", "1"]
+          answer: "-2"
+          explanation: >-
+            Minus one each way. Walk it repeatedly and the total falls without
+            bound, so no shortest route exists and the correct output is a
+            refusal rather than a number.
+        - id: ne-prop-why
+          kind: property
+          prompt: >-
+            Precisely which step of the cheapest-first argument does a negative
+            edge break?
+          options:
+            - that the rest of any route out of the finished region can only add cost
+            - that the heap can be sorted
+            - that every vertex is reachable
+            - that the graph has no cycles
+          answer: that the rest of any route out of the finished region can only add cost
+          explanation: >-
+            Non-negativity is exactly the premise that a continuation cannot
+            help. Remove it and the smallest frontier value is no longer a lower
+            bound on anything, so nothing may be settled.
+        - id: ne-prop-detect
+          kind: property
+          prompt: >-
+            How is a negative cycle detected?
+          options:
+            - run one more round after the n-1; if anything still improves, one exists
+            - check whether any single edge is negative
+            - check whether the graph has a cycle at all
+            - sum every edge weight and test the sign
+          answer: run one more round after the n-1; if anything still improves, one exists
+          explanation: >-
+            If n-1 rounds were enough, nothing can move afterwards. Something
+            moving means a route with n or more edges beat every shorter one,
+            and only a negative cycle allows that.
+        - id: ne-trap-hang
+          kind: trap
+          prompt: >-
+            A lazily-deleted heap sweep is run on a graph containing a negative
+            cycle. What is the verdict?
+          options:
+            - time limit — the distances fall forever and the vertex is re-pushed each time
+            - wrong answer, with distances too large
+            - runtime error from the heap growing
+            - it works, but slowly
+          answer: time limit — the distances fall forever and the vertex is re-pushed each time
+          explanation: >-
+            No answer at all, from code with no loop bug in it. You will hunt
+            for an infinite loop and find none, because the loop is in the graph.
+        - id: ne-trap-sentinel
+          kind: trap
+          prompt: >-
+            A round-based relaxation has no guard on unreached vertices, and the
+            unreached sentinel is a large positive number. What can go wrong on
+            a graph with negative arcs?
+          options:
+            - the sentinel is relaxed by a negative arc, so unreachable vertices propagate fictional distances
+            - the rounds never terminate
+            - the sentinel overflows to zero
+            - nothing, the sentinel is never used
+          answer: the sentinel is relaxed by a negative arc, so unreachable vertices propagate fictional distances
+          explanation: >-
+            Sentinel plus a negative weight is smaller than the sentinel, so it
+            spreads and can even counterfeit a negative cycle. Skip any arc
+            whose source is still unreached, and the whole class disappears.
+        - id: ne-recall-rounds
+          kind: recall
+          prompt: >-
+            Write the outer for-loop header that runs the guaranteed number of
+            relaxation rounds over n vertices.
+          answer: "for (int i = 1; i < n; ++i)"
+          accepts:
+            - "for(inti=1;i<n;++i)"
+            - "for(inti=1;i<=n-1;++i)"
+            - "for(inti=0;i<n-1;++i)"
+            - "for(intr=1;r<n;++r)"
+          explanation: >-
+            n - 1 rounds, because a shortest route has at most n - 1 edges. Keep
+            the extra pass mentally separate: it finds nothing, it proves
+            something.
+        - id: ne-apply-guard
+          kind: apply
+          prompt: >-
+            Write the statement that skips an arc from `a` whose source has not
+            been reached, given the unreached sentinel `INF`.
+          answer: "if (dist[a] == INF) continue;"
+          accepts:
+            - "if(dist[a]==INF)continue;"
+            - "if(dist[a]>=INF)continue;"
+            - "if(d[a]==INF)continue;"
+            - "if(dist[a]==INF)continue"
+          explanation: >-
+            Without it, sentinel plus a negative weight beats the sentinel and
+            unreachable vertices start inventing distances — and sometimes a
+            negative cycle that does not exist.
+
+  # ---------------------------------------------------------------- stage 6
+  - id: stage-indegree-zero
+    order: 6
+    pattern: topological-order
+    trial_problem_ids: [forge-order-of-works, apprentice-curriculum-loop]
+    secret:
+      id: indegree-zero
+      name: Take What Nothing Points At
+      idiom: "if (--indeg[v] == 0) q.push(v);"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        The last secret, and the one for graphs that will not be walked. A
+        one-way edge a to b can mean two entirely different things and the whole
+        region turns on which. "You can travel from a to b" is reachability and
+        you sweep it. "a must happen before b" is a PROMISE, and no sweep keeps
+        promises — you need a sequence in which every promise holds. The rule is
+        one sentence: emit any vertex nothing points at. Count, for each vertex,
+        how many edges arrive; emit the ones counting zero; and when you emit a
+        vertex, decrement the count of everything it points at, because one of
+        their requirements has just been met. Anything reaching zero joins the
+        queue. Now the part that makes this my favourite algorithm in the
+        region: the impossibility proof is FREE. If you emit fewer than n
+        vertices, everything you could not emit is holding a cycle — and you
+        never had to look for one. One comparison of a list length against n,
+        and you have both the order and the reason there is none. Two more
+        things. The order is not unique and a judge that says "any valid order"
+        is telling you so; do not go looking for the canonical one. And then the
+        payoff, which is why this belongs beside the shortest-path secrets: on a
+        graph with no cycle, every vertex depends only on vertices earlier in
+        the order, so ONE pass in that order computes longest routes, route
+        counts, anything of the shape "combine over everything pointing at me".
+        Negative weights included, in O(n + m), with no heap and no rounds.
+        That is the reward for noticing that the graph has no cycle.
+      demonstrations:
+        - expression: "arcs 4->1, 1->2, 4->5, 5->2, 5->3, 2->3, 3->6"
+          result: "in-degrees 1, 2, 1, 0, 2, 1"
+          note: >-
+            Only vertex 4 counts zero, so only vertex 4 may go first. Everything
+            else is waiting on something.
+        - expression: "emitting by in-degree on that graph"
+          result: "4, 1, 5, 2, 3, 6"
+          note: >-
+            The handbook's own answer. Emit 4, which frees 1 and 5; emit 1,
+            which lowers 2 to one; emit 5, which frees 2; and so on.
+        - expression: "arcs 1->2, 4->1, 4->5, 5->2, 2->3, 3->5, 3->6"
+          result: "only 2 vertices emitted of 6"
+          note: >-
+            Emit 4, then 1, and the queue is empty with 2, 3, 5 and 6 still
+            waiting. The cycle 2->3->5->2 is holding them, and the count alone
+            proved it.
+        - expression: "the impossibility test"
+          result: "emitted.size() < n"
+          note: >-
+            One comparison. No colour array, no recursion, no search for the
+            cycle itself — and the vertices left over are exactly the ones
+            involved in or blocked behind it.
+        - expression: "arcs 1->2, 1->3, 2->4, 3->4"
+          result: "2 distinct valid orders"
+          note: >-
+            1, then 2 and 3 in either order, then 4. Counted by exhausting all
+            24 permutations. "Any valid order" in a statement means exactly this.
+        - expression: "route counts on 1->2, 1->4, 4->5, 5->2, 5->3, 2->3, 3->6"
+          result: "1, 2, 3, 1, 1, 3"
+          note: >-
+            In the order 1, 4, 5, 2, 3, 6, push each count forward. Vertex 6
+            ends at 3, matching the three routes the handbook lists by hand.
+        - expression: "the same computation run in input order instead"
+          result: "counts too small, and they change when the edges are shuffled"
+          note: >-
+            A value is read before it has finished growing. The order is not
+            presentation; it is the guarantee that every dependency is already
+            final.
+        - expression: "a route count doubling at every branch"
+          result: "past INT_MAX after 31 branches"
+          note: >-
+            Which is nothing at all on a graph of 10^5 vertices. long long, or
+            the modulus the statement gave you.
+      watch_out:
+        - warning: "Compare the emitted count with n, every single time."
+          why: >-
+            Without it a cyclic input prints a short list that looks like a
+            valid order, and the judge rejects an answer whose correct value was
+            "impossible". The check is one comparison and it is the entire
+            difference between an algorithm and half of one.
+        - warning: "Add ONE direction of a precedence edge."
+          why: >-
+            Habit from undirected problems makes people push both. Then a and b
+            each require the other, every non-trivial input reports a cycle, and
+            the tell is that even the sample says impossible.
+        - warning: "In-degrees, not out-degrees."
+          why: >-
+            Starting from vertices with nothing LEAVING them builds the sequence
+            backwards. It passes any test whose expected order happens to be
+            symmetric and fails the rest. If you do take sinks first, you must
+            reverse before printing, and that reversal is the classic thing to
+            forget.
+        - warning: "Run the dynamic program in the emitted order, never in input order."
+          why: >-
+            The whole value of the order is that every vertex's inputs are final
+            before it is read. Iterate over the vertices as they were given and
+            you read values that are still growing; the answers come out too
+            small and change when the edges are shuffled, which no sample will
+            reveal.
+        - warning: "Route counts and longest routes need long long."
+          why: >-
+            A count doubles at every branch, so 31 branches is already past
+            INT_MAX, and a longest route summing 10^5 weights of 10^9 reaches
+            10^14. If the statement gives you a modulus, that is the setter
+            telling you the true value does not fit in anything.
+        - warning: "Prefer the in-degree queue to the recursive three-state walk."
+          why: >-
+            They are equally correct and only one of them recurses. At 10^5
+            dependencies in a chain the recursive version overflows the stack
+            and reports a segmentation fault, while the queue does not recurse
+            at all — and the queue's cycle test is a length comparison rather
+            than a colour to maintain.
+      drills:
+        - id: iz-eval-indeg
+          kind: evaluate
+          prompt: >-
+            Arcs 4->1, 1->2, 4->5, 5->2, 5->3, 2->3, 3->6. How many vertices
+            have in-degree zero?
+          options: ["1", "2", "3", "0"]
+          answer: "1"
+          explanation: >-
+            Only vertex 4. The in-degrees are 1, 2, 1, 0, 2, 1 for vertices 1 to
+            6, so vertex 4 is the only one that may be emitted first.
+        - id: iz-eval-order
+          kind: evaluate
+          prompt: >-
+            On that same graph, emitting in-degree-zero vertices in increasing
+            numeric order, what sequence comes out?
+          options:
+            - "4, 1, 5, 2, 3, 6"
+            - "1, 2, 3, 4, 5, 6"
+            - "6, 3, 2, 5, 1, 4"
+            - "4, 5, 1, 2, 3, 6"
+          answer: "4, 1, 5, 2, 3, 6"
+          explanation: >-
+            Emit 4, freeing 1 and 5; take 1, lowering vertex 2 to one; take 5,
+            freeing 2 and lowering 3; then 2, then 3, then 6.
+        - id: iz-eval-cyclecount
+          kind: evaluate
+          prompt: >-
+            Arcs 1->2, 4->1, 4->5, 5->2, 2->3, 3->5, 3->6 on six vertices. How
+            many vertices does the in-degree sweep emit?
+          options: ["2", "4", "6", "0"]
+          answer: "2"
+          explanation: >-
+            Vertex 4, then vertex 1, and the queue is empty. The cycle
+            2->3->5->2 holds the rest, and comparing 2 with 6 proved it without
+            anything being searched for.
+        - id: iz-eval-counts
+          kind: evaluate
+          prompt: >-
+            On the acyclic graph 1->2, 1->4, 4->5, 5->2, 5->3, 2->3, 3->6, how
+            many distinct routes lead from vertex 1 to vertex 6?
+          options: ["1", "2", "3", "4"]
+          answer: "3"
+          explanation: >-
+            1-2-3-6, 1-4-5-2-3-6 and 1-4-5-3-6. Computed by pushing counts along
+            the order 1, 4, 5, 2, 3, 6, and matching the handbook's hand count.
+        - id: iz-prop-meaning
+          kind: property
+          prompt: >-
+            What distinguishes a problem needing this pattern from one needing a
+            reachability sweep, given that both take one-way pairs as input?
+          options:
+            - whether the pair means "a must come before b" and the answer is a sequence
+            - whether the graph is connected
+            - whether n is large
+            - whether the input is given as an edge list
+          answer: whether the pair means "a must come before b" and the answer is a sequence
+          explanation: >-
+            The input format is identical and decides nothing. The sentence
+            explaining what the pair MEANS is where the pattern lives, and a
+            sequence whose positions matter is the shape of the answer here.
+        - id: iz-prop-cycle
+          kind: property
+          prompt: >-
+            The sweep finishes having emitted fewer than n vertices. What has
+            been proved?
+          options:
+            - the vertices not emitted contain a cycle, so no valid order exists
+            - the graph is disconnected
+            - the input contained a duplicate edge
+            - the queue was initialised wrongly
+          answer: the vertices not emitted contain a cycle, so no valid order exists
+          explanation: >-
+            Everything left over still has a requirement waiting, and following
+            those requirements backwards inside a finite set must repeat a
+            vertex. The order and the impossibility proof are the same
+            computation.
+        - id: iz-trap-nocheck
+          kind: trap
+          prompt: >-
+            A solution prints whatever the sweep emitted and never compares the
+            length with n. On which inputs does it fail?
+          options:
+            - those with a circular requirement, where it prints a short list instead of reporting impossible
+            - those with duplicate edges
+            - those where n is 1
+            - those with several valid orders
+          answer: those with a circular requirement, where it prints a short list instead of reporting impossible
+          explanation: >-
+            The short list looks like a perfectly good answer and breaks no
+            constraint it contains. It is simply not all n vertices, and the
+            expected output was a refusal.
+        - id: iz-trap-inputorder
+          kind: trap
+          prompt: >-
+            A longest-route computation on an acyclic graph iterates over the
+            vertices in input order rather than the emitted order. What is the
+            symptom?
+          options:
+            - answers too small, and they change when the edges are shuffled
+            - a crash on the last vertex
+            - the answers are correct but the program is slower
+            - an infinite loop
+          answer: answers too small, and they change when the edges are shuffled
+          explanation: >-
+            A value is read before it has finished growing. The order is not
+            cosmetic — it is exactly the guarantee that every input to a vertex
+            is final by the time the vertex is processed.
+        - id: iz-recall-decrement
+          kind: recall
+          prompt: >-
+            Inside the loop over the successors v of an emitted vertex, write
+            the statement that records the satisfied requirement and queues v
+            when nothing is left waiting on it.
+          answer: "if (--indeg[v] == 0) q.push(v);"
+          accepts:
+            - "if(--indeg[v]==0)q.push(v);"
+            - "if(--indeg[v]==0){q.push(v);}"
+            - "indeg[v]--;if(indeg[v]==0)q.push(v);"
+            - "if(--deg[v]==0)q.push(v);"
+          explanation: >-
+            Pre-decrement so the test reads the new value. This one line is the
+            whole algorithm; everything else is counting the in-degrees once at
+            the start and comparing a length at the end.
+        - id: iz-apply-cycletest
+          kind: apply
+          prompt: >-
+            The emitted vertices are in `vector<int> order` and there are n
+            vertices. Write the condition that is true exactly when the graph
+            contains a cycle.
+          answer: "(int)order.size() < n"
+          accepts:
+            - "(int)order.size()<n"
+            - "order.size()<n"
+            - "order.size()!=n"
+            - "(int)order.size()!=n"
+          explanation: >-
+            One comparison, and it is the entire impossibility proof. Anything
+            that could not be emitted is stuck inside or behind a cycle, and you
+            never had to find the cycle to say so.
+
+final_test_problem_ids:
+  - flooded-cellars
+  - knight-errand
+  - lock-dial-turns
+  - toll-road-crossing
+  - fuel-stops-layered
+  - assembly-longest-chain

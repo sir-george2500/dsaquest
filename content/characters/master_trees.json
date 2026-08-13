@@ -1,0 +1,180 @@
+{
+  "id": "master_trees",
+  "name": "MASTER OF TREES",
+  "title": "Sage Orenna Thal, the Rooted",
+  "region": "forest-of-trees",
+  "patterns": [
+    "subtree-aggregation",
+    "tree-diameter",
+    "tree-dp",
+    "binary-lifting"
+  ],
+  "personality": {
+    "warmth": 0.5,
+    "verbosity": 0.4,
+    "praise_threshold": 0.88
+  },
+  "gate": {
+    "recognition": 0.7,
+    "understanding": 0.85,
+    "implementation": 0.7,
+    "retention": 0.7
+  },
+  "placeholders": {
+    "days": "whole days since the relevant event — the student's last visit, a past failure on this problem, or the length of the current unbroken practice streak",
+    "streak": "number of consecutive correct drills in the current run",
+    "attempts": "how many attempts the student previously needed on this problem",
+    "secret": "the name of the secret currently being taught or tested",
+    "idiom": "the C++ expression at the heart of the current secret",
+    "requirement": "name of the gate dimension that is short: recognition, understanding, implementation, or retention",
+    "shortfall": "how far the short gate dimension sits below its threshold, as a percentage",
+    "score": "how many final-test problems were answered correctly",
+    "total": "number of problems in the final test",
+    "required": "how many must be answered correctly to pass"
+  },
+  "dialogue": {
+    "greeting_first": [
+      "Sit. How many paths join n glades, if every glade can be reached and none can be reached twice? Say the number aloud. Everything I teach you follows from it.",
+      "You have come to the wood. Before anything else: which glade is the root? Nobody will ever tell you. Does that trouble you, and should it?",
+      "Other masters will show you a technique and ask you to repeat it. I am going to ask you questions until you say the technique yourself. You may find that slower. Ask yourself why I would choose it anyway.",
+      "What is a visited array for? Answer that honestly and half of this region is already yours."
+    ],
+    "greeting_returning": [
+      "Again. What does a recursive call give you the instant it returns, that you did not have before it?",
+      "Sit. Which direction does today's question look — downwards into what a glade commands, or upwards towards what commands it?",
+      "You came back. Good. Then: how many numbers must a child send to its parent, and what decides that?",
+      "Continue. Where does the combining line go, and why is there only one place it can go?"
+    ],
+    "greeting_after_gap": [
+      "{days} days. Tell me without looking: what replaces the visited array here, and why is it enough?",
+      "Gone {days} days. The wood did not move. Has the answer to 'which glade is the top' changed while you were away?",
+      "{days} days. A centre worth 3 with three leaves worth 2 each. What does taking the best glade first score? Start there and the rest will come back.",
+      "{days} days away. Which of the two loops goes on the outside when you build the jump table? If you had to think, we begin one stage earlier."
+    ],
+    "lesson_intro": [
+      "{secret}. Before I show you anything — what is the question the statement is actually asking? Say it in one sentence with no code in it.",
+      "One walk. Watch what it folds, not how it moves. Can you tell me in advance which of those two ever changes between problems?",
+      "I will give you a wood and a rule. You will tell me what a glade must report to its parent. Ready?",
+      "This one is short. So ask the useful question first: what would go wrong if you did the obvious thing instead?"
+    ],
+    "lesson_memorise": [
+      "Keep `{idiom}`. Not because it is clever — ask yourself how many of this region's problems end at that one line.",
+      "Learn it until you no longer have to derive it. Then, when it fails you, you will notice — which is the only reason memorising is worth anything.",
+      "Take it now. Under a clock, will you rederive this, or will you type it?",
+      "In the hand. And the reason it works — where does that go, and how would you prove you still had it?"
+    ],
+    "drill_correct": [
+      "Yes. Next.",
+      "Correct. And why?",
+      "Good. Continue.",
+      "That is it. Hold on to how you got there."
+    ],
+    "drill_wrong": [
+      "No. You went back the way you came. What was supposed to stop you?",
+      "Wrong. You read the child's value — but had it been computed yet?",
+      "No. You took every child. The longest walk bends once; how many branches meet at the bend?",
+      "Wrong. You summed the children's skipped values. If the parent is empty, what is the child forbidden from doing?",
+      "No. That product was computed in int. What is the largest it can be when n is two hundred thousand?",
+      "Wrong. You jumped when the two landed on the same glade. What was the loop trying to avoid?",
+      "No. You read the answer off the root. Must the longest walk touch the root at all?"
+    ],
+    "drill_streak": [
+      "{streak} in a row. The hand is quick. Is the reason arriving with it, or after it?",
+      "Steady. Hold it.",
+      "{streak} straight. Now tell me one of them again, slower, and say why.",
+      "Good rhythm. What happens to it when I take the labels off?"
+    ],
+    "trial_intro": [
+      "Nothing named. First question: how many places, how many links, and can you get from any one to any other?",
+      "Read it twice. What is the answer asked about — one glade, every glade, or a pair of them?",
+      "One problem. Before you write anything: does the question look downwards or upwards?",
+      "The label is off. The constraints are not. What does the bound on n forbid you from doing?"
+    ],
+    "fail_wrong_pattern": [
+      "No. Were both ends of that route given to you, or were you asked to find them? Answer that and you had the right technique in front of you.",
+      "Wrong tool. Did any choice at one place forbid a choice at another? If nothing was forbidden, why did you carry a state?",
+      "No. That question was about everything below a place, not about the route between two of them. Which direction were you looking?",
+      "That was one number per place, not two. What would the parent have needed to know that a single total could not tell it?",
+      "No. Count the links again. n links, not n-1 — so what did your parent guard fail to stop?"
+    ],
+    "fail_timeout": [
+      "Time. You knew it was a wood in the first minute. What were you doing for the rest of it?",
+      "Time ran out. Nothing you had was wrong; it was slow. Is that a knowing problem or a typing problem?",
+      "Time. You answered it once per glade, did you not? What would one walk have cost?",
+      "Time. Nothing is lost. Which part took longest — deciding, or writing?"
+    ],
+    "fail_wrong_answer": [
+      "The walk was right. Where was the combining line — above the recursive call, or below it?",
+      "Right idea. The product overflowed. How large is s times (n - s) when n is two hundred thousand, and what type was it in?",
+      "Close. You kept the deepest branch. How many do you need to glue a walk together?",
+      "The states were right and one transition was not. If the parent is left empty, is the child forbidden anything at all?",
+      "Correct approach. It died on one test. What shape was that test, and how deep did your recursion go?",
+      "You levelled the two glades and then ran the loop anyway. What if levelling had already made them equal?"
+    ],
+    "success": [
+      "That holds. Next.",
+      "Correct. Say the reason once, then move on.",
+      "Accepted. Continue.",
+      "Done. The next one gives less away."
+    ],
+    "success_fast": [
+      "Quick — and you counted the links before you counted anything else. That is the right order.",
+      "You asked which direction it looked before you asked which technique. Good.",
+      "No wasted structure. Did you know it was a fold, or did you find out?",
+      "Fast. Now: could you have said why in the same time?"
+    ],
+    "praise_exceptional": [
+      "That was well done. You found the case where the root has one child before I could ask about it.",
+      "You refused the greedy and produced the four-glade wood that refutes it. Few students produce the counterexample; most only accept one.",
+      "You asked what the parent needed to know, and the number of states fell out. That is the question, and you asked it unprompted.",
+      "That is the best you have done here. You did not recall a technique. You derived one, and then recognised it."
+    ],
+    "praise_major": [
+      "I have asked a great many students what a visited array is for. Most answer correctly and still write one. You stopped writing them, and you can say why. You have earned my respect.",
+      "You arrived able to walk a wood. You leave able to say what a glade must tell its parent, and to count how many numbers that takes, on a problem neither of us has seen. You have earned my respect.",
+      "I do not say this often and will not repeat it: you no longer ask me which technique. You ask the statement, and it answers you. You have earned my respect."
+    ],
+    "memorisation_detected": [
+      "You produce the right line and cannot say what the parent needed. Are those the same thing? A different problem, then.",
+      "You pass the woods you have seen and fail their variants. What have you actually retained — the fold, or the file?",
+      "Change the rule from 'no two adjacent' to 'three dyes, neighbours differ' and you stall. How many states does the second one need, and why could you not derive it?"
+    ],
+    "improvement_noticed": [
+      "You failed this {days} days ago. Today you asked the right question first. Do you notice which one it was?",
+      "You needed {attempts} attempts on this once. Today, one. What changed — the technique, or the question you opened with?",
+      "This is the problem where you rooted at glade 1 and read the answer off it. You did not do that today.",
+      "Straighter than last time. You counted the links before you chose anything."
+    ],
+    "commitment_noticed": [
+      "{days} days unbroken. Do you know how many students leave when I answer a question with a question?",
+      "Most who reach this wood want to be told. You keep coming back to be asked. That is rarer, and it is the half I cannot teach.",
+      "You have returned after every failure so far. I keep count. Should I keep counting?",
+      "Talent walks in here weekly and leaves the moment the first answer is another question. You did not."
+    ],
+    "gate_locked": [
+      "Not yet. {requirement} is short by {shortfall} percent. What would you do differently if I let you through today?",
+      "The gate holds. Understanding is short — you can write the fold. Can you say what a glade reports and why one number would not do?",
+      "No. Recognition is short. Given a statement, can you yet tell me whether it looks downwards or upwards? That is the whole of it.",
+      "Implementation is short. You know where the combining line goes. Do your hands?",
+      "Retention is short. Which of the six could you still write without me? Go and find out; that is the review."
+    ],
+    "gate_open": [
+      "Nothing is short. Do you feel ready, or merely permitted? Both are acceptable answers.",
+      "The gate is open. When would you like to walk through it?",
+      "Enough. You may attempt it.",
+      "You meet the requirements. The rest is your judgement, and it is time you used it."
+    ],
+    "final_test_intro": [
+      "I will name nothing. Every question I have asked you was so that I would not have to. What is the first thing you check on each statement?",
+      "{total} problems, {required} of them right. For each, three questions — how many links, which direction, and how many numbers does a child owe its parent.",
+      "No help. Only statements. Which of them are you expecting to be a fold?",
+      "Some of these look upwards and some look down. Nothing will tell you which. What will?"
+    ],
+    "victory": [
+      "It is done. Tell me — which question turned out to be the one that mattered?",
+      "You passed. Remember that you were never given a root, and that it never mattered. Go.",
+      "Finished. Everything after this branches worse and asks the same three questions. You have them.",
+      "That is mastery of the wood. The sea is next, and nothing there has unique routes. What breaks first, do you think?"
+    ]
+  }
+}

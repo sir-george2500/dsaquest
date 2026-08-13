@@ -1,0 +1,62 @@
+# Sample inputs for Warlord Thessaly Grune's four templates.
+#
+# No expected outputs: the intact template is the oracle. What these inputs
+# have to be is DISCRIMINATING — an input set on which a broken hole produces
+# different bytes from a correct one.
+#
+# Every entry below therefore pairs an ordinary graph with the degenerate case
+# that separates the plausible mistakes:
+#
+#   * a graph on which claiming a vertex late still gives the right answer, so
+#     that only the count of pushes would differ — paired with one where it
+#     changes the output;
+#   * a disconnected graph, because a sweep that starts only at vertex 1
+#     answers most tests correctly;
+#   * an odd cycle, because a two-colouring that never checks for a conflict
+#     succeeds on every bipartite input;
+#   * a negative edge and a negative cycle, because the finality claim is
+#     invisible until one of them is present;
+#   * a cyclic dependency, because a topological sweep that skips the length
+#     check prints a short list and looks fine.
+
+graph-traversal.cpp:
+  # n m / m undirected edges "u v" / source
+  - "5 6\n1 2\n1 4\n2 3\n2 5\n3 5\n4 5\n1\n"      # CPH 12: triangle 2-3-5, not bipartite
+  - "5 6\n1 2\n1 3\n1 4\n2 5\n3 5\n4 5\n1\n"      # bipartite; mark-on-pop pushes 7 not 5
+  - "5 4\n1 3\n1 4\n3 4\n2 5\n1\n"                # two components, one holding a triangle
+  - "6 0\n3\n"                                    # no edges at all: six components
+  - "4 3\n1 2\n2 3\n3 4\n1\n"                     # a path: bipartite, one component
+  - "1 0\n1\n"                                    # single vertex
+  - "3 4\n1 2\n1 2\n2 3\n2 3\n2\n"                # repeated edges must not repeat a visit
+
+bfs-shortest-path.cpp:
+  # n m / m undirected edges / s t / k then k sources / R C then R grid rows
+  - "6 6\n1 2\n2 3\n1 4\n2 5\n3 6\n5 6\n1 6\n2\n4 6\n4 4\n..#.\n###.\n..#.\n.#..\n"
+  - "4 2\n1 2\n3 4\n1 4\n1\n3\n1 1\n.\n"          # target unreachable: the path prints "none"
+  - "5 4\n1 2\n2 3\n3 4\n4 5\n1 5\n2\n1 5\n2 3\n...\n.#.\n"   # sources at both ends of a path
+  - "3 2\n1 2\n2 3\n1 3\n0\n2 2\n..\n..\n"        # zero sources: every multi-source dist stays -1
+  - "4 4\n1 2\n2 3\n3 4\n1 4\n1 4\n1\n2\n2 2\n#.\n..\n"       # start cell walled off
+  - "1 0\n1 1\n1\n1\n1 1\n.\n"                    # single vertex, s == t
+  - "6 5\n1 2\n1 3\n2 4\n3 4\n4 5\n1 5\n3\n5 5 1\n3 3\n...\n.#.\n...\n"  # duplicate sources
+
+dijkstra-weighted.cpp:
+  # n m / m DIRECTED arcs "u v w" / source
+  - "5 12\n1 2 5\n2 1 5\n1 4 9\n4 1 9\n1 5 1\n5 1 1\n2 3 2\n3 2 2\n3 4 6\n4 3 6\n4 5 2\n5 4 2\n1\n"
+  - "4 4\n1 2 2\n2 4 3\n1 3 6\n3 4 -5\n1\n"       # the negative edge: settle-time 5, truth 1
+  - "3 3\n1 2 1\n2 3 -1\n3 2 -1\n1\n"             # a negative cycle: the extra round must catch it
+  - "4 8\n1 2 1\n2 1 1\n2 3 1\n3 2 1\n3 4 1\n4 3 1\n1 4 5\n4 1 5\n1\n"   # one hop costs 5, three cost 3
+  - "4 8\n1 2 0\n2 1 0\n2 3 0\n3 2 0\n3 4 0\n4 3 0\n1 4 1\n4 1 1\n1\n"   # every weight 0 or 1
+  - "3 1\n1 2 7\n1\n"                             # vertex 3 unreachable, and stays -1
+  - "1 0\n1\n"                                    # single vertex, no arcs
+  - "3 4\n1 2 1000000000\n2 3 1000000000\n1 3 2000000001\n3 1 1\n1\n"    # totals past INT_MAX
+
+topological-order.cpp:
+  # n m / m DIRECTED edges "u v" meaning u before v
+  - "6 7\n4 1\n1 2\n4 5\n5 2\n5 3\n2 3\n3 6\n"    # CPH 16: the order is 4 1 5 2 3 6
+  - "6 7\n1 2\n1 4\n4 5\n5 2\n5 3\n2 3\n3 6\n"    # CPH 16: three routes from 1 to 6
+  - "6 7\n1 2\n4 1\n4 5\n5 2\n2 3\n3 5\n3 6\n"    # cycle 2->3->5->2: IMPOSSIBLE
+  - "2 1\n1 1\n"                                  # a self-edge is the smallest cycle
+  - "4 0\n"                                       # no edges: every order is valid
+  - "1 0\n"                                       # single vertex
+  - "4 4\n1 2\n1 3\n2 4\n3 4\n"                   # a diamond: two routes to vertex 4
+  - "5 4\n2 3\n3 4\n4 5\n5 2\n"                   # vertex 1 free, the rest a cycle

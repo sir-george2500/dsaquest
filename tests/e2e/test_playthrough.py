@@ -532,14 +532,19 @@ def test_a_boss_fight_won(context):
             assert screen.fight is not None
 
             assert "THE ARRAY BEAST" in _flat(screen, "#arena-title")
-            assert "100 THE ARRAY BEAST" in _flat(screen, "#bars")
+            assert "100 / 100" in _flat(screen, "#arena-title")
             assert _flat(screen, "#boss-say").strip()
 
             await _fight(screen, pilot, win=True)
 
             assert screen.phase == "done"
-            bars = _flat(screen, "#bars")
-            assert "0 THE ARRAY BEAST" in bars, "clearing every phase must empty its health"
+            # The boss's health is a bar with the count on the title line, and
+            # the player's is a row of blow ticks — one per mistake they can
+            # still afford. Both changed shape when the arena was rebuilt.
+            assert "0 / 100" in _flat(screen, "#arena-title"), (
+                "clearing every phase must empty its health"
+            )
+            assert "█" not in _flat(screen, "#bars"), "an emptied bar has no filled cells"
 
             verdict = _flat(screen, "#arena-verdict")
             assert "DEFEATED" in verdict
@@ -581,9 +586,10 @@ def test_a_boss_fight_lost(context):
             await _fight(screen, pilot, win=False)
 
             assert screen.phase == "done"
-            bars = _flat(screen, "#bars")
-            assert "0 you" in bars, "failing every phase must empty the player's health"
-            assert f"{boss.boss_hp} THE ARRAY BEAST" in bars, "the beast took no damage"
+            assert screen.fight.player_hp == 0, "failing every phase must empty the player"
+            assert f"{boss.boss_hp} / {boss.boss_hp}" in _flat(screen, "#arena-title"), (
+                "the beast took no damage"
+            )
 
             verdict = _flat(screen, "#arena-verdict")
             assert "IT STANDS" in verdict

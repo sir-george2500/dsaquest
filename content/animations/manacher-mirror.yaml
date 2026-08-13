@@ -1,0 +1,108 @@
+id: manacher-mirror
+title: The mirror inside the palindrome
+secret: grow-from-the-middle
+pattern: palindrome-centres
+summary: >-
+  Odd radii of "abacaba". The first four centres are found by comparing
+  characters; the last three are read off their mirror images inside a
+  palindrome already known, and cost nothing at all.
+kind: array
+data: [a, b, a, c, a, b, a]
+labels: ["0", "1", "2", "3", "4", "5", "6"]
+idiom: "k = (i > r) ? 1 : min(d1[l + r - i], r - i + 1);"
+note: "d1 = [., ., ., ., ., ., .]      no window yet"
+
+steps:
+  - say: >-
+      Centre 0. Nothing is known yet, so start with a radius of 1 — the single
+      character, which is always symmetric — and try to push outwards. There is
+      nothing to the left of index 0, so it stops immediately. d1[0] = 1.
+    point: {i: 0}
+    mark: {0: "active"}
+    note: "d1 = [1, ., ., ., ., ., .]      window [0, 0]"
+
+  - say: >-
+      Centre 1. Push outwards: s[0] = 'a' equals s[2] = 'a', so "aba" is
+      symmetric. Push again and we fall off the left end. d1[1] = 2.
+    point: {i: 1}
+    mark: {0: "in", 1: "active", 2: "in"}
+    span: [0, 2]
+    note: "d1 = [1, 2, ., ., ., ., .]      window [0, 2] -- rightmost so far"
+
+  - say: >-
+      That palindrome [0, 2] is the furthest right anything has reached, so
+      remember it as the window. Every centre from here to index 2 sits inside
+      it, and inside it the string is its own mirror.
+    note: "d1 = [1, 2, ., ., ., ., .]      window l=0 r=2"
+
+  - say: >-
+      Centre 2 is inside the window. Its mirror about the window's own centre
+      is index l + r - i = 0 + 2 - 2 = 0, and d1[0] is 1 — so start from 1
+      rather than from scratch. One comparison then fails ('b' against 'c'),
+      so d1[2] = 1.
+    point: {i: 2}
+    mark: {2: "active", 0: "settled"}
+    note: "d1 = [1, 2, 1, ., ., ., .]      seeded from the mirror at index 0"
+
+  - say: >-
+      Centre 3 lies past the window's right edge, so there is nothing to
+      borrow. Start at 1 and compare honestly.
+    point: {i: 3}
+    mark: {1: "settled", 2: "settled", 3: "active"}
+    span: null
+    note: "d1 = [1, 2, 1, ., ., ., .]      i is past r, no shortcut"
+
+  - say: >-
+      s[2] = s[4] = 'a', then s[1] = s[5] = 'b', then s[0] = s[6] = 'a'. The
+      whole string is symmetric about index 3. d1[3] = 4, and the window jumps
+      to [0, 6].
+    mark: {0: "in", 1: "in", 2: "in", 4: "in", 5: "in", 6: "in"}
+    span: [0, 6]
+    note: "d1 = [1, 2, 1, 4, ., ., .]      window l=0 r=6"
+
+  - say: >-
+      Centre 4 is inside the new window. Its mirror is 0 + 6 - 4 = 2, where
+      the radius is 1 — but the window only reaches r - i + 1 = 3 further, so
+      the borrowed value is min(1, 3) = 1. The smaller of the two is what may
+      be trusted.
+    point: {i: 4}
+    mark: {4: "active"}
+    note: "d1 = [1, 2, 1, 4, ., ., .]      mirror index 2 gives 1, clamp gives 3"
+
+  - say: >-
+      One failed comparison confirms it and d1[4] = 1. No character inside the
+      window was compared twice. That is the saving, and it is the entire
+      algorithm.
+    mark: {4: "settled"}
+    note: "d1 = [1, 2, 1, 4, 1, ., .]"
+
+  - say: >-
+      Centre 5. Its mirror is 0 + 6 - 5 = 1, where the radius is 2. The window
+      allows r - i + 1 = 2. Both agree, so start at 2 — the palindrome "aba"
+      at index 5 is known before a single character is looked at.
+    point: {i: 5}
+    mark: {5: "active"}
+    note: "d1 = [1, 2, 1, 4, 1, ., .]      mirror gives 2, clamp gives 2"
+
+  - say: >-
+      Trying to extend runs off the right end of the string, so d1[5] = 2. The
+      clamp is what makes this safe: had the mirror's radius exceeded what the
+      window guarantees, trusting it would have claimed a palindrome nobody
+      verified.
+    mark: {5: "settled"}
+    note: "d1 = [1, 2, 1, 4, 1, 2, .]"
+
+  - say: >-
+      Centre 6. Mirror at index 0, radius 1; the window allows 1. d1[6] = 1
+      and the scan is over.
+    point: {i: 6}
+    mark: {6: "settled"}
+    note: "d1 = [1, 2, 1, 4, 1, 2, 1]"
+
+  - say: >-
+      Add them up: 1 + 2 + 1 + 4 + 1 + 2 + 1 = 12 odd palindromes. There are
+      no even ones here, because no two neighbouring characters are equal — and
+      that is why a second array is needed for strings where they are.
+    mark: {0: "answer", 1: "answer", 2: "answer", 3: "answer", 4: "answer", 5: "answer", 6: "answer"}
+    span: [0, 6]
+    note: "12 palindromic substrings, and r never moved left once"

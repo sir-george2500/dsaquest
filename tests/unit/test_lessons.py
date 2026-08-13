@@ -361,12 +361,17 @@ def test_every_master_defines_every_required_pool(masters):
         assert set(master.dialogue) >= REQUIRED_POOLS, master.id
 
 
-def test_every_master_has_a_mandatory_ascii_portrait(masters):
-    """The game must work with no image support at all."""
+def test_every_master_has_art(masters):
+    """A sprite, an ASCII portrait, or both — but never a master with no face.
+
+    The ASCII block used to be mandatory because it was the only art. The
+    screens now draw the pixel sprite, so the requirement is that a master has
+    *some* art, and the ASCII one is a fallback that may be absent.
+    """
     for master in masters.values():
-        portrait = master.portrait
-        assert portrait.strip()
-        assert max(len(line) for line in portrait.splitlines()) <= 32
+        assert master.has_art, f"{master.id} has neither a sprite nor an ASCII portrait"
+        if master.portrait.strip():
+            assert max(len(line) for line in master.portrait.splitlines()) <= 32
 
 
 def test_the_master_does_not_repeat_himself_until_the_pool_is_spent(conn, masters):
@@ -451,8 +456,12 @@ def test_supplied_placeholders_still_substitute(masters):
 def test_every_master_has_a_distinct_title_and_portrait(masters):
     titles = [m.title for m in masters.values()]
     assert len(set(titles)) == len(titles), titles
-    portraits = [m.portrait for m in masters.values()]
-    assert len(set(portraits)) == len(portraits), "two masters share a portrait"
+    # Compare whichever art each master actually has. Two masters sharing a
+    # face is the real defect; an absent fallback is not.
+    faces = [
+        (m.sprite_path().read_text() if m.sprite_path() else m.portrait) for m in masters.values()
+    ]
+    assert len(set(faces)) == len(faces), "two masters share a face"
 
 
 def test_no_two_masters_govern_the_same_pattern(masters):

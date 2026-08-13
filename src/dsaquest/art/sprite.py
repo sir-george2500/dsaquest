@@ -110,6 +110,24 @@ def load_sprite(path: Path) -> Sprite:
     return parse_sprite(path.read_text(encoding="utf-8"), name=path.stem)
 
 
+def upscale(sprite: Sprite, factor: int) -> Sprite:
+    """Repeat every pixel ``factor`` times in both directions.
+
+    Nearest-neighbour on purpose. Pixel art is not a low-resolution photograph
+    to be smoothed; the hard edge IS the art, and any interpolation turns a
+    24x24 portrait into a blur. Scaling before the half-block pass means one
+    renderer serves every size.
+    """
+    if factor <= 1:
+        return sprite
+    rows = tuple(
+        tuple(pixel for pixel in row for _ in range(factor))
+        for row in sprite.rows
+        for _ in range(factor)
+    )
+    return Sprite(name=sprite.name, rows=rows)
+
+
 def sprite_segments(sprite: Sprite) -> list[list[Segment]]:
     """One list of segments per terminal row.
 
@@ -135,10 +153,16 @@ def sprite_segments(sprite: Sprite) -> list[list[Segment]]:
     return lines
 
 
-def sprite_text(sprite: Sprite) -> Text:
-    """The sprite as a Rich Text, ready to hand to a Static."""
+def sprite_text(sprite: Sprite, *, scale: int = 1) -> Text:
+    """The sprite as a Rich Text, ready to hand to a Static.
+
+    ``scale`` is in source pixels. A cell is twice as tall as it is wide and
+    holds two stacked pixels, so scale 1 gives ``width`` columns by
+    ``height / 2`` rows, and scale 2 gives twice each — 24x24 becomes 48x24,
+    which is the size a boss wants and a side portrait does not.
+    """
     text = Text(no_wrap=True, overflow="crop")
-    for index, line in enumerate(sprite_segments(sprite)):
+    for index, line in enumerate(sprite_segments(upscale(sprite, scale))):
         if index:
             text.append("\n")
         for segment in line:

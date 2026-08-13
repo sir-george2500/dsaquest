@@ -16,10 +16,11 @@ from datetime import UTC, datetime
 from textual import on
 from textual.app import ComposeResult
 from textual.binding import Binding
-from textual.containers import Vertical, VerticalScroll
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Input, Static
 
+from ..art.sprite import load_sprite, sprite_text
 from ..content.lessons import CurriculumSet
 from ..domain.lesson import Drill, Stage
 from ..learning.par import format_duration
@@ -56,7 +57,10 @@ def safe(text: str) -> str:
 
 
 MASTER_CSS = """
-#portrait { width: 26; padding: 0 1; color: $text-muted; }
+#master-head { layout: horizontal; height: 14; padding: 1 2 0 2; }
+#portrait-frame { width: 28; height: 14; border: round #38332b; padding: 0 1; }
+#portrait { width: 24; height: 12; color: $text-muted; }
+#master-meta { width: 1fr; height: 14; padding: 0 0 0 3; }
 #say { padding: 1 2; border: round $accent; margin: 1 2; height: auto; }
 #lesson { padding: 1 2; margin: 0 2; height: auto; }
 #drill { padding: 1 2; margin: 1 2; border: round $primary; height: auto; }
@@ -112,7 +116,15 @@ class MasterScreen(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
-        yield Static(self.master.portrait, id="portrait")
+        with Horizontal(id="master-head"):
+            with Vertical(id="portrait-frame"):
+                yield Static(self.portrait(), id="portrait")
+            with Vertical(id="master-meta"):
+                yield Static(id="master-rank")
+                yield Static("")
+                yield Static(id="master-name")
+                yield Static("")
+                yield Static(id="master-domain")
         yield Static(id="say")
         yield Static(id="track")
         yield Static(id="clock")
@@ -122,6 +134,21 @@ class MasterScreen(Screen):
         yield Static(id="verdict")
         yield Footer()
 
+    def portrait(self):
+        """The master's pixel portrait, or their ASCII one if none is drawn yet.
+
+        The sprite is the art this game is supposed to look like. The ASCII
+        block was the placeholder and it stayed on this screen long after the
+        sprites existed, because only the roster had been wired to them — so a
+        player pressing `t` met the placeholder and never the art.
+        """
+        from ..tui.roster import sprite_for
+
+        path = sprite_for(self.master.id)
+        if path.is_file():
+            return sprite_text(load_sprite(path))
+        return self.master.portrait
+
     def on_mount(self) -> None:
         self.query_one("#reply", Input).display = False
         self.query_one("#verdict", Static).display = False
@@ -129,6 +156,14 @@ class MasterScreen(Screen):
         self.query_one("#clock", Static).display = False
         self.title = self.master.name
         self.sub_title = self.master.title
+
+        from .card import accent_for, letterspace
+
+        accent = accent_for(self.master.id)
+        region = self.master.region.replace("-", " ").replace("_", " ").upper()
+        self.query_one("#master-rank", Static).update(f"[#8a7f6d]{letterspace(region, 44)}[/]")
+        self.query_one("#master-name", Static).update(f"[b #ece5d6]{safe(self.master.title)}[/]")
+        self.query_one("#master-domain", Static).update(f"[{accent}]{safe(self.master.name)}[/]")
 
         conn = self.app.context.conn
         self.say(greet(conn, self.master, seed=self._seed()))

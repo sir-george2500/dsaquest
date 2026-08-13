@@ -1,0 +1,1339 @@
+# Sage Orenna Thal's teaching plan — the Rooted, Master of Trees.
+#
+# Six secrets across four patterns. Every number in every demonstration and
+# every drill below was computed by brute force before it was written down —
+# the census of the seven-glade wood, the total of 46, the star that scores 3
+# against 6, the two levels of the jump table, the five-step climb that takes
+# two reads. Nothing here is remembered.
+#
+# The Sage does not tell. She asks. If a line in this file states a fact that
+# the student could have been made to state instead, it is a line she would not
+# have spoken, and it should be rewritten as the question that produces it.
+
+master_id: master_trees
+patterns:
+  - subtree-aggregation
+  - tree-diameter
+  - tree-dp
+  - binary-lifting
+title: Sage Orenna Thal, the Rooted — Six Questions of the Branching Wood
+
+opening: >-
+  Before we begin, answer me three things. How many glades does your wood have?
+  How many paths? And can you walk from any glade to any other? If the second
+  number is one less than the first and the answer to the third is yes, then
+  what have you been handed — and why did the statement take such care not to
+  say the word? Now the question that costs students the most. Which glade is
+  the top of your wood? Nobody told you, so you assume it matters. Does it? Try
+  it. Fix glade 1, write down every parent; fix glade 5, write them all again.
+  Every parent changed. Did the answer? Six secrets. The first three are one
+  walk, folded three different ways. The fourth asks what happens when a walk
+  must remember two numbers instead of one; the fifth, what happens when a
+  choice at one glade forbids a choice at another. The last looks upwards
+  rather than down, which is the only direction a single walk cannot help you
+  with. I will not tell you which of them a problem wants. I will ask you what
+  the problem is counting, and you will find you already knew.
+
+stages:
+  # ---------------------------------------------------------------- stage 0
+  - id: stage-root-and-guard
+    order: 0
+    pattern: subtree-aggregation
+    trial_problem_ids: [glade-census-rolls]
+    secret:
+      id: root-and-guard
+      name: The Root You Were Never Given
+      idiom: "for (int to : g[v]) if (to != parent) dfs(to, v);"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        What does a general graph traversal carry that this one does not? A
+        visited array. Why does it carry it? To stop you arriving somewhere
+        twice. So ask the useful question: in a wood with no loops, how many
+        ways are there to arrive at a glade you have already left? One — back
+        along the path you came in on. And what is the cheapest way to refuse
+        that one route? Remember which glade you came from and skip it. That is
+        the whole guard, and it costs one argument rather than an array. Now the
+        harder question, the one this region turns on. Which glade is the root?
+        The statement did not say, and students take that as an obstacle.
+        Should they? Root the same wood at glade 1 and every parent points one
+        way; root it at glade 5 and every parent points somewhere else. Did any
+        answer about the whole wood change? None did. So what have you actually
+        gained by choosing? A direction. "Everything below v" means nothing
+        until you choose, and means something precise the instant you do.
+      demonstrations:
+        - expression: "n = 7 glades, 6 paths, every glade reachable"
+          result: "a tree, unnamed"
+          note: >-
+            Exactly one route between any two glades, no loops, and any glade at
+            all may be declared the top. Three gifts in one sentence the setter
+            was careful not to summarise for you.
+        - expression: "paths 1-2, 1-3, 1-4, 2-5, 2-6, 4-7, walked from glade 1"
+          result: "parents of 2..7 are 1, 1, 1, 2, 2, 4"
+          note: "Glade 1 is the top. Its children are 2, 3 and 4; 2's are 5 and 6; 4's is 7."
+        - expression: "the same wood walked from glade 5 instead"
+          result: "parents 2, 5, 2, 1, 1, 4 for glades 1, 2, 3, 4, 6, 7"
+          note: >-
+            Every parent is different and glade 1 now hangs beneath 2. Ask what
+            the total number of glades is under either rooting: seven, both
+            times. The choice bought a direction, not an answer.
+        - expression: "standing at glade 2, arrived from 1; its neighbours are 1, 5, 6"
+          result: "descend into 5 and 6 only"
+          note: "One of the three is where you came from. The other two are children."
+        - expression: "the same walk with `if (to == parent)` deleted"
+          result: "1 -> 2 -> 1 -> 2 -> ... until the stack dies"
+          note: >-
+            Which is the smallest input that shows it? Two glades and one path.
+            This is the one mistake in the whole region that a sample catches.
+        - expression: "6 paths, each looked at from both of its ends"
+          result: "12 visits to adjacency entries"
+          note: "Every glade entered once, every path read twice. That is what makes the walk O(n)."
+        - expression: "a chain of 200000 glades, walked recursively"
+          result: "about 16 MB of stack"
+          note: >-
+            A frame for a small walk measures 80 bytes under g++ -O2 here, so an
+            8 MB stack is spent near 100000 glades. Which test does that? The
+            one shaped like a chain, and no other.
+      watch_out:
+        - warning: "A `visited` array is not wrong here, it is merely unnecessary — but leaving out the parent guard IS wrong."
+          why: >-
+            One or the other must stop the walk turning round. The parent
+            argument is the cheaper of the two and the one every published tree
+            solution uses, so read it as the idiom rather than as a trick. Miss
+            both and the recursion is infinite on any input with a single path.
+        - warning: "The two glades on an edge line are not parent and child."
+          why: >-
+            Input lines arrive in whatever order and orientation the setter felt
+            like. Push both directions into the adjacency and let the walk decide
+            which way is downwards. Trusting the printed order works on the
+            samples of setters who happened to be tidy and fails on the rest.
+        - warning: "A wood that is a chain will overflow the stack, and it will not tell you why."
+          why: >-
+            The verdict is a bare runtime error on one test out of forty. If n
+            reaches 10^5 either walk iteratively — a breadth-first sweep, then
+            the list read backwards — or arrange the headroom deliberately.
+            Discovering this from a leaderboard is expensive.
+        - warning: "Check n = 1 before you write anything else."
+          why: >-
+            One glade, no paths, and every loop below runs zero times. Most
+            implementations survive it by accident; the ones that read n-1 edges
+            into a fixed-size array, or that start a maximum at the first child,
+            do not.
+        - warning: "\"n vertices and n edges\" is not this pattern."
+          why: >-
+            One extra path means exactly one loop, and the parent guard is then
+            not enough — two different routes reach some glade and it is entered
+            twice. Count the edge line in the constraints before you type the
+            walk; the difference between n-1 and n is the difference between a
+            fold and a search.
+      drills:
+        - id: rag-eval-routes
+          kind: evaluate
+          prompt: >-
+            A statement gives n places, n-1 links, and says every place is
+            reachable from every other. How many different routes are there
+            between two given places?
+          options: ["exactly one", "at most two", "n - 1", "it depends on which two"]
+          answer: "exactly one"
+          explanation: >-
+            Two different routes between the same pair would close a loop, and a
+            loop needs more links than n-1 allows. That uniqueness is what every
+            technique in this region rests on.
+        - id: rag-eval-children
+          kind: evaluate
+          prompt: >-
+            Paths 1-2, 1-3, 1-4, 2-5, 2-6, 4-7, walked from glade 1. The walk is
+            standing at glade 2, having arrived from glade 1. Which neighbours
+            does it descend into?
+          options: ["5 and 6", "1, 5 and 6", "1 only", "5, 6 and 7"]
+          answer: "5 and 6"
+          explanation: >-
+            Glade 2's neighbours are 1, 5 and 6. One of them is where it came
+            from, so the guard refuses it; the other two are its children. Glade
+            7 hangs beneath 4 and is never seen from here.
+        - id: rag-eval-reroot
+          kind: evaluate
+          prompt: >-
+            The same six paths, but the walk now starts at glade 5. What is the
+            parent of glade 1?
+          options: ["2", "5", "3", "it has none — glade 1 is always the root"]
+          answer: "2"
+          explanation: >-
+            From 5 the only way onwards is 2, and from 2 the neighbours are 1
+            and 6. So 1 hangs beneath 2. Nothing in the input changed; only the
+            direction you agreed to read it in.
+        - id: rag-prop-guard
+          kind: property
+          prompt: >-
+            What does `if (to == parent) continue;` replace, and why is the
+            replacement sound here?
+          options:
+            - "the visited array — with no loops, the only way back into a place is the link you arrived on"
+            - "the recursion base case, since leaves have no children"
+            - "the bounds check on the adjacency list"
+            - "nothing; it is an optimisation that can be omitted"
+          answer: "the visited array — with no loops, the only way back into a place is the link you arrived on"
+          explanation: >-
+            A visited array exists to refuse a second arrival. On a structure
+            with exactly one route between any two places there is exactly one
+            second arrival to refuse, and it is the one you just came from. One
+            argument does the work of an array.
+        - id: rag-prop-cost
+          kind: property
+          prompt: >-
+            During the whole walk, how many times is a single path looked at,
+            and what does that make the traversal cost?
+          options:
+            - "twice, once from each of its two ends — so the walk is O(n)"
+            - "once, from the parent's end — so the walk is O(n)"
+            - "once per glade in the wood — so the walk is O(n^2)"
+            - "it depends on the shape of the wood"
+          answer: "twice, once from each of its two ends — so the walk is O(n)"
+          explanation: >-
+            Each glade's neighbour list is read once, and a path appears in
+            exactly two such lists. Six paths therefore cost twelve reads. Total
+            work is proportional to glades plus paths, and on a wood those two
+            numbers differ by one.
+        - id: rag-trap-noguard
+          kind: trap
+          prompt: >-
+            The parent guard is left out of the walk. On an input of two glades
+            joined by one path, what happens?
+          options:
+            - "1 -> 2 -> 1 -> 2 -> ... until the stack overflows"
+            - "each glade is visited once; the guard only matters on larger inputs"
+            - "the walk visits glade 1 twice and then stops"
+            - "it is a compile error, since dfs must take a visited array"
+          answer: "1 -> 2 -> 1 -> 2 -> ... until the stack overflows"
+          explanation: >-
+            From 1 the walk enters 2; from 2 the only neighbour is 1, and with
+            nothing to refuse it, the walk goes back. This is the one bug in
+            this region that the smallest possible sample catches — which is
+            worth noticing, because none of the others do.
+        - id: rag-recall-guard
+          kind: recall
+          prompt: >-
+            Inside the loop over v's neighbours, write the single statement that
+            stops the walk from going back the way it came. The neighbour is
+            `to` and the glade you arrived from is `parent`.
+          answer: "if (to == parent) continue;"
+          accepts:
+            - "if(to==parent)continue;"
+            - "if(to==parent)continue"
+            - "if(parent==to)continue;"
+            - "if(to==p)continue;"
+            - "if(to!=parent)dfs(to,v);"
+          explanation: >-
+            One comparison, and it is the entire reason a wood needs no visited
+            array. Memorise the pairing rather than the characters: on a
+            structure with unique routes, the thing you must refuse is the way
+            you came.
+        - id: rag-apply-adjacency
+          kind: apply
+          prompt: >-
+            With `vector<vector<int>> g` already sized to n+1 and `u` and `v`
+            just read from one input line, write the statement or statements
+            that record that undirected path.
+          answer: "g[u].push_back(v); g[v].push_back(u);"
+          accepts:
+            - "g[u].push_back(v);g[v].push_back(u);"
+            - "g[v].push_back(u);g[u].push_back(v);"
+            - "g[u].emplace_back(v);g[v].emplace_back(u);"
+            - "g[u].push_back(v),g[v].push_back(u);"
+          explanation: >-
+            Both directions, always. The line said "u v" and meant "these two
+            are joined"; which of them is nearer the top is a question the walk
+            answers, not the input.
+
+  # ---------------------------------------------------------------- stage 1
+  - id: stage-postorder-fold
+    order: 1
+    pattern: subtree-aggregation
+    trial_problem_ids: [grove-tithe-ledger]
+    secret:
+      id: postorder-fold
+      name: The Child Finishes First
+      idiom: "dfs(to, v); sz[v] += sz[to];"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        Answer this before you write anything. When the recursive call on a
+        child returns, what is true that was not true before it? The child's
+        answer exists. And what is true about every other glade in the wood?
+        Nothing has been touched. So the call returns owning exactly one thing,
+        a finished region, disjoint from every sibling's — which is why the
+        parent may simply add them up without any risk of counting a glade
+        twice. Now: where does the combining line go? You have two candidate
+        places, above the recursive call and below it, and only one of them can
+        be right. Put it above and ask what value you are reading. The one the
+        child had before it was computed. What answer comes back then? On a
+        wood of seven glades whose counters all started at one, every count
+        returns as one plus the number of children — and glades whose children
+        are leaves are correct, which is why a two-level sample passes and a
+        three-level one does not. And when you have that line in the right
+        place, ask the last question: what would change if the problem wanted
+        the largest value below each glade instead of the total? One operator.
+        Not the walk. The walk is never the difficulty.
+      demonstrations:
+        - expression: "the census on paths 1-2, 1-3, 1-4, 2-5, 2-6, 4-7, from glade 1"
+          result: "7 3 1 2 1 1 1"
+          note: >-
+            Glade 2 owns 5 and 6 and itself, so 3. Glade 4 owns 7 and itself, so
+            2. Glade 1 owns everything, so 7 — which is a free check, since the
+            top's count must always be n.
+        - expression: "how glade 2's count is assembled"
+          result: "1 + 1 + 1 = 3"
+          note: "Its own one, plus what came back from 5, plus what came back from 6."
+        - expression: "the fold line moved ABOVE the recursive call, counters pre-set to 1"
+          result: "4 3 1 2 1 1 1"
+          note: >-
+            Glade 1 reports 4, which is 1 plus its three children. Read the
+            wrong numbers and you get exactly one plus the number of children —
+            correct at every glade whose children are leaves, wrong everywhere
+            else.
+        - expression: "the same mistake with the counters starting at 0 and set to 1 on entry"
+          result: "1 1 1 1 1 1 1"
+          note: >-
+            A different wrong answer from the same bug. Ask which of the two you
+            would rather debug at midnight, then put the line below the call.
+        - expression: "the tithe fold on a chain 1-2-3-4-5-6 with yields 7, -3, 0, 11, -11, 4"
+          result: "8 1 4 4 -7 4"
+          note: >-
+            Read it from the far end: 4, then -11+4 = -7, then 11-7 = 4, then
+            0+4 = 4, then -3+4 = 1, then 7+1 = 8. Negative yields change nothing
+            about the method and everything about any attempt to stop early.
+        - expression: "a breadth-first list of the seven-glade wood, read backwards"
+          result: "7 6 5 4 3 2 1"
+          note: >-
+            Every glade appears after all of its children. Which is the same
+            guarantee the recursion was buying — obtained with a queue and a
+            reversed loop, and no stack at all.
+        - expression: "the same walk folding with a maximum instead of a sum"
+          result: "2 1 0 1 0 0 0"
+          note: >-
+            The loudness at each glade. One character of difference from the
+            census, and a different question answered.
+      watch_out:
+        - warning: "The combining line goes AFTER the recursive call. Always."
+          why: >-
+            Above it you read a value that has not been computed. The symptom
+            depends on how the array was initialised — one plus the number of
+            children, or all ones — and both are right for glades whose children
+            are leaves, so a shallow sample proves nothing.
+        - warning: "The top's answer is a free assertion. Use it."
+          why: >-
+            A census must give n at the root; a total must give the sum of every
+            value. Checking that one number costs a line and catches a
+            surprising share of fold bugs before the judge does.
+        - warning: "Choose the neutral value for the operator you are folding with."
+          why: >-
+            A sum starts at 0 and a count at 1, but a maximum over a possibly
+            empty set of children does not start at 0 unless the values cannot
+            be negative — and a minimum never does. Get this wrong and the bug
+            appears only at leaves, which are most of the wood.
+        - warning: "A total over 2*10^5 glades needs long long even when each value is small."
+          why: >-
+            2*10^5 values of 10^9 reach 2*10^14. The individual numbers fit in
+            an int comfortably, which is exactly what makes this one easy to
+            walk past — read the bound on the ANSWER, not on the input.
+        - warning: "Do not answer the question once per glade."
+          why: >-
+            Walking the region below each glade in turn is correct and O(n^2),
+            and it passes every sample. The whole point of the fold is that all
+            n answers fall out of one walk; if your code has a loop over glades
+            with a traversal inside it, you have written the slow version of
+            this pattern rather than a different one.
+      drills:
+        - id: pof-eval-census
+          kind: evaluate
+          prompt: >-
+            Paths 1-2, 1-3, 1-4, 2-5, 2-6, 4-7, with glade 1 at the top. How
+            many glades lie in glade 2's region, counting glade 2 itself?
+          options: ["2", "3", "4", "7"]
+          answer: "3"
+          explanation: >-
+            Glades 2, 5 and 6. Glade 1 is above it and glades 3, 4 and 7 are on
+            other branches. The top's own count is 7, which is n, and that
+            equality is worth asserting in code.
+        - id: pof-eval-tithe
+          kind: evaluate
+          prompt: >-
+            A chain 1-2-3-4-5-6 with yields 7, -3, 0, 11, -11 and 4, and glade 1
+            at the top. What is the ledger line for glade 4?
+          options: ["11", "4", "0", "-7"]
+          answer: "4"
+          explanation: >-
+            Glade 6 gives 4, glade 5 gives -11 + 4 = -7, and glade 4 gives 11 +
+            (-7) = 4. The negative yield does not license stopping early — you
+            cannot know what lies below it until you have been there.
+        - id: pof-eval-loudness
+          kind: evaluate
+          prompt: >-
+            The same seven-glade wood, folding with a maximum instead of a sum:
+            each glade reports one plus the largest report from its children,
+            and a glade with no children reports 0. What does glade 1 report?
+          options: ["0", "1", "2", "3"]
+          answer: "2"
+          explanation: >-
+            Glades 5, 6, 3 and 7 report 0. Glades 2 and 4 report 1. Glade 1
+            takes the largest of 1, 0 and 1 and adds one, giving 2. Same walk,
+            same shape, one operator changed.
+        - id: pof-prop-when
+          kind: property
+          prompt: >-
+            At what exact moment does a child's folded value become safe to
+            read?
+          options:
+            - "when the recursive call on that child returns"
+            - "as soon as the child has been pushed onto the adjacency list"
+            - "after every child of the parent has been visited"
+            - "at the start of the parent's call, since the arrays are global"
+          answer: "when the recursive call on that child returns"
+          explanation: >-
+            The call returns having filled in that child's whole region and
+            nothing else. That instant is the only guarantee you have, and the
+            combining line is placed to sit immediately after it.
+        - id: pof-prop-disjoint
+          kind: property
+          prompt: >-
+            Why may a glade simply ADD its children's totals without any risk of
+            counting a glade twice?
+          options:
+            - "the regions below two different children share no glade, since a shared glade would need two routes to the top"
+            - "because the walk marks each glade as visited before recursing"
+            - "because the values are non-negative"
+            - "it may not; a set must be kept to remove duplicates"
+          answer: "the regions below two different children share no glade, since a shared glade would need two routes to the top"
+          explanation: >-
+            Disjointness is not a convenience, it is the theorem the whole fold
+            rests on, and it comes straight from routes being unique. Break that
+            — add one more path — and addition silently double-counts.
+        - id: pof-trap-order
+          kind: trap
+          prompt: >-
+            The line `sz[v] += sz[to];` is written ABOVE `dfs(to, v);` instead of
+            below it, with every counter pre-set to 1. On the seven-glade wood,
+            what does glade 1 report?
+          options:
+            - "4 — one plus its three children, because each child's count was read before it was computed"
+            - "7 — the order of those two lines does not matter"
+            - "3 — only the last child is counted"
+            - "0 — nothing is ever added"
+          answer: "4 — one plus its three children, because each child's count was read before it was computed"
+          explanation: >-
+            Every glade comes back as one plus its number of children. Notice
+            what that means for testing: glade 2 reports 3, which is correct, so
+            any sample only two levels deep agrees with the bug.
+        - id: pof-recall-fold
+          kind: recall
+          prompt: >-
+            Write the two statements, in order, that visit the child `to` from
+            glade `v` and fold its census count into v's.
+          answer: "dfs(to, v); sz[v] += sz[to];"
+          accepts:
+            - "dfs(to,v);sz[v]+=sz[to];"
+            - "dfs(to,v);sz[v]+=sz[to]"
+            - "dfs(to,v);sz[v]=sz[v]+sz[to];"
+            - "dfs(to,v);count[v]+=count[to];"
+          explanation: >-
+            Recurse, then combine. The order is the secret; the arithmetic is
+            not. Reverse the two lines and you have a program that is correct on
+            every glade whose children happen to be leaves.
+        - id: pof-apply-iterative
+          kind: apply
+          prompt: >-
+            You have `order_`, a list of every glade with each parent before its
+            children, and `par`, the parent of each glade. Inside a loop that
+            walks `order_` BACKWARDS with the current glade in `v`, write the
+            statement that folds v's total into its parent's. The top is `root`.
+          answer: "if (v != root) total[par[v]] += total[v];"
+          accepts:
+            - "if(v!=root)total[par[v]]+=total[v];"
+            - "if(v!=root)total[par[v]]+=total[v]"
+            - "if(v!=root){total[par[v]]+=total[v];}"
+            - "if(par[v]!=v)total[par[v]]+=total[v];"
+          explanation: >-
+            Backwards through a parent-before-child list is post-order without a
+            stack. The guard on the top matters: fold the root into its own
+            parent and, depending on how you set that up, you either double the
+            answer or write outside the array.
+
+  # ---------------------------------------------------------------- stage 2
+  - id: stage-edge-split
+    order: 2
+    pattern: subtree-aggregation
+    trial_problem_ids: [canopy-pair-walks]
+    secret:
+      id: edge-split
+      name: Every Path Is Two Numbers
+      idiom: "answer += (long long)sz[c] * (n - sz[c]);"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        Here is a question with nearly two times ten to the tenth answers, and
+        I want one number. Total the distance between every pair of glades in a
+        wood of 200000. How many pairs? Far too many to visit. So stop counting
+        pairs and ask a different question — the move that makes this whole
+        secret. What happens if you cut exactly one path? Two pieces. How large
+        are they? If you have already fixed a top, one of them is precisely the
+        region below the path's lower end, of size s, and the other is
+        everything else, of size n - s. Now, which routes used that path? Only
+        the ones with one end in each piece. How many is that? You have just
+        written s times (n - s) without being told to. Add that over the n-1
+        paths and you have the answer to the impossible question, and you never
+        computed a single distance. Ask yourself what else this shape answers.
+        How many pairs are separated when a path is closed? The same product.
+        Which closure divides the wood most evenly? The s nearest to n/2. How
+        much does each path contribute to a total that is summed over pairs?
+        Always the same two numbers. One walk, and every path in the wood hands
+        you both of them.
+      demonstrations:
+        - expression: "cutting each path of the seven-glade wood 1-2, 1-3, 1-4, 2-5, 2-6, 4-7"
+          result: "(3,4) (1,6) (2,5) (1,6) (1,6) (1,6)"
+          note: >-
+            Six paths, six pairs of piece sizes, and every pair sums to 7. The
+            first is the path above glade 2, whose region holds 3 glades.
+        - expression: "the total of s * (n - s) over those six paths"
+          result: "12 + 6 + 10 + 6 + 6 + 6 = 46"
+          note: "One walk produced all six values of s. Nothing else was computed."
+        - expression: "the same wood, adding up all 21 pairwise distances by hand"
+          result: "46"
+          note: >-
+            The same number, arrived at the expensive way. Ask which of the two
+            methods survives n = 200000, and you have the reason this secret
+            exists.
+        - expression: "a chain of 6 glades"
+          result: "5 + 8 + 9 + 8 + 5 = 35"
+          note: >-
+            The middle path carries the most traffic, 3 times 3. Which is what
+            everyone's intuition says about a road, and here it is arithmetic.
+        - expression: "a star of 6 glades, one centre and five leaves"
+          result: "5 paths, each 1 * 5, so 25"
+          note: >-
+            Every path is as unbalanced as it can be. Compare with 35 for the
+            chain — same n, same number of paths, different answer, because the
+            answer was never about n.
+        - expression: "the most even cut of the seven-glade wood"
+          result: "3 and 4, a difference of 1"
+          note: >-
+            The path above glade 2. Every other cut leaves 1 against 6 or 2
+            against 5. Same six numbers, read for a different purpose.
+        - expression: "the largest product possible at n = 200000"
+          result: "100000 * 100000 = 10^10"
+          note: >-
+            INT_MAX is 2147483647. So this multiplication overflows an int by a
+            factor of five before the sum has even begun. Which test finds it?
+            Never the sample.
+      watch_out:
+        - warning: "Cast before you multiply, not after."
+          why: >-
+            `(long long)(sz[c] * (n - sz[c]))` computes the product in int and
+            then widens the wreckage. The cast belongs on an operand:
+            `(long long)sz[c] * (n - sz[c])`. This is the single commonest way
+            to write this line wrongly and it looks completely correct.
+        - warning: "Iterate over glades, not over input lines, to enumerate the paths."
+          why: >-
+            Every non-top glade is the lower end of exactly one path, so a loop
+            over glades 2..n visits each path once. Looping over the input lines
+            instead means deciding, per line, which of the two ends was the
+            lower one — extra work that exists only to reintroduce a bug.
+        - warning: "The piece sizes come from a rooting, but the answer does not depend on it."
+          why: >-
+            Root elsewhere and every s becomes n - s. The product is unchanged,
+            since s(n - s) is symmetric. Worth knowing because it means you may
+            root wherever is convenient, and worth checking because if your
+            answer DOES move when you re-root, the bug is in the fold.
+        - warning: "This is not the same as a distance query."
+          why: >-
+            Summing over all pairs is O(n) by this argument; answering one named
+            pair is a different pattern entirely and needs the jump table. If
+            the statement names two glades, you are in the wrong secret — and if
+            it says "over all pairs", answering them one at a time is 10^10
+            queries.
+        - warning: "Check what the statement counts on a path — glades or steps."
+          why: >-
+            A route of 4 steps visits 5 glades. This secret naturally produces
+            steps, because each path contributes one. If the statement wants
+            glades, the correction is a count of pairs added on, not a fudge
+            applied afterwards.
+      drills:
+        - id: esp-eval-split
+          kind: evaluate
+          prompt: >-
+            In the wood with paths 1-2, 1-3, 1-4, 2-5, 2-6 and 4-7, the path
+            between glades 1 and 2 is closed. What are the sizes of the two
+            pieces?
+          options: ["3 and 4", "2 and 5", "1 and 6", "3 and 3"]
+          answer: "3 and 4"
+          explanation: >-
+            Glades 2, 5 and 6 fall on one side; glades 1, 3, 4 and 7 on the
+            other. Note that the two sizes always add to n, which makes the
+            second one free once you have the first.
+        - id: esp-eval-total
+          kind: evaluate
+          prompt: >-
+            For that same seven-glade wood, what is the total of the distances
+            between all 21 pairs of distinct glades?
+          options: ["21", "38", "46", "56"]
+          answer: "46"
+          explanation: >-
+            Adding s * (n - s) over the six paths: 3*4 + 1*6 + 2*5 + 1*6 + 1*6 +
+            1*6 = 12 + 6 + 10 + 6 + 6 + 6 = 46. Enumerating all 21 pairs gives
+            the same figure, rather more slowly.
+        - id: esp-eval-chain
+          kind: evaluate
+          prompt: >-
+            A chain of 6 glades, 1-2-3-4-5-6. What is the total of the distances
+            between all pairs?
+          options: ["15", "25", "35", "45"]
+          answer: "35"
+          explanation: >-
+            The five paths split the chain 1|5, 2|4, 3|3, 4|2 and 5|1, giving 5
+            + 8 + 9 + 8 + 5 = 35. A star of the same size gives 25, which is the
+            proof that no formula in n alone can be right.
+        - id: esp-prop-why
+          kind: property
+          prompt: >-
+            Why is the number of routes using one particular path exactly
+            s * (n - s), where s is the size of one of the two pieces it
+            separates?
+          options:
+            - "a route uses the path exactly when its two ends lie in different pieces, and there are s * (n - s) such pairs"
+            - "because each of the s glades in the smaller piece is at distance 1 from the path"
+            - "because the path is used once by every glade, and there are n of them"
+            - "it is an approximation that is exact only on a chain"
+          answer: "a route uses the path exactly when its two ends lie in different pieces, and there are s * (n - s) such pairs"
+          explanation: >-
+            Routes are unique, so there is no choice about whether to use the
+            path — either the two ends are separated by it or they are not. That
+            turns a sum over pairs into a sum over paths, which is n-1 terms
+            instead of nearly n^2/2.
+        - id: esp-prop-reroot
+          kind: property
+          prompt: >-
+            You root the wood somewhere else and every piece size s becomes
+            n - s. What happens to the total?
+          options:
+            - "nothing — s * (n - s) is unchanged when s and n - s are swapped"
+            - "it is negated"
+            - "it doubles, since every path is now counted from both ends"
+            - "it changes, which is why the root must be glade 1"
+          answer: "nothing — s * (n - s) is unchanged when s and n - s are swapped"
+          explanation: >-
+            The product is symmetric, so the choice of top is free — as it
+            always is in this region. Use it as a test: if your answer moves
+            when you re-root, the fault is in the fold and not in this line.
+        - id: esp-trap-overflow
+          kind: trap
+          prompt: >-
+            The line is written `answer += (long long)(sz[c] * (n - sz[c]));`
+            with sz and n both int, and n reaches 200000. What happens?
+          options:
+            - "the product is computed in int and overflows before the cast can help"
+            - "nothing — the cast makes the whole expression 64-bit"
+            - "it fails to compile"
+            - "it is correct but slow, because of the conversion"
+          answer: "the product is computed in int and overflows before the cast can help"
+          explanation: >-
+            A cast applied to a finished expression widens the damage, not the
+            arithmetic. The largest product here is 10^5 * 10^5 = 10^10, roughly
+            five times INT_MAX. Put the cast on an operand and the multiplication
+            itself happens in 64 bits.
+        - id: esp-recall-contribution
+          kind: recall
+          prompt: >-
+            Glade `c` is not the top, `sz` holds every region size and `n` is the
+            number of glades. Write the statement that adds the path above c to
+            a `long long answer`, safely.
+          answer: "answer += (long long)sz[c] * (n - sz[c]);"
+          accepts:
+            - "answer+=(longlong)sz[c]*(n-sz[c]);"
+            - "answer+=1LL*sz[c]*(n-sz[c]);"
+            - "answer+=(longlong)sz[c]*(longlong)(n-sz[c]);"
+            - "answer+=(ll)sz[c]*(n-sz[c]);"
+          explanation: >-
+            The cast is on an operand, so the multiplication is done in 64 bits.
+            Memorise the shape with the cast inside it; the version without is
+            correct on every input you will ever test by hand.
+        - id: esp-apply-loop
+          kind: apply
+          prompt: >-
+            With the top at glade 1, write the for-loop header that visits every
+            path of the wood exactly once, by visiting the glade at its lower
+            end.
+          answer: "for (int c = 2; c <= n; ++c)"
+          accepts:
+            - "for(intc=2;c<=n;++c)"
+            - "for(intc=2;c<=n;c++)"
+            - "for(intv=2;v<=n;++v)"
+            - "for(intc=2;c<=n;++c){"
+          explanation: >-
+            Every glade except the top is the lower end of exactly one path, so
+            n-1 glades enumerate n-1 paths with no bookkeeping at all. Looping
+            over the input lines instead forces you to work out which end was
+            lower, which is a decision you do not have to make.
+
+  # ---------------------------------------------------------------- stage 3
+  - id: stage-two-best-branches
+    order: 3
+    pattern: tree-diameter
+    trial_problem_ids: [longest-trail-of-the-wood]
+    secret:
+      id: two-best-branches
+      name: The Walk Bends Once
+      idiom: "best = max(best, first + second);"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        The longest walk in the wood. Both ends free, which is what makes it
+        hard — where would you even start looking? So do what you did before:
+        fix a top, arbitrarily. Now take any route in the wood and ask which of
+        its glades is nearest the top. Could there be two? No: go up from either
+        end and you must arrive at that one glade before you can come back down.
+        So every route has exactly one highest glade. What does the route look
+        like on either side of it? Two chains going downwards, and nothing else.
+        So if you knew, at every glade, the depths of its two deepest branches,
+        would you have the answer? You would — take their sum, and maximise over
+        every glade. Now the question that separates the students who have
+        understood from those who have copied. Why must you maximise over EVERY
+        glade rather than just the top? Take a wood where the top has one child.
+        The top sees a single branch and reports 3. The route 5-3-2-4-6 has
+        length 4 and never touches the top. There is a second method — walk to
+        the farthest glade from anywhere, then walk to the farthest from that —
+        and it is four lines. Ask what it needs to be true. That distances
+        cannot shrink as you walk. Make one path cost -5 and it is wrong.
+      demonstrations:
+        - expression: "paths 1-2, 2-3, 2-4, 3-5, 4-6, topped at glade 1"
+          result: "downward depths 3, 2, 1, 1, 0, 0"
+          note: "Glade 1 has one child, glade 2 has two, and 5 and 6 are the far ends."
+        - expression: "the two deepest branches AT THE TOP of that wood"
+          result: "3 and nothing, so 3"
+          note: >-
+            The top has one child. Reading the answer here is the commonest
+            error in the secret, and it is short by exactly the amount it
+            misses.
+        - expression: "the two deepest branches at glade 2"
+          result: "2 and 2, so 4"
+          note: >-
+            The route 5-3-2-4-6, four paths long, bending at glade 2. This is
+            the answer, and it never touches the top at all.
+        - expression: "the same fold on the seven-glade wood 1-2, 1-3, 1-4, 2-5, 2-6, 4-7"
+          result: "branches 2, 1 and 2 at the top, so 4"
+          note: >-
+            Here the longest route DOES bend at the top — 5-2-1-4-7. Which is
+            precisely why testing on this wood would not have caught the bug
+            above.
+        - expression: "two sweeps on 1-2, 2-3, 2-4, 3-5, 4-6"
+          result: "from 1 the farthest is 5 at distance 3; from 5 the farthest is 6 at distance 4"
+          note: "Four lines, the same 4, and both ends of the route named for free."
+        - expression: "two sweeps where A-B costs 1, A-C costs -5, C-D costs -5, C-E costs 2"
+          result: "reports 1, while the true maximum is 2 between C and E"
+          note: >-
+            From A the farthest is B at 1; from B the farthest is A at 1. The
+            first sweep landed on a glade that ends no longest route at all,
+            because a negative path let distance shrink.
+        - expression: "the radius of 1-2, 2-3, 2-4, 3-5, 4-6"
+          result: "2, at glade 2"
+          note: >-
+            The longest route is 4, and 4 halved and rounded up is 2. The
+            eccentricities are 3, 2, 3, 3, 4, 4 — smallest at the middle of the
+            longest route, always.
+      watch_out:
+        - warning: "Maximise over EVERY glade, not over the top."
+          why: >-
+            The route need not pass through whichever glade you happened to root
+            at. On 1-2, 2-3, 2-4, 3-5, 4-6 rooted at 1 the top reports 3 and the
+            answer is 4. If your code computes the candidate only once, after
+            the walk, rather than at every glade during it, this is the bug.
+        - warning: "Keep the best TWO branches, not the best one."
+          why: >-
+            One branch gives you the height of the wood, which is right on a
+            chain and about half the truth on anything that forks. The update is
+            three lines and people write one; then the samples, which are often
+            chains, agree.
+        - warning: "The two-sweep method needs distances that cannot shrink."
+          why: >-
+            Its proof draws the longest route horizontally and argues that the
+            farthest glade from anywhere is one of its ends. Allow a negative
+            path and that argument fails outright: on A-B = 1, A-C = -5, C-D =
+            -5, C-E = 2 the sweeps report 1 where 2 is available. On a graph with
+            a loop it is not merely wrong, the problem is hard.
+        - warning: "Start the second sweep from what the FIRST one found."
+          why: >-
+            Sweeping twice from glade 1 gives you glade 1's eccentricity, which
+            agrees with the answer on symmetric woods and is short on lopsided
+            ones. The two sweeps are not interchangeable and the order is the
+            whole method.
+        - warning: "Decide whether the answer counts paths or glades before you initialise."
+          why: >-
+            A route of 4 paths passes through 5 glades. Both conventions appear
+            in real statements, sometimes in the same sentence as "length". On n
+            = 1 the two answers are 0 and 1, which is the case where the choice
+            becomes visible.
+      drills:
+        - id: tbb-eval-answer
+          kind: evaluate
+          prompt: >-
+            Paths 1-2, 2-3, 2-4, 3-5, 4-6. What is the greatest number of paths
+            on a route between two glades?
+          options: ["3", "4", "5", "6"]
+          answer: "4"
+          explanation: >-
+            The route 5-3-2-4-6 uses four paths. Every other route is shorter —
+            in particular anything ending at glade 1, which hangs off the side of
+            this route rather than lying on it.
+        - id: tbb-eval-root-only
+          kind: evaluate
+          prompt: >-
+            The same wood, but the answer is read off glade 1 alone by adding its
+            two deepest branches. What does that report?
+          options: ["3", "4", "5", "2"]
+          answer: "3"
+          explanation: >-
+            Glade 1 has exactly one child, so its second branch is nothing and it
+            reports 3. The true answer, 4, bends at glade 2. This is why the
+            candidate must be taken at every glade.
+        - id: tbb-eval-sweeps
+          kind: evaluate
+          prompt: >-
+            In that wood, you walk from glade 1 to the farthest glade, then from
+            there to the farthest glade again. Which glades do you land on, and
+            what is the second distance?
+          options:
+            - "5 then 6, distance 4"
+            - "6 then 5, distance 3"
+            - "5 then 1, distance 3"
+            - "2 then 5, distance 2"
+          answer: "5 then 6, distance 4"
+          explanation: >-
+            From 1 the farthest is 5 at distance 3; from 5 the farthest is 6 at
+            distance 4. The method also hands you the two ends, which the fold
+            has to be extended to report.
+        - id: tbb-prop-highest
+          kind: property
+          prompt: >-
+            After rooting the wood anywhere, what is true of every route in it?
+          options:
+            - "it has exactly one highest glade, and above that glade it is two downward chains glued together"
+            - "it passes through the root"
+            - "it has at most two highest glades, one per end"
+            - "its highest glade is always a leaf"
+          answer: "it has exactly one highest glade, and above that glade it is two downward chains glued together"
+          explanation: >-
+            One highest glade, because going up from either end must reach it
+            before coming back down. That is the entire justification for keeping
+            two branch depths per glade, and it holds whichever glade you rooted
+            at.
+        - id: tbb-prop-radius
+          kind: property
+          prompt: >-
+            The longest route in a wood is L paths long. Where should a single
+            herald stand so that the farthest glade is as near as possible, and
+            how far is it?
+          options:
+            - "at the middle of that route, and the distance is L divided by two, rounded up"
+            - "at either end of that route, and the distance is L"
+            - "at the glade with the most neighbours, and the distance is L minus one"
+            - "anywhere; every glade has the same worst distance"
+          answer: "at the middle of that route, and the distance is L divided by two, rounded up"
+          explanation: >-
+            No post can do better: it is at least half of L away from one of the
+            two ends. And the middle attains it. On the six-glade wood above, L
+            is 4 and the radius is 2, at glade 2.
+        - id: tbb-trap-negative
+          kind: trap
+          prompt: >-
+            Paths carry lengths: A-B is 1, A-C is -5, C-D is -5, C-E is 2. The
+            two-sweep method is used, starting at A. What does it report, and
+            what is the truth?
+          options:
+            - "it reports 1, while the longest is 2, between C and E"
+            - "it reports 2, which is correct"
+            - "it reports -5, the smallest length"
+            - "it loops forever on the negative paths"
+          answer: "it reports 1, while the longest is 2, between C and E"
+          explanation: >-
+            From A the farthest is B at 1; from B the farthest is A at 1. The
+            sweep's proof needs distance not to shrink as you walk, and a
+            negative path breaks exactly that. The two-branch fold at every
+            glade still gets this right.
+        - id: tbb-recall-candidate
+          kind: recall
+          prompt: >-
+            With `first` and `second` holding the depths of the two deepest
+            branches below glade v, write the statement that records the longest
+            route bending at v into `best`.
+          answer: "best = max(best, first + second);"
+          accepts:
+            - "best=max(best,first+second);"
+            - "best=max(best,first+second)"
+            - "best=max(first+second,best);"
+            - "if(first+second>best)best=first+second;"
+          explanation: >-
+            The sum of the two, at every glade, not just at the top. Memorise
+            that the candidate is taken DURING the walk; a single line after the
+            walk can only ever describe the glade you started at.
+        - id: tbb-apply-update
+          kind: apply
+          prompt: >-
+            Inside the loop over v's children, with `int branch` holding the
+            child's depth plus one and `first` and `second` the two largest seen
+            so far, write the update that keeps them correct.
+          answer: "if (branch > first) { second = first; first = branch; } else if (branch > second) second = branch;"
+          accepts:
+            - "if(branch>first){second=first;first=branch;}elseif(branch>second)second=branch;"
+            - "if(branch>first){second=first;first=branch;}elseif(branch>second){second=branch;}"
+            - "if(branch>=first){second=first;first=branch;}elseif(branch>second)second=branch;"
+          explanation: >-
+            The demoted value must go into `second`, which is the line people
+            drop. Writing only `first = max(first, branch)` computes the height
+            of the wood and never the longest route through a fork.
+
+  # ---------------------------------------------------------------- stage 4
+  - id: stage-take-or-leave
+    order: 4
+    pattern: tree-dp
+    trial_problem_ids: [glade-watchposts]
+    secret:
+      id: take-or-leave
+      name: Two Numbers, Because the Parent Must Choose
+      idiom: "skip[v] += max(skip[to], take[to]);"
+      memorise: true
+      baseline_drills: 6
+      teaches: >-
+        A wood, a value at every glade, and one rule: two chosen glades may not
+        be joined by a path. Your instinct says take the most valuable glade
+        first. Test it. A centre worth 3 with three leaves worth 2 each. What
+        does the instinct score? Three, and then everything is blocked. What was
+        available? Six. So no ranking of the glades can be right — and before
+        you go looking for a cleverer ranking, ask why. What did taking the
+        centre cost? Not value. It cost the LEGALITY of three other glades. Now
+        take that to the fold. A glade sends its answer up to its parent. Is one
+        number enough? Ask what the parent needs to know. If the parent takes
+        itself, may the child be taken? No. If the parent leaves itself, may the
+        child be taken? Yes, if the child wants to. So the parent needs two
+        different answers from the child, and the child cannot know which will
+        be wanted. Hence two numbers. Now write the two lines and watch what
+        they are NOT. If v is taken, every child must be skipped, so you add
+        skip. If v is skipped, is every child taken? No — each child does
+        whatever suits it, so you add the better of its two. That asymmetry is
+        the whole secret, and writing skip as a sum of skip is the quiet bug
+        that answers 1 where the truth is 4.
+      demonstrations:
+        - expression: "a centre worth 3 joined to three leaves worth 2 each, taking the best glade first"
+          result: "3"
+          note: "The centre is chosen and every leaf is then illegal. One glade, three crowns."
+        - expression: "the same wood, the two-state fold"
+          result: "6"
+          note: >-
+            take at the centre is 3 + 0 + 0 + 0 = 3; skip at the centre is
+            max(0,2) three times, which is 6. The answer is the larger, and it
+            leaves the centre empty.
+        - expression: "a chain of three glades worth 1, 3 and 1"
+          result: "3"
+          note: >-
+            Here taking the middle IS right. So there is no rule about centres
+            either — only the fold. Ask what changed between this wood and the
+            star: the number of neighbours the middle blocks.
+        - expression: "the seven-glade wood 1-2, 1-3, 1-4, 2-5, 2-6, 4-7 with every value 1"
+          result: "4"
+          note: >-
+            take at glade 1 is 1 + skip[2] + skip[3] + skip[4] = 1 + 2 + 0 + 1 =
+            4; skip at glade 1 is 2 + 1 + 1 = 4. Both come to 4, by different
+            routes — glades 1, 5, 6, 7 or glades 5, 6, 3, 7.
+        - expression: "the same wood with `skip[v] += skip[to];` instead of the max"
+          result: "1"
+          note: >-
+            Every skip collapses to 0 and the answer becomes the value of the
+            top alone. Four becomes one, in silence, on a wood where the correct
+            answer is more than half the glades.
+        - expression: "the same recursion counting arrangements instead of maximising"
+          result: "38 on that seven-glade wood"
+          note: >-
+            max became plus, plus became times. Nothing else moved, because the
+            states came from the constraint and only the operators come from the
+            question.
+        - expression: "the fewest glades needed so that every path has a chosen end, on that wood"
+          result: "3"
+          note: >-
+            Glades 1, 2 and 4. And 7 - 4 = 3: the complement of a largest legal
+            set is a smallest covering set, on a wood, always. A free check on
+            both answers at once.
+      watch_out:
+        - warning: "The two transitions are not symmetric. Read them out loud before you type them."
+          why: >-
+            Taking v forbids every child, so take[v] adds skip[c] only. Skipping
+            v forbids nothing, so skip[v] adds max(skip[c], take[c]). Writing the
+            second as a sum of skip[c] gives 1 instead of 4 on a seven-glade wood
+            — a wrong answer, never a crash.
+        - warning: "A greedy is not merely unproven here, it is refuted at four glades."
+          why: >-
+            Centre 3, leaves 2, 2, 2: three against six. Before you spend an hour
+            tuning a ranking, spend ten seconds on that wood. The general shape —
+            a local choice that changes what is LEGAL elsewhere rather than what
+            is affordable — is the boundary of the greedy region entirely.
+        - warning: "Initialise a maximisation with a sentinel, not with zero, when a state can be impossible."
+          why: >-
+            Zero is the right start for "best total, possibly empty". It is the
+            wrong start when the statement forces at least one glade to be
+            chosen, or when values may be negative. Use a large negative
+            sentinel, and check that adding two of them cannot overflow.
+        - warning: "In the counting form, reduce after every multiplication."
+          why: >-
+            The count roughly doubles per independent choice, so a modulus
+            applied at the end is wrong from about the fortieth glade. Keep the
+            operands long long so the intermediate product of two values below
+            10^9 still fits before the reduction.
+        - warning: "Two states is not a law — count the decisions."
+          why: >-
+            Three dyes with neighbours differing needs three numbers per glade; a
+            budget of k spent across the wood needs k+1 of them. The recipe is
+            always "one number per distinct thing the parent might need to know",
+            and asking that question is faster than remembering which classic
+            problem this resembles.
+      drills:
+        - id: tol-eval-greedy
+          kind: evaluate
+          prompt: >-
+            A centre glade worth 3 is joined to three leaves worth 2 each. No two
+            chosen glades may be joined by a path. Choosing the most valuable
+            glade first and then whatever remains legal, what total is scored?
+          options: ["3", "4", "6", "9"]
+          answer: "3"
+          explanation: >-
+            The centre is taken for 3 and every leaf is now illegal. The instinct
+            spent nothing and yet blocked everything, because what it consumed
+            was legality rather than budget.
+        - id: tol-eval-optimum
+          kind: evaluate
+          prompt: >-
+            The same four glades. What is the largest legal total?
+          options: ["3", "5", "6", "7"]
+          answer: "6"
+          explanation: >-
+            The three leaves, 2 + 2 + 2, leaving the centre empty. Four glades
+            and one path each — the smallest wood on which any ranking of glades
+            is refuted.
+        - id: tol-eval-seven
+          kind: evaluate
+          prompt: >-
+            Paths 1-2, 1-3, 1-4, 2-5, 2-6, 4-7, every glade worth 1, no two
+            chosen glades joined by a path. What is the largest number of glades
+            that can be chosen?
+          options: ["3", "4", "5", "6"]
+          answer: "4"
+          explanation: >-
+            Glades 5, 6, 3 and 7 — or glades 1, 5, 6 and 7, which scores the
+            same. The fold reports 4 from both of its states at the top, by two
+            different routes.
+        - id: tol-prop-asymmetry
+          kind: property
+          prompt: >-
+            Why does the transition for "v is taken" use only skip[c], while the
+            transition for "v is skipped" uses max(skip[c], take[c])?
+          options:
+            - "taking v forbids every child, but skipping v forbids nothing, so each child is then free to do whatever suits it"
+            - "because skip is always larger than take"
+            - "because a skipped glade contributes no value of its own"
+            - "they are the same; the max is only a safety net"
+          answer: "taking v forbids every child, but skipping v forbids nothing, so each child is then free to do whatever suits it"
+          explanation: >-
+            The rule constrains a glade and its neighbour, so it bites in one
+            direction only. Getting this backwards is not a style question: it is
+            the difference between 4 and 1 on a seven-glade wood.
+        - id: tol-prop-count
+          kind: property
+          prompt: >-
+            The same two states are used to COUNT the legal choices instead of
+            maximising them. Which operators change?
+          options:
+            - "max over the two ways becomes a sum of them, and adding the children becomes multiplying them"
+            - "only the max changes; the children are still added"
+            - "nothing changes except the final line"
+            - "the states must be extended to three"
+          answer: "max over the two ways becomes a sum of them, and adding the children becomes multiplying them"
+          explanation: >-
+            The states come from the CONSTRAINT and the operators come from the
+            QUESTION. Once a glade's own state is fixed, its branches are
+            independent, which is precisely why their counts multiply.
+        - id: tol-trap-skip
+          kind: trap
+          prompt: >-
+            A solution writes `skip[v] += skip[to];` instead of
+            `skip[v] += max(skip[to], take[to]);`. On the seven-glade wood with
+            every value 1, what does it report?
+          options:
+            - "1 — every skip collapses to zero, so only the top's own value survives"
+            - "4 — the bug cancels out on this shape"
+            - "3 — one fewer than the truth"
+            - "7 — every glade is counted"
+          answer: "1 — every skip collapses to zero, so only the top's own value survives"
+          explanation: >-
+            With that line the leaves give skip 0, so every ancestor's skip is 0
+            too, and take at the top is just its own 1. A wrong answer with no
+            crash and no warning, on a wood where the truth is 4.
+        - id: tol-recall-skip
+          kind: recall
+          prompt: >-
+            Write the statement that folds a finished child `to` into v's
+            SKIPPED state, for the largest-total problem.
+          answer: "skip[v] += max(skip[to], take[to]);"
+          accepts:
+            - "skip[v]+=max(skip[to],take[to]);"
+            - "skip[v]+=max(take[to],skip[to]);"
+            - "skip[v]+=max(dp[to][0],dp[to][1]);"
+            - "dp[v][0]+=max(dp[to][0],dp[to][1]);"
+          explanation: >-
+            The max is the whole line. Leaving v empty places no restriction on
+            the child, so the child gets to pick its own better state — which is
+            exactly what a max over the two means.
+        - id: tol-apply-count
+          kind: apply
+          prompt: >-
+            In the counting version, with `ways0` and `ways1` per glade and a
+            `const long long MOD`, write the statement that folds a finished
+            child `to` into `ways0[v]`, keeping every value reduced.
+          answer: "ways0[v] = ways0[v] * (ways0[to] + ways1[to]) % MOD;"
+          accepts:
+            - "ways0[v]=ways0[v]*(ways0[to]+ways1[to])%MOD;"
+            - "ways0[v]=ways0[v]*(ways1[to]+ways0[to])%MOD;"
+            - "ways0[v]=(ways0[v]*(ways0[to]+ways1[to]))%MOD;"
+            - "ways0[v]=ways0[v]*((ways0[to]+ways1[to])%MOD)%MOD;"
+          explanation: >-
+            v is unused here, so the child may be either way — hence the sum —
+            and the branches are independent, hence the multiplication. Reduce
+            now, not at the end: this product doubles about once per glade.
+
+  # ---------------------------------------------------------------- stage 5
+  - id: stage-power-of-two-jumps
+    order: 5
+    pattern: binary-lifting
+    trial_problem_ids: [elder-kinship-lines]
+    secret:
+      id: power-of-two-jumps
+      name: Climb by Halving the Climb
+      idiom: "up[k][v] = up[k - 1][up[k - 1][v]];"
+      memorise: true
+      baseline_drills: 6
+      teaches: >-
+        Every secret so far looked downwards, and one walk sufficed. Now look
+        up. Two glades are named, and I want the last glade their two lines of
+        descent share — two hundred thousand times. What does one such question
+        cost by walking? Up to n. And how many questions? Up to n. So what is
+        the product, and will it finish? It will not. Ask instead what is
+        expensive. Climbing one step at a time. And what did the bits master
+        tell you about any number k? That it is a sum of distinct powers of two.
+        So if you could climb 1, 2, 4 and 8 steps in one move each, how many
+        moves would a climb of five take? Two, not five: four and one. Then the
+        only question left is how you would know where a jump of four lands, and
+        the answer is the shape of the whole technique — a jump of four is a
+        jump of two, twice. Each level of the table is built from the one below
+        it, which forces the order: could you fill level 2 for one glade before
+        level 1 exists for ALL of them? No, because the jump of two lands
+        somewhere you cannot predict. Level outside, glade inside. Now the
+        meeting point. Two glades at different depths — can you compare their
+        ancestors? Not until they are level. Once they are, what is the rule?
+        Jump both only while they land on DIFFERENT glades; the moment they
+        agree you have gone too far. And before any of that, ask the question
+        everyone forgets: what if levelling them already made them equal?
+      demonstrations:
+        - expression: "up[0] for the wood 1-2, 1-3, 2-4, 2-5, 4-8, 4-9, 5-10, 3-6, 3-7, 6-11"
+          result: "1 1 1 2 2 3 3 4 4 5 6"
+          note: >-
+            One step up is just the parent, for glades 1 through 11 in order. The
+            top is written as its own parent, so a jump past it stops rather than
+            reading nothing.
+        - expression: "up[1] for the same wood, each entry being up[0] of up[0]"
+          result: "1 1 1 1 1 1 1 2 2 2 3"
+          note: >-
+            Two steps above glade 8 is glade 2, because one step is 4 and one
+            step above 4 is 2. Everything shallower than two levels has already
+            saturated at the top.
+        - expression: "the same table with the glade loop outside and the level loop inside"
+          result: "entries read before they exist"
+          note: >-
+            Filling glade 11 to level 3 requires level 2 at some glade the jump
+            lands on, which has not been reached yet. Right for shallow
+            questions, wrong for deep ones — the worst possible failure shape.
+        - expression: "climbing 5 from glade 9 on a chain 1-2-3-4-5-6-7-8-9"
+          result: "glade 4, in two table reads"
+          note: >-
+            5 is 101 in binary: one step takes 9 to 8, then four steps take 8 to
+            4. Glade 9 sits at depth 8 and glade 4 at depth 3, which is the
+            check.
+        - expression: "the meeting point of glades 8 and 10 in that eleven-glade wood"
+          result: "glade 2, at distance 4"
+          note: >-
+            Both sit at depth 3, so no levelling is needed. depth 3 + depth 3 -
+            2 times depth 1 = 4, and the route 8-4-2-5-10 confirms it.
+        - expression: "the meeting point of glades 8 and 4"
+          result: "glade 4, at distance 1"
+          note: >-
+            8 is at depth 3 and 4 at depth 2. Levelling lifts 8 by one step,
+            straight onto 4 — so the answer is found before the descending loop
+            has run at all. Forget this case and the answer is too high and the
+            distance too large by an even number.
+        - expression: "the table at n = 200000"
+          result: "18 levels, about 14 MB of int"
+          note: >-
+            2^18 = 262144, comfortably past the deepest possible climb of 199999,
+            while 2^17 = 131072 is not. Ask what 20 levels would cost you, and
+            whether you were about to write 20.
+      watch_out:
+        - warning: "The level loop must be the OUTER one."
+          why: >-
+            up[k][v] reads up[k-1] at a glade the jump lands on, which may be
+            anywhere. So every entry of level k-1 must exist before any entry of
+            level k is computed. Nested the other way, shallow questions are
+            right and deep ones are wrong — which no small sample will show you.
+        - warning: "Level the two glades BEFORE you compare their ancestors, and check for equality straight after."
+          why: >-
+            The descending loop means nothing unless the two sit at the same
+            depth. And if levelling has already made them equal, one was an
+            ancestor of the other and that glade IS the answer — running the loop
+            anyway sends you above it and makes every such distance too large by
+            an even number.
+        - warning: "Jump only while the two land on DIFFERENT glades."
+          why: >-
+            Jumping when up[b][u] equals up[b][w] overshoots to a common ancestor
+            that is too high, usually the top. The loop's job is to get as close
+            as possible WITHOUT meeting; the answer is then one more step, taken
+            after the loop.
+        - warning: "Pick one convention for the top and keep it."
+          why: >-
+            Either the top is its own parent and every overlong jump saturates
+            harmlessly, or 0 means "off the top" and every single use must be
+            guarded. Both work. Mixing them gives you a read at index 0 that
+            returns whatever was left there, and an answer that is plausible.
+        - warning: "One or two queries do not justify a table."
+          why: >-
+            Building 18 levels to answer three questions is work you did not
+            need; walk both glades upwards in step and finish in O(n). The table
+            earns its keep when the number of questions is comparable to n, which
+            is what the bound on q is telling you.
+      drills:
+        - id: ptj-eval-level-one
+          kind: evaluate
+          prompt: >-
+            The wood 1-2, 1-3, 2-4, 2-5, 4-8, 4-9, 5-10, 3-6, 3-7, 6-11, topped
+            at glade 1. What is up[1][8] — the glade exactly two steps above
+            glade 8?
+          options: ["1", "2", "4", "5"]
+          answer: "2"
+          explanation: >-
+            One step above 8 is 4, and one step above 4 is 2. Which is the
+            recurrence itself: up[1][8] = up[0][up[0][8]] = up[0][4] = 2.
+        - id: ptj-eval-climb
+          kind: evaluate
+          prompt: >-
+            A chain 1-2-3-4-5-6-7-8-9, topped at glade 1. Climbing exactly 5
+            steps from glade 9, where do you land, and how many table reads does
+            it take?
+          options:
+            - "glade 4, in two reads"
+            - "glade 4, in five reads"
+            - "glade 5, in two reads"
+            - "glade 3, in three reads"
+          answer: "glade 4, in two reads"
+          explanation: >-
+            5 is 101 in binary, so it is a jump of 1 and a jump of 4: 9 to 8,
+            then 8 to 4. Glade 9 sits at depth 8 and glade 4 at depth 3, and
+            8 - 5 = 3.
+        - id: ptj-eval-distance
+          kind: evaluate
+          prompt: >-
+            In the eleven-glade wood above, glades 9 and 11 both sit at depth 3
+            and their deepest shared ancestor is glade 1. How many paths lie on
+            the route between them?
+          options: ["3", "4", "5", "6"]
+          answer: "6"
+          explanation: >-
+            3 + 3 - 2 times 0 = 6. The route is 9-4-2-1-3-6-11. The formula
+            subtracts the shared stretch twice because both depths counted it
+            once each.
+        - id: ptj-prop-loop-order
+          kind: property
+          prompt: >-
+            When building the table, which loop must be outside the other, and
+            why?
+          options:
+            - "the level loop, because up[k][v] reads up[k-1] at a glade that may be anywhere"
+            - "the glade loop, so that each glade's whole column is finished together"
+            - "either; the two loops are independent"
+            - "the level loop, because otherwise the table is too large"
+          answer: "the level loop, because up[k][v] reads up[k-1] at a glade that may be anywhere"
+          explanation: >-
+            The jump of 2^(k-1) lands somewhere unpredictable, so the entire
+            previous level must already exist. Nested the other way you get
+            correct shallow answers and wrong deep ones, which is the hardest
+            kind of bug to find.
+        - id: ptj-prop-levels
+          kind: property
+          prompt: >-
+            At n = 200000, how many levels does the table need, and roughly what
+            does it cost?
+          options:
+            - "18 levels, about 14 MB of int, since 2^18 = 262144 exceeds the deepest possible climb"
+            - "20 levels, about 16 MB, since a round number is safer"
+            - "200000 levels, one per possible climb"
+            - "17 levels, since 2^17 is greater than 10^5"
+          answer: "18 levels, about 14 MB of int, since 2^18 = 262144 exceeds the deepest possible climb"
+          explanation: >-
+            The deepest climb is 199999, and 2^17 = 131072 does not cover it
+            while 2^18 does. 18 times 2*10^5 times 4 bytes is 14.4 MB; twenty
+            levels would be a third more for nothing.
+        - id: ptj-trap-equal-jump
+          kind: trap
+          prompt: >-
+            In the descending phase, a solution jumps whenever up[b][u] EQUALS
+            up[b][w]. What goes wrong?
+          options:
+            - "it overshoots to a common ancestor that is too high, usually the top, so every distance is too large by an even number"
+            - "it never moves, so the answer is always the starting glade"
+            - "it reads outside the table"
+            - "nothing; the two rules are equivalent"
+          answer: "it overshoots to a common ancestor that is too high, usually the top, so every distance is too large by an even number"
+          explanation: >-
+            The loop's purpose is to climb as far as possible WITHOUT meeting, so
+            the two stay strictly below the answer, which is then one more step
+            up. Equality means you have already passed it.
+        - id: ptj-recall-recurrence
+          kind: recall
+          prompt: >-
+            Write the statement that fills level k of the jump table for glade v
+            from the level below it.
+          answer: "up[k][v] = up[k - 1][up[k - 1][v]];"
+          accepts:
+            - "up[k][v]=up[k-1][up[k-1][v]];"
+            - "up[k][v]=up[k-1][up[k-1][v]]"
+            - "up[v][k]=up[up[v][k-1]][k-1];"
+            - "anc[k][v]=anc[k-1][anc[k-1][v]];"
+          explanation: >-
+            A jump of 2^k is a jump of 2^(k-1) taken twice. Memorise the doubled
+            index — it is the only line in the technique, and everything else is
+            a loop over the bits of a number.
+        - id: ptj-apply-distance
+          kind: apply
+          prompt: >-
+            With `depth_` filled and `meet(u, w)` returning the deepest shared
+            ancestor, write the return statement that gives the number of paths
+            between u and w.
+          answer: "return depth_[u] + depth_[w] - 2 * depth_[meet(u, w)];"
+          accepts:
+            - "returndepth_[u]+depth_[w]-2*depth_[meet(u,w)];"
+            - "returndepth_[u]+depth_[w]-2*depth_[meet(u,w)]"
+            - "returndep[u]+dep[w]-2*dep[lca(u,w)];"
+            - "returndepth[u]+depth[w]-2*depth[lca(u,w)];"
+          explanation: >-
+            Both depths count the stretch above the shared glade, so it is
+            removed twice. Note that the formula does not care whether depth
+            starts at 0 or 1 — the offset cancels — only that all three were
+            measured the same way.
+
+final_test_problem_ids:
+  - deepest-roll-call
+  - lantern-cut-of-the-wood
+  - herald-post-of-the-wood
+  - bridge-toll-guards
+  - banner-arrangements-of-the-wood
+  - kin-road-lengths

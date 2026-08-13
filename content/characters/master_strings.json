@@ -1,0 +1,181 @@
+{
+  "id": "master_strings",
+  "name": "MASTER OF STRINGS",
+  "title": "Scribe Halvern Ash, the Prefix",
+  "region": "library-of-strings",
+  "patterns": [
+    "prefix-function",
+    "string-hashing",
+    "trie",
+    "palindrome-centres"
+  ],
+  "personality": {
+    "warmth": 0.55,
+    "verbosity": 0.5,
+    "praise_threshold": 0.88
+  },
+  "gate": {
+    "recognition": 0.75,
+    "understanding": 0.8,
+    "implementation": 0.75,
+    "retention": 0.7
+  },
+  "placeholders": {
+    "days": "whole days since the relevant event — the student's last visit, a past failure on this problem, or the length of the current unbroken practice streak",
+    "streak": "number of consecutive correct drills in the current run",
+    "attempts": "how many attempts the student previously needed on this problem",
+    "secret": "the name of the secret currently being taught or tested",
+    "idiom": "the C++ expression at the heart of the current secret",
+    "requirement": "name of the gate dimension that is short: recognition, understanding, implementation, or retention",
+    "shortfall": "how far the short gate dimension sits below its threshold, as a percentage",
+    "score": "how many final-test problems were answered correctly",
+    "total": "number of problems in the final test",
+    "required": "how many must be answered correctly to pass"
+  },
+  "dialogue": {
+    "greeting_first": [
+      "Ah. Sit anywhere, only not on the eleventh shelf; the eleventh shelf is where I keep the things that were nearly right.",
+      "You have arrived at the quietest region and you will find it the most exacting. Nothing here is approximately equal to anything.",
+      "Welcome. I copy things for a living, which has made me unusually interested in the difference between two things that look the same.",
+      "Before we begin: everything I teach you compares a thing with itself. That is not a riddle. It is the whole subject, and you will find it appears more often than you would guess."
+    ],
+    "greeting_returning": [
+      "Back. Good. Where were we — ah, the fallback. Yes.",
+      "Sit. I have kept your place.",
+      "You return. I had rather assumed you would; you left mid-argument, and people who leave mid-argument come back.",
+      "Again, then. Quietly, and from the beginning of the line."
+    ],
+    "greeting_after_gap": [
+      "{days} days. The shelves did not move. I cannot say the same for what you knew about the fallback chain.",
+      "{days} days away. Tell me, without looking: what does k become when the characters disagree? I ask because it is the first thing to go.",
+      "{days} days. You have almost certainly kept the code and lost the argument. That is the usual order, and it is the wrong way round.",
+      "Gone {days} days, and back. Sit. We will begin one step behind where you stopped, which will annoy you and will be correct."
+    ],
+    "lesson_intro": [
+      "{secret}. Small. Nearly everything here is small; the subject's difficulty is that the small things are exact.",
+      "Watch the middle of the argument, not the ends. The ends are always obvious.",
+      "I will show you this once slowly and once at speed. The slow one is the one to copy down.",
+      "This is four lines. I have seen four lines like these lose more contests than any other four lines in the discipline, which is why we are going to be careful."
+    ],
+    "lesson_memorise": [
+      "Keep `{idiom}`. Not because it is clever — because under a clock you will not rederive it, and you will not need to.",
+      "Into the hand with this one. The reason it works goes somewhere slower and deeper.",
+      "Copy it out. Copying is not beneath you; it is my profession, and I am rather good at it.",
+      "This one you will write a hundred times. Make the hundredth identical to the first."
+    ],
+    "drill_correct": [
+      "Yes.",
+      "Correct. Next.",
+      "Quite right.",
+      "Good. Continue.",
+      "That is the one."
+    ],
+    "drill_wrong": [
+      "No. k falls to the border of the border. Never to zero — zero is the algorithm you were trying to replace.",
+      "No. You joined the two strings without a separator, and a match ran across the join. Three occurrences became one.",
+      "Not quite. That is the smallest period, and the string is not therefore a repetition. One modulo separates those two sentences.",
+      "No. You mapped the first letter to nothing, so every leading run of it now hashes to the same value. You built the collision yourself.",
+      "No — you looked only at middles that sit on a character. \"abba\" is sitting there in the gap, waiting.",
+      "No. That counter tells you how many words pass through the node. You wanted the one that says how many stop.",
+      "Wrong, and interestingly so: that is what a fingerprint says, not what it proves."
+    ],
+    "drill_streak": [
+      "{streak} in a row. I notice these things; I write them down.",
+      "Steady. Keep the rhythm — this material rewards rhythm.",
+      "{streak} straight, and none of them guessed as far as I can tell. Continue.",
+      "Good. You have stopped reaching for the code before the sentence."
+    ],
+    "trial_intro": [
+      "Nothing named. Read it twice — the second reading is where the constraints start speaking.",
+      "The label comes off here. The bounds stay on, and the bounds are usually the sentence that tells you which of my four you are holding.",
+      "One statement. Decide what is being compared with what, and the technique follows from that alone.",
+      "Take your time. Speed here is a consequence, never a method."
+    ],
+    "fail_wrong_pattern": [
+      "No. That was one pattern in one text with an exact answer demanded — a border array, not a fingerprint. You reached for the probabilistic tool where the certain one was cheaper.",
+      "No. Those were arbitrary stretches compared with each other, in the middle of the line. No border reaches there.",
+      "That was a dictionary queried by its beginnings. A tally can tell you how many words ARE something; it has never been able to say how many BEGIN like something.",
+      "No — the thing you were asked for reads the same backwards. That is a middle, not an end, and your instinct went to the end.",
+      "You chose counting. Counting is blind to position, and every letter of that statement was about position."
+    ],
+    "fail_timeout": [
+      "Time. Nothing you had was wrong; it was late. Fluency is a separate skill from understanding and it is drilled separately.",
+      "Time ran out. You spent it deriving something I told you to memorise. That is my failure as much as yours — we will drill it.",
+      "Time. You were looking for something complicated. In this library the complicated thing is usually the proof, not the code.",
+      "Time. Note where it went: you had the technique in the first minute."
+    ],
+    "fail_wrong_answer": [
+      "Right technique, wrong join. Without a separator a border ran across it, and your count came back a third of what it should be.",
+      "The approach was correct and the subtraction went negative. C++ gives the remainder the sign of the dividend; add the modulus back.",
+      "You found the smallest period and reported it as a repetition. \"abcabca\" has period 3 and is not \"abc\" repeated. One modulo.",
+      "Correct scan, wrong accumulator. A row of 1e5 identical characters holds 5,000,050,000 symmetric stretches, and an int stops at 2,147,483,647.",
+      "The structure was right and the marker was missing, so a prefix of a stored word read as stored. \"car\" is not in a dictionary containing only \"card\".",
+      "You were right and you were unlucky, which here is the same thing: one modulus, a hundred thousand fingerprints compared with each other, five expected collisions."
+    ],
+    "success": [
+      "Correct. Write it down before you lose the shape of it.",
+      "That holds. Continue.",
+      "Yes. Next.",
+      "Accepted. The next one gives away less."
+    ],
+    "success_fast": [
+      "Quick, and you named what was being compared with what before you typed. That is the right order.",
+      "You read the bound first. Good — the bound is the sentence that chooses between my four.",
+      "No hesitation and no wasted structure. I approve, quietly.",
+      "One pass, one table, one argument. That is the whole discipline, and you did it in the right sequence."
+    ],
+    "praise_exceptional": [
+      "That was well done. You saw the separator before it bit you, which almost nobody does the first time.",
+      "You distrusted your own fingerprint. Few students distrust a tool that has never yet failed them; that is the rarer habit by far.",
+      "Clean, exact, and you could say why it was linear. I noticed which of those came first.",
+      "That is the best you have done in this room. You did not write code and then justify it. You argued, and then the code was short."
+    ],
+    "praise_major": [
+      "I have copied out a great many solutions in this library, and most of them were four lines that happened to be right. Yours are four lines that are right for a reason you can state. You have earned my respect.",
+      "You came here able to match a pattern. You leave able to say when a fingerprint is a proof and when it is only a strong opinion, which is the whole of this region and most of the rest of the discipline. You have earned my respect.",
+      "I will say this once, and I will not repeat it because you will remember it: you have learned to distrust the right things. That is not a technique. That is judgement. You have earned my respect."
+    ],
+    "memorisation_detected": [
+      "You remember which of my four this problem wanted. You cannot say what was being compared with what. Those are different, and the difference is the entire library. A different problem.",
+      "You pass the statements you have read and fail their variants. Change the alphabet and you are lost, which means what you learned was the story and not the structure. Back one step.",
+      "That answer was retrieved, not derived. I can tell, because you gave it before the constraints were on the screen. Here is one you have not seen."
+    ],
+    "improvement_noticed": [
+      "You failed this {days} days ago, on the separator. Today you wrote it without being asked. That is improvement, and I record it.",
+      "{attempts} attempts, once. Today one. I keep the ledger; it is the one thing I am unambiguously good at.",
+      "This is the problem where you spent an hour on the accumulator. You declared it long long in the first minute today.",
+      "Steadier than last time. You asked what was being compared before you asked which table to build."
+    ],
+    "commitment_noticed": [
+      "{days} days unbroken. This library rewards the patient more reliably than the quick; the quick tend to guess the separator.",
+      "Many students reach this region. Most want the four lines. You have twice now asked me why they are linear, which is a different question and the better one.",
+      "You have returned after every failure so far. I write these things down, and the record is not short.",
+      "Attendance is the part I cannot teach. You brought your own, and it has begun to show in your recall."
+    ],
+    "gate_locked": [
+      "Not yet. {requirement} is short by {shortfall} percent. The shelves are patient.",
+      "The gate holds. Understanding is short — you can produce the fallback and not say why it is linear, and here that is half a technique.",
+      "No. Recognition is short. You hold four tools and cannot yet hear which one a statement is describing.",
+      "Implementation is short. The idea is right and the index is not, and in this region an index is the whole answer.",
+      "Retention is short. What you proved a fortnight ago has gone quiet. Review it — that is not a punishment, it is the schedule working."
+    ],
+    "gate_open": [
+      "The gate is open. Come when you are ready and not when you are impatient; they are rarely the same day.",
+      "Nothing is short any more. The final test is on the reading desk when you want it.",
+      "Enough. You may attempt it.",
+      "You meet the requirements. The rest of the decision is yours, and I will not push."
+    ],
+    "final_test_intro": [
+      "I will name nothing. Every drill before this one existed so that I would not have to.",
+      "{total} problems, {required} of them right. Read each twice. Ask what is being compared with what, and then ask whether the answer must be exact.",
+      "No help. Only the statements, the bounds, and whatever argument you can still make from memory.",
+      "One of these does not want any of my four. Recognising that is also an answer, and I will accept it."
+    ],
+    "victory": [
+      "It is done. The library is behind you, and quieter than it was.",
+      "You passed. Remember the shapes of the failures — the missing separator, the single modulus, the middle in the gap — not only the shapes of the rules. Go.",
+      "Finished. Everything after this assumes you can tell a fingerprint from a proof. You can, now.",
+      "That is mastery of the written line. Take the eleventh shelf with you; you will not need it again."
+    ]
+  }
+}

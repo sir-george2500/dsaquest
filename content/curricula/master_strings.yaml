@@ -1,0 +1,1516 @@
+# Scribe Halvern Ash's teaching plan — the Prefix, Master of Strings.
+#
+# Seven secrets across four patterns. Every number in every demonstration was
+# computed rather than remembered: the border tables, the occurrence counts,
+# the two twenty-character strings that collide modulo 1e9+9, the Thue-Morse
+# length at which base 31 dies modulo 2^64, and the node counts. This region
+# has an unusual property that shapes the whole plan — three of its four
+# techniques are LINEAR and exact, and the fourth is neither, so the master
+# spends an entire secret on the boundary where a fingerprint stops being a
+# proof. The final test names nothing.
+
+master_id: master_strings
+patterns:
+  - prefix-function
+  - string-hashing
+  - trie
+  - palindrome-centres
+title: Scribe Halvern Ash, the Prefix — Seven Secrets of the Written Line
+
+opening: >-
+  You have come a long way to be told that a string is an array whose elements
+  happen to be letters. Almost everything you already own still works here: a
+  window is a window, a tally is a tally. What is new is that these arrays are
+  compared with THEMSELVES, and that turns out to be worth an entire library.
+  Seven secrets. The first three are one idea seen from three sides: if you
+  remember how much of a thing you have already matched, you never have to look
+  at a character twice. The fourth and fifth are a bargain — a fingerprint that
+  makes any two stretches comparable in one operation, and the precise price of
+  that bargain, which is that somebody who has never met you can construct two
+  different stretches your fingerprint cannot tell apart. I will teach you the
+  attack, not merely the defence; a warrior who has not seen his armour pierced
+  does not know what it is for. The sixth is a tree whose paths spell words.
+  The seventh is the observation that a symmetric thing is defined by its
+  middle and not by its ends, which halves a great deal of thinking. Be
+  precise. In this region an answer that is nearly right is a different answer.
+
+stages:
+  # ---------------------------------------------------------------- stage 0
+  - id: stage-the-border
+    order: 0
+    pattern: prefix-function
+    trial_problem_ids: [scriptorium-repeated-seal]
+    secret:
+      id: the-border
+      name: The Longest Thing That Is Both Ends
+      idiom: "while (k > 0 && s[i] != s[k]) k = pi[k - 1];"
+      memorise: true
+      animation: border-fallback
+      baseline_drills: 5
+      teaches: >-
+        A border of a string is a piece that is simultaneously its beginning
+        and its ending — proper, meaning shorter than the whole. "abacaba"
+        begins and ends with "aba", and also with "a". The prefix function is
+        one number per position: pi[i] is the length of the longest border of
+        the prefix ending at i. That is all it is, and nearly everything in
+        this region is a consequence of it. Now the part worth your attention.
+        Computing it looks quadratic and is not. Carry the last answer forward
+        as a candidate length k. If the next character extends the match, k
+        rises by one. If it does not, the next candidate is not zero — it is
+        pi[k-1], the border OF the border, because any shorter border of the
+        longer prefix must also be a border of the piece you had. So k falls
+        down a chain and never restarts. And since k rises by at most one per
+        position, the total of all its falls across the whole string cannot
+        exceed the total of its rises, which is n. Two nested loops, O(n) work.
+        Learn that argument, not the code: the code is five lines and every
+        student can copy it, while the argument is what tells you the technique
+        is available at 1e6 characters.
+      demonstrations:
+        - expression: "the borders of abacaba, found by comparing every length"
+          result: "a and aba"
+          note: >-
+            Only those two. "ab" is not an ending, "abac" is not, and the whole
+            string is excluded because a border must be proper.
+        - expression: "pi of abacaba"
+          result: "[0, 0, 1, 0, 1, 2, 3]"
+          note: >-
+            The last entry is 3, which is "aba". Walking pi[k-1] from there
+            gives pi[2] = 1, then pi[0] = 0 — the chain lists every border in
+            decreasing order and stops.
+        - expression: "pi of aabaaab"
+          result: "[0, 1, 0, 1, 2, 2, 3]"
+          note: >-
+            Watch index 5. The candidate was 2, s[5] = 'a' disagreed with
+            s[2] = 'b', so k fell to pi[1] = 1 — NOT to 0 — and then matched
+            and rose back to 2.
+        - expression: "pi of abcabcd"
+          result: "[0, 0, 0, 1, 2, 3, 0]"
+          note: >-
+            At the final 'd' the chain falls all the way to the floor: 3, then
+            pi[2] = 0, and nothing matches there either. A full collapse costs
+            three steps once, not three steps per position.
+        - expression: "pi[0], for every string that has ever existed"
+          result: "0"
+          note: >-
+            One character has no proper border. If your table starts with
+            anything else, you have written a loop that begins at 0 instead of
+            at 1.
+        - expression: "a text of 1e6 'a' and a pattern of 1e3 'a', matched by restarting after each mismatch"
+          result: "about 1e9 character comparisons"
+          note: >-
+            The same code on random text finishes instantly, which is why this
+            bug survives every local test and dies on the judge.
+      watch_out:
+        - warning: "The book's border and the table's border are not the same word."
+          why: >-
+            The Competitive Programmer's Handbook lists the borders of ABACABA
+            as A, ABA and ABACABA — the whole string included. The prefix
+            function stores only PROPER borders, so its last entry is 3 and not
+            7. Read any formula involving borders twice to see which definition
+            it assumes.
+        - warning: "On a mismatch, k = pi[k - 1] — never k = 0."
+          why: >-
+            Resetting to zero is not a slower correct algorithm, it is the
+            naive matcher with extra steps: it throws away a proved match and
+            makes the whole thing O(nm). The fallback chain is the entire
+            contribution of this technique.
+        - warning: "Do not try to remove the inner while loop."
+          why: >-
+            It looks like the quadratic term and it is not one. k rises at most
+            once per position, so the sum of everything it ever loses is bounded
+            by n. Students who cannot state that argument tend to "optimise" the
+            loop into something wrong.
+        - warning: "The comparison is s[i] against s[k], not s[i] against s[i - k]."
+          why: >-
+            k is a LENGTH, and the next character of the candidate prefix sits
+            at index k. Writing i - k compares the wrong pair and produces a
+            table that is right on short strings by coincidence.
+        - warning: "One table is one string."
+          why: >-
+            The table is built for whatever string you hand it. Two strings
+            need one concatenated string with a separator, which is the next
+            secret — building two tables and comparing them answers nothing.
+      drills:
+        - id: bor-eval-abacaba
+          kind: evaluate
+          prompt: >-
+            What is the prefix-function table of "abacaba"?
+          options:
+            - "[0, 0, 1, 0, 1, 2, 3]"
+            - "[0, 1, 0, 1, 2, 3, 0]"
+            - "[0, 0, 1, 1, 2, 3, 3]"
+            - "[7, 0, 1, 0, 3, 0, 1]"
+          answer: "[0, 0, 1, 0, 1, 2, 3]"
+          explanation: >-
+            The last entry is 3 because "aba" both opens and closes the string.
+            The fourth option is the Z-array of the same string, which is a
+            different measurement of the same idea and a popular wrong answer.
+        - id: bor-eval-fallback
+          kind: evaluate
+          prompt: >-
+            Building the table of "aabaaab", the candidate length at index 5 is
+            2 and s[5] = 'a' disagrees with s[2] = 'b'. What does the candidate
+            become before the next comparison?
+          options: ["0", "1", "2", "3"]
+          answer: "1"
+          explanation: >-
+            pi[k - 1] = pi[1] = 1. It falls to the border of the border, not to
+            the floor — and then s[5] = 'a' matches s[1] = 'a', so it climbs
+            straight back to 2. Falling to 0 would have cost the whole match.
+        - id: bor-eval-last-entry
+          kind: evaluate
+          prompt: >-
+            What is the LAST entry of the prefix-function table of "abcabcd"?
+          options: ["0", "1", "3", "6"]
+          answer: "0"
+          explanation: >-
+            The table is [0, 0, 0, 1, 2, 3, 0]. The candidate reached 3 on
+            "abcabc" and then 'd' matched nothing at all, so the chain fell 3,
+            0 and stopped. A string can have a long border at one position and
+            none at the next.
+        - id: bor-prop-definition
+          kind: property
+          prompt: >-
+            What exactly does pi[i] hold?
+          options:
+            - "the length of the longest proper prefix of s[0..i] that is also a suffix of s[0..i]"
+            - "the length of the longest repeated substring inside s[0..i]"
+            - "how many times s[i] has appeared so far"
+            - "the position where the prefix of s last occurred"
+          answer: "the length of the longest proper prefix of s[0..i] that is also a suffix of s[0..i]"
+          explanation: >-
+            Prefix, suffix, same string, and proper — shorter than s[0..i]
+            itself. Drop the word "proper" and every entry becomes i + 1 and the
+            table says nothing.
+        - id: bor-prop-amortised
+          kind: property
+          prompt: >-
+            The inner while loop can run many times at a single position. Why
+            is the whole computation still O(n)?
+          options:
+            - "k rises by at most one per position, so the total of all its falls cannot exceed the total of its rises"
+            - "the while loop runs at most twice at any position"
+            - "the string is scanned twice, and two passes are linear"
+            - "it is not O(n); it is O(n log n), which is close enough in practice"
+          answer: "k rises by at most one per position, so the total of all its falls cannot exceed the total of its rises"
+          explanation: >-
+            The classic amortised argument. k is a non-negative quantity that
+            gains at most n in total across the scan, so it can lose at most n
+            in total, however unevenly those losses are distributed.
+        - id: bor-trap-reset
+          kind: trap
+          prompt: >-
+            A student writes `if (s[i] != s[k]) k = 0;` instead of the fallback
+            loop. The table is wrong. What has he actually built?
+          options:
+            - "the naive matcher — it discards a proved match, and the search built on it becomes O(nm)"
+            - "the Z-array, which is a different but equally useful table"
+            - "a correct table computed in a different order"
+            - "nothing; the code will not compile"
+          answer: "the naive matcher — it discards a proved match, and the search built on it becomes O(nm)"
+          explanation: >-
+            The fallback chain IS the technique. Resetting to zero throws away
+            everything the scan has earned, and the resulting code is a slower
+            way to write the loop you were trying to replace.
+        - id: bor-trap-proper
+          kind: trap
+          prompt: >-
+            A solution reports that the longest border of "aaaa" is 4. What
+            went wrong?
+          options:
+            - "the whole string was allowed as its own border; a border must be proper, so the answer is 3"
+            - "nothing — 4 is correct"
+            - "the table was built from the right-hand end"
+            - "the string has no border and the answer should be 0"
+          answer: "the whole string was allowed as its own border; a border must be proper, so the answer is 3"
+          explanation: >-
+            pi of "aaaa" is [0, 1, 2, 3]. Every self-comparison technique in
+            this region assumes proper borders; allow the whole string and the
+            period formula returns 0 and every derived answer collapses.
+        - id: bor-recall-fallback
+          kind: recall
+          prompt: >-
+            Write the statement that moves the candidate length k after a
+            disagreement, for a string s and table pi.
+          answer: "while (k > 0 && s[i] != s[k]) k = pi[k - 1];"
+          accepts:
+            - "while(k>0&&s[i]!=s[k])k=pi[k-1];"
+            - "while(k>0&&s[i]!=s[k])k=pi[k-1]"
+            - "while(k&&s[i]!=s[k])k=pi[k-1];"
+            - "while(k>0and s[i]!=s[k])k=pi[k-1];"
+          explanation: >-
+            The guard k > 0 is what stops the chain at the floor, and pi[k - 1]
+            is the border of the border. Memorise the pair together: without the
+            guard you index pi[-1], and without the fallback you have written
+            the naive matcher.
+        - id: bor-apply-extend
+          kind: apply
+          prompt: >-
+            Immediately after the fallback loop, with s, k and i in scope, write
+            the statement that extends the match when the characters do agree.
+          answer: "if (s[i] == s[k]) ++k;"
+          accepts:
+            - "if(s[i]==s[k])++k;"
+            - "if(s[i]==s[k])k++;"
+            - "if(s[i]==s[k]){++k;}"
+            - "if(s[k]==s[i])++k;"
+          explanation: >-
+            One character, one increment, and it is the only place k ever
+            grows — which is exactly why the amortised argument holds. Assign
+            pi[i] = k on the next line.
+
+  # ---------------------------------------------------------------- stage 1
+  - id: stage-search-by-joining
+    order: 1
+    pattern: prefix-function
+    trial_problem_ids: [ledger-motif-count, copyist-margin-overlap]
+    secret:
+      id: search-by-joining
+      name: Make Two Strings Into One
+      idiom: "pi of pat + SEP + text; every value equal to |pat| is a match"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        You have a table that describes one string. You want to find one string
+        inside another. The trick is not to build a matcher at all: glue the
+        two strings together with a character that cannot occur in either, run
+        the same table over the result, and read off every position whose value
+        equals the pattern's length. Such a position can only mean that the
+        last |pat| characters ending there are exactly the pattern, because a
+        border that long has to start at the very beginning. Now the separator,
+        which is the part people skip and then lose a contest over. Without it,
+        a match may run across the join and use characters from the pattern as
+        though they were text: searching "aab" inside "aabaabaab" reports ONE
+        occurrence instead of three. The separator must be outside the input
+        alphabet — '#' is a habit, not a guarantee, and on a problem whose
+        alphabet is unstated it is a bet. The same construction answers a
+        second question you will meet constantly: join B, a separator, and A,
+        and the final value is the longest ending of A that is also a beginning
+        of B. Every "how much do these overlap" statement is that sentence.
+      demonstrations:
+        - expression: "occurrences of aab inside aabaabaab, overlaps counted"
+          result: "3, at positions 0, 3 and 6"
+          note: "The correct answer, by direct comparison at every position."
+        - expression: "the same search coded as pi of aab + aabaabaab, with no separator"
+          result: "1"
+          note: >-
+            The border runs across the join and the count collapses. Every test
+            whose pattern and text share no boundary is unaffected, which is why
+            this reaches the judge alive.
+        - expression: "pi of aa#aaa"
+          result: "[0, 1, 0, 0, 1, 2]"
+          note: >-
+            Two entries equal 2, at indices 4 and 5, so "aa" occurs twice in
+            "aaa" — correct, and the separator reset the chain to 0 at the join.
+        - expression: "pi of aaaaa, which is the same search with no separator"
+          result: "[0, 1, 2, 3, 4]"
+          note: >-
+            Only index 2 holds the value 2, so the count comes back as 1 where
+            the truth is 2. Two characters of input, one missing separator.
+        - expression: "pi of aba#abababa, reading positions with value 3"
+          result: "indices 6, 8 and 10"
+          note: >-
+            Subtract 2m = 6 from each: matches at 0, 2 and 4 in the text.
+            Overlapping matches, all found, in one pass.
+        - expression: "the last value of pi of B + SEP + A"
+          result: "the longest ending of A that is also a beginning of B"
+          note: >-
+            Which is exactly the overlap you must not write twice when gluing
+            two sheets together. The separator stops it exceeding either length.
+      watch_out:
+        - warning: "The separator must be impossible, not merely unlikely."
+          why: >-
+            If the input alphabet is unstated, '#' and '$' can occur. Use a
+            byte outside the printable range such as '\\1', or — when the input
+            really can be any byte — do not concatenate at all and compare the
+            running value against the pattern length in the text region only.
+        - warning: "The match STARTS at i - 2 * m, not at i - m."
+          why: >-
+            i is the last index of the match inside the joined string, and the
+            joined string carries the pattern and the separator in front of the
+            text: m + 1 characters, then the match's own m. Off by m is a wrong
+            answer on every test, which at least fails loudly.
+        - warning: "Do not skip forward by m after a hit."
+          why: >-
+            That is the reflex from writing a matcher by hand and it silently
+            drops overlapping matches: "aa" inside "aaaa" is 3 occurrences, not
+            2. The table has already paid for the overlaps; take them.
+        - warning: "The joined string doubles your memory."
+          why: >-
+            A 1e6-character text plus its pattern plus a table of ints is about
+            8 MB. That is fine. Two such searches nested inside a loop over 1e5
+            patterns is not, and that is the moment to reach for a prefix tree
+            or an automaton instead.
+        - warning: "Reading with cin >> stops at whitespace."
+          why: >-
+            If the text may contain spaces, `cin >> text` silently reads one
+            word and every count is wrong on exactly the tests that contain a
+            space. Use getline, and remember to consume the newline left by any
+            preceding numeric read.
+      drills:
+        - id: sbj-eval-overlaps
+          kind: evaluate
+          prompt: >-
+            How many times does "aab" occur in "aabaabaab", counting positions
+            where two occurrences share letters?
+          options: ["1", "2", "3", "4"]
+          answer: "3"
+          explanation: >-
+            At 0, 3 and 6. They do not in fact overlap here, but a solution that
+            jumps forward by the pattern length after each hit still gets this
+            right — which is why the next drill matters.
+        - id: sbj-eval-noseparator
+          kind: evaluate
+          prompt: >-
+            The same search is coded as the prefix function of "aab" joined
+            directly to "aabaabaab" with no separator, counting values equal to
+            3 in the text region. What does it report?
+          options: ["0", "1", "3", "9"]
+          answer: "1"
+          explanation: >-
+            A border of the joined string may begin inside the pattern and run
+            across the join, so the values in the text region no longer mean
+            what you think. One missing character, two thirds of the answer
+            gone.
+        - id: sbj-eval-aa-in-aaa
+          kind: evaluate
+          prompt: >-
+            The prefix function of "aa#aaa" is [0, 1, 0, 0, 1, 2]. How many
+            times does "aa" occur in "aaa"?
+          options: ["1", "2", "3", "0"]
+          answer: "2"
+          explanation: >-
+            Two entries in the text region equal the pattern length of 2, at
+            indices 4 and 5, so the matches start at positions 0 and 1 of the
+            text. They share the middle 'a', and both count.
+        - id: sbj-prop-position
+          kind: property
+          prompt: >-
+            An entry at index i of the joined string equals m, the pattern
+            length. Where does that match begin inside the TEXT?
+          options:
+            - "i - 2 * m"
+            - "i - m"
+            - "i - m - 1"
+            - "i"
+          answer: "i - 2 * m"
+          explanation: >-
+            The joined string is m characters of pattern, one separator, then
+            the text, so text position 0 sits at index m + 1. The match ends at
+            i and is m long, so it begins at i - m + 1 in the joined string,
+            which is (i - m + 1) - (m + 1) = i - 2m in the text.
+        - id: sbj-prop-overlap-join
+          kind: property
+          prompt: >-
+            You want the longest ending of A that is also a beginning of B.
+            Which string do you build the table for?
+          options:
+            - "B + separator + A, and read the last value"
+            - "A + separator + B, and read the last value"
+            - "A + B, with no separator, and read the largest value"
+            - "A alone, and read the last value"
+          answer: "B + separator + A, and read the last value"
+          explanation: >-
+            The last value is the longest piece that both begins the joined
+            string — so it is a beginning of B — and ends it, so it is an ending
+            of A. Getting the order the wrong way round answers the mirror
+            question, which is a different number.
+        - id: sbj-trap-skip
+          kind: trap
+          prompt: >-
+            After every match, a solution advances its scan position by the
+            pattern length. On "aa" inside "aaaa" it reports 2. What is the
+            true answer and why?
+          options:
+            - "3 — occurrences may share letters, and skipping forward by m discards exactly those"
+            - "2 — the solution is correct"
+            - "4 — every position starts an occurrence"
+            - "1 — only the first occurrence counts"
+          answer: "3 — occurrences may share letters, and skipping forward by m discards exactly those"
+          explanation: >-
+            Positions 0, 1 and 2. The table never needed to skip: it carries the
+            partial match forward, which is precisely what lets overlapping
+            occurrences be found without any extra work.
+        - id: sbj-recall-join
+          kind: recall
+          prompt: >-
+            Write the expression that builds the string whose prefix function
+            locates every occurrence of `pat` in `text`.
+          answer: "pat + '#' + text"
+          accepts:
+            - "pat+'#'+text"
+            - "pat+sep+text"
+            - "pat+'\\1'+text"
+            - "pat+separator+text"
+            - "pat+'$'+text"
+          explanation: >-
+            Pattern first, then a separator that cannot occur in either string,
+            then the text. Whichever byte you pick, the requirement is the same:
+            nothing in the input may equal it.
+        - id: sbj-apply-count
+          kind: apply
+          prompt: >-
+            Inside `for (int i = m + 1; i < (int)joined.size(); ++i)`, with the
+            table in `pi` and the pattern length in `m`, write the statement
+            that records a match by pushing its text position into `at`.
+          answer: "if (pi[i] == m) at.push_back(i - 2 * m);"
+          accepts:
+            - "if(pi[i]==m)at.push_back(i-2*m);"
+            - "if(pi[i]==m)at.push_back(i-2*m)"
+            - "if(m==pi[i])at.push_back(i-2*m);"
+            - "if(pi[i]==m){at.push_back(i-2*m);}"
+          explanation: >-
+            Equality, not >=: inside the text region a value can never exceed m
+            anyway, because the separator makes a longer border impossible — and
+            if it can exceed m, your separator is not doing its job.
+
+  # ---------------------------------------------------------------- stage 2
+  - id: stage-period-subtraction
+    order: 2
+    pattern: prefix-function
+    trial_problem_ids: [metronome-prefix-periods]
+    secret:
+      id: the-period-subtraction
+      name: The Period Is One Subtraction
+      idiom: "p = n - pi[n - 1];  exact repetition iff n % p == 0"
+      memorise: true
+      baseline_drills: 4
+      teaches: >-
+        Here is the return on the table you have built. The smallest p such that
+        s[i] equals s[i + p] everywhere both exist is n minus the last entry of
+        the table. Nothing more. The reason is a single sentence: shifting the
+        string left by p and finding it agrees with itself is the same statement
+        as its first n - p characters being also its last n - p characters,
+        which is the definition of a border of length n - p. The longest border
+        gives the smallest shift. And now the sentence that separates the
+        careful from the confident: a smallest period is NOT the same thing as a
+        repetition. "abcabca" has smallest period 3, and it is not "abc"
+        repeated — the last block is partial. The extra condition is n % p == 0,
+        and it is one modulo. Most wrong answers on this family are the missing
+        modulo; most of the rest are forgetting that when the string has no
+        border at all the period is n itself, which means "no shorter period
+        exists" and not "zero".
+      demonstrations:
+        - expression: "aabaab, with pi ending in 3"
+          result: "period 3, and 6 % 3 == 0"
+          note: "So it is exactly \"aab\" twice. Both halves of the test pass."
+        - expression: "abcabca, with pi ending in 4"
+          result: "period 3, and 7 % 3 == 1"
+          note: >-
+            3 IS the smallest period — every character equals the one three
+            places before it — but the string is not a whole number of blocks.
+            The formula was right and the conclusion would have been wrong.
+        - expression: "abacaba, with pi ending in 3"
+          result: "period 4"
+          note: >-
+            7 % 4 is 3, so no repetition here either. Note the period is longer
+            than the border in this case; there is no rule that one is small.
+        - expression: "ababab, with pi ending in 4"
+          result: "period 2, and 6 % 2 == 0, so three repetitions"
+          note: "The count of blocks is n / p, but only once divisibility is known."
+        - expression: "banana, with pi ending in 0"
+          result: "period 6"
+          note: >-
+            No border at all, so the period is the whole string: nothing shorter
+            repeats. Reporting 0 here divides by zero one line later.
+        - expression: "the shortest banner carrying the seal abacaba at both ends"
+          result: "2 * 7 - 3 = 11"
+          note: >-
+            The two copies overlap by the longest proper border, which is
+            exactly what the table's last entry holds. Same number, third use.
+      watch_out:
+        - warning: "A smallest period is not a repetition until n % p == 0."
+          why: >-
+            "abcabca" has period 3 and is not "abc" repeated. Statements say
+            "built by repeating a block with no gap and no overlap", and that
+            sentence is the modulo. Solutions that skip it pass every sample
+            where the repetition happens to be exact.
+        - warning: "No border means p = n, not p = 0."
+          why: >-
+            pi[n-1] = 0 gives p = n - 0 = n, which correctly says "nothing
+            shorter repeats". If you special-case it to 0 you will divide by
+            zero when you compute n / p.
+        - warning: "The number of blocks is n / p, and only when p divides n."
+          why: >-
+            Computing n / p first and checking afterwards gives a truncated
+            answer that looks plausible. Check first, then divide; the two lines
+            are not interchangeable.
+        - warning: "The period of every PREFIX needs the whole table, not just its last entry."
+          why: >-
+            k - pi[k-1] for each k answers "how regular is the chant so far" at
+            every point, and it is free — the table already holds every entry.
+            Rebuilding the table per prefix turns a linear problem quadratic.
+        - warning: "This is a statement about the string, not about its characters."
+          why: >-
+            A string can be built entirely of two letters and have no period
+            shorter than itself. Counting letters, or looking for the most
+            frequent one, has nothing to do with the question; only positional
+            agreement does.
+      drills:
+        - id: per-eval-aabaab
+          kind: evaluate
+          prompt: >-
+            The prefix function of "aabaab" ends in 3. What is the length of the
+            smallest block that, repeated, builds the string exactly?
+          options: ["2", "3", "4", "6"]
+          answer: "3"
+          explanation: >-
+            p = 6 - 3 = 3, and 6 % 3 == 0, so the string is "aab" twice. Both
+            halves of the test are satisfied, which is what allows the word
+            "exactly".
+        - id: per-eval-abcabca
+          kind: evaluate
+          prompt: >-
+            The prefix function of "abcabca" ends in 4, so its smallest period
+            is 3. Is the string an exact repetition of a shorter block?
+          options:
+            - "no — 7 % 3 is 1, so the last block is partial"
+            - "yes — it is \"abc\" repeated"
+            - "no — its smallest period is 7"
+            - "yes — it is \"abca\" repeated"
+          answer: "no — 7 % 3 is 1, so the last block is partial"
+          explanation: >-
+            The period is genuinely 3: every character equals the one three
+            places earlier. What fails is divisibility, and that is the entire
+            difference between "has a period" and "is a repetition".
+        - id: per-eval-abacaba
+          kind: evaluate
+          prompt: >-
+            The prefix function of "abacaba" is [0, 0, 1, 0, 1, 2, 3]. What is
+            its smallest period?
+          options: ["3", "4", "6", "7"]
+          answer: "4"
+          explanation: >-
+            7 - 3 = 4. Check it by hand: s[0] = s[4] = 'a', s[1] = s[5] = 'b',
+            s[2] = s[6] = 'a'. A shift of 4 agrees everywhere the two copies
+            overlap, and no smaller shift does.
+        - id: per-eval-banana
+          kind: evaluate
+          prompt: >-
+            The prefix function of "banana" ends in 0. What is its smallest
+            period?
+          options: ["0", "1", "3", "6"]
+          answer: "6"
+          explanation: >-
+            No border means no shift shorter than the whole string works, so
+            p = n = 6. Answering 0 here is not merely wrong — it divides by zero
+            the moment you compute the number of blocks.
+        - id: per-prop-why
+          kind: property
+          prompt: >-
+            Why is the smallest period equal to n minus the longest border?
+          options:
+            - "a shift of p agreeing everywhere is the same statement as the first n - p characters also being the last n - p"
+            - "because the border is always half the string"
+            - "because the prefix function is monotone"
+            - "it is an empirical rule with known exceptions"
+          answer: "a shift of p agreeing everywhere is the same statement as the first n - p characters also being the last n - p"
+          explanation: >-
+            The two sentences describe the same overlap from two directions, so
+            the longest border and the smallest period are the same fact
+            subtracted from n. That is why one table answers both questions.
+        - id: per-trap-modulo
+          kind: trap
+          prompt: >-
+            A solution prints n - pi[n-1] as the answer to "the length of the
+            smallest block that builds the row by whole repetitions". Which
+            input breaks it?
+          options:
+            - "any row whose period does not divide its length, such as abcabca"
+            - "any row of a single repeated character"
+            - "any row with no border, such as banana"
+            - "none; the formula is complete"
+          answer: "any row whose period does not divide its length, such as abcabca"
+          explanation: >-
+            The formula gives 3, and no whole number of "abc" blocks makes
+            "abcabca". When the divisibility fails the honest answer is n — the
+            row is its own smallest block.
+        - id: per-recall-period
+          kind: recall
+          prompt: >-
+            The table is in `pi` and the length in `n`. Write the expression for
+            the smallest period.
+          answer: "n - pi[n - 1]"
+          accepts:
+            - "n-pi[n-1]"
+            - "n-pi[n-1];"
+            - "n-pi.back()"
+            - "n-pi[pi.size()-1]"
+          explanation: >-
+            One subtraction, and it is the same number that gives the shortest
+            banner holding a seal twice (2n - pi[n-1]) and the regularity of
+            every prefix (k - pi[k-1]). Memorise the subtraction, not the three
+            applications.
+        - id: per-apply-repetition
+          kind: apply
+          prompt: >-
+            With `n` and the period in `p`, write the condition that is true
+            exactly when the string is some shorter block repeated a whole
+            number of times.
+          answer: "p < n && n % p == 0"
+          accepts:
+            - "p<n&&n%p==0"
+            - "n%p==0&&p<n"
+            - "p!=n&&n%p==0"
+            - "n%p==0&&p!=n"
+          explanation: >-
+            Both halves. The modulo rules out a partial last block; p < n rules
+            out the degenerate reading in which every string is trivially itself
+            repeated once.
+
+  # ---------------------------------------------------------------- stage 3
+  - id: stage-rolling-fingerprint
+    order: 3
+    pattern: string-hashing
+    trial_problem_ids: [ward-stone-twin-panels]
+    secret:
+      id: the-rolling-fingerprint
+      name: A Substring Is a Number
+      idiom: "h[i + 1] = h[i] * B + v(s[i]);   sub(l, r) = h[r] - h[l] * B^(r-l)"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        Everything so far has related a string to itself from one end. Now the
+        other kind of question: is s[3..9] the same text as s[40..46]? No border
+        array reaches into the middle of a string, and comparing character by
+        character costs the length. So read the string as a number. Each prefix
+        gets a value: multiply the previous value by a base and add the next
+        character. Then the value of any stretch is the difference of two prefix
+        values, once the earlier one has been scaled by a power of the base to
+        line the two up at the same place value — exactly the same algebra as a
+        prefix sum, with multiplication where the sum had addition. Work it by
+        hand once and it will never leave you. Base 31, 'a' worth 1: "abc" has
+        prefix values 0, 1, 33, 1026. The stretch "bc" is 1026 - 1 * 961 = 65,
+        and 'b' * 31 + 'c' is 2 * 31 + 3 = 65. Three things will cost you if you
+        are careless: never map a character to zero, because then "a", "aa" and
+        the empty string all fingerprint the same; a subtraction modulo M can go
+        negative in C++ and must be brought back; and everything is long long,
+        because a base times a modulus near 1e9 already needs more than 32 bits.
+      demonstrations:
+        - expression: "prefix values of abc, base 31, a = 1"
+          result: "[0, 1, 33, 1026]"
+          note: >-
+            1, then 1 * 31 + 2 = 33, then 33 * 31 + 3 = 1026. Four entries for
+            three characters: the leading 0 is the empty prefix and it removes
+            every special case at l = 0.
+        - expression: "the stretch bc, as 1026 - 1 * 31^2"
+          result: "65"
+          note: >-
+            And directly, 'b' * 31 + 'c' = 2 * 31 + 3 = 65. The power of the
+            base is what shifts the earlier prefix up to the same place value.
+        - expression: "abcabd: the stretches at [0,2) and at [3,5)"
+          result: "33 and 33"
+          note: "Both are \"ab\". Equal text, equal fingerprint — always, in that direction."
+        - expression: "abcabd: the stretches at [0,3) and at [3,6)"
+          result: "1026 and 1027"
+          note: >-
+            "abc" against "abd". One character differs and the values differ by
+            exactly one, which is the polynomial doing its job at the lowest
+            place value.
+        - expression: "mapping a to 0 instead of 1: the values of a, aa, aaa"
+          result: "0, 0, 0"
+          note: >-
+            And the empty string is 0 as well. Every leading run of a-s becomes
+            invisible — a family of collisions you built yourself, before any
+            opponent had to try.
+        - expression: "(5 - 7) % M in C++, for M = 1e9+9"
+          result: "-2"
+          note: >-
+            Not 1000000007. C++ gives the remainder the sign of the dividend, so
+            a substring hashes to different values in different places and about
+            half of your comparisons fail.
+      watch_out:
+        - warning: "No character may map to zero."
+          why: >-
+            With 'a' worth 0, "a", "aa", "aaa" and "" all fingerprint to 0, and
+            every prefix of an a-run collides with every other. Map the alphabet
+            to 1..26. It costs one addition and removes an entire class of
+            wrong answers.
+        - warning: "A modular subtraction in C++ can be negative."
+          why: >-
+            (h[r] - h[l] * p) % M is negative whenever the product is larger, so
+            the same text produces two different values and equality tests fail
+            at random. Add M and take the remainder again, every time.
+        - warning: "Use half-open ranges and a leading zero in the table."
+          why: >-
+            With h[0] = 0 and sub(l, r) covering l..r-1, there is no special
+            case at l = 0. The textbook formula with h[0] = s[0] needs one, and
+            copying it into a codebase that uses the other convention shifts
+            every fingerprint by one position.
+        - warning: "Everything is long long, including the powers."
+          why: >-
+            The base times a value near 1e9 already exceeds 32 bits before the
+            modulo is applied. An int anywhere in the chain gives silent
+            overflow, which is undefined behaviour and not a reliable wrap.
+        - warning: "Build the power table once, not per query."
+          why: >-
+            Recomputing B^(r-l) with fast exponentiation inside a query turns an
+            O(1) comparison into O(log n) and, on 2e5 queries, into the reason
+            the submission is slow. One vector of powers, filled alongside the
+            prefixes.
+      drills:
+        - id: rfp-eval-prefixes
+          kind: evaluate
+          prompt: >-
+            Base 31, with 'a' worth 1, 'b' worth 2, 'c' worth 3, and h[0] = 0.
+            What are the prefix values of "abc"?
+          options:
+            - "[0, 1, 33, 1026]"
+            - "[1, 33, 1026]"
+            - "[0, 1, 32, 993]"
+            - "[0, 1, 34, 1057]"
+          answer: "[0, 1, 33, 1026]"
+          explanation: >-
+            1, then 1 * 31 + 2 = 33, then 33 * 31 + 3 = 1026. Four values for
+            three characters — the empty prefix is worth having.
+        - id: rfp-eval-substring
+          kind: evaluate
+          prompt: >-
+            From that table, with 31^2 = 961, what is the fingerprint of the
+            stretch "bc" — that is, the half-open range [1, 3)?
+          options: ["65", "1025", "993", "33"]
+          answer: "65"
+          explanation: >-
+            1026 - 1 * 961 = 65, and computing it directly gives
+            2 * 31 + 3 = 65. The power of the base lifts the shorter prefix to
+            the same place value before the subtraction.
+        - id: rfp-eval-zero-map
+          kind: evaluate
+          prompt: >-
+            A solution maps 'a' to 0 rather than to 1. What are the fingerprints
+            of "a", "aa" and "aaa"?
+          options:
+            - "0, 0 and 0 — and the empty string is 0 as well"
+            - "0, 1 and 2"
+            - "1, 2 and 3"
+            - "0, 31 and 961"
+          answer: "0, 0 and 0 — and the empty string is 0 as well"
+          explanation: >-
+            Zero times anything is zero. Every leading run of the zero-mapped
+            character vanishes, so an entire family of different strings becomes
+            indistinguishable before an opponent has done anything at all.
+        - id: rfp-prop-power
+          kind: property
+          prompt: >-
+            In sub(l, r) = h[r] - h[l] * B^(r-l), what is the power of the base
+            doing?
+          options:
+            - "shifting the earlier prefix up to the same place value as the later one, so the shared part cancels"
+            - "keeping the result positive"
+            - "reducing the result modulo M"
+            - "making the fingerprint independent of the length"
+          answer: "shifting the earlier prefix up to the same place value as the later one, so the shared part cancels"
+          explanation: >-
+            It is exactly the same manoeuvre as subtracting prefix sums, except
+            that the earlier prefix has been multiplied by the base r - l times
+            in the meantime and must be scaled to match before it will cancel.
+        - id: rfp-prop-direction
+          kind: property
+          prompt: >-
+            Which of these is guaranteed, with no probability attached?
+          options:
+            - "equal text always gives equal fingerprints"
+            - "equal fingerprints always mean equal text"
+            - "different text always gives different fingerprints"
+            - "both directions are guaranteed once two moduli are used"
+          answer: "equal text always gives equal fingerprints"
+          explanation: >-
+            The fingerprint is a function of the text, so that direction is
+            certain. The converse is the one you buy with a probability, and
+            knowing which is which is what tells you when a verification step is
+            needed.
+        - id: rfp-trap-negative
+          kind: trap
+          prompt: >-
+            A solution computes `(h[r] - h[l] * p[r - l]) % M` and compares the
+            results directly. It answers "different" for stretches that are
+            plainly identical. What is wrong?
+          options:
+            - "the remainder takes the sign of the dividend in C++, so the same text can produce a negative value in one place and a positive one in another"
+            - "the power table was built with the wrong base"
+            - "the modulus is not prime"
+            - "h[l] should have been h[l - 1]"
+          answer: "the remainder takes the sign of the dividend in C++, so the same text can produce a negative value in one place and a positive one in another"
+          explanation: >-
+            Roughly half the comparisons fail, and the small tests where the
+            subtraction happens to stay positive all pass. Add M and take the
+            remainder again before returning.
+        - id: rfp-recall-substring
+          kind: recall
+          prompt: >-
+            Write the expression for the fingerprint of the half-open range
+            [l, r), given tables `h` and `p` and modulus `M`, before the
+            negative correction.
+          answer: "(h[r] - h[l] * p[r - l]) % M"
+          accepts:
+            - "(h[r]-h[l]*p[r-l])%m"
+            - "(h[r]-h[l]*p[r-l])%mod"
+            - "(h[r]-h[l]*p[r-l])%m;"
+            - "h[r]-h[l]*p[r-l]"
+          explanation: >-
+            Then add M and reduce again. Memorise the shape: later prefix, minus
+            earlier prefix scaled by the base raised to the length between them.
+        - id: rfp-apply-build
+          kind: apply
+          prompt: >-
+            Inside `for (int i = 0; i < n; ++i)`, with `h`, `p`, base `B`,
+            modulus `M` and string `s` in scope, write the two statements that
+            extend the prefix table and the power table.
+          answer: "h[i + 1] = (h[i] * B + (s[i] - 'a' + 1)) % M; p[i + 1] = p[i] * B % M;"
+          accepts:
+            - "h[i+1]=(h[i]*b+(s[i]-'a'+1))%m;p[i+1]=p[i]*b%m;"
+            - "h[i+1]=(h[i]*b+s[i]-'a'+1)%m;p[i+1]=p[i]*b%m;"
+            - "p[i+1]=p[i]*b%m;h[i+1]=(h[i]*b+(s[i]-'a'+1))%m;"
+            - "h[i+1]=(h[i]*b+(s[i]-'a'+1))%m;p[i+1]=(p[i]*b)%m;"
+          explanation: >-
+            The + 1 is not decoration. Without it the first letter of the
+            alphabet contributes nothing and every leading run of it collides.
+
+  # ---------------------------------------------------------------- stage 4
+  - id: stage-one-modulus-target
+    order: 4
+    pattern: string-hashing
+    trial_problem_ids: [chorus-line-repeats]
+    secret:
+      id: one-modulus-is-a-target
+      name: Your Fingerprint Is a Target
+      idiom: "two moduli, and a base drawn from the clock at run time"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        Now the price, and I want you to understand it as an ATTACK rather than
+        as bad luck, because the two need different defences. Bad luck first.
+        When you compare many stretches with each other — a set, a sort, a
+        search for a repeat — you are running the birthday problem, and the
+        threshold is not the modulus but its square root. Against a modulus near
+        1e9 you need only about thirty-seven thousand fingerprints for an even
+        chance that some pair collides; among 1e5 of them you should expect
+        about five collisions. A string of three hundred characters already has
+        more stretches than that. Now the attack. Modulo 2^64 — which is what
+        unsigned overflow gives you, and it looks free — is not probabilistic at
+        all. For ANY odd base there is a pair of Thue-Morse strings whose
+        fingerprints are identical, and with base 31 they are 256 characters
+        long. Your opponent does not need to know your base. Someone published
+        the construction years ago and every setter has it. The defences are
+        cheap and there are two: compare a pair of fingerprints under two
+        independent moduli, which multiplies the space to about 1e18 and pushes
+        the birthday threshold past a billion; and draw the base from the clock
+        so that no fixed test can be prepared against you. And one more thing,
+        free and absolute: when a match is claimed, compare the characters. On
+        hits only, it costs nothing amortised, and it converts a probability
+        into a certainty.
+      demonstrations:
+        - expression: "these two 20-character strings, base 31, modulo 1e9+9: bbaaabbbaaaabbabbbba and aabaaababbabaaababab"
+          result: "both fingerprint to 212006090"
+          note: >-
+            Found by generating random strings until two agreed; it took about
+            140,000 of them. Nothing clever was needed, and nothing clever will
+            be needed by the person writing the tests.
+        - expression: "the same two strings modulo 1e9+7"
+          result: "647183986 and 955207621"
+          note: >-
+            Different. A second, independent modulus separates them instantly,
+            which is the entire argument for the pair.
+        - expression: "the Thue-Morse pair of length 256, base 31, modulo 2^64"
+          result: "both 1696614343997855744"
+          note: >-
+            Built by A -> AB, B -> BA from a single character. This is not a
+            probability: it is an identity that holds for every odd base, and
+            256 characters is small enough to hide in any test file.
+        - expression: "that same pair modulo 1e9+9"
+          result: "496354625 and 212108064"
+          note: >-
+            Separated at once. The weakness is the power-of-two modulus, not the
+            construction.
+        - expression: "the number of fingerprints for an even chance of a collision, modulus near 1e9"
+          result: "about 37,000"
+          note: >-
+            The square root of the modulus, times 1.18. Not the modulus itself.
+            That factor is what surprises people.
+        - expression: "1e5 fingerprints compared with each other, modulus 1e9+9"
+          result: "about 5 collisions expected"
+          note: >-
+            n(n-1)/2 divided by M. With two moduli the same count expects 5e-9
+            collisions, which is the difference between a bug and a certainty.
+      watch_out:
+        - warning: "Hashing modulo 2^64 is broken, not merely weak."
+          why: >-
+            Unsigned overflow is a modulus of 2^64, and the Thue-Morse
+            construction collides under it for every odd base — at 256
+            characters for base 31. There is no random choice you can make that
+            escapes it, because the attack does not depend on your base.
+        - warning: "Comparing many stretches with EACH OTHER is the dangerous shape."
+          why: >-
+            One pattern against many positions is the safe case: the chance is
+            about n/M. Putting n fingerprints in a set and asking whether any two
+            agree is n^2/2M, which is a million times larger at n = 1e5. Read
+            which shape your problem has before choosing your moduli.
+        - warning: "A published base is a target."
+          why: >-
+            31 and 131 appear in every tutorial, and tests get built against
+            them. Draw the base at run time from a 64-bit clock-seeded
+            generator; it costs two lines and cannot be prepared for.
+        - warning: "Verify the characters when a match is claimed."
+          why: >-
+            The comparison only runs on hits, so it costs nothing amortised and
+            it turns a probabilistic answer into an exact one. If you cannot
+            afford it, that is a signal your problem wanted the border array
+            instead.
+        - warning: "One modulus near 1e18 needs __int128 for the multiply."
+          why: >-
+            Two values near 1e18 multiplied in long long overflow, which is
+            undefined behaviour rather than a wrap. Two moduli near 1e9 give the
+            same collision resistance with ordinary arithmetic, and are usually
+            faster in practice.
+      drills:
+        - id: omt-eval-birthday
+          kind: evaluate
+          prompt: >-
+            Fingerprints are taken modulo a prime near 1e9. Roughly how many are
+            needed before there is an even chance that some two of them collide?
+          options: ["about 37,000", "about 1e9", "about 500,000,000", "about 1,000"]
+          answer: "about 37,000"
+          explanation: >-
+            About 1.18 times the square root of the modulus. The birthday bound
+            depends on the square root, which is why "a billion values is
+            plenty" is wrong in exactly the situations where you compare many
+            things with each other.
+        - id: omt-eval-expected-pairs
+          kind: evaluate
+          prompt: >-
+            You compare 1e5 fingerprints with each other, modulo 1e9+9. How many
+            colliding pairs should you expect?
+          options: ["about 5", "about 0.0001", "about 500", "exactly 0"]
+          answer: "about 5"
+          explanation: >-
+            n(n-1)/2 divided by the modulus is 5e9 / 1e9, so five. Not a risk —
+            an expectation. Under two moduli the same computation gives 5e-9.
+        - id: omt-eval-thuemorse
+          kind: evaluate
+          prompt: >-
+            Hashing modulo 2^64 with base 31, how long is the shortest published
+            pair of strings that is guaranteed to collide?
+          options: ["256 characters", "2^64 characters", "about 37,000 characters", "no such pair exists"]
+          answer: "256 characters"
+          explanation: >-
+            The Thue-Morse pair, built by A -> AB and B -> BA. It collides for
+            every odd base, so the attacker never needs to know which one you
+            picked — and 256 characters fits inside any test file unnoticed.
+        - id: omt-prop-shape
+          kind: property
+          prompt: >-
+            Which of these two problems is far more dangerous for a single
+            modulus?
+          options:
+            - "putting every window's fingerprint in a set to find a repeat, because every pair is being compared"
+            - "searching for one fixed pattern in a long text, because the text is long"
+            - "they carry the same risk, since the modulus is the same"
+            - "neither; a single modulus near 1e9 is safe in all cases"
+          answer: "putting every window's fingerprint in a set to find a repeat, because every pair is being compared"
+          explanation: >-
+            One pattern against n positions risks about n/M. All pairs of n
+            windows risks about n^2/2M. At n = 1e5 that is 1e-4 against 5, and
+            the second is not a risk but a plan.
+        - id: omt-prop-two-moduli
+          kind: property
+          prompt: >-
+            Why does comparing a PAIR of fingerprints under two moduli near 1e9
+            help so much?
+          options:
+            - "the pair behaves like a single value modulo about 1e18, so the birthday threshold rises from 37,000 to over a billion"
+            - "it makes collisions impossible"
+            - "it doubles the number of comparisons and so halves the error"
+            - "it removes the need to choose the base carefully"
+          answer: "the pair behaves like a single value modulo about 1e18, so the birthday threshold rises from 37,000 to over a billion"
+          explanation: >-
+            Two independent moduli multiply. It does not make a collision
+            impossible — nothing does — but it moves the threshold far past any
+            input the problem can contain.
+        - id: omt-trap-unsigned
+          kind: trap
+          prompt: >-
+            A solution stores fingerprints in `unsigned long long` and lets them
+            overflow, on the grounds that this is arithmetic modulo 2^64 and
+            2^64 is enormous. It fails one test. Why?
+          options:
+            - "2^64 is a power of two, and there is a published pair of strings that collides under it for every odd base"
+            - "unsigned overflow is undefined behaviour in C++"
+            - "2^64 is smaller than 1e9 + 9"
+            - "it does not fail; the test must be broken"
+          answer: "2^64 is a power of two, and there is a published pair of strings that collides under it for every odd base"
+          explanation: >-
+            Unsigned overflow is well defined — that is not the problem. The
+            problem is that the modulus is structured, so the collision is a
+            construction rather than an accident, and randomising the base does
+            not escape it.
+        - id: omt-recall-randombase
+          kind: recall
+          prompt: >-
+            Write the declaration that seeds a 64-bit generator from the clock,
+            so the base cannot be prepared for in advance.
+          answer: "mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());"
+          accepts:
+            - "mt19937_64rng(chrono::steady_clock::now().time_since_epoch().count());"
+            - "mt19937_64rng(chrono::high_resolution_clock::now().time_since_epoch().count());"
+            - "std::mt19937_64rng(std::chrono::steady_clock::now().time_since_epoch().count());"
+            - "mt19937_64rng(chrono::steady_clock::now().time_since_epoch().count())"
+          explanation: >-
+            Then pick the base from it. A fixed 31 is in every tutorial and
+            therefore in every anti-hash test; a base nobody can predict cannot
+            be targeted, only guessed at.
+        - id: omt-apply-verify
+          kind: apply
+          prompt: >-
+            Inside the search loop, with `text`, `pat`, position `i` and length
+            `m`, write the condition that accepts a match only after the
+            characters have been compared as well as the fingerprints.
+          answer: "if (ht.sub(i, i + m) == target && text.compare(i, m, pat) == 0)"
+          accepts:
+            - "if(ht.sub(i,i+m)==target&&text.compare(i,m,pat)==0)"
+            - "if(ht.sub(i,i+m)==target&&text.compare(i,m,pat)==0){"
+            - "if(ht.sub(i,i+m)==target&&text.substr(i,m)==pat)"
+            - "if(target==ht.sub(i,i+m)&&text.compare(i,m,pat)==0)"
+          explanation: >-
+            Short-circuit evaluation means the comparison runs only on hits, so
+            it is free amortised — and it converts "almost certainly correct"
+            into "correct", which is the whole reason to write it.
+
+  # ---------------------------------------------------------------- stage 5
+  - id: stage-path-spells-word
+    order: 5
+    pattern: trie
+    trial_problem_ids: [apprentice-name-roll]
+    secret:
+      id: the-path-spells-the-word
+      name: The Path Spells the Word
+      idiom: "v = child[v][c - 'a'];  ++pass[v];"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        A map from word to count answers one question: how many times did I see
+        exactly this? It cannot answer how many words BEGIN like this, and no
+        amount of cleverness will make it, because it never stored a beginning
+        as an object. So store the beginnings. Build a tree in which every node
+        is one distinct prefix and the path from the root spells it; two words
+        that begin alike walk the same chain until they differ. Insert "cat",
+        "car", "card" and "dog" — thirteen letters — and you get nine nodes,
+        because "ca" is stored once. Every operation costs the length of the
+        word and nothing else: not the number of stored words, not their total
+        size. That independence is what you are buying. Two counters per node
+        pay for almost every problem in this family: how many words pass
+        through, and how many stop here. Maintain both during insertion and no
+        query ever has to explore a subtree. And the stopping counter is not
+        optional — a word can end inside another word, "car" inside "card", and
+        without it the structure will happily tell you that "c" is a word you
+        stored. The price is memory. Twenty-six integer children per node is
+        104 bytes, so a million characters is about 99 MiB before anything else
+        exists, and over a mixed-case alphabet it is 236 MiB and you are dead.
+      demonstrations:
+        - expression: "inserting cat, car, card, dog — 13 letters"
+          result: "9 nodes including the root"
+          note: >-
+            The distinct non-empty prefixes are c, ca, cat, car, card, d, do,
+            dog — eight, plus the root. Shared beginnings are stored once, which
+            is the whole economy of the structure.
+        - expression: "how many stored words begin with ca"
+          result: "3"
+          note: "cat, car and card. One walk of two letters, and the counter was already there."
+        - expression: "how many stored words begin with car, and how many ARE car"
+          result: "2 and 1"
+          note: >-
+            Two different counters at the same node. Confusing them is the most
+            common bug in this whole structure.
+        - expression: "the longest stored word that begins cardigan"
+          result: "4, which is card"
+          note: >-
+            Walk the query and remember the deepest node marked as a word
+            ending. Every prefix of the query is tested at once, at no extra
+            cost.
+        - expression: "26 integer children per node, one million characters of input"
+          result: "about 99 MiB"
+          note: >-
+            26 * 4 bytes * 1,000,001 nodes. Correct algorithm, memory limit
+            exceeded. Over 62 characters the same input needs about 236 MiB.
+        - expression: "the largest exclusive-or of 6 against the stored numbers 1, 5 and 9"
+          result: "15"
+          note: >-
+            6 xor 9 = 15. The same tree over the bits of a number, walked from
+            the top taking the opposite bit wherever one exists.
+      watch_out:
+        - warning: "A word can end inside another word."
+          why: >-
+            Insert "card" without an end marker and the structure claims to
+            contain "car", "ca" and "c". Every dictionary that happens to be
+            prefix-free passes, which is most hand-written tests and none of the
+            judge's.
+        - warning: "Never hold a reference to a node across an insertion."
+          why: >-
+            `auto& node = nodes[v];` followed by a push_back that reallocates
+            the vector leaves the reference dangling. It corrupts silently, and
+            only on inputs large enough to force a reallocation. Store the
+            index.
+        - warning: "Child 0 may mean absent only because node 0 is the root."
+          why: >-
+            The root can never be anybody's child, so zero is free to mean
+            "nothing here" and the children array needs no fill loop. Use -1 as
+            the sentinel and you must remember to fill; the convention that
+            cannot be forgotten is worth preferring.
+        - warning: "c - 'a' is a bet on the alphabet."
+          why: >-
+            One capital letter, digit or space in the input and the index goes
+            out of range — negative or past 25 — writing over a neighbouring
+            node without crashing. Read the statement's alphabet before sizing
+            the array.
+        - warning: "Do not recurse down a chain a million characters long."
+          why: >-
+            One enormous word gives one enormous chain and the stack overflows,
+            reported as a bare runtime error. The iterative walk is the same
+            four lines and has no depth.
+      drills:
+        - id: pts-eval-nodes
+          kind: evaluate
+          prompt: >-
+            You insert cat, car, card and dog. How many nodes does the structure
+            hold, counting the root?
+          options: ["9", "13", "14", "4"]
+          answer: "9"
+          explanation: >-
+            One node per distinct non-empty prefix — c, ca, cat, car, card, d,
+            do, dog — plus the root. Thirteen letters were inserted and four of
+            them were shared.
+        - id: pts-eval-prefix-count
+          kind: evaluate
+          prompt: >-
+            With cat, car, card and dog stored, how many words begin with "ca",
+            and how many words are exactly "car"?
+          options: ["3 and 1", "3 and 2", "2 and 1", "4 and 1"]
+          answer: "3 and 1"
+          explanation: >-
+            cat, car and card begin with "ca"; only one stored word is "car"
+            itself. Two counters, one node, and mistaking one for the other is
+            the classic bug.
+        - id: pts-eval-memory
+          kind: evaluate
+          prompt: >-
+            Each node holds 26 integer children. The total length of the input
+            is 1e6. Roughly how much memory do the nodes need?
+          options: ["about 99 MiB", "about 4 MiB", "about 26 MiB", "about 1 GiB"]
+          answer: "about 99 MiB"
+          explanation: >-
+            26 * 4 bytes is 104 per node, and there can be a million and one
+            nodes. Correct algorithm, memory limit exceeded — and over a
+            62-character alphabet it is 236 MiB.
+        - id: pts-prop-node
+          kind: property
+          prompt: >-
+            What does a single node represent?
+          options:
+            - "exactly one distinct prefix of the inserted set, spelled by the path from the root"
+            - "exactly one inserted word"
+            - "one character of the alphabet"
+            - "one query that has been answered"
+          answer: "exactly one distinct prefix of the inserted set, spelled by the path from the root"
+          explanation: >-
+            That is why the node count is bounded by the total length of the
+            input and not by the number of words, and why words with shared
+            beginnings cost almost nothing extra.
+        - id: pts-prop-independence
+          kind: property
+          prompt: >-
+            An insertion or a query costs O(length of the word). What does that
+            cost NOT depend on?
+          options:
+            - "how many words are already stored"
+            - "the length of the word"
+            - "the size of the alphabet"
+            - "whether the word was seen before"
+          answer: "how many words are already stored"
+          explanation: >-
+            The independence is the whole reason to pay the memory. A structure
+            holding a million words answers a five-letter query in five steps.
+        - id: pts-trap-no-marker
+          kind: trap
+          prompt: >-
+            Only "card" has been inserted, and the structure reports that "car"
+            is present. What is missing?
+          options:
+            - "the marker saying a word ENDS at this node, as opposed to merely passing through it"
+            - "the counter of how many words pass through the node"
+            - "the root node"
+            - "nothing; car is a prefix of card, so it is present"
+          answer: "the marker saying a word ENDS at this node, as opposed to merely passing through it"
+          explanation: >-
+            Reaching a node proves the prefix exists. Only the end marker proves
+            a word does. Test dictionaries that are prefix-free never reveal
+            this, and real ones always do.
+        - id: pts-trap-reference
+          kind: trap
+          prompt: >-
+            An insertion writes `auto& node = nodes[v];` and then calls
+            `nodes.push_back(...)` before using `node` again. It corrupts data
+            on large inputs only. Why?
+          options:
+            - "push_back may reallocate the vector, after which the reference points into freed memory"
+            - "auto& cannot bind to a vector element"
+            - "the node was copied rather than referenced"
+            - "push_back invalidates only iterators, never references"
+          answer: "push_back may reallocate the vector, after which the reference points into freed memory"
+          explanation: >-
+            Small inputs stay inside the reserved capacity and never
+            reallocate — which is exactly why this reaches the judge. Store the
+            index and index the vector again, or reserve up front.
+        - id: pts-recall-descend
+          kind: recall
+          prompt: >-
+            Write the statement that steps from the current node `v` to the
+            child for the character `ch`, over a lowercase alphabet.
+          answer: "v = child[v][ch - 'a'];"
+          accepts:
+            - "v=child[v][ch-'a'];"
+            - "v=child[v][ch-'a']"
+            - "v=children[v][ch-'a'];"
+            - "v=child[v][(int)(ch-'a')];"
+          explanation: >-
+            One array step per character, which is the whole cost model. If you
+            ever find yourself searching among the children rather than indexing
+            them, you have chosen a map where an array was intended.
+        - id: pts-apply-create
+          kind: apply
+          prompt: >-
+            Inside insert, with `v`, the letter index `c`, and `add_node()`
+            returning a fresh node, write the statement that creates the child
+            only when it does not yet exist.
+          answer: "if (child[v][c] == 0) child[v][c] = add_node();"
+          accepts:
+            - "if(child[v][c]==0)child[v][c]=add_node();"
+            - "if(!child[v][c])child[v][c]=add_node();"
+            - "if(child[v][c]==0){child[v][c]=add_node();}"
+            - "if(children[v][c]==0)children[v][c]=add_node();"
+          explanation: >-
+            Zero means absent, and it is safe to say so because node 0 is the
+            root and can never be a child. That convention removes the fill loop
+            and with it the chance of forgetting it.
+
+  # ---------------------------------------------------------------- stage 6
+  - id: stage-grow-from-the-middle
+    order: 6
+    pattern: palindrome-centres
+    trial_problem_ids: [mirror-hall-longest]
+    secret:
+      id: grow-from-the-middle
+      name: A Symmetric Thing Has a Middle
+      idiom: "while (l >= 0 && r < n && s[l] == s[r]) { --l; ++r; }"
+      memorise: true
+      animation: manacher-mirror
+      baseline_drills: 5
+      teaches: >-
+        The last secret, and the shortest. A stretch that reads the same in both
+        directions is not defined by its two ends; it is defined by its middle.
+        There are n middles that sit on a character and n - 1 that sit in the
+        gap between two, so 2n - 1 in all — and every symmetric stretch in the
+        string belongs to exactly one of them. That turns a search over O(n^2)
+        pairs of endpoints into a walk over 2n - 1 positions, each pushed
+        outwards while the characters agree. Write that first. It is O(n^2) in
+        the worst case and it is the right answer up to about n = 5000, and
+        shorter code under a clock is a real property. The half that people
+        forget is the gaps: an odd-only scan misses "abba" entirely and every
+        test with an odd answer passes. Above 1e5 you need the linear form.
+        Its idea is the one you already met in the fallback chain: never
+        re-compare what you have already proved. Keep the symmetric stretch that
+        reaches furthest right; any middle inside it mirrors to a middle you
+        have already measured, so start from that measurement instead of from
+        one — clamped to how much of the known stretch is still ahead of you,
+        because past its edge nothing has been verified. On "abacaba" the last
+        three middles cost one failed comparison between them.
+      demonstrations:
+        - expression: "the number of possible middles in a row of 5 characters"
+          result: "9"
+          note: "Five on a character and four in the gaps. 2n - 1, always."
+        - expression: "the odd radii of abacaba"
+          result: "[1, 2, 1, 4, 1, 2, 1]"
+          note: >-
+            The 4 at index 3 is the whole string. Every even radius is 0 here,
+            because no two neighbouring characters are equal.
+        - expression: "the radii of aaaa, odd then even"
+          result: "[1, 2, 2, 1] and [0, 1, 2, 1]"
+          note: >-
+            Their total is 10, which is the number of symmetric stretches
+            counted by position. Both arrays are needed and neither is small.
+        - expression: "abba, scanned with odd middles only"
+          result: "the answer comes back as 1"
+          note: >-
+            The true answer is 4, and it lives at the gap between the two b-s.
+            A scan that never looks in a gap cannot find any even-length answer.
+        - expression: "aaaa: symmetric stretches counted by position, and counted as distinct texts"
+          result: "10 and 4"
+          note: >-
+            Ten positions, four different texts: a, aa, aaa, aaaa. Read which
+            one the statement asks for before you choose your structure.
+        - expression: "a row of 1e5 identical characters"
+          result: "5,000,050,000 symmetric stretches"
+          note: >-
+            n(n+1)/2, which is past what a 32-bit integer holds. It is also
+            about 5e9 comparisons if you expand from every middle by hand, which
+            is the same number telling you two different things.
+      watch_out:
+        - warning: "Both parities, always."
+          why: >-
+            Odd middles alone miss every even-length answer, and "abba" is the
+            two-line test that catches it. The classic symptom is an answer that
+            is correct on every sample and one short on the judge.
+        - warning: "Count into a 64-bit accumulator."
+          why: >-
+            A row of 1e5 identical characters holds 5,000,050,000 symmetric
+            stretches. An int wraps to a negative number and the sample tests,
+            which are small, all pass.
+        - warning: "Clamp the borrowed radius to what the known stretch still guarantees."
+          why: >-
+            The mirror's value is only trustworthy inside the stretch you have
+            already verified. Take the minimum of the mirror's radius and
+            r - i + 1; trusting the mirror past the edge claims a symmetry
+            nobody checked.
+        - warning: "\"By position\" and \"as distinct texts\" are different questions."
+          why: >-
+            "aaaa" has ten symmetric stretches by position and four distinct
+            ones. The radii sum answers the first; the second needs a structure
+            that stores each text once. Read the statement twice.
+        - warning: "Comparing the string with its own reverse does not work."
+          why: >-
+            The longest common stretch of a string and its reverse need not be
+            symmetric at all: for "abacdfgdcaba" it is "abacd", of length 5,
+            while the longest symmetric stretch is "aba", of length 3. It is a
+            plausible idea that fails on the fourth test and it has cost a great
+            many contests.
+      drills:
+        - id: gfm-eval-centres
+          kind: evaluate
+          prompt: >-
+            How many possible middles does a row of 5 characters have?
+          options: ["9", "5", "4", "10"]
+          answer: "9"
+          explanation: >-
+            Five sitting on a character and four sitting in the gaps between
+            them: 2n - 1. Every symmetric stretch belongs to exactly one, which
+            is what makes the enumeration complete.
+        - id: gfm-eval-count-aaaa
+          kind: evaluate
+          prompt: >-
+            How many stretches of "aaaa" read the same in both directions,
+            counting each starting position separately?
+          options: ["10", "4", "6", "16"]
+          answer: "10"
+          explanation: >-
+            Four of length 1, three of length 2, two of length 3 and one of
+            length 4. Equivalently the radii sum: [1,2,2,1] plus [0,1,2,1].
+        - id: gfm-eval-distinct
+          kind: evaluate
+          prompt: >-
+            How many DIFFERENT texts appear among those symmetric stretches of
+            "aaaa"?
+          options: ["4", "10", "1", "6"]
+          answer: "4"
+          explanation: >-
+            a, aa, aaa and aaaa. Ten by position, four as texts — two different
+            questions with two different answers, and the statement always says
+            which but rarely emphasises it.
+        - id: gfm-eval-radii
+          kind: evaluate
+          prompt: >-
+            What are the odd radii of "abacaba", counting the centre character
+            itself?
+          options:
+            - "[1, 2, 1, 4, 1, 2, 1]"
+            - "[1, 1, 1, 1, 1, 1, 1]"
+            - "[0, 1, 0, 3, 0, 1, 0]"
+            - "[1, 2, 3, 4, 3, 2, 1]"
+          answer: "[1, 2, 1, 4, 1, 2, 1]"
+          explanation: >-
+            The 4 at the middle is the whole string. Their sum is 12, and since
+            every even radius here is 0, the string has exactly 12 symmetric
+            stretches.
+        - id: gfm-prop-two-arrays
+          kind: property
+          prompt: >-
+            Why are two arrays of radii needed rather than one?
+          options:
+            - "an even-length stretch has its middle in the gap between two characters, which no per-character array can index"
+            - "one array would overflow"
+            - "the second array stores the answer positions"
+            - "the second array is an optimisation and can be dropped"
+          answer: "an even-length stretch has its middle in the gap between two characters, which no per-character array can index"
+          explanation: >-
+            The two parities are genuinely different objects. Writing the scan
+            twice, carefully, is the honest cost; the doubled-string trick with
+            separators avoids it at the price of turning every index into an
+            arithmetic puzzle.
+        - id: gfm-trap-odd-only
+          kind: trap
+          prompt: >-
+            A scan expands only from middles that sit on a character. On "abba"
+            what does it report as the longest symmetric stretch?
+          options:
+            - "1 — it cannot see the stretch whose middle lies in a gap"
+            - "4 — it is correct"
+            - "2 — it finds bb"
+            - "0 — it finds nothing"
+          answer: "1 — it cannot see the stretch whose middle lies in a gap"
+          explanation: >-
+            The answer "abba" is centred between the two b-s, and no
+            per-character middle reaches it. Every sample with an odd answer
+            passes, which is what makes this bug survive to the judge.
+        - id: gfm-trap-reverse
+          kind: trap
+          prompt: >-
+            A solution reverses the string and takes the longest stretch the two
+            have in common. On "abacdfgdcaba" it answers 5. What is the true
+            answer?
+          options:
+            - "3 — the common stretch abacd is not symmetric at all"
+            - "5 — the solution is correct"
+            - "12 — the whole string is symmetric"
+            - "1 — the string has no symmetric stretch longer than one"
+          answer: "3 — the common stretch abacd is not symmetric at all"
+          explanation: >-
+            "abacd" appears in the string and in its reverse, at unrelated
+            positions, so it proves nothing. The longest symmetric stretch is
+            "aba". This idea is plausible, popular, and wrong.
+        - id: gfm-recall-expand
+          kind: recall
+          prompt: >-
+            Write the loop that pushes both ends of a candidate outwards while
+            the characters still agree, for indices l and r in a string s of
+            length n.
+          answer: "while (l >= 0 && r < n && s[l] == s[r]) { --l; ++r; }"
+          accepts:
+            - "while(l>=0&&r<n&&s[l]==s[r]){--l;++r;}"
+            - "while(l>=0&&r<n&&s[l]==s[r]){l--;r++;}"
+            - "while(l>=0&&r<n&&s[l]==s[r]){--l,++r;}"
+            - "while(0<=l&&r<n&&s[l]==s[r]){--l;++r;}"
+          explanation: >-
+            Both bounds in the guard, and both indices move. Start it at
+            (c, c) for an odd middle and (c, c + 1) for an even one — the same
+            three lines cover both parities.
+        - id: gfm-apply-accumulate
+          kind: apply
+          prompt: >-
+            With the two radius vectors `d1` and `d2` built, write the
+            declaration and loop-free expression that totals the number of
+            symmetric stretches without overflowing.
+          answer: "long long total = accumulate(d1.begin(), d1.end(), 0LL) + accumulate(d2.begin(), d2.end(), 0LL);"
+          accepts:
+            - "longlongtotal=accumulate(d1.begin(),d1.end(),0ll)+accumulate(d2.begin(),d2.end(),0ll);"
+            - "longlongtotal=accumulate(d1.begin(),d1.end(),0ll)+accumulate(d2.begin(),d2.end(),0ll)"
+            - "longlongtotal=std::accumulate(d1.begin(),d1.end(),0ll)+std::accumulate(d2.begin(),d2.end(),0ll);"
+          explanation: >-
+            The 0LL is the whole drill. accumulate takes its type from the
+            initial value, so a plain 0 sums into an int and wraps at
+            2,147,483,647 — well below the 5,000,050,000 a row of 1e5 identical
+            characters produces.
+
+final_test_problem_ids:
+  - index-prefix-tallies
+  - twin-seal-banner
+  - palimpsest-common-passage
+  - mosaic-tile-blocks
+  - rune-pair-brightest
+  - chime-symmetric-count
