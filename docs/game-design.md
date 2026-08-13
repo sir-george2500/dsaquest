@@ -1,67 +1,437 @@
 # DSA Warrior — Game Design
 
-The design document for the warrior-journey layer. Written after the codebase
-audit and the Competitive Programmer's Handbook curriculum audit.
+Design document for the warrior-journey layer. Written after the codebase audit
+and the Competitive Programmer's Handbook curriculum audit.
 
 ---
 
 ## 0. What this product is
 
-> A daily training ritual that makes you measurably faster at recognising and
-> implementing competitive-programming patterns in C++, wrapped in a warrior's
-> journey brutal enough that you want to come back tomorrow.
+> A daily training ritual that makes you measurably better at understanding,
+> recognising and implementing competitive-programming patterns in C++, wrapped
+> in a warrior's journey demanding enough that you want to come back tomorrow.
 
-Two engines, and they must never be confused:
+Two engines, never confused:
 
 | | Purpose | Owns |
 |---|---|---|
-| **Learning engine** | Creates competence | FSRS scheduling, mastery, retention, difficulty adaptation |
-| **Game engine** | Creates motivation | Masters, respect, bosses, HP, arcs, dialogue, timers |
+| **Learning engine** | Creates competence | Scheduling, mastery, retention, adaptation |
+| **Game engine** | Creates motivation | Masters, respect, bosses, arcs, dialogue, timers |
 
-**The one rule everything obeys:** the game layer *wraps* the learning loop and
-never replaces it. Every dramatic element must be a faithful rendering of a real
-measurement. A master who says "pathetic" when you actually performed well
-destroys the only thing that makes the harshness bearable — that it is *true*.
+**The rule everything obeys:** the game layer *wraps* the learning loop and never
+replaces it. Every dramatic element must be a faithful rendering of a real
+measurement. A master who says "pathetic" when you actually did well destroys
+the only thing that makes his harshness bearable — that it is *true*.
 
-Corollary: no dialogue line, HP number, or boss gate may be driven by anything
-other than measured performance.
+**The test for every future feature:** does this make the player better at
+understanding, recognising, remembering or applying algorithms? If it only adds
+grinding, time-in-app or XP, it does not ship.
 
 ---
 
-## 1. Curriculum: 30 families, ~90 techniques
+## 1. The Master is a teacher before he is an opponent
 
-The handbook has 30 chapters. That is a happy accident worth exploiting: **one
-core family per chapter**, each expanding into techniques, algorithms and
-archetypes.
+This is the core of the design and the thing a lesser version gets backwards.
+
+A master does not throw an unlabelled problem at a student and wait for failure.
+He teaches the technique, drills it until the hand moves without the mind, and
+only then removes the label to find out whether the student *understood*.
 
 ```
-FAMILY (30)  →  TECHNIQUE (~90)  →  ARCHETYPE  →  VARIANT  →  BOSS
+MASTER
+   ↓
+TEACH THE CONCEPT          what this is, and why it exists
+   ↓
+REVEAL THE PATTERN         named openly — nothing hidden yet
+   ↓
+TEACH THE SECRET           the trick that collapses the work
+   ↓
+DEMONSTRATE               worked example, concrete numbers
+   ↓
+GUIDED PRACTICE            drills — pattern known
+   ↓
+RECALL TRAINING            can you produce the trick from memory?
+   ↓
+APPLICATION                a real problem, pattern still named
+   ↓
+FINAL TEST                 pattern HIDDEN
+   ↓
+MASTER'S JUDGMENT          verdict, diagnosis, what happens next
 ```
 
-### Mapping, with current status
+### Why this does not contradict recognition training
 
-| Region | CPH ch. | Families | Status |
+The founding premise stands: *"I can solve problems but I struggle to recognise
+patterns."* Recognition can only be **tested** with the pattern hidden.
+
+But recognition cannot be **taught** by hiding things. It is taught by building
+a library of techniques so thoroughly that the signals become visible. You
+cannot recognise a sliding window you have never been shown.
+
+| Phase | Pattern | Trains | Combat analogy |
 |---|---|---|---|
-| **The Village** | 1–2 | Complexity estimation, C++ fundamentals | MISSING |
-| **Plains of Arrays** | 3, 4, 8, 9.1 | Sorting-as-preprocessor, Hashing ✓, Prefix sums ✓, Two pointers ✓, Sliding window ✓, Monotonic stack/deque | 4 of 6 ✓ |
-| **Halls of Search** | 3.3, 5 | Binary search ✓, Search on answer ✓, Complete search, Backtracking, Meet in the middle | 2 of 5 ✓ |
-| **Vault of Structures** | 4, 9.2–9.4 | Ordered sets, Heaps, Fenwick tree, Segment tree, Sparse table | MISSING |
-| **Ridge of Greed** | 6 | Exchange argument, Scheduling, Deadlines, Huffman | MISSING |
-| **Forest of Trees** | 14, 15, 18 | Tree DFS/BFS, Diameter, Rerooting, DSU, MST, LCA, Euler tour | MISSING |
-| **Sea of Graphs** | 11–13, 16, 17, 19, 20 | Representation, Traversal, Toposort, DAG DP, Cycle detection, Dijkstra, Bellman-Ford, Floyd-Warshall, SCC, Euler paths, Flows, Matching | MISSING |
-| **The Forbidden Art** | 7, 10.5 | 1-D DP, Knapsack, LIS, Grid DP, Edit distance, Interval DP, Tree DP, Bitmask DP | MISSING |
-| **Temple of Numbers** | 21–24 | Primes, Modular arithmetic, Combinatorics, Inclusion-exclusion, Matrices, Probability, Markov | MISSING |
-| **Library of Strings** | 26 | Trie, String hashing, Z-algorithm, KMP | MISSING |
-| **Summit of the Seven** | 25, 27–30 | Game theory, Sqrt decomposition, Mo's, Lazy segment trees, Geometry, Sweep line | MISSING |
+| Teach | named | knowledge | the sensei demonstrates |
+| Drill | named | fluency | a thousand repetitions |
+| Test | **hidden** | recognition, understanding | sparring |
+| Boss | **hidden**, composed | transfer | a real fight |
 
-**Current coverage: 6 techniques of ~90. 4 of 30 chapters, all partial.**
-
-Bit manipulation (ch. 10) is a *cross-cutting* family, taught inside Vault of
-Structures and The Forbidden Art rather than as a region.
+Hiding the pattern before the technique is taught does not train recognition. It
+trains frustration.
 
 ---
 
-## 2. The world
+## 2. Secrets — the unit of teaching
+
+A master teaches a **secret**, not a topic. A secret is one small observation
+that collapses a class of problems.
+
+Each secret carries its own required-exercise budget, and the master **decides
+when you are done** — the numbers below are starting points, not quotas.
+
+```
+MASTER OF BITS
+
+  Secret 1  Reading the lowest bit        n & 1          ~3 exercises
+  Secret 2  Clearing the lowest set bit   n & (n - 1)    ~4 exercises
+  Secret 3  Counting set bits             loop on the above  ~5 exercises
+  Secret 4  Masks and subsets             1 << k         ~6 exercises
+  Secret 5  Cancellation                  n ^ n, n ^ 0   ~4 exercises
+
+  Final test                              3 unfamiliar problems, nothing named
+```
+
+### What a lesson looks like
+
+```
+╔══════════════════════════════════════════════════════════╗
+║              MASTER OF BIT MANIPULATION                  ║
+╠══════════════════════════════════════════════════════════╣
+║                                                          ║
+║  "Today you learn to read the bits."                     ║
+║                                                          ║
+║  "Before you fight, you must understand your weapon."    ║
+║                                                          ║
+║  SECRET 1 — THE LOWEST BIT                               ║
+║                                                          ║
+║      n & 1   tells you whether the lowest bit is 0 or 1  ║
+║                                                          ║
+║  DEMONSTRATION                                           ║
+║                                                          ║
+║      13 = 1101      13 & 1 = 1      odd                  ║
+║      12 = 1100      12 & 1 = 0      even                 ║
+║                                                          ║
+║  WHAT TO WATCH FOR                                       ║
+║                                                          ║
+║      n % 2 on a negative n returns -1, not 1.            ║
+║      & 1 does not lie. Prefer it.                        ║
+║      n >> 1 is not division by two when n is negative.   ║
+║                                                          ║
+║  "Memorise it. You will use it often."                   ║
+╚══════════════════════════════════════════════════════════╝
+```
+
+### Teaching scales with level
+
+The same master returns with harder secrets as the student rises:
+
+| Level | Secret taught | Question asked |
+|---|---|---|
+| Beginner | `n & 1` | Is n odd or even? |
+| Intermediate | `n & (n - 1)` | How do you remove the lowest set bit? |
+| Advanced | composition | How many set bits are present? |
+| Expert | **nothing named** | An unfamiliar problem. Recognise it yourself. |
+
+```
+Learn → Practice → Recall → Apply → Recognise independently
+```
+
+---
+
+## 3. Three kinds of problem, kept strictly separate
+
+| Kind | Player is told | Purpose |
+|---|---|---|
+| **Training problem** | the concept, explicitly | fluency in the technique |
+| **Recognition problem** | nothing; asked *which* technique | recognition |
+| **Master problem** | nothing at all — a normal CP problem | transfer |
+
+Mixing these is how a training tool becomes a quiz. A training problem that
+hides its pattern is not harder, it is just unfair; a master problem that names
+its pattern is not a test at all.
+
+---
+
+## 4. Timers are generous. Time is a secondary metric.
+
+The goal is not *"can you type fast?"* It is *"can you understand and solve this
+correctly under reasonable competitive pressure?"*
+
+A player must never lose because the clock was artificially short.
+
+| Task | Time |
+|---|---|
+| Concept recall | 1–3 min |
+| Easy problem | 8–15 min |
+| Medium problem | 15–30 min |
+| Hard problem | 30–60 min |
+| Master Trial | 30–90 min |
+| Boss challenge | 45–120 min |
+
+All configurable, all tuned against real data as it accumulates.
+
+### Time is ranked below understanding
+
+Primary: **understanding, correctness, recognition, reasoning, implementation,
+retention.** Speed is an *additional* metric on top.
+
+A slow, correct, well-understood solution is progress and is reported as
+progress. The game makes you faster as a *consequence* of understanding, not by
+threatening you with a clock.
+
+### Timeout is not a memory failure
+
+Load-bearing rule. A timeout means slow, not forgotten. Rating it as forgotten
+would tell the scheduler you lost a pattern you actually hold.
+
+```
+correct, fast     → Easy
+correct, slow     → Good        speed is reported, not punished
+TIMEOUT           → Hard        never "Again"
+wrong             → Again
+judge failure     → no rating at all
+```
+
+### Time analysis is a diagnosis, not a scoreboard
+
+```
+TIME ANALYSIS
+  Pattern recognition   0:31   ✓
+  Planning              0:58   ✓
+  Implementation        4:12   ✗
+  Debugging             1:08   ✗
+  Total                 6:49        target 6:00
+
+  Your bottleneck is implementation, not recognition.
+  You knew the pattern in 31 seconds and then took four minutes to type it.
+  → Code Completion drills on this template
+```
+
+Debug time only exists after a failed submission, which makes it the sharpest
+signal we have: high debug time means you code before you think.
+
+---
+
+## 5. Understanding check before submission
+
+On Master problems, trials and bosses, the player states their reasoning before
+the code is judged:
+
+```
+BEFORE SUBMISSION
+
+  What is the key idea?          > ______________________
+  What is the expected complexity? > ____________________
+  What invariant are you maintaining? > _________________
+```
+
+This exists to prevent *"I memorised the code but have no idea why it works."*
+It is graded against the pattern's rubric, and it feeds the **Conceptual
+Understanding** dimension directly. Getting the code right with the reasoning
+wrong is recorded as exactly that — and the master says so.
+
+---
+
+## 6. Warrior Strength — seven dimensions
+
+Strength is never "problems solved". It is derived so that grinding easy content
+cannot inflate it.
+
+```
+WARRIOR STRENGTH                                    82
+
+  Pattern Recognition      ████████████████░░░░     82
+  Conceptual Understanding ██████████████████░░     91
+  Implementation           ███████████████░░░░░     76
+  Problem Solving          ████████████████░░░░     84
+  Retention                ██████████████░░░░░░     73
+  Speed                    ████████████░░░░░░░░     61
+  Consistency              ███████████████████░     94
+```
+
+| Dimension | Source | Scheduled? |
+|---|---|---|
+| Pattern Recognition | recognition card | **yes** — FSRS |
+| Conceptual Understanding | understanding checks + recall card | **yes** — FSRS |
+| Implementation | implementation card | **yes** — FSRS |
+| Problem Solving | accuracy on **Master problems only** (unaided, hidden pattern) | derived |
+| Retention | minimum retrievability across cards | derived |
+| Speed | median time vs. target, by mode and difficulty | derived |
+| Consistency | days practised, sessions finished, returns after failure, review adherence | derived |
+
+Three scheduled cards, four derived metrics. Problem Solving is measured *only*
+on unaided problems, so drilling with the pattern named cannot raise it.
+
+**Overall strength weights understanding highest and speed lowest**, matching
+§4. Speed contributes but can never carry a weak understanding score.
+
+---
+
+## 7. Commitment is a first-class signal
+
+The masters notice dedication, not only talent. Tracked:
+
+```
+days practised           sessions completed        patterns revisited
+boss attempts            review adherence          improvement over time
+returns after a failure
+```
+
+This is what makes a master say:
+
+> *"You failed this trial three days ago. Today you solved it. That is
+> improvement. Continue."*
+
+Consistency feeds Warrior Strength directly, and it is the one dimension a
+merely talented player cannot shortcut.
+
+---
+
+## 8. Praise is genuine, proportional, and therefore rare
+
+Masters are strict, not cruel. They are not withholding praise as a technique —
+they give it exactly when it is earned, which is what makes it land.
+
+| Achievement | Master says |
+|---|---|
+| Small success | "Correct." / "Continue." |
+| Strong performance | "Good. You recognised the pattern quickly." |
+| Exceptional | "That was well done. You saw the trap before it appeared." |
+| Major | "I have trained many students. Few remain when the problems become difficult. You did. **You have earned my respect.**" |
+
+Rarity is mechanical, not a matter of authoring discipline: each master carries
+a `praise_threshold`, and the top tier only fires for performances in the top
+decile *of your own history with that master*. Praise therefore tracks genuine
+improvement rather than an absolute bar, and it cannot be farmed.
+
+Failure dialogue always arrives with a diagnosis and a route back. Hostility
+attaches to the *performance*, never the person, and never leaves the fiction.
+
+> *"I am not here to make you feel special. I am here to make you stronger.
+>  If you fail, we train. If you improve, I acknowledge it.
+>  If you master the technique, I respect you."*
+
+---
+
+## 9. The Master remembers you
+
+Each master keeps state about the student:
+
+```
+what you previously failed        which patterns are weak
+which secrets you have forgotten  how fast you improve
+how many attempts you needed      whether you practise consistently
+```
+
+> *MASTER OF GRAPHS: "You struggled with Dijkstra last week. Today you solved
+> three weighted shortest-path problems unaided. Your weakness is becoming a
+> strength."*
+
+All of this is already in the event log — `attempt`, `review_log`, `mistake`.
+The master layer reads it; nothing new needs recording except which lines have
+already been spoken, so he does not repeat himself.
+
+---
+
+## 10. Masters detect memorisation
+
+If a player scores well on problems they have seen and poorly on fresh variants
+of the same pattern, that is memorisation, not mastery — and it is measurable:
+
+```
+memorisation_gap = accuracy(seen instances) − accuracy(fresh variants)
+```
+
+Above threshold, with enough samples, the master calls it:
+
+> *"You remember the solution. You do not understand the technique. That is not
+> mastery. I will give you a different problem."*
+
+He then generates a **structurally different problem on the same pattern** —
+different skin, constraints, input representation, objective. The parameterised
+problem machinery and the brute-force oracle already built are exactly what this
+requires.
+
+This is the mechanism that stops the whole product degrading into recall of a
+problem set.
+
+---
+
+## 11. Adaptive question counts
+
+The master decides when you are ready. Never a fixed quota.
+
+| Evidence | Master's response |
+|---|---|
+| Concept grasped quickly | fewer drills, harder variations, earlier final test |
+| Repeated failure | more worked examples, simpler variations, targeted recall, later test |
+| Correct but slow | same difficulty, more repetition for fluency |
+| Correct but reasoning wrong | recall and explanation drills, not more coding |
+
+Mastery is never "you completed 20 questions". It is: can you **recognise,
+explain, recall, implement, use in a variation, and recognise unaided?** Only
+then does mastery move significantly.
+
+---
+
+## 12. Memory training on a real schedule
+
+Some techniques are meant to be memorised. The master says so plainly — *"You
+will use this often. Memorise it."* — and then the scheduler validates it
+through application, not recitation.
+
+```
+Day 1   Learn        the secret is taught
+Day 2   Recall       produce it from memory
+Day 4   Apply        use it, pattern named
+Day 7   Variation    same secret, different shape
+Day 14  Mixed        among other patterns, unnamed
+Day 30  Boss         under pressure, composed
+```
+
+This is FSRS doing what it already does, with the *kind* of exercise changing as
+the interval grows. Memorisation becomes durable knowledge because every
+repetition demands more than the last.
+
+---
+
+## 13. Curriculum — 30 families, ~90 secrets
+
+The handbook has 30 chapters. One core family per chapter, each expanding into
+secrets, algorithms and archetypes.
+
+```
+FAMILY (30) → SECRET (~90) → ARCHETYPE → VARIANT → BOSS
+```
+
+| Region | CPH ch. | Status |
+|---|---|---|
+| The Village | 1–2 | complexity estimation, C++ fundamentals — MISSING |
+| Plains of Arrays | 3, 4, 8, 9.1 | hashing ✓ prefix ✓ two-pointers ✓ window ✓, monotonic ✗ |
+| Halls of Search | 3.3, 5 | binary search ✓ search-on-answer ✓, complete search ✗ |
+| Vault of Structures | 4, 9.2–9.4 | MISSING |
+| Ridge of Greed | 6 | MISSING |
+| Forest of Trees | 14, 15, 18 | MISSING |
+| Sea of Graphs | 11–13, 16, 17, 19, 20 | MISSING |
+| The Forbidden Art | 7, 10.5 | MISSING |
+| Temple of Numbers | 21–24 | MISSING |
+| Library of Strings | 26 | MISSING |
+| Summit of the Seven | 25, 27–30 | MISSING |
+
+**Current coverage: 6 secrets of ~90; 4 of 30 chapters, all partial.**
+
+---
+
+## 14. The world
 
 ```
                         THE ELITE CODER
@@ -90,314 +460,166 @@ Structures and The Forbidden Art rather than as a region.
                         THE VILLAGE
 ```
 
-Regions after the Plains open **in parallel**, not in a line. The prerequisite
-DAG already implemented drives this — you are never made to grind an unrelated
-region to reach the one you want.
+Regions after the Plains open **in parallel**. The prerequisite DAG already
+implemented drives this — you are never made to grind an unrelated region.
 
 ### Arcs
 
-| Arc | Regions | New mechanic introduced |
+| Arc | Regions | New mechanic |
 |---|---|---|
-| I — The Awakening | Village, Plains | Recognition. No timer. |
-| II — The First Master | Halls of Search | **Timer appears.** Master Trials. |
-| III — The Hidden Patterns | Structures, Greed | **Hidden pattern.** Duels. |
-| IV — The Forest and the Sea | Trees, Graphs | **Multi-pattern bosses.** Phases. |
-| V — The Forbidden Art | DP | **Enrage.** Explain-before-implement. |
-| VI — The Seven Masters | Numbers, Strings, Summit | **Legendary bosses.** No hints. |
-| Final — The Elite Coder | — | **Held-out problems.** Nothing familiar. |
+| I — The Awakening | Village, Plains | lessons and drills; no timer |
+| II — The First Master | Halls of Search | timer appears; Master Trials |
+| III — The Hidden Patterns | Structures, Greed | hidden patterns; duels |
+| IV — Forest and Sea | Trees, Graphs | multi-pattern bosses; phases |
+| V — The Forbidden Art | DP | explain-before-implement enforced |
+| VI — The Seven Masters | Numbers, Strings, Summit | legendary bosses; no hints |
+| Final | — | held-out problems; nothing familiar |
 
 ---
 
-## 3. The three currencies — kept distinct on purpose
+## 15. The three currencies, kept distinct
 
-Three numbers is one too many unless each answers a different question.
-
-| | Question it answers | Behaviour | Gates progression? |
+| | Answers | Behaviour | Gates? |
 |---|---|---|---|
-| **Mastery** | *Can I actually do this?* | FSRS-derived, **decays**, per pattern per dimension | **Yes — the only thing that does** |
-| **Respect** | *What have I proven to this master?* | Per master, **monotonic**, difficulty-weighted, diminishing returns | No — governs dialogue, rematches, prestige |
-| **XP / Level** | *How far along am I?* | Global, monotonic, paces the campaign | No |
+| **Warrior Strength** | *Can I actually do this?* | 7 dimensions, decays | **Yes — the only gate** |
+| **Respect** | *What have I proven to this master?* | per master, **never decays**, difficulty-weighted, diminishing returns | No — governs dialogue and prestige |
+| **XP / Level** | *How far along am I?* | global, paces the campaign | No |
 
-**Respect does not open doors. Mastery does.** Respect is how the master *talks*
-to you — it is the narrative memory of what you have done, and it must never
-decay, because a master forgetting your victories is not ruthless, it is broken.
-
-Respect is difficulty-weighted with diminishing returns so grinding Tier-1
-content cannot buy Tier-4 standing:
-
-```
-respect_gain = base(outcome) × difficulty_weight × 0.6^(times_at_this_tier_today)
-```
-
-Failure costs respect (−1) but **never mastery and never XP**. You cannot be
-made worse by trying.
+Respect never decays: a master forgetting your victories is not strict, it is
+broken. Failure costs a little respect and never costs strength or XP — trying
+must not be able to make you worse.
 
 ---
 
-## 4. Timer and pressure
-
-### Adaptive limits
-
-```
-limit = base(mode, difficulty) × personal_factor × pressure_stage_factor
-```
-
-- `base` — the table from the spec (recognition 30–180 s, implementation 5–40 min)
-- `personal_factor` — clamped to [0.7, 1.5], derived from your median time on
-  that mode/difficulty. The system learns your normal speed and then squeezes.
-- `pressure_stage_factor` — 1.0 calm → 0.75 ruthless → 0.6 boss
-
-The clamp matters. Without a floor, a fast player spirals into impossible limits;
-without a ceiling, a slow player never feels pressure.
-
-### The five pressure stages
-
-| Stage | Timer | Hints | Pattern shown |
-|---|---|---|---|
-| 1 Calm Training | none | free | yes |
-| 2 Timed Training | generous | free | yes |
-| 3 Ruthless Training | tight | costed | yes |
-| 4 Master Trial | tight | one only | **hidden** |
-| 5 Boss Fight | tight | none | **hidden**, multi-pattern |
-
-A pattern advances stages as its own mastery rises. Stages are per-pattern, not
-global — you can be at Stage 4 on Two Pointers and Stage 1 on DP.
-
-### Time is a learning metric, not a punishment
-
-Instrumented phases, with explicit transitions in the UI:
-
-```
-recognise  → the moment you commit to a pattern
-plan       → until you start typing
-implement  → until first submission
-debug      → from first failed submission to acceptance
-```
-
-Debug time only exists after a failed submission, which makes it the sharpest
-diagnostic we have: high debug time means you code before you think.
-
-```
-TIME ANALYSIS
-  Pattern recognition   0:31   (target 0:45)  ✓
-  Planning              0:58   (target 1:00)  ✓
-  Implementation        4:12   (target 2:30)  ✗
-  Debugging             1:08   (target 0:45)  ✗
-  Total                 6:49   (target 6:00)
-
-  Your bottleneck is implementation speed, not recognition.
-  You knew the pattern in 31 seconds and then took four minutes to type it.
-  → Code Completion drills on this pattern's template
-```
-
-### Timeout is not a memory failure
-
-**This is load-bearing.** A timeout means you were slow, not that you forgot.
-Rating a timeout as `Again` would tell FSRS you have lost a pattern you actually
-know, corrupting the schedule.
-
-```
-outcome            recognition card    implementation card
-correct, fast      Easy                Easy
-correct, slow      Good                Hard
-TIMEOUT            Hard                Hard          ← never Again
-wrong answer       Again               Again
-judge failure      no rating           no rating
-```
-
-Timeouts hurt **respect and score**, not the memory model.
-
----
-
-## 5. Boss engine
+## 16. Boss system
 
 ### Tiers
 
-| Tier | Name | Tests | Gate to |
-|---|---|---|---|
-| 1 | Training Bosses | one foundational pattern | next pattern group |
-| 2 | Pattern Bosses | a family, pattern hidden | next region |
-| 3 | Algorithm Masters | multiple concepts composed | next arc |
-| 4 | Elite Warriors | multi-pattern + traps + tight constraints | legendary path |
-| 5 | Legendary Bosses | a whole discipline at depth | **The Final Gate** |
-| ∞ | The Elite Coder | everything, nothing familiar | — |
+| Tier | Tests | Gates |
+|---|---|---|
+| 1 Training Bosses | one foundational secret | next secret group |
+| 2 Pattern Bosses | a family, pattern hidden | next region |
+| 3 Algorithm Masters | multiple concepts composed | next arc |
+| 4 Elite Warriors | multi-pattern, traps, tight constraints | legendary path |
+| 5 Legendary Bosses | a whole discipline at depth | **The Final Gate** |
+| ∞ The Elite Coder | everything, nothing familiar | — |
 
-### Gates come before the fight, not during it
+### The gate is checked before the fight, not during it
 
-**Boss HP is drama; the mastery gate is the actual test.** If HP alone decided
-victory, a weak player could grind attempts until they got lucky. So:
+If HP alone decided victory, a weak player could grind attempts until lucky.
+So the mastery requirements are satisfied **before the fight unlocks**; HP is
+tension and scoring inside it.
 
-- The gate (§4 of your spec — recognition ≥ X%, retention ≥ Y%, trial passed)
-  must be satisfied *before the fight is unlocked at all*.
-- Inside the fight, HP is a scoring and tension device.
-
-This is why the requirements panel exists: it tells you exactly what remains.
-
-### Phases and HP
+### Phases
 
 ```
-PHASE 1  Identify the pattern          boss −10 HP
-PHASE 2  Explain the approach          boss −10 HP
-PHASE 3  Choose structure + complexity boss −10 HP
-PHASE 4  Implement                     boss −30 HP
-PHASE 5  Survive hidden tests          boss −30 HP
-         (optimise, when applicable)   boss −20 HP
+PHASE 1  Identify the pattern           −10 boss HP
+PHASE 2  Explain the approach           −10
+PHASE 3  Structure and complexity       −10
+PHASE 4  Implement                      −30
+PHASE 5  Survive hidden tests           −30
+         Optimise, where applicable     −20
 ```
 
-A mistake costs player HP, time, or a hint — it does **not** end the fight.
-Reaching 0 player HP ends the attempt, and the attempt is logged with a full
-failure diagnosis. Bosses are always retryable; nothing is ever lost permanently.
+A mistake costs HP, time or a hint — never the whole fight. Bosses are always
+retryable and nothing is permanently lost.
 
 ### Enrage removes safety, never accelerates the clock
 
-Accelerating a timer punishes careful thought, which is the opposite of what
-§8 asks the game to teach. Enrage instead:
+Speeding up a timer punishes careful thought, which is the opposite of §4.
+Enrage instead disables remaining hints, reveals the hidden test count, and
+doubles both the respect at stake and the respect gained.
 
-- disables remaining hints
-- reveals the hidden test count so you feel the exposure
-- doubles respect loss on failure and doubles it on victory
+### Victory tiers and rematches
 
-Fair, dramatic, and it does not make a slow thinker permanently unable to finish.
+Normal → Strong (≤1 hint) → Perfect (no hints, no wrong answers, within target)
+→ Legendary (Perfect, under target, hard variant).
 
-### Rematch and victory tiers
-
-| Victory | Condition |
-|---|---|
-| Normal | boss defeated |
-| Strong | ≤ 1 hint |
-| Perfect | no hints, no wrong answers, no failed submissions, within target time |
-| Legendary | Perfect + under target time + hard variant |
-
-Defeated bosses stay available for Rematch / Speed Trial / No-Hint Trial. Every
-rematch draws a **generated variant** — same underlying skill, different
-narrative skin, constraints and input. The parameterised-problem machinery and
-the differential-judging oracle already built are exactly what this needs.
+Defeated bosses stay available for Rematch, Speed Trial and No-Hint Trial. Every
+rematch draws a **generated variant** — same skill, different everything else.
 
 ---
 
-## 6. The Elite Coder needs a held-out problem set
+## 17. The Elite Coder needs a held-out problem set
 
-This is the design consequence of your final-boss philosophy, and it changes
-what content we must author.
+The design consequence of his speech, and it changes what content we author.
 
-> "You have been training against problems that prepared you for me.
->  I will not give you a familiar pattern. I will give you a problem."
+> *"You have been training against problems that prepared you for me. I will not
+> give you a familiar pattern. I will give you a problem. Nothing more."*
 
-If the Elite Coder draws from the same pool as training, it is not testing
-transfer — it is testing recall of the pool. So:
+If he draws from the training pool he tests recall of that pool, not transfer.
+So: **a reserved set, never shown in training at any stage**, composed from
+families in unusual combinations, with no signals listed, no hints and no
+pattern name — ever. Content validation enforces the reservation so a future
+author cannot leak one into rotation.
 
-- **A reserved set of problems, never shown in training, at any stage.**
-- Composed from families in unusual combinations.
-- No `signals_present` shown, no hint ladder, no pattern name, ever.
-- Content validation must *enforce* the reservation, so a future author cannot
-  accidentally leak an Elite Coder problem into the training rotation.
-
-This is the thesis of the whole product made mechanical: the masters teach
-techniques, the bosses test those techniques, and the Elite Coder tests whether
-you can think when nobody tells you which technique to use.
+The masters teach techniques. The bosses test those techniques. The Elite Coder
+tests whether you can think when nobody tells you which technique to use.
 
 ---
 
-## 7. Characters — data, not code
+## 18. Characters — data, not code
 
 ```
-content/characters/
-    master_arrays.json
-    master_search.json
-    ...
-    elite_coder.json
+content/characters/master_bits.json    …    elite_coder.json
 ```
 
-Each character declares personality, the patterns it governs, gate thresholds,
-boss rules, reward rules, and **dialogue pools keyed by measured outcome**:
-
-```json
-{
-  "id": "master_search",
-  "name": "MASTER OF SEARCH",
-  "region": "halls-of-search",
-  "personality": {"warmth": 0.1, "verbosity": 0.2, "praise_threshold": 0.9},
-  "dialogue": {
-    "greeting":        ["You are early. That is not the same as being ready."],
-    "fail_wrong":      ["You searched linearly. I asked for logarithmic."],
-    "fail_timeout":    ["Time. You had the answer and could not reach it."],
-    "success":         ["Acceptable."],
-    "success_fast":    ["...", "Faster than last time. Continue."],
-    "exceptional":     ["You have earned another lesson."],
-    "gate_locked":     ["Return when your recognition holds above eighty."],
-    "boss_intro":      ["Find the logarithmic solution. DEFEAT ME."]
-  }
-}
-```
-
-Dialogue selection is driven by the outcome record, never by a random roll
-alone — randomness only picks *between* lines that already fit the situation.
-
-### Praise budget
-
-`praise_threshold` makes rarity mechanical rather than a matter of authoring
-discipline. A master with 0.9 only reaches `exceptional` for performances in the
-top 10% of *your own* history with them. Praise stays rare automatically, and it
-tracks genuine improvement rather than an absolute bar.
-
-### Portraits
+Each declares personality, governed secrets, gate thresholds, boss rules, and
+dialogue pools keyed by **measured outcome** — never by a random roll alone.
+Randomness only picks *between* lines that already fit the situation.
 
 ```
 assets/characters/<id>/{portrait.png, portrait.txt, portrait.ansi}
 ```
 
-Resolution order, decided at runtime by capability probe:
-
-```
-kitty graphics protocol  →  sixel  →  half-block ANSI  →  Unicode art  →  ASCII
-```
-
-Your terminal is kitty, so real images work. **The core game must never depend
-on it** — `portrait.txt` is mandatory for every character, images optional.
+Resolution at runtime: kitty graphics → sixel → half-block ANSI → Unicode →
+ASCII. Your terminal is kitty, so real images work. `portrait.txt` is mandatory
+for every character; images are always optional.
 
 ---
 
-## 8. What is engine work vs. presentation
-
-From the audit. Nothing existing gets rewritten.
+## 19. Engine work vs. presentation
 
 | Component | Verdict |
 |---|---|
 | `judge/` sandbox | **Untouched.** Production-grade already. |
-| `learning/` FSRS, mastery | **Extended, not changed.** Add timeout rating path. |
-| `storage/` | **New tables only:** `respect`, `boss_record`, `phase_timing`, `character_state`. |
-| `game/` XP, unlocks, achievements | Kept. Respect added alongside, not replacing. |
-| Masters, arcs, dialogue, combat metaphor | **Pure presentation** over existing worlds/patterns. |
-| **`timing/`** | **New subsystem.** Adaptive limits, phase instrumentation, timeout semantics. |
-| **`boss/`** | **New subsystem.** Phase state machine, HP, gates, enrage, variants. |
-| **`world/`** | **New package.** Regions, arcs, masters, dialogue selection, respect. |
-| `tui/` | Substantial new screens: journey map, boss arena, timer HUD, verdict. |
+| `learning/` | **Extended:** timeout rating path, understanding dimension |
+| `storage/` | **New tables:** `respect`, `boss_record`, `phase_timing`, `lesson_progress`, `character_memory` |
+| `game/` | Kept; respect added alongside XP |
+| Masters, arcs, dialogue, combat metaphor | **Pure presentation** |
+| **`lessons/`** | **New.** Secrets, demonstrations, adaptive drill counts |
+| **`timing/`** | **New.** Generous limits, phase instrumentation, timeout semantics |
+| **`boss/`** | **New.** Phases, HP, gates, enrage, variants |
+| **`world/`** | **New.** Regions, arcs, masters, dialogue, respect, master memory |
+| `tui/` | New screens: lesson, journey map, boss arena, timer HUD, verdict |
 
 ---
 
-## 9. Build order
+## 20. Build order
 
-1. **`timing/`** — adaptive limits, phase instrumentation, timeout semantics, the
-   time-analysis report. Everything else depends on it.
-2. **`world/`** — characters, dialogue, respect, regions/arcs. Makes it *feel*
-   like the game.
-3. **`boss/`** — phases, HP, gates, enrage, rematch, variants.
-4. **Curriculum** — the 26 missing chapters, authored in parallel, region by
-   region in campaign order.
-5. **The Elite Coder** — held-out set, final gate, the last screen.
+1. **`lessons/`** — the teach → drill → test spine, with the Master of Bits as
+   the first full vertical slice. Without this the masters are not teachers.
+2. **`timing/`** — generous limits, phase instrumentation, timeout semantics.
+3. **`world/`** — characters, dialogue, respect, master memory, regions, arcs.
+4. **`boss/`** — phases, HP, gates, enrage, rematch, variants.
+5. **Curriculum** — the 26 missing chapters, region by region in campaign order.
+6. **The Elite Coder** — held-out set, final gate.
 
 Each stage ships playable. No stage requires rewriting the previous one.
 
 ---
 
-## 10. Things this design deliberately refuses
+## 21. What this design refuses
 
-- **No timer acceleration.** Punishes thinking.
-- **No XP or mastery loss on failure.** Trying must never make you worse.
+- **No timer acceleration**, and no tight timers. They punish thinking.
+- **No strength or XP loss on failure.** Trying must never make you worse.
 - **No respect decay.** A master does not forget.
 - **No boss winnable without the mastery gate.** HP cannot substitute for skill.
-- **No praise on schedule.** Praise is earned against your own history.
-- **No dialogue that insults the person.** Hostility attaches to the performance,
-  stays inside the fiction, and always arrives with a diagnosis and a route back.
-- **No engagement metric as a goal.** Optimise retention and transfer. If the
-  game is fun but you are not measurably faster in three months, it failed.
+- **No praise on a schedule.** Earned against your own history, or not given.
+- **No hidden pattern before the technique has been taught.** That is not
+  difficulty, it is withholding.
+- **No mastery credit for question count.** Six abilities, demonstrated.
+- **No dialogue that insults the person.** Hostility attaches to performance,
+  stays inside the fiction, and always arrives with a route back.
+- **No engagement metric as a goal.** If the game is fun and you are not
+  measurably stronger in three months, it failed.
