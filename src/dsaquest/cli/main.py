@@ -264,7 +264,8 @@ def train(
                 respect = repo.get_respect(context.conn, found.id)
                 console.print(f"  [b]{found.id}[/]  {found.title}")
                 console.print(
-                    f"      teaches [cyan]{found.pattern}[/]   [bright_black]respect {respect}[/]\n"
+                    f"      teaches [cyan]{', '.join(found.patterns)}[/]   "
+                    f"[bright_black]respect {respect}[/]\n"
                 )
             console.print("[dim]dsa train <master_id>[/]")
             return

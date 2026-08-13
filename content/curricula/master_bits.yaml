@@ -5,7 +5,8 @@
 # The final test names nothing.
 
 master_id: master_bits
-pattern: bit-manipulation
+patterns:
+  - bit-manipulation
 title: The Master of Bit Manipulation — Five Secrets of the Machine
 
 opening: >-

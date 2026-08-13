@@ -55,7 +55,7 @@ class CurriculumSet:
 
     @cached_property
     def by_pattern(self) -> dict[str, Curriculum]:
-        return {c.pattern: c for c in self.curricula.values()}
+        return {pattern: c for c in self.curricula.values() for pattern in c.patterns}
 
     def for_pattern(self, pattern_id: str) -> Curriculum | None:
         """The master who teaches this pattern, if one does.
@@ -118,18 +118,26 @@ def _cross_validate(
     for curriculum in curricula.values():
         where = curriculum.master_id
 
-        if curriculum.pattern not in library:
-            problems.append(f"{where}: teaches unknown pattern {curriculum.pattern!r}")
+        for pattern in curriculum.patterns:
+            if pattern not in library:
+                problems.append(f"{where}: teaches unknown pattern {pattern!r}")
 
-        # Two masters teaching one pattern would give the student contradictory
-        # instruction and make "who do I train under?" ambiguous.
-        if curriculum.pattern in taught:
-            problems.append(
-                f"{where}: pattern {curriculum.pattern!r} is already taught by "
-                f"{taught[curriculum.pattern]!r}"
-            )
-        else:
-            taught[curriculum.pattern] = where
+            # Two masters teaching one pattern would give the student
+            # contradictory instruction and make "who do I train under?"
+            # ambiguous.
+            if pattern in taught:
+                problems.append(
+                    f"{where}: pattern {pattern!r} is already taught by {taught[pattern]!r}"
+                )
+            else:
+                taught[pattern] = where
+
+        for stage in curriculum.stages:
+            if stage.pattern is not None and stage.pattern not in curriculum.patterns:
+                problems.append(
+                    f"{where}/{stage.id}: pattern {stage.pattern!r} is not one this "
+                    f"master governs {list(curriculum.patterns)}"
+                )
 
         orders = [stage.order for stage in curriculum.stages]
         if len(set(orders)) != len(orders):

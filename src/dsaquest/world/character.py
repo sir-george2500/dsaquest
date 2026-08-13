@@ -75,7 +75,7 @@ class Master:
     name: str
     title: str
     region: str
-    pattern: str
+    patterns: tuple[str, ...]
     personality: dict[str, float]
     gate: dict[str, float]
     dialogue: dict[str, tuple[str, ...]]
@@ -139,7 +139,7 @@ def load_masters() -> dict[str, Master]:
             name=raw["name"],
             title=raw.get("title", raw["name"]),
             region=raw.get("region", ""),
-            pattern=raw["pattern"],
+            patterns=tuple(raw.get("patterns") or [raw["pattern"]]),
             personality=raw.get("personality", {}),
             gate=raw.get("gate", {}),
             dialogue={k: tuple(v) for k, v in raw["dialogue"].items()},

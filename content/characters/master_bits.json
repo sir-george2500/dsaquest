@@ -3,7 +3,6 @@
   "name": "MASTER OF BIT MANIPULATION",
   "title": "Grandmaster Ragine, Keeper of the Thirty-Two",
   "region": "vault-of-structures",
-  "pattern": "bit-manipulation",
   "personality": {
     "warmth": 0.1,
     "verbosity": 0.25,
@@ -162,5 +161,8 @@
       "Finished. Carry it out with you — the next master will assume you have it.",
       "That is mastery. Not speed, not memory. Mastery. Go."
     ]
-  }
+  },
+  "patterns": [
+    "bit-manipulation"
+  ]
 }

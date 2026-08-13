@@ -59,7 +59,8 @@ def conn():
 
 def test_the_master_of_bits_has_a_curriculum(curricula):
     curriculum = curricula[MASTER_ID]
-    assert curriculum.pattern == "bit-manipulation"
+    assert curriculum.patterns == ("bit-manipulation",)
+    assert curriculum.primary_pattern == "bit-manipulation"
     assert len(curriculum.stages) == 5
     assert [s.order for s in curriculum.ordered_stages] == [0, 1, 2, 3, 4]
 

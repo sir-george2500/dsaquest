@@ -123,6 +123,13 @@ class Stage(_Frozen):
     id: str = Field(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")
     order: int = Field(ge=0)
     secret: Secret
+    pattern: str | None = Field(
+        default=None,
+        description=(
+            "Which of the master's patterns this secret belongs to. "
+            "Defaults to the curriculum's first pattern."
+        ),
+    )
     trial_problem_ids: tuple[str, ...] = Field(
         default=(),
         description="Problems used as this stage's trial. Pattern is NOT revealed.",
@@ -133,7 +140,14 @@ class Curriculum(_Frozen):
     """A master's full teaching plan for the pattern he governs."""
 
     master_id: str = Field(pattern=r"^[a-z0-9]+(_[a-z0-9]+)*$")
-    pattern: str = Field(description="Pattern id this curriculum teaches")
+    patterns: tuple[str, ...] = Field(
+        min_length=1,
+        description=(
+            "Every pattern this master governs. A Master of Search teaches both "
+            "binary search and search-on-the-answer; a Master of Arrays teaches "
+            "four. One pattern per master would have forced a master per pattern."
+        ),
+    )
     title: str
     opening: str = Field(min_length=20, description="What the master says when training begins")
     stages: tuple[Stage, ...] = Field(min_length=1)
@@ -141,6 +155,14 @@ class Curriculum(_Frozen):
         default=(),
         description="The master's final test. Nothing named, drawn from all stages.",
     )
+
+    @property
+    def primary_pattern(self) -> str:
+        """The pattern a stage belongs to when it does not say."""
+        return self.patterns[0]
+
+    def pattern_of(self, stage: Stage) -> str:
+        return stage.pattern or self.primary_pattern
 
     @property
     def secrets(self) -> tuple[Secret, ...]:
