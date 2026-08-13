@@ -28,15 +28,31 @@ write one. One "mastery" number hides that. Three cards don't.
 
 ## Status
 
-Early. Phase 1 (MVP) in progress — see `docs/architecture.md` for the plan.
+**Phase 1 (MVP) complete and playable.** 283 tests.
 
 - [x] Domain model
-- [x] Sandboxed C++ judge
-- [ ] Content: 6 patterns
-- [ ] Storage
-- [ ] FSRS scheduling
-- [ ] Game modes
-- [ ] TUI
+- [x] Sandboxed C++ judge — cgroups + bubblewrap + rlimits, ~9 ms overhead
+- [x] Content: 6 patterns, 23 problems, 18 cloze holes
+- [x] SQLite storage + migrations
+- [x] FSRS-6 scheduling and the mastery model
+- [x] Game engine: XP, levels, streaks, unlocks, achievements
+- [x] Mode A (Pattern Hunter) and Mode C (Code Completion)
+- [x] Textual TUI + CLI
+- [x] nvim workspace handoff
+
+Next: Modes B (Pattern Recall), D (Duel) and E (Boss Fight); the remaining
+27 patterns; live-reload watch mode.
+
+### The six MVP patterns
+
+Chosen as the most *confusable* cluster rather than the easiest — mixing these
+up is the exact failure this app exists to fix.
+
+```
+World 1   Hashing & Frequency · Prefix Sums & Difference Arrays
+          Two Pointers · Sliding Window
+World 2   Binary Search on Sorted Data · Binary Search on the Answer
+```
 
 ## Requirements
 
