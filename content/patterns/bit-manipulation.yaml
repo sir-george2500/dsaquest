@@ -1,0 +1,254 @@
+id: bit-manipulation
+name: Bit Manipulation
+world: 3
+order: 0
+tagline: >-
+  Treat an integer as a set and a XOR as a memory you never have to allocate:
+  membership, pairing and "try every subset" all collapse into single machine
+  instructions.
+
+prerequisites: []
+
+signals:
+  - cue: n <= 20 (sometimes 22 or 25) with "choose any subset / any group / any combination"
+    strength: 3
+    note: >-
+      That bound is not caution, it is an instruction. 2^n * n is 20 million at
+      n = 20 and unusable at n = 30, so a tiny n next to an exponential question
+      means the intended solution enumerates all 1<<n subsets.
+  - cue: every element appears twice (or an even number of times) except one or two
+    strength: 3
+    note: >-
+      The statement has told you the data cancels. XOR everything and the pairs
+      erase themselves; whatever is left is the answer, with no container at all.
+  - cue: >-
+      the state is "which of these at-most-20 things have I got" - which cities
+      visited, which skills covered, which colours used
+    strength: 3
+    note: >-
+      A set over a fixed tiny universe is an integer. Once you see that, union,
+      intersection and "add this member" are one operator each, and the set can
+      be a DP array index.
+  - cue: O(1) extra memory demanded while the values themselves are unbounded
+    strength: 3
+    note: >-
+      The memory clause exists to forbid the tally. If you may not store the
+      values, the only thing left to accumulate is a running XOR or a per-column
+      count of fixed width.
+  - cue: >-
+      cost defined as "how many positions differ", "how many toggles", "how many
+      switches must change"
+    strength: 2
+    note: >-
+      A distance counted over independent two-state positions is a popcount of a
+      difference, and the columns are independent so they can be counted apart.
+  - cue: an operation that undoes itself when applied twice
+    strength: 2
+    note: >-
+      Self-inverse is the defining property of XOR. It also means only the parity
+      of the number of applications matters, never the count.
+  - cue: values up to 1e9 but only their evenness, halving or doubling matters
+    strength: 1
+    note: >-
+      Weak alone. It says the value's digits in base two are the real object,
+      even when the statement talks about repeatedly halving a number.
+
+anti_signals:
+  - cue: you need how many times each value occurred, over values you cannot bound
+    instead: hashing-frequency
+    note: >-
+      A set has one bit per member and no room for a count above one. The moment
+      the answer needs "three of these", the state is a tally, not a set.
+  - cue: n is 10^5 and the question still asks about subsets
+    instead: binary-search-answer
+    note: >-
+      Enumeration is off the table at that size, so the intended solution is
+      almost always a search over the answer with a feasibility check inside.
+  - cue: the chosen elements must be adjacent in the input
+    instead: sliding-window
+    note: >-
+      A set forgets position entirely. Contiguity is a constraint about where
+      things are, which no mask can express.
+  - cue: many queries asking for the total over a range of the array
+    instead: prefix-sum
+    note: >-
+      Running totals answer those, and the XOR variant is still the prefix
+      pattern - the idea is the prefix, the operator is incidental.
+  - cue: the array is sorted and you need the pair meeting a numeric target
+    instead: two-pointers
+    note: >-
+      Order is the resource there. Bit tricks buy nothing that convergence does
+      not already give you for free.
+
+confusable_with:
+  - pattern_id: hashing-frequency
+    tell: >-
+      Is your state a membership set over a universe small enough to index by
+      position, or a tally of how many times each of unboundedly many values
+      appeared? A mask IS the set - one bit per member, nothing else fits in it.
+      A hash map counts occurrences, and counting is what a mask cannot do.
+
+invariant: >-
+  Bit i of the mask is set exactly when member i is in the set, so the mask and
+  the set are the same object - and a running XOR holds precisely the values
+  that have been seen an odd number of times so far.
+
+complexity:
+  time: O(n * w)
+  space: O(1)
+  note: >-
+    XOR and popcount sweeps are O(n) with w = 32 or 64 as a constant, and need no
+    memory at all. Subset enumeration is O(2^n * n), which is why n is capped at
+    around 20; enumerating every submask of every mask is O(3^n), the standard
+    budget for subset DP.
+
+data_structures:
+  - an unsigned integer used as a set
+  - an array indexed by mask (2^n entries) for subset DP
+  - per-position counters, one per bit column
+  - std::bitset for a universe too large for one word
+
+cpp_facilities:
+  - std::popcount, std::countr_zero, std::countl_zero, std::bit_width (<bit>, C++20)
+  - std::has_single_bit and std::bit_ceil
+  - unsigned and unsigned long long, so shifts and overflow are defined
+  - "x & -x to isolate and x & (x - 1) to clear the lowest set bit"
+  - "the submask loop: for (s = m; s; s = (s - 1) & m)"
+  - std::bitset for fixed-width sets beyond 64 members
+
+traps:
+  - description: >-
+      Writing `1 << k` when k can reach 31 or more. The literal is an int, so the
+      shift runs out of room at the sign bit; `1LL << k` or `1u << k` is the fix.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Correct for every small k, then negative or zero for the high positions -
+      typically a single failing test with large values, and different answers
+      under -O2 than under -O0.
+  - description: >-
+      Sizing a subset-DP array as `1 << n` but building masks with `1 << i` where
+      i can equal n, so the full mask is one index past the end.
+    mistake_code: CPP_OUT_OF_BOUNDS
+    symptom: >-
+      No crash, just a wrong answer on the case where every member is used, plus
+      occasional nondeterminism between runs.
+  - description: >-
+      Enumerating all 2^n subsets when n is 30 or more, or all pairs of masks
+      (4^n) when submask enumeration (3^n) was intended.
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      Accepted on the samples and TLE on the first real test. The 4^n version
+      often passes n <= 12 and dies at n <= 18.
+  - description: >-
+      Forgetting that mask 0 is the empty set, and either counting it as a valid
+      answer when the statement demands a non-empty group or skipping it when it
+      is the base case of the DP.
+    mistake_code: BOUNDS_EMPTY_INPUT
+    symptom: >-
+      Off by exactly one subset, or a DP that never starts because dp[0] was
+      never seeded.
+  - description: >-
+      Splitting on the lowest set bit of a running XOR without considering that
+      the XOR can legitimately be zero, or that the unpaired value is itself 0.
+    mistake_code: BOUNDS_SINGLE_ELEMENT
+    symptom: >-
+      Fails only the test where the answer is 0 or where every value pairs up -
+      the probe becomes 0, so every element lands in the same pile.
+  - description: >-
+      Reaching for an unordered_map of value to count when the statement already
+      guaranteed the values pair off and forbade the memory.
+    mistake_code: COMPLEX_TOO_MUCH_MEMORY
+    symptom: >-
+      Correct on every test and over the memory limit on the largest one. The
+      giveaway was in the constraints, not in the question.
+
+recall_rubric:
+  - key: mask-is-a-set
+    prompt: >-
+      Say what bit i of the mask means, and give the operator for union,
+      intersection and adding one member.
+    essential: true
+    accepts:
+      - bit i means member i
+      - mask is the set
+      - membership
+      - "|"
+      - "1 << i"
+  - key: xor-cancels
+    prompt: >-
+      State the property that makes a running XOR work (a ^ a == 0, so anything
+      seen an even number of times disappears).
+    essential: true
+    accepts:
+      - a ^ a
+      - cancels
+      - pairs vanish
+      - self-inverse
+      - even number of times
+  - key: lowest-set-bit
+    prompt: >-
+      Give the two idioms for the lowest set bit: isolate it, and clear it.
+    essential: true
+    accepts:
+      - x & -x
+      - x & (x - 1)
+      - lowest set bit
+      - countr_zero
+  - key: enumeration-budget
+    prompt: >-
+      Give the cost of enumerating all subsets and the n it is affordable up to.
+    essential: false
+    accepts:
+      - 2^n
+      - n <= 20
+      - "2^n * n"
+      - exponential
+  - key: submask-loop
+    prompt: >-
+      Write the loop that visits every submask of m and give its total cost over
+      all masks.
+    essential: false
+    accepts:
+      - (s - 1) & m
+      - submask
+      - 3^n
+  - key: width-safety
+    prompt: >-
+      Say why `1 << k` is wrong for large k and what to shift instead.
+    essential: false
+    accepts:
+      - 1ll
+      - 1ull
+      - unsigned
+      - overflow
+      - undefined
+  - key: signed-shift
+    prompt: >-
+      Say what a right shift does to a negative number and why it is not division.
+    essential: false
+    accepts:
+      - arithmetic shift
+      - rounds down
+      - towards negative infinity
+      - sign bit
+  - key: complexity
+    prompt: Give the time and space cost of the linear forms of this pattern.
+    essential: false
+    accepts:
+      - o(n)
+      - o(1) space
+      - constant memory
+
+template_file: bit-manipulation.cpp
+template_notes: >-
+  Four forms. The low-bit toolkit is the vocabulary - parity, membership,
+  isolate and clear the lowest set bit - and everything later is spelled with
+  it. XOR cancellation is the one to internalise first, including the two-
+  survivor split that reuses the lowest-set-bit idiom to turn one hard problem
+  into two easy ones. Subset enumeration is the form the constraints announce,
+  paired with the submask loop that is its natural next step. The last section
+  is not a technique but a list of the ways signed types quietly ruin all three.
+
+related:
+  - hashing-frequency
+  - prefix-sum

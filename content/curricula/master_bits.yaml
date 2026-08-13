@@ -1,0 +1,813 @@
+# The Master of Bit Manipulation's teaching plan.
+#
+# Five secrets, taught in order. Every demonstration is a concrete number the
+# master has checked; every watch-out is a bug that has cost somebody a contest.
+# The final test names nothing.
+
+master_id: master_bits
+pattern: bit-manipulation
+title: The Master of Bit Manipulation — Five Secrets of the Machine
+
+opening: >-
+  You count in ten because you have ten fingers. The machine has two states and
+  no fingers at all, and it is faster than you will ever be. Until you learn to
+  read a number the way the machine stores it, you are arguing with your weapon
+  instead of holding it. Five secrets. Each one is small. Each one collapses
+  work you are currently doing with a loop. Learn them in order, and do not ask
+  me for the next one until your hand moves without your mind.
+
+stages:
+  # ---------------------------------------------------------------- stage 0
+  - id: stage-lowest-bit
+    order: 0
+    trial_problem_ids: []
+    secret:
+      id: lowest-bit
+      name: The Lowest Bit
+      idiom: "n & 1"
+      memorise: true
+      baseline_drills: 3
+      teaches: >-
+        Every warrior thinks in decimal. That is your first weakness. The
+        machine does not: it stores n as a row of bits, and the rightmost bit
+        alone decides whether n is odd. `n & 1` keeps that one bit and throws
+        the rest away, giving you 0 or 1 and nothing else. You already know
+        `n % 2`, so you will ask why this exists. It exists because `%` must
+        reason about sign and division, and `&` reasons about nothing at all —
+        it looks at one bit and answers. It is faster, it is shorter, and
+        unlike `%` it tells the truth when n is negative.
+      demonstrations:
+        - expression: "13 & 1"
+          result: "1"
+          note: "13 = 1101 in binary. The lowest bit is 1, so 13 is odd."
+        - expression: "12 & 1"
+          result: "0"
+          note: "12 = 1100. The lowest bit is 0, so 12 is even."
+        - expression: "40 & 1"
+          result: "0"
+          note: "40 = 101000. Five bits above it are set or clear; none of them matter."
+        - expression: "-3 & 1"
+          result: "1"
+          note: >-
+            -3 is stored as ...11111101. The lowest bit is 1, so -3 is odd —
+            which is correct. Compare with -3 % 2, which is -1.
+      watch_out:
+        - warning: "`n % 2 == 1` is false for every negative odd number."
+          why: >-
+            C++ integer division truncates toward zero, so the remainder carries
+            the sign of the dividend: -3 % 2 is -1, not 1. The test silently
+            calls -3 even. `n & 1` reads a stored bit and cannot have a sign, so
+            -3 & 1 is 1. Test parity with `n & 1`, or with `n % 2 != 0`.
+        - warning: "`n >> 1` is not division by two when n is negative."
+          why: >-
+            The right shift on a signed type keeps the sign bit and rounds
+            toward negative infinity: -3 >> 1 is -2, while -3 / 2 is -1. On
+            non-negative values the two agree; the moment negatives appear they
+            do not, and the off-by-one hides deep in your loop.
+        - warning: "`if (n & 1 == 0)` does not test what you wrote."
+          why: >-
+            `==` binds tighter than `&`, so the compiler reads `n & (1 == 0)`,
+            which is `n & 0`, which is 0 — the branch is dead for every n. The
+            bitwise operators sit BELOW the comparisons in the precedence table.
+            Parenthesise: `if ((n & 1) == 0)`.
+      drills:
+        - id: low-eval-13
+          kind: evaluate
+          prompt: "What is 13 & 1 ?"
+          options: ["0", "1", "6", "13"]
+          answer: "1"
+          explanation: >-
+            13 = 1101. AND with 1 = 0001 keeps only the rightmost bit, which is
+            1. The result of `n & 1` is always 0 or 1, never anything larger.
+        - id: low-eval-neg
+          kind: evaluate
+          prompt: "In C++, with int n = -3, what is n & 1 ?"
+          options: ["-1", "0", "1", "3"]
+          answer: "1"
+          explanation: >-
+            -3 is stored in two's complement as ...11111101, so its lowest bit
+            is 1 and the AND yields 1. This is exactly where `n % 2` betrays
+            you: -3 % 2 is -1, so `n % 2 == 1` would call -3 even.
+        - id: low-eval-40
+          kind: evaluate
+          prompt: "What is 40 & 1 ?"
+          options: ["0", "1", "20", "40"]
+          answer: "0"
+          explanation: >-
+            40 = 101000. The lowest bit is 0, so the AND is 0 and 40 is even.
+            Note that the answer is not 40: the mask 1 deletes every bit but one.
+        - id: low-prop-meaning
+          kind: property
+          prompt: "You compute n & 1 and get 1. What have you learnt about n?"
+          options:
+            - "n is odd"
+            - "n is even"
+            - "n is a power of two"
+            - "n is positive"
+          answer: "n is odd"
+          explanation: >-
+            The lowest bit carries the value 2^0 = 1, the only place an odd
+            amount can live; every higher bit contributes an even amount. So the
+            lowest bit alone decides parity, for negative n as well as positive.
+        - id: low-trap-precedence
+          kind: trap
+          prompt: >-
+            This prints nothing for any n. Why? `if (n & 1 == 0) cout << "even";`
+          options:
+            - "`==` binds tighter than `&`, so it reads n & (1 == 0), which is n & 0 = 0"
+            - "`&` returns a bool, so it can never equal the integer 0"
+            - "it works for positive n and fails only for negative n"
+            - "n & 1 is undefined when n is 0"
+          answer: "`==` binds tighter than `&`, so it reads n & (1 == 0), which is n & 0 = 0"
+          explanation: >-
+            Bitwise AND sits below the equality operators in C++ precedence — a
+            historical wart you must simply know. The condition becomes the
+            constant 0 and the branch is dead. Always write `((n & 1) == 0)`, or
+            simply `if (!(n & 1))`.
+        - id: low-recall-odd
+          kind: recall
+          prompt: >-
+            Write the expression that tests whether int n is odd, correct for
+            negative n, without using % anywhere.
+          answer: "n & 1"
+          accepts: ["n&1", "1&n", "(n&1)", "(n&1)==1", "(n&1)!=0", "n&1==1"]
+          explanation: >-
+            `n & 1` is the whole answer: 1 when n is odd, 0 when it is even, for
+            every sign. Commit it to memory — you will type it in almost every
+            bit problem you ever meet.
+        - id: low-apply-sum-odds
+          kind: apply
+          prompt: >-
+            You are summing only the odd entries of an array a[] that may
+            contain negative values. Write the guard condition that goes inside
+            `if ( ... ) s += a[i];`
+          answer: "a[i] & 1"
+          accepts: ["a[i]&1", "(a[i]&1)", "1&a[i]", "(a[i]&1)!=0", "(a[i]&1)==1"]
+          explanation: >-
+            `a[i] & 1` is non-zero exactly for odd entries, negative ones
+            included. Writing `a[i] % 2 == 1` here drops every negative odd
+            value from the sum — a bug that passes the sample and dies on test 7.
+
+  # ---------------------------------------------------------------- stage 1
+  - id: stage-clear-lowest-set
+    order: 1
+    trial_problem_ids: [bit-count-signals]
+    secret:
+      id: clear-lowest-set
+      name: Clearing the Lowest Set Bit
+      idiom: "n & (n - 1)"
+      memorise: true
+      baseline_drills: 4
+      teaches: >-
+        Subtracting one from n does something very specific: it flips the lowest
+        set bit to 0 and turns every 0 below it into 1. Nothing above that bit
+        moves. AND the two together and every bit they disagree on dies — which
+        is precisely the lowest set bit and the run of ones borrowed beneath it.
+        One subtraction and one AND remove the rightmost 1 from a number. This
+        is the engine of half of bit manipulation: it turns "loop over 32 bits"
+        into "loop over the set bits", and it hands you the power-of-two test
+        for free, because a power of two has exactly one bit to remove.
+      demonstrations:
+        - expression: "12 & 11"
+          result: "8"
+          note: "12 = 1100, 11 = 1011. The AND is 1000 = 8: the lowest 1 is gone."
+        - expression: "40 & 39"
+          result: "32"
+          note: "40 = 101000, 39 = 100111. Only bit 5 survives: 100000 = 32."
+        - expression: "16 & 15"
+          result: "0"
+          note: >-
+            16 = 10000 has exactly one set bit, so removing it leaves nothing.
+            That is the power-of-two test.
+        - expression: "0 & -1"
+          result: "0"
+          note: >-
+            n = 0 gives n - 1 = -1 = all ones, and 0 & -1 = 0. Zero passes the
+            power-of-two test while being no such thing. Guard it.
+        - expression: "12 & -12"
+          result: "4"
+          note: >-
+            A different tool, kept close by so you never confuse them: `n & -n`
+            ISOLATES the lowest set bit (12 = 1100 gives 100 = 4), while
+            `n & (n - 1)` REMOVES it.
+      watch_out:
+        - warning: "`(n & (n - 1)) == 0` calls 0 a power of two."
+          why: >-
+            0 has no set bits, so there is nothing to clear and the expression is
+            0. The test must be `n > 0 && (n & (n - 1)) == 0`, or `n && !(n & (n - 1))`.
+            This single missing guard is the most common wrong answer to
+            "is it a power of two" ever submitted.
+        - warning: "Never run this on INT_MIN as a signed int."
+          why: >-
+            n - 1 with n = INT_MIN overflows a signed int, which is undefined
+            behaviour — the optimiser is allowed to assume it cannot happen and
+            delete your loop guard. Do bit surgery on `unsigned` or `unsigned
+            long long` and the wraparound is defined.
+        - warning: "`n & (n - 1)` is not `n & -n`."
+          why: >-
+            They differ in every bit but the lowest set one: for 12 the first
+            gives 8 (the rest of the number) and the second gives 4 (the bit
+            itself). Ask yourself which you want — the bit, or everything else —
+            before you type either.
+      drills:
+        - id: clr-eval-12
+          kind: evaluate
+          prompt: "What is 12 & (12 - 1) ?"
+          options: ["0", "4", "8", "12"]
+          answer: "8"
+          explanation: >-
+            12 = 1100 and 11 = 1011; the AND is 1000 = 8. The lowest set bit
+            (value 4) has been removed and bit 3 was left untouched.
+        - id: clr-eval-40
+          kind: evaluate
+          prompt: "What is 40 & 39 ?"
+          options: ["1", "8", "32", "39"]
+          answer: "32"
+          explanation: >-
+            40 = 101000, 39 = 100111. The subtraction flipped bit 3 down and
+            filled the zeros beneath it; the AND wipes all of that, leaving
+            100000 = 32.
+        - id: clr-eval-16
+          kind: evaluate
+          prompt: "What is 16 & 15 ?"
+          options: ["0", "1", "15", "16"]
+          answer: "0"
+          explanation: >-
+            16 = 10000 has a single set bit. Clearing it leaves 0 — which is why
+            `n & (n - 1)` being 0 means "at most one set bit", i.e. a power of
+            two or zero.
+        - id: clr-prop-zero
+          kind: property
+          prompt: "For exactly which non-negative n is n & (n - 1) equal to 0 ?"
+          options:
+            - "n is zero, or n is a power of two"
+            - "n is a power of two, and never for zero"
+            - "n is even"
+            - "n is odd"
+          answer: "n is zero, or n is a power of two"
+          explanation: >-
+            The expression removes one set bit, so the result is 0 exactly when
+            there was at most one bit to remove: powers of two have one, and
+            zero has none. Zero sneaking in through that "at most" is the trap.
+        - id: clr-recall-idiom
+          kind: recall
+          prompt: >-
+            Write the expression that returns n with its lowest set bit removed.
+          answer: "n & (n - 1)"
+          accepts: ["n&(n-1)", "(n&(n-1))", "n&n-1", "(n-1)&n"]
+          explanation: >-
+            `n & (n - 1)`. Memorise the shape, not a story about it: subtract
+            one, AND with the original, the rightmost 1 is gone.
+        - id: clr-trap-pow2
+          kind: trap
+          prompt: >-
+            `bool isPow2(int n) { return (n & (n - 1)) == 0; }` — this passes the
+            samples and fails the judge. What is wrong?
+          options:
+            - "it returns true for n == 0, since 0 & -1 == 0"
+            - "it returns false for n == 1, since 1 has one set bit"
+            - "`==` binds before `&`, so the parentheses change nothing"
+            - "it is wrong for every even n"
+          answer: "it returns true for n == 0, since 0 & -1 == 0"
+          explanation: >-
+            Zero has no set bits, so nothing is cleared and the result is 0. The
+            function must be `return n > 0 && (n & (n - 1)) == 0;`. (n == 1 is
+            handled correctly: 1 & 0 == 0, and 1 = 2^0 really is a power of two.)
+        - id: clr-trap-intmin
+          kind: trap
+          prompt: >-
+            `int n = read(); int c = 0; while (n) { n &= n - 1; ++c; }` — the
+            input may be any 32-bit int. Which input makes this undefined?
+          options:
+            - "n = INT_MIN, because INT_MIN - 1 overflows a signed int"
+            - "n = 0, because the loop body never runs"
+            - "n = -1, because the loop runs 32 times"
+            - "n = 1, because 1 - 1 is 0"
+          answer: "n = INT_MIN, because INT_MIN - 1 overflows a signed int"
+          explanation: >-
+            Signed overflow is undefined behaviour, not wraparound — the
+            compiler may assume it never happens and reshape the loop. n = -1
+            and n = 0 are merely uninteresting (32 iterations and none). Declare
+            the variable `unsigned` and the subtraction is defined for every input.
+        - id: clr-apply-pow2
+          kind: apply
+          prompt: >-
+            Write the full condition, in one expression, that is true exactly
+            when the int n is a power of two.
+          answer: "n > 0 && (n & (n - 1)) == 0"
+          accepts:
+            - "n>0&&(n&(n-1))==0"
+            - "n&&!(n&(n-1))"
+            - "n!=0&&(n&(n-1))==0"
+            - "(n&(n-1))==0&&n>0"
+            - "n>0&&!(n&(n-1))"
+          explanation: >-
+            Two halves, and both are load-bearing: the AND says "at most one set
+            bit", the guard removes zero (and, for signed input, negatives such
+            as INT_MIN, which also clears to 0).
+
+  # ---------------------------------------------------------------- stage 2
+  - id: stage-count-set-bits
+    order: 2
+    trial_problem_ids: [bit-count-signals]
+    secret:
+      id: count-set-bits
+      name: Counting the Set Bits
+      idiom: "__builtin_popcount(n)"
+      memorise: false
+      baseline_drills: 5
+      teaches: >-
+        You now own a tool that removes exactly one set bit. Repeat it until
+        nothing is left and count the repetitions: that count is the number of
+        set bits, the popcount. `while (n) { n &= n - 1; ++c; }` runs once per
+        SET bit, not once per bit — for 1 it runs once where a shifting loop
+        would run thirty-two times. Do not derive it in a contest, though: GCC
+        and Clang give you `__builtin_popcount`, which compiles to a single
+        instruction on any machine built this century. Know the loop so you
+        understand the cost; type the builtin so you keep your minutes.
+      demonstrations:
+        - expression: "__builtin_popcount(13)"
+          result: "3"
+          note: "13 = 1101 — three bits are set."
+        - expression: "12 -> 12 & 11 = 8 -> 8 & 7 = 0"
+          result: "2 iterations"
+          note: >-
+            The loop stops after two passes, and 12 = 1100 indeed has two set
+            bits. The number of iterations IS the popcount.
+        - expression: "__builtin_popcount(255)"
+          result: "8"
+          note: "255 = 11111111. Eight ones, so the clearing loop would run eight times."
+        - expression: "__builtin_popcount(1023)"
+          result: "10"
+          note: "1023 = 2^10 - 1 = 1111111111. A number of the form 2^k - 1 has popcount k."
+        - expression: "__builtin_popcount(1LL << 40)"
+          result: "0"
+          note: >-
+            Wrong answer, and it compiles without a warning. The argument is
+            narrowed to unsigned int, and 2^40 mod 2^32 is 0.
+            `__builtin_popcountll(1LL << 40)` is 1.
+      watch_out:
+        - warning: "`__builtin_popcount` takes an unsigned INT. Feed it a long long and you lose the top 32 bits."
+          why: >-
+            The parameter type forces a silent narrowing conversion, so any bit
+            at position 32 or above is discarded before counting begins. For
+            64-bit values call `__builtin_popcountll`. The same suffix rule
+            applies to `__builtin_ctz` / `__builtin_ctzll` and `__builtin_clz` /
+            `__builtin_clzll`.
+        - warning: "The clearing loop costs O(popcount), a shifting loop costs O(width)."
+          why: >-
+            `while (n) { n &= n - 1; }` touches only the set bits, so a sparse
+            mask is nearly free. `for (int i = 0; i < 32; ++i) c += (n >> i) & 1;`
+            always pays 32 steps. Inside a loop over 2^20 masks that difference
+            is the whole time limit.
+        - warning: "`__builtin_popcount` is a GCC/Clang extension, not standard C++."
+          why: >-
+            On MSVC or a strict judge it may not exist; the C++20 standard
+            spelling is `std::popcount` from `<bit>`, and it refuses signed
+            arguments outright — you must pass an unsigned type. Keep the
+            clearing loop in your head as the portable fallback.
+      drills:
+        - id: pop-eval-100
+          kind: evaluate
+          prompt: "How many set bits does 100 have?"
+          options: ["2", "3", "4", "6"]
+          answer: "3"
+          explanation: >-
+            100 = 64 + 32 + 4 = 1100100, so three bits are set and
+            __builtin_popcount(100) is 3.
+        - id: pop-eval-loop-255
+          kind: evaluate
+          prompt: >-
+            How many times does the body of `while (n) { n &= n - 1; ++c; }` run
+            for n = 255 ?
+          options: ["1", "8", "32", "255"]
+          answer: "8"
+          explanation: >-
+            255 = 11111111 has eight set bits, and each iteration removes exactly
+            one. The loop is O(popcount), not O(32) and certainly not O(n).
+        - id: pop-eval-1023
+          kind: evaluate
+          prompt: "What is __builtin_popcount(1023) ?"
+          options: ["1", "9", "10", "1023"]
+          answer: "10"
+          explanation: >-
+            1023 = 2^10 - 1 = 1111111111 — ten consecutive ones. Every number of
+            the form 2^k - 1 is k ones, which makes such numbers useful full masks.
+        - id: pop-prop-iterations
+          kind: property
+          prompt: >-
+            Running `while (n) { n &= n - 1; ++c; }` on n = 40 leaves c = 2.
+            What does that 2 tell you about 40 ?
+          options:
+            - "40 has exactly two set bits (40 = 101000)"
+            - "40 is divisible by two twice"
+            - "40 needs two bytes to store"
+            - "40 is the second power of two above 32"
+          answer: "40 has exactly two set bits (40 = 101000)"
+          explanation: >-
+            Each iteration deletes exactly one set bit and the loop ends at zero,
+            so the iteration count is the popcount. 40 = 32 + 8, two bits.
+        - id: pop-prop-cost
+          kind: property
+          prompt: >-
+            Compare `while (n) { n &= n - 1; ++c; }` with
+            `for (int i = 0; i < 32; ++i) c += (n >> i) & 1;` on n = 1024.
+          options:
+            - "the clearing loop runs once, the shifting loop runs 32 times; both give 1"
+            - "both run 32 times, but the first is written more briefly"
+            - "the clearing loop runs 1024 times"
+            - "they disagree: the clearing loop gives 1, the shifting loop gives 11"
+          answer: "the clearing loop runs once, the shifting loop runs 32 times; both give 1"
+          explanation: >-
+            1024 = 2^10 has a single set bit, so the clearing loop finishes in
+            one pass while the shifting loop dutifully inspects all 32 positions.
+            Same answer, very different cost on sparse masks.
+        - id: pop-recall-64
+          kind: recall
+          prompt: >-
+            Name the builtin that counts the set bits of a 64-bit value in one call.
+          answer: "__builtin_popcountll"
+          accepts: ["__builtin_popcountll", "__builtin_popcountll(x)", "__builtin_popcountll(n)"]
+          explanation: >-
+            The `ll` suffix takes an unsigned long long. Without it the argument
+            is cut down to 32 bits and every high bit is counted as absent.
+        - id: pop-trap-narrow
+          kind: trap
+          prompt: >-
+            `long long m = 1LL << 40; cout << __builtin_popcount(m);` prints 0.
+            Why?
+          options:
+            - "the argument is narrowed to unsigned int, and 2^40 has no bits below position 32"
+            - "__builtin_popcount cannot accept a variable, only a literal"
+            - "1LL << 40 is undefined behaviour, so anything may print"
+            - "popcount counts zero bits, and 2^40 has none set below bit 40"
+          answer: "the argument is narrowed to unsigned int, and 2^40 has no bits below position 32"
+          explanation: >-
+            The parameter is `unsigned int`, so m is truncated modulo 2^32 to 0
+            before the count happens — silently, with no warning at default
+            settings. Use `__builtin_popcountll(m)`, which prints 1.
+        - id: pop-apply-loop
+          kind: apply
+          prompt: >-
+            Write the loop that counts the set bits of unsigned n into an
+            already-declared counter c, using no builtins.
+          answer: "while (n) { n &= n - 1; ++c; }"
+          accepts:
+            - "while(n){n&=n-1;++c;}"
+            - "while(n){n&=n-1;c++;}"
+            - "while(n!=0){n&=n-1;++c;}"
+            - "for(;n;n&=n-1)++c;"
+          explanation: >-
+            Each pass removes the lowest remaining set bit, so the number of
+            passes equals the number of set bits. This is the portable fallback
+            when a judge lacks the GCC builtins.
+
+  # ---------------------------------------------------------------- stage 3
+  - id: stage-masks-as-sets
+    order: 3
+    trial_problem_ids: [bit-mask-crew]
+    secret:
+      id: masks-as-sets
+      name: Masks Are Sets
+      idiom: "1 << k"
+      memorise: true
+      baseline_drills: 6
+      teaches: >-
+        Stop seeing an integer as a quantity. See it as a row of switches: bit k
+        is set if item k is in your set, clear if it is not. `1 << k` is the
+        single switch for item k, and with it you own the whole vocabulary —
+        `(mask >> k) & 1` asks, `mask |= 1 << k` adds, `mask &= ~(1 << k)`
+        removes, `mask ^= 1 << k` toggles. Then the reason this matters:
+        an n-element set has 2^n subsets, and the integers 0 .. (1 << n) - 1
+        ARE those subsets, each exactly once. A loop over subsets becomes a loop
+        over integers. This is how a problem about twenty crew members with
+        twenty conflicting duties becomes a million cheap array lookups.
+      demonstrations:
+        - expression: "1 << 5"
+          result: "32"
+          note: "100000 — a single switch, at position 5, counting from 0 at the right."
+        - expression: "(37 >> 2) & 1"
+          result: "1"
+          note: >-
+            37 = 100101, so bits 0, 2 and 5 are set. Shifting bit 2 down to the
+            bottom and masking gives a clean 0/1 answer: item 2 is present.
+        - expression: "37 & (1 << 3)"
+          result: "0"
+          note: "1 << 3 = 8, and 37 = 100101 has bit 3 clear, so the test yields 0 — absent."
+        - expression: "37 & (1 << 2)"
+          result: "4"
+          note: >-
+            Present — but the value is 4, not 1. `mask & (1 << k)` returns 0 or
+            2^k. Test it against 0, never against 1.
+        - expression: "37 | (1 << 1)"
+          result: "39"
+          note: "Adding item 1: 100101 becomes 100111 = 39."
+        - expression: "37 & ~(1 << 0)"
+          result: "36"
+          note: "Removing item 0: ~1 is ...11111110, which clears the bottom bit. 37 - 1 = 36."
+        - expression: "37 ^ (1 << 5)"
+          result: "5"
+          note: "Toggling item 5, which was present: 100101 becomes 000101 = 5."
+        - expression: "1 << 20"
+          result: "1048576"
+          note: >-
+            The number of subsets of a 20-element set — about a million, which
+            is a perfectly reasonable loop bound. 1 << 25 is not.
+      watch_out:
+        - warning: "`1 << 31` and beyond do not fit a positive int."
+          why: >-
+            `1` is a signed int, so the shift is done in int: bit 31 lands on the
+            sign bit (undefined behaviour before C++20, INT_MIN after) and any
+            shift of 32 or more is undefined in every standard. Write `1u << 31`
+            or `1LL << k` the moment k can reach 31.
+        - warning: "Shifting by a count >= the width of the type is undefined behaviour."
+          why: >-
+            It is not "zero" and not "wrap the count", however your machine
+            happened to behave last time — the hardware often shifts by k mod 32,
+            so `1 << 32` may quietly produce 1. For a 40-element subset loop the
+            bound must be `1LL << n`, and the mask variable must be long long.
+        - warning: "`if (mask & (1 << k) == 1)` is a dead branch for every k > 0."
+          why: >-
+            `==` binds tighter than `&`, so it reads `mask & ((1 << k) == 1)`,
+            which is `mask & 0` unless k is 0. Two separate lessons collide here:
+            fix the precedence, and remember the test yields 2^k, not 1. Write
+            `if (mask & (1 << k))` or `if ((mask >> k) & 1)`.
+        - warning: "`~(1 << k)` on an int is a negative number, and that is fine — mixing widths is not."
+          why: >-
+            `mask &= ~(1 << k)` on a long long mask computes ~ in 32-bit int and
+            then sign-extends it, which happens to work; but `mask |= 1 << k`
+            with k >= 31 sets the wrong bits entirely. Keep the literal's type
+            equal to the mask's type: `1LL << k`.
+      drills:
+        - id: msk-eval-shift6
+          kind: evaluate
+          prompt: "What is 1 << 6 ?"
+          options: ["12", "32", "64", "128"]
+          answer: "64"
+          explanation: >-
+            `1 << k` is 2^k, so 1 << 6 = 64 = 1000000. Shifting left by k moves
+            the single bit up k positions, appending k zeros.
+        - id: msk-eval-test-bit
+          kind: evaluate
+          prompt: "With mask = 37, what is mask & (1 << 2) ?"
+          options: ["0", "1", "4", "37"]
+          answer: "4"
+          explanation: >-
+            37 = 100101 has bit 2 set, and 1 << 2 = 4, so the AND is 4 — the
+            value of the bit, not a boolean 1. This is why the idiom is compared
+            against 0, and why `(mask >> k) & 1` is preferred when you want 0/1.
+        - id: msk-eval-clear-bit
+          kind: evaluate
+          prompt: "With mask = 26, what is mask & ~(1 << 3) ?"
+          options: ["16", "18", "24", "26"]
+          answer: "18"
+          explanation: >-
+            26 = 11010, so bits 1, 3 and 4 are set. ~(1 << 3) is all ones except
+            bit 3, so the AND removes the value 8: 26 - 8 = 18 = 10010.
+        - id: msk-eval-subset-count
+          kind: evaluate
+          prompt: "How many iterations does `for (int m = 0; m < (1 << 20); ++m)` perform?"
+          options: ["20", "400", "1048576", "1073741824"]
+          answer: "1048576"
+          explanation: >-
+            2^20 = 1048576, one iteration per subset of a 20-element set. That is
+            a million passes — cheap if the body is O(1) or O(n), fatal if it is
+            another 2^n loop.
+        - id: msk-prop-enumerate
+          kind: property
+          prompt: >-
+            In `for (int m = 0; m < (1 << n); ++m)`, what does the integer m
+            represent?
+          options:
+            - "one subset of the n items, with bit k set when item k is chosen"
+            - "the number of items chosen so far"
+            - "the index of the item currently being considered"
+            - "a permutation of the n items"
+          answer: "one subset of the n items, with bit k set when item k is chosen"
+          explanation: >-
+            The integers 0 .. 2^n - 1 are in exact one-to-one correspondence with
+            the subsets of an n-element set. Counting up therefore visits every
+            subset once, in an order where m grows with its highest chosen item.
+        - id: msk-recall-set-bit
+          kind: recall
+          prompt: "Write the statement that adds item k to the set held in mask."
+          answer: "mask |= 1 << k"
+          accepts: ["mask|=1<<k", "mask|=(1<<k)", "mask=mask|(1<<k)", "mask|=1ll<<k"]
+          explanation: >-
+            OR sets the bit and leaves every other bit untouched — and it is
+            idempotent, so adding an item already present changes nothing.
+        - id: msk-trap-eq-precedence
+          kind: trap
+          prompt: >-
+            `if (mask & (1 << k) == 1) { /* item k present */ }` never fires for
+            k = 3. What is wrong?
+          options:
+            - "`==` binds tighter than `&`, so it reads mask & ((1 << k) == 1), i.e. mask & 0"
+            - "1 << k must be written as 1 << (k - 1)"
+            - "& cannot appear inside an if condition without a cast"
+            - "the mask must be unsigned or the AND yields a negative value"
+          answer: "`==` binds tighter than `&`, so it reads mask & ((1 << k) == 1), i.e. mask & 0"
+          explanation: >-
+            The comparison is evaluated first and is false for every k except 0,
+            so the condition collapses to mask & 0 = 0. Even parenthesised
+            correctly, `(mask & (1 << k)) == 1` is still wrong for k > 0: the
+            value is 2^k. Use `if (mask & (1 << k))` or `if ((mask >> k) & 1)`.
+        - id: msk-trap-shift40
+          kind: trap
+          prompt: >-
+            n can be 40. `long long total = 0; for (long long m = 0; m < (1 << n); ++m) ...`
+            What breaks?
+          options:
+            - "`1 << n` is computed in int, and shifting an int by 40 is undefined behaviour"
+            - "the loop variable must be int to be compared against 1 << n"
+            - "long long cannot hold 2^40"
+            - "nothing breaks; it merely runs slowly"
+          answer: "`1 << n` is computed in int, and shifting an int by 40 is undefined behaviour"
+          explanation: >-
+            Assigning to a long long does not change how the right-hand side is
+            evaluated: the literal 1 is an int, so the shift happens in 32 bits.
+            You need `1LL << n`. (And then admit the deeper problem — 2^40
+            iterations will not finish either way.)
+        - id: msk-apply-submasks
+          kind: apply
+          prompt: >-
+            Write the for-loop header that enumerates every non-empty submask s
+            of the mask m.
+          answer: "for (int s = m; s; s = (s - 1) & m)"
+          accepts:
+            - "for(ints=m;s;s=(s-1)&m)"
+            - "for(ints=m;s>0;s=(s-1)&m)"
+            - "for(ints=m;s!=0;s=(s-1)&m)"
+            - "for(s=m;s;s=(s-1)&m)"
+          explanation: >-
+            `(s - 1) & m` is the next smaller submask: subtracting one borrows
+            through the bits below, and the AND snaps the result back inside m.
+            The loop stops at 0, so the empty submask must be handled separately.
+            Over all m this costs 3^n in total, not 4^n.
+
+  # ---------------------------------------------------------------- stage 4
+  - id: stage-xor-cancellation
+    order: 4
+    trial_problem_ids: [bit-xor-relic, bit-parity-lanterns]
+    secret:
+      id: xor-cancellation
+      name: Cancellation
+      idiom: "a ^ b"
+      memorise: true
+      baseline_drills: 4
+      teaches: >-
+        XOR has two properties and the second one is the weapon: `n ^ n` is 0,
+        and `n ^ 0` is n. A value XOR-ed in twice leaves no trace at all. XOR is
+        also commutative and associative, so the ORDER in which values arrive is
+        irrelevant — you may fold an entire array into one accumulator and every
+        value that appeared an even number of times cancels itself out. That is
+        how you find the one unpaired element in an array of a million numbers
+        with a single int of memory and one pass. No map, no sort, no second
+        array. The same cancellation gives you prefix XOR over ranges, exactly
+        as prefix sums do, because XOR is its own inverse.
+      demonstrations:
+        - expression: "5 ^ 5"
+          result: "0"
+          note: "Identical bits everywhere, so every column differs from itself nowhere: 0."
+        - expression: "5 ^ 0"
+          result: "5"
+          note: "0 is the identity. This is why an XOR accumulator must start at 0."
+        - expression: "5 ^ 3"
+          result: "6"
+          note: "101 ^ 011 = 110. A column is 1 exactly when the two bits disagree."
+        - expression: "4 ^ 7 ^ 4"
+          result: "7"
+          note: "The two 4s cancel even though they are not adjacent — order does not matter."
+        - expression: "2 ^ 3 ^ 5 ^ 2 ^ 3"
+          result: "5"
+          note: >-
+            The pairs annihilate and the lone value walks out untouched. This is
+            the whole 'find the unpaired element' technique, in one line.
+        - expression: "1 ^ 2 ^ 3"
+          result: "0"
+          note: >-
+            A warning wrapped in a demonstration: 1 ^ 2 = 3, and 3 ^ 3 = 0. A
+            zero result does NOT prove the array was empty of odd occurrences.
+      watch_out:
+        - warning: "`^` has LOWER precedence than `==`, `<` and every comparison."
+          why: >-
+            `if (a ^ b == 0)` is read as `a ^ (b == 0)`, which for b != 0 is just
+            a — a condition that is true whenever a is non-zero, and never the
+            equality you wanted. Parenthesise every XOR you compare.
+        - warning: "`cout << a ^ b;` does not compile, and the reason is precedence again."
+          why: >-
+            `<<` binds tighter than `^`, so it parses as `(cout << a) ^ b` —
+            XOR of an ostream with an int. Write `cout << (a ^ b)`. The same trap
+            bites `cout << a & 1`.
+        - warning: "The unpaired-element trick needs every OTHER value to appear an even number of times."
+          why: >-
+            Cancellation is pairwise: three copies of a value leave one copy
+            behind and pollute the answer. If the statement says "every other
+            element appears three times", XOR alone is the wrong tool — you must
+            count bits modulo 3 instead.
+        - warning: "XOR-swapping a[i] with a[j] destroys the value when i == j."
+          why: >-
+            `a[i] ^= a[j]` with i == j is `x ^= x`, which is 0, and the remaining
+            two steps can never recover it. std::swap has no such failure mode
+            and compiles to the same instructions. Do not be clever here.
+      drills:
+        - id: xor-eval-pair
+          kind: evaluate
+          prompt: "What is 9 ^ 9 ^ 4 ?"
+          options: ["0", "4", "9", "13"]
+          answer: "4"
+          explanation: >-
+            9 ^ 9 = 0 and 0 ^ 4 = 4. The pair annihilates and the identity leaves
+            the survivor untouched — the two rules working together.
+        - id: xor-eval-6-3
+          kind: evaluate
+          prompt: "What is 6 ^ 3 ?"
+          options: ["2", "5", "7", "9"]
+          answer: "5"
+          explanation: >-
+            110 ^ 011 = 101 = 5. Bit 2 is set in one operand only, bit 1 is set
+            in both (so it cancels), bit 0 is set in one only.
+        - id: xor-eval-fold
+          kind: evaluate
+          prompt: "What is 2 ^ 3 ^ 5 ^ 2 ^ 3 ?"
+          options: ["0", "3", "5", "15"]
+          answer: "5"
+          explanation: >-
+            XOR is commutative and associative, so reorder to (2 ^ 2) ^ (3 ^ 3) ^ 5
+            = 0 ^ 0 ^ 5 = 5. The order values arrive in never matters.
+        - id: xor-prop-unpaired
+          kind: property
+          prompt: >-
+            Every value in an array appears exactly twice except one. You XOR all
+            n values together. What do you hold?
+          options:
+            - "the value that appears once"
+            - "the number of distinct values"
+            - "the sum of the values, modulo 2"
+            - "zero, since almost everything cancels"
+          answer: "the value that appears once"
+          explanation: >-
+            Each pair contributes x ^ x = 0, and 0 is the identity, so only the
+            unpaired value survives. One int of memory, one pass, no hash map —
+            and it works for values up to 10^9 just as well as small ones.
+        - id: xor-recall-accumulate
+          kind: recall
+          prompt: >-
+            An accumulator `int x = 0;` scans the array. Write the single
+            statement inside the loop that finds the unpaired value.
+          answer: "x ^= a[i]"
+          accepts: ["x^=a[i]", "x=x^a[i]", "x^=a[i];", "x^=v"]
+          explanation: >-
+            Fold every element in with XOR. The accumulator MUST start at 0,
+            because 0 is the identity — starting at a[0] and then looping from
+            i = 0 XORs the first element twice and cancels it away.
+        - id: xor-trap-precedence
+          kind: trap
+          prompt: >-
+            `if (x ^ 0 == 5) cout << "found";` fires for almost every x. Why?
+          options:
+            - "`==` binds tighter than `^`, so it reads x ^ (0 == 5), which is x ^ 0, i.e. x"
+            - "^ means exponentiation, so x^0 is 1"
+            - "XOR with 0 is undefined for negative x"
+            - "the comparison happens last, so the branch tests 5"
+          answer: "`==` binds tighter than `^`, so it reads x ^ (0 == 5), which is x ^ 0, i.e. x"
+          explanation: >-
+            0 == 5 is false = 0, so the condition becomes plain x — true for every
+            non-zero x. XOR sits near the bottom of the precedence table, below
+            every comparison. Write `if ((x ^ 0) == 5)`.
+        - id: xor-trap-triples
+          kind: trap
+          prompt: >-
+            "Every element appears three times except one; find it." A solution
+            XORs everything into one accumulator. What happens?
+          options:
+            - "three copies leave one copy behind, so the result is polluted by every value"
+            - "it works, since 3 is odd and XOR only cares about parity of the answer"
+            - "it works only if the array is sorted first"
+            - "the accumulator overflows"
+          answer: "three copies leave one copy behind, so the result is polluted by every value"
+          explanation: >-
+            x ^ x ^ x = x, not 0 — cancellation is pairwise, so it only erases
+            EVEN multiplicities. For triples you count each bit position modulo 3
+            (or keep two accumulators). Read the multiplicity in the statement
+            before you reach for XOR.
+        - id: xor-apply-missing
+          kind: apply
+          prompt: >-
+            The array a[0..n-2] holds all but one of the numbers 1..n, each once.
+            Write the expression, using an accumulator x already XOR-ed with
+            every array element and with every value 1..n, that gives the missing
+            number.
+          answer: "x"
+          accepts: ["x", "x^0", "0^x"]
+          explanation: >-
+            Every present number is XOR-ed in twice — once from the array, once
+            from the 1..n sweep — and cancels. Only the missing number appears an
+            odd number of times, so the accumulator IS the answer. No subtraction,
+            so no overflow worry when n reaches 10^6.
+
+final_test_problem_ids:
+  - bit-parity-lanterns
+  - bit-mask-crew
+  - bit-count-signals
+  - bit-xor-relic

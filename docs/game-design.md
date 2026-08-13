@@ -463,6 +463,28 @@ FAMILY (30) → SECRET (~90) → ARCHETYPE → VARIANT → BOSS
 Regions after the Plains open **in parallel**. The prerequisite DAG already
 implemented drives this — you are never made to grind an unrelated region.
 
+### The masters
+
+Naming convention: **`<Rank> <Name>, <Epithet>` — Master of `<Domain>`**. Ranks
+are never repeated, so the rank alone tells you who is speaking. All names are
+original; none references an existing franchise.
+
+| Region | Master | Character |
+|---|---|---|
+| The Village | **Elder Vhast, the Unhurried** | Master of Foundations — complexity, C++, estimation. Patient in a way none of the others are. |
+| Plains of Arrays | **Warden Ilsa Korrin, the Straight Line** | Master of Arrays. Blunt. Believes most problems are simpler than the student wants them to be. |
+| Halls of Search | **Adjudicator Sevrin Kol, the Halving** | Master of Search. Cold, precise, obsessed with efficiency. *"Your solution works. But it is slow."* |
+| Vault of Structures | **Grandmaster Ragine, Keeper of the Thirty-Two** | Master of Bits. Finds decimal thinking sentimental. |
+| Vault of Structures | **Keeper Maelin Vore, the Ledger** | Master of Structures — heaps, ordered sets, Fenwick, segment trees. Records everything, forgives nothing. |
+| Ridge of Greed | **Strategist Dovan Rhe, the Exchange** | Master of Greed. Will not accept an answer without a proof that the local choice is safe. |
+| Forest of Trees | **Sage Orenna Thal, the Rooted** | Master of Trees. Speaks in questions. |
+| Sea of Graphs | **Warlord Thessaly Grune, the Unbridged** | Master of Graphs. Aggressive and unforgiving. *"You know BFS. But do you know when BFS is wrong?"* |
+| The Forbidden Art | **Archivist Nym Solvane, the State** | Master of Dynamic Programming. Impossible to impress. *"Define what dp[i] actually means."* |
+| Temple of Numbers | **Oracle Cassiun, the Remainder** | Master of Mathematics. Talks past the student as often as to them. |
+| Library of Strings | **Scribe Halvern Ash, the Prefix** | Master of Strings. Quiet, meticulous, faintly amused. |
+| Summit of the Seven | **The Seven Nameless** | Legendary bosses. They have no names because they are not teachers. |
+| — | **THE ELITE CODER** | The final boss. Gives you a problem. Nothing more. |
+
 ### Arcs
 
 | Arc | Regions | New mechanic |

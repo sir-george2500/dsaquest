@@ -1,7 +1,7 @@
 {
   "id": "master_bits",
   "name": "MASTER OF BIT MANIPULATION",
-  "title": "Sevrin Kol, Keeper of the Thirty-Two",
+  "title": "Grandmaster Ragine, Keeper of the Thirty-Two",
   "region": "vault-of-structures",
   "pattern": "bit-manipulation",
   "personality": {
@@ -10,9 +10,9 @@
     "praise_threshold": 0.85
   },
   "gate": {
-    "recognition": 0.80,
+    "recognition": 0.8,
     "understanding": 0.75,
-    "implementation": 0.80,
+    "implementation": 0.8,
     "retention": 0.75
   },
   "placeholders": {

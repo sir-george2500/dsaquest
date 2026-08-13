@@ -83,6 +83,12 @@ confusable_with:
       Does the answer require the chosen elements to be adjacent? If it does,
       you need a window; a frequency map knows how many, never where.
     mistake_code: PATTERN_WINDOW_OVER_HASH
+  - pattern_id: bit-manipulation
+    tell: >-
+      Are you storing how many times each of unboundedly many values appeared,
+      or merely which members of a fixed universe of at most twenty are present?
+      Counting occurrences needs a map; membership over a tiny universe is one
+      integer, because a bitmask IS the set and has no room for a count.
 
 invariant: >-
   At the moment index i is examined, the map holds the tally of exactly the
