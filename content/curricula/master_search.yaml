@@ -1,0 +1,1212 @@
+# Adjudicator Sevrin Kol's teaching plan.
+#
+# Six secrets across two patterns: three that make a search over a sorted
+# container exact, and three that make a search over an INVENTED answer legal.
+# Every index in every demonstration has been evaluated, not remembered.
+# The final test names nothing.
+
+master_id: master_search
+patterns:
+  - binary-search
+  - binary-search-answer
+title: Adjudicator Sevrin Kol, the Halving — Six Secrets of the Vanishing Half
+
+opening: >-
+  Your solution works. I have read it. It walks the list from the front, one
+  element at a time, and on the sample it is indistinguishable from mine. On the
+  real input it performs four times ten to the tenth operations and the judge
+  stops it at two seconds. You did not write a wrong answer. You wrote a slow
+  one, which the judge scores identically. Order is information: a list that
+  arrives sorted has already told you where things are not, and refusing to
+  spend that information is the single most expensive habit you have. Six
+  secrets. The first three make the probe exact. The last three let you probe a
+  range that does not exist yet — a speed, a capacity, a deadline you invent and
+  then test. Learn them in order. I will not advance you on effort.
+
+stages:
+  # ---------------------------------------------------------------- stage 0
+  - id: stage-half-open-invariant
+    order: 0
+    pattern: binary-search
+    trial_problem_ids: []
+    secret:
+      id: half-open-invariant
+      name: The Half-Open Range
+      idiom: "[lo, hi)"
+      memorise: true
+      baseline_drills: 4
+      teaches: >-
+        Most people do not lose binary search to the algorithm. They lose it to
+        the ends, and they lose it because they never decided what `hi` means.
+        Decide once, here, and never think about it again: the range is
+        half-open, `lo` is a candidate for the answer and `hi` is NOT — it is one
+        past the last candidate. So `hi` starts at n, not at n - 1, and when
+        `lo == hi` the range is empty and that shared value IS the answer. The
+        reason hi starts at n is not aesthetic. "Every element is smaller than x"
+        is a real outcome, and its answer is index n; a range that stops at
+        n - 1 has nowhere to put it and will hand you n - 1 instead, silently.
+        The invariant you maintain is one sentence: everything before lo is
+        proven too small, everything from hi onward is proven not-too-small.
+      demonstrations:
+        - expression: "A = {1,2,2,2,5,7,7,9}, n = 8 — first index with A[i] >= 5"
+          result: "4"
+          note: >-
+            lo=0 hi=8, mid=4, A[4]=5 which is not < 5, so hi=4. Now lo=0 hi=4,
+            mid=2, A[2]=2 < 5, so lo=3. Now lo=3 hi=4, mid=3, A[3]=2 < 5, so
+            lo=4. lo == hi == 4, and A[4] = 5. Three probes, not eight steps.
+        - expression: "same array — first index with A[i] >= 10"
+          result: "8"
+          note: >-
+            Every element is smaller, so lo walks all the way up to n = 8. That
+            is a legal, meaningful answer meaning `absent, and larger than
+            everything`. It is exactly what a returned end() iterator means.
+        - expression: "same array with hi initialised to n - 1 = 7 — first index with A[i] >= 10"
+          result: "7"
+          note: >-
+            The identical loop now returns 7, and A[7] = 9 is not >= 10. Nothing
+            crashed and nothing warned. One wrong initial bound turned a correct
+            algorithm into a confident lie.
+        - expression: "range width per iteration, n = 8"
+          result: "8 -> 4 -> 2 -> 1 -> 0"
+          note: >-
+            The width at least halves every pass, so the loop runs at most
+            ceil(log2(n + 1)) = 4 times for n = 8. There are n + 1 possible
+            answers, 0 through n, which is why it is n + 1 and not n.
+        - expression: "loop exit condition"
+          result: "lo == hi"
+          note: >-
+            The range is empty. Return lo. Do not return mid — mid holds
+            whichever index you probed last, which is not the boundary.
+      watch_out:
+        - warning: "`hi = n - 1` with `hi = mid` and `while (lo < hi)` cannot represent `not found`."
+          why: >-
+            The answer space has n + 1 slots (before every element, and after the
+            last), but the range [0, n-1] has only n. The overflow slot is the
+            one that gets crushed, so every query larger than the maximum reports
+            n - 1. On {1,2,2,2,5,7,7,9} a search for 10 returns 7 instead of 8 —
+            and the sample, whose queries are always in range, passes.
+        - warning: "`while (lo <= hi)` with a half-open hi is two bugs at once."
+          why: >-
+            When lo == hi the body runs again with mid == lo; the branch that
+            writes `hi = mid` leaves hi untouched, so the loop never ends. And if
+            that shared value is n, the probe reads a[n], one past the end of the
+            array. Half-open ranges use `<`. Inclusive ranges use `<=`. Never mix
+            the two halves of a convention.
+        - warning: "Returning `mid` after the loop instead of `lo`."
+          why: >-
+            The loop terminates on the range being empty, not on mid landing
+            anywhere useful. mid is whatever you last probed — usually adjacent
+            to the answer, which is why this bug is off by exactly one and only
+            sometimes. lo and hi are equal at exit; that value is the boundary.
+        - warning: "The invariant is only true if the array is partitioned by the same comparator that sorted it."
+          why: >-
+            Bisection assumes the predicate `A[i] < x` is false-then-true across
+            the range. On a descending array it is true-then-false, so half the
+            range is discarded on the wrong evidence. The loop still terminates,
+            still returns an index, and the index is meaningless.
+      drills:
+        - id: ho-eval-first-ge-5
+          kind: evaluate
+          prompt: >-
+            A = {1,2,2,2,5,7,7,9} with indices 0..7. The half-open loop for
+            `first index with A[i] >= 5` ends with lo == hi. What is that value?
+          options: ["3", "4", "5", "8"]
+          answer: "4"
+          explanation: >-
+            Trace it: mid=4 gives A[4]=5, not smaller than 5, so hi=4; mid=2
+            gives 2 < 5, so lo=3; mid=3 gives 2 < 5, so lo=4. lo == hi == 4, and
+            A[4] is indeed the first element that is at least 5.
+        - id: ho-eval-absent-large
+          kind: evaluate
+          prompt: >-
+            Same array A = {1,2,2,2,5,7,7,9}, n = 8. What does the half-open
+            search for `first index with A[i] >= 10` return?
+          options: ["-1", "7", "8", "it is undefined"]
+          answer: "8"
+          explanation: >-
+            Every element is below 10, so lo is pushed all the way to n = 8. That
+            is not an error value — it is the position where 10 would be
+            inserted, and it is the whole reason hi starts at n rather than n-1.
+        - id: ho-prop-invariant
+          kind: property
+          prompt: >-
+            Mid-search the range is [lo, hi). What is known about the two ends?
+          options:
+            - "lo may still be the answer; hi may not — everything from hi onward is already proven"
+            - "both lo and hi are still candidates, which is why the loop stops when they meet"
+            - "hi may still be the answer; lo has already been rejected"
+            - "neither is a candidate; the answer is strictly between them"
+          answer: "lo may still be the answer; hi may not — everything from hi onward is already proven"
+          explanation: >-
+            That asymmetry is the entire convention. Rejecting mid means excluding
+            it, so `lo = mid + 1`; accepting mid means it is still a candidate and
+            everything above is settled, so `hi = mid` and not `mid - 1`.
+        - id: ho-trap-inclusive-hi
+          kind: trap
+          prompt: >-
+            `int lo = 0, hi = n - 1; while (lo < hi) { int mid = lo + (hi - lo) / 2;
+            if (a[mid] < x) lo = mid + 1; else hi = mid; } return lo;` — on
+            {1,2,2,2,5,7,7,9} with x = 10 it returns 7. What is wrong?
+          options:
+            - "hi starts at n - 1, so the answer `n` for `larger than everything` has no index to land on"
+            - "the rejecting branch should be `lo = mid`, not `lo = mid + 1`"
+            - "`while (lo < hi)` should be `while (lo <= hi)` whenever hi is n - 1"
+            - "nothing is wrong; 7 is the correct answer, since a[7] = 9 is the largest element"
+          answer: "hi starts at n - 1, so the answer `n` for `larger than everything` has no index to land on"
+          explanation: >-
+            There are n + 1 possible answers and only n slots in [0, n-1], so the
+            overflow answer is clamped to n - 1. Every other query is correct,
+            which is why this survives the sample and dies on the test containing
+            a value above the maximum. Initialise hi = n.
+        - id: ho-trap-le-condition
+          kind: trap
+          prompt: >-
+            `int lo = 0, hi = n; while (lo <= hi) { int mid = lo + (hi - lo) / 2;
+            if (a[mid] < x) lo = mid + 1; else hi = mid; }` — what happens?
+          options:
+            - "when lo == hi the body runs again with mid == lo, `hi = mid` changes nothing, and it spins forever"
+            - "it is correct but does one wasted iteration at the end"
+            - "it reads a[-1] whenever x is smaller than every element"
+            - "`lo = mid + 1` can never fire, so lo stays 0"
+          answer: "when lo == hi the body runs again with mid == lo, `hi = mid` changes nothing, and it spins forever"
+          explanation: >-
+            An empty half-open range is lo == hi, so `<=` grants one extra pass
+            over a range that no longer exists — and the accepting branch is a
+            no-op there. Worse, if that shared value is n, the probe reads a[n],
+            past the end. Half-open ranges loop on `<`.
+        - id: ho-recall-bounds
+          kind: recall
+          prompt: >-
+            Write the initialisation and the loop header of the half-open binary
+            search over an array of n elements.
+          answer: "int lo = 0, hi = n; while (lo < hi)"
+          accepts:
+            - "intlo=0,hi=n;while(lo<hi)"
+            - "intlo=0;inthi=n;while(lo<hi)"
+            - "lo=0,hi=n;while(lo<hi)"
+            - "lo=0;hi=n;while(lo<hi)"
+            - "intlo=0,hi=n;while(lo<hi){"
+          explanation: >-
+            hi = n, never n - 1, and the loop condition is `<`, never `<=`. Those
+            two characters are the whole convention; every other line of the
+            search follows from them.
+        - id: ho-apply-branches
+          kind: apply
+          prompt: >-
+            Inside that loop, with `int mid = lo + (hi - lo) / 2;` already
+            written, give the if/else that finds the first index with a[i] >= x.
+          answer: "if (a[mid] < x) lo = mid + 1; else hi = mid;"
+          accepts:
+            - "if(a[mid]<x)lo=mid+1;elsehi=mid;"
+            - "if(a[mid]<x)lo=mid+1;elsehi=mid"
+            - "if(a[mid]>=x)hi=mid;elselo=mid+1;"
+            - "if(a[mid]>=x)hi=mid;elselo=mid+1"
+          explanation: >-
+            Rejecting mid excludes it, hence the +1; accepting mid keeps it as a
+            candidate, hence `hi = mid`. Change the single character `<` to `<=`
+            and the same loop returns the first index with a[i] > x instead —
+            that is upper_bound, and it is the only difference between them.
+
+  # ---------------------------------------------------------------- stage 1
+  - id: stage-lower-upper-bound
+    order: 1
+    pattern: binary-search
+    trial_problem_ids: [ice-core-age-block, burst-window-tally]
+    secret:
+      id: lower-upper-bound
+      name: The Two Boundaries
+      idiom: "std::lower_bound / std::upper_bound"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        You have written the loop. Now stop writing it. `lower_bound(first, last,
+        x)` returns the first position whose value is not less than x, and
+        `upper_bound` returns the first position whose value is strictly greater.
+        When x is PRESENT they straddle its block; when x is ABSENT they are the
+        same position — the place x would be inserted to keep the order — and
+        that is a useful answer, not a failure. Learn what falls out of the pair.
+        The number of occurrences of x is `upper_bound(x) - lower_bound(x)`, with
+        no +1 and no -1 anywhere. The number of values in [l, r] is
+        `upper_bound(r) - lower_bound(l)`, by the same subtraction. Successor is
+        lower_bound; predecessor is the position before upper_bound. Half of all
+        counting problems on sorted data are one line of this.
+      demonstrations:
+        - expression: "A = {1,2,2,2,5,7,7,9}; lower_bound(A, 2) - A.begin()"
+          result: "1"
+          note: "The first index whose value is not less than 2. A[0] = 1 is less; A[1] = 2 is not."
+        - expression: "upper_bound(A, 2) - A.begin()"
+          result: "4"
+          note: "The first index whose value is strictly greater than 2, which is A[4] = 5."
+        - expression: "count of 2 = 4 - 1"
+          result: "3"
+          note: "The block of 2s occupies indices 1, 2 and 3. The subtraction needs no adjustment."
+        - expression: "lower_bound(A, 3) - A.begin()"
+          result: "4"
+          note: >-
+            3 is ABSENT. The answer is not -1 and not end(): it is the insertion
+            point, index 4, where a 3 would go. upper_bound(A, 3) is also 4, so
+            the count comes out 4 - 4 = 0, exactly as it should.
+        - expression: "lower_bound(A, 10) - A.begin()"
+          result: "8, which is A.end()"
+          note: >-
+            Only when x exceeds EVERY element does lower_bound return end().
+            Dereferencing that iterator is undefined behaviour. Absent does not
+            mean end(); above the maximum does.
+        - expression: "upper_bound(A, 7) - lower_bound(A, 2)"
+          result: "7 - 1 = 6"
+          note: >-
+            Values in the closed range [2, 7]: the six elements 2, 2, 2, 5, 7, 7.
+            Two boundaries, one subtraction — no scan, and no +1 to get wrong.
+        - expression: "prev(upper_bound(A, 6)) - A.begin()"
+          result: "4"
+          note: >-
+            The largest element not exceeding 6. upper_bound(6) is index 5
+            (A[5] = 7 is the first above 6), and stepping back one lands on
+            A[4] = 5. This is the predecessor idiom.
+      watch_out:
+        - warning: "lower_bound returns end() when every element is smaller — dereferencing it is undefined behaviour."
+          why: >-
+            The return value is a position, and `one past the last` is a legal
+            position with no element behind it. `*lower_bound(all(a), x)` on a
+            query above the maximum reads memory the vector does not own:
+            segfault if you are lucky, garbage if you are not. Always compare the
+            iterator with end() before you dereference it.
+        - warning: "`prev(upper_bound(...))` for `largest element <= x` is undefined when the iterator is begin()."
+          why: >-
+            If x is smaller than every element, upper_bound returns begin(), and
+            stepping back from begin() walks off the front. On
+            {1,2,2,2,5,7,7,9} a query of 0 does exactly this. Test
+            `it != a.begin()` first; there simply is no predecessor to report.
+        - warning: "std::lower_bound on a std::set is O(n). The member .lower_bound() is O(log n)."
+          why: >-
+            The free algorithm needs random-access iterators to jump to a
+            midpoint. A set's iterators are bidirectional, so std::advance walks
+            node by node: still only log n comparisons, but O(n) pointer hops.
+            It compiles, it returns the right answer, and it turns 2*10^5 queries
+            into a quadratic wall clock. Write `s.lower_bound(x)`.
+        - warning: "lower_bound and upper_bound differ by one character, and the difference is the multiplicity of x."
+          why: >-
+            lower_bound is `first >= x`, upper_bound is `first > x`. Swap them in
+            a counting formula and every answer shifts by the number of copies of
+            the boundary value — zero on data with no duplicates, which is why
+            this passes half the tests and none of the interesting ones.
+        - warning: "The range must be sorted by the same comparator you pass in."
+          why: >-
+            lower_bound only requires the range to be PARTITIONED with respect to
+            `elem < x`, so on a descending vector it does not fail loudly — it
+            discards the wrong half and returns a position with no meaning. If
+            you sorted with a custom comparator, pass that same comparator here.
+      drills:
+        - id: lub-eval-lower-2
+          kind: evaluate
+          prompt: >-
+            A = {1,2,2,2,5,7,7,9}. What is `lower_bound(A.begin(), A.end(), 2) - A.begin()` ?
+          options: ["0", "1", "3", "4"]
+          answer: "1"
+          explanation: >-
+            lower_bound is the FIRST position not less than x. A[0] = 1 is less
+            than 2, A[1] = 2 is not, so the answer is 1 — the left edge of the
+            block of 2s, never its right edge.
+        - id: lub-eval-upper-2
+          kind: evaluate
+          prompt: >-
+            Same array. What is `upper_bound(A.begin(), A.end(), 2) - A.begin()` ?
+          options: ["1", "3", "4", "5"]
+          answer: "4"
+          explanation: >-
+            upper_bound is the first position STRICTLY greater than x. Indices 1,
+            2 and 3 all hold 2; index 4 holds 5. Note it is one past the last 2,
+            not the last 2 itself — which is what makes the subtraction clean.
+        - id: lub-eval-absent-3
+          kind: evaluate
+          prompt: >-
+            Same array A = {1,2,2,2,5,7,7,9}, and 3 does not occur.
+            What is `lower_bound(A.begin(), A.end(), 3) - A.begin()` ?
+          options: ["-1", "3", "4", "8"]
+          answer: "4"
+          explanation: >-
+            Absence is not signalled. You get the insertion point — index 4,
+            where A[4] = 5 is the first value at least 3. To test presence you
+            must also check that the position is not end() AND that the element
+            there equals 3.
+        - id: lub-eval-count-7
+          kind: evaluate
+          prompt: >-
+            Same array. How many times does 7 occur, computed as
+            upper_bound(7) - lower_bound(7) ?
+          options: ["0", "1", "2", "3"]
+          answer: "2"
+          explanation: >-
+            lower_bound(7) is index 5 and upper_bound(7) is index 7, so
+            7 - 5 = 2 — the elements A[5] and A[6]. The subtraction of two
+            half-open boundaries is always the exact count, with no adjustment.
+        - id: lub-prop-absent
+          kind: property
+          prompt: >-
+            x does not occur in the sorted vector, but is smaller than the
+            largest element. What does lower_bound return?
+          options:
+            - "the insertion point — the first element strictly greater than x"
+            - "end(), because x was not found"
+            - "the last element smaller than x"
+            - "an unspecified position; the result is only defined when x is present"
+          answer: "the insertion point — the first element strictly greater than x"
+          explanation: >-
+            lower_bound answers `first not less than x`, which for an absent x is
+            the first element above it — the position where x would be inserted.
+            It returns end() only when x exceeds every element, which is a
+            different situation and the one that makes dereferencing unsafe.
+        - id: lub-trap-deref-end
+          kind: trap
+          prompt: >-
+            `auto it = lower_bound(a.begin(), a.end(), x); cout << *it;` — correct
+            on every sample, crashes on the last test. What is the mechanism?
+          options:
+            - "when x exceeds every element lower_bound returns end(), and dereferencing end() is undefined behaviour"
+            - "lower_bound returns a const iterator, so `*it` reads uninitialised memory"
+            - "lower_bound requires the vector to be sorted descending"
+            - "the vector must be non-empty, and the samples happened to be empty"
+          answer: "when x exceeds every element lower_bound returns end(), and dereferencing end() is undefined behaviour"
+          explanation: >-
+            end() is a valid position with no element behind it. On
+            {1,2,2,2,5,7,7,9} a query of 10 lands there. Samples rarely contain a
+            query above the maximum, which is precisely why this bug survives to
+            the judge. Guard with `if (it != a.end())`.
+        - id: lub-trap-set-free-function
+          kind: trap
+          prompt: >-
+            `set<int> s; ... for (int q : queries) cout << *lower_bound(s.begin(), s.end(), q);`
+            — the answers are all correct and it TLEs at n = q = 2*10^5. Why?
+          options:
+            - "set iterators are bidirectional, so the free algorithm walks node by node: O(n) per query, not O(log n)"
+            - "std::lower_bound cannot be used on a set at all, so it falls back to a linear scan by design"
+            - "the set must be re-sorted before each query"
+            - "dereferencing a set iterator is O(log n), and doing it q times is quadratic"
+          answer: "set iterators are bidirectional, so the free algorithm walks node by node: O(n) per query, not O(log n)"
+          explanation: >-
+            The algorithm still performs only O(log n) comparisons, but reaching
+            each midpoint costs O(n) increments without random access. The member
+            `s.lower_bound(q)` descends the tree in O(log n) and is the same
+            number of keystrokes. This is the classic TLE that looks algorithmic
+            and is not.
+        - id: lub-recall-count
+          kind: recall
+          prompt: >-
+            Write the expression giving the number of occurrences of x in the
+            sorted vector a.
+          answer: "upper_bound(a.begin(), a.end(), x) - lower_bound(a.begin(), a.end(), x)"
+          accepts:
+            - "upper_bound(a.begin(),a.end(),x)-lower_bound(a.begin(),a.end(),x)"
+            - "upper_bound(all(a),x)-lower_bound(all(a),x)"
+            - "ub-lb"
+            - "upper_bound-lower_bound"
+            - "equal_range"
+            - "auto[l,r]=equal_range(a.begin(),a.end(),x);r-l"
+          explanation: >-
+            Two half-open boundaries, subtracted. It is correct when x is absent
+            (both are the same position, giving 0) and needs no +1 ever.
+            `equal_range` returns the same pair in one call and one probe budget.
+        - id: lub-apply-range-count
+          kind: apply
+          prompt: >-
+            Write the expression counting how many values of the sorted vector a
+            lie in the closed interval [l, r].
+          answer: "upper_bound(a.begin(), a.end(), r) - lower_bound(a.begin(), a.end(), l)"
+          accepts:
+            - "upper_bound(a.begin(),a.end(),r)-lower_bound(a.begin(),a.end(),l)"
+            - "upper_bound(all(a),r)-lower_bound(all(a),l)"
+            - "ub(r)-lb(l)"
+          explanation: >-
+            upper_bound on the RIGHT end because r is included; lower_bound on the
+            LEFT end for the same reason. On {1,2,2,2,5,7,7,9} with [2,7] that is
+            7 - 1 = 6. Swapping which side gets which function is the standard way
+            to be off by the multiplicity of a boundary value.
+
+  # ---------------------------------------------------------------- stage 2
+  - id: stage-mid-without-overflow
+    order: 2
+    pattern: binary-search
+    trial_problem_ids: [tram-next-departure, anthology-page-lookup]
+    secret:
+      id: mid-without-overflow
+      name: The Midpoint That Cannot Overflow
+      idiom: "lo + (hi - lo) / 2"
+      memorise: true
+      baseline_drills: 3
+      teaches: >-
+        `(lo + hi) / 2` is arithmetic you learned as a child and it is wrong here.
+        The sum can leave the type before the division ever happens, and signed
+        overflow in C++ is undefined behaviour, not wraparound — the optimiser is
+        permitted to assume it cannot occur. `lo + (hi - lo) / 2` computes the
+        same value by taking half of the WIDTH and adding it back, and the width
+        never exceeds either bound. Type it always, including on arrays of 200000
+        elements where it genuinely cannot overflow, because the identical
+        skeleton is about to run over values instead of indices — times to 10^9,
+        sums to 10^14, answers to 10^18 — and you will not want to be deciding.
+        Know one more thing about it: it rounds DOWN, toward lo. For a two-wide
+        range the midpoint is lo itself, so a branch that writes `lo = mid` moves
+        nothing and the loop never ends.
+      demonstrations:
+        - expression: "int lo = 2000000000, hi = 2100000000; (lo + hi) / 2"
+          result: "-97483648"
+          note: >-
+            lo + hi = 4100000000, which is past INT_MAX = 2147483647. Wrapped into
+            32 bits that is -194967296, and halving gives -97483648 — an index far
+            outside any array. It is also undefined behaviour, so the compiler
+            owed you nothing.
+        - expression: "int lo = 2000000000, hi = 2100000000; lo + (hi - lo) / 2"
+          result: "2050000000"
+          note: >-
+            hi - lo = 100000000, half of that is 50000000, added back onto lo.
+            Every intermediate value stays between lo and hi, so nothing can leave
+            the type.
+        - expression: "lo = 3, hi = 4: lo + (hi - lo) / 2"
+          result: "3"
+          note: >-
+            The midpoint of a two-wide range is its LEFT end. This is not a flaw,
+            it is the rounding; but it means `lo = mid` here assigns 3 to 3.
+        - expression: "lo = 3, hi = 4: lo + (hi - lo + 1) / 2"
+          result: "4"
+          note: >-
+            The round-up midpoint. Needed exactly when the accepting branch is
+            `lo = mid` — the maximise-the-minimum shape — so that lo can move.
+        - expression: "search width 200000 vs. answer range 10^18"
+          result: "18 probes vs. 60 probes"
+          note: >-
+            log2(200000) is about 17.6 and log2(10^18) is about 59.8. The range
+            being a trillion times larger costs three times the work. That is the
+            whole economics of bisection.
+      watch_out:
+        - warning: "`lo = mid` with the round-down midpoint never terminates when hi - lo == 1."
+          why: >-
+            mid = lo + (hi - lo) / 2 equals lo when the range is two wide, so
+            `lo = mid` writes lo back to itself and hi does not move either. The
+            loop spins at 100% CPU forever. It cannot happen until the range has
+            narrowed to two, so every small test passes and the verdict is TLE,
+            not wrong answer — which sends you hunting for a complexity problem
+            that does not exist.
+        - warning: "On indices of a 2*10^5 array `(lo + hi) / 2` really cannot overflow — and that is the trap."
+          why: >-
+            You learn the habit on safe data and then reuse the skeleton on
+            values. The tram timetable runs to 10^9; the anthology has 10^14
+            pages; a bisected answer runs to 10^18. Two of those overflow int and
+            one is close enough to LLONG_MAX to matter. Write the safe form every
+            time and the question never comes up.
+        - warning: "`lo + (hi - lo) / 2` is safe only while lo <= hi and the difference itself fits."
+          why: >-
+            The subtraction is the thing you are trusting. With a negative lo and
+            a large positive hi, hi - lo can overflow just as the sum would. For
+            index searches and for answer ranges over non-negative quantities —
+            which is nearly everything — the form is unconditionally safe; if
+            your bounds can straddle zero at full magnitude, widen the type.
+        - warning: "`int mid = lo + (hi - lo) / 2;` with long long lo and hi."
+          why: >-
+            The arithmetic is done correctly in 64 bits and then truncated into
+            mid on assignment, silently. The predicate then judges a completely
+            different candidate from the one the loop believes it tested. Declare
+            mid with the same type as the bounds.
+      drills:
+        - id: mid-eval-overflow
+          kind: evaluate
+          prompt: >-
+            `int lo = 2000000000, hi = 2100000000;` — what does `(lo + hi) / 2`
+            produce on a machine that wraps 32-bit ints?
+          options: ["2050000000", "-97483648", "4100000000", "2147483647"]
+          answer: "-97483648"
+          explanation: >-
+            The sum 4100000000 exceeds INT_MAX = 2147483647 and wraps to
+            -194967296; halving gives -97483648. And since signed overflow is
+            undefined behaviour, a different compiler may produce something else
+            entirely — you are not owed the wraparound.
+        - id: mid-eval-two-wide
+          kind: evaluate
+          prompt: "With lo = 3 and hi = 4, what is `lo + (hi - lo) / 2` ?"
+          options: ["3", "4", "0", "7"]
+          answer: "3"
+          explanation: >-
+            (4 - 3) / 2 is 0 by integer division, so mid = 3 = lo. The midpoint of
+            a two-wide range is always its left end. Everything about round-up
+            midpoints and infinite loops follows from this one fact.
+        - id: mid-prop-round-up
+          kind: property
+          prompt: "When must the midpoint be written `lo + (hi - lo + 1) / 2` ?"
+          options:
+            - "when the accepting branch writes `lo = mid`, so that lo can still move at width 2"
+            - "when hi is larger than 2^31, to avoid overflow"
+            - "when the array contains duplicates"
+            - "whenever the loop condition is `while (lo < hi)`"
+          answer: "when the accepting branch writes `lo = mid`, so that lo can still move at width 2"
+          explanation: >-
+            Round toward the end that the accepting branch moves. `hi = mid`
+            pairs with rounding down; `lo = mid` pairs with rounding up. Pair
+            them the other way and you get an infinite loop at width 2 — not a
+            wrong answer, a hang.
+        - id: mid-trap-infinite-loop
+          kind: trap
+          prompt: >-
+            `while (lo < hi) { long long mid = lo + (hi - lo) / 2; if (can(mid)) lo = mid; else hi = mid - 1; }`
+            — the program prints nothing and is killed on time. What is wrong?
+          options:
+            - "at hi == lo + 1 the midpoint is lo, so `lo = mid` moves nothing and the loop spins"
+            - "`hi = mid - 1` skips a candidate, so the answer comes out one too small"
+            - "can(mid) is being called on an unsorted range"
+            - "mid should be int, not long long"
+          answer: "at hi == lo + 1 the midpoint is lo, so `lo = mid` moves nothing and the loop spins"
+          explanation: >-
+            The accepting branch keeps mid, so the midpoint must round UP:
+            `lo + (hi - lo + 1) / 2`. The hang only appears once the range
+            narrows to two elements and can(lo) is true, so tiny tests finish
+            normally and the judge reports TLE with the process pinned at 100%.
+        - id: mid-recall-midpoint
+          kind: recall
+          prompt: >-
+            Write the overflow-safe midpoint for the loop whose accepting branch
+            is `hi = mid`.
+          answer: "lo + (hi - lo) / 2"
+          accepts:
+            - "lo+(hi-lo)/2"
+            - "(lo+(hi-lo)/2)"
+            - "lo+(hi-lo)/2;"
+            - "mid=lo+(hi-lo)/2"
+            - "intmid=lo+(hi-lo)/2"
+          explanation: >-
+            Half of the WIDTH, added back onto lo. It stays inside [lo, hi] at
+            every step, so no intermediate value can leave the type, and it
+            rounds down toward lo — which is exactly what `hi = mid` wants.
+        - id: mid-apply-round-up
+          kind: apply
+          prompt: >-
+            Write the midpoint for the maximise-the-minimum loop, whose accepting
+            branch is `lo = mid` and whose rejecting branch is `hi = mid - 1`.
+          answer: "lo + (hi - lo + 1) / 2"
+          accepts:
+            - "lo+(hi-lo+1)/2"
+            - "(lo+(hi-lo+1)/2)"
+            - "mid=lo+(hi-lo+1)/2"
+            - "lo+(hi+1-lo)/2"
+          explanation: >-
+            The +1 makes the division round up, so at hi == lo + 1 the midpoint is
+            hi and lo genuinely advances. Still overflow-safe: the largest
+            intermediate is hi - lo + 1, not lo + hi.
+
+  # ---------------------------------------------------------------- stage 3
+  - id: stage-monotone-predicate
+    order: 3
+    pattern: binary-search-answer
+    trial_problem_ids: [cider-press-rate]
+    secret:
+      id: monotone-predicate
+      name: The Monotone Predicate
+      idiom: "bool can(long long x)"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        Here the array disappears. There is nothing sorted to probe, and mid is
+        no longer an index — it is a candidate ANSWER you invented: a rate, a
+        capacity, a deadline. The search only becomes legal if you can write a
+        function `can(x)` that answers yes or no, and if that function is
+        MONOTONE: once it flips from false to true it must never flip back. That
+        is not a detail, it is the entire licence to bisect. Bisection works by
+        discarding half the range on the evidence of one probe, and it may only
+        do so if one probe really does settle a whole half. A predicate that
+        flips twice has no boundary to find, and the loop will still terminate,
+        still return a number, and still be wrong. So before you write the loop,
+        say the sentence out loud: raising x can only make this easier. If you
+        cannot prove that sentence, you do not have this pattern.
+      demonstrations:
+        - expression: "crates {3,6,7,11}, H = 8 hours; can(r) = sum of ceil(w/r) <= 8; can(3)"
+          result: "false"
+          note: "Hours = 1 + 2 + 3 + 4 = 10, which is more than 8. A rate of 3 does not finish the shift."
+        - expression: "same crates; can(4)"
+          result: "true"
+          note: "Hours = 1 + 2 + 2 + 3 = 8, exactly the budget. So 4 is feasible."
+        - expression: "can(1), can(2), can(3), can(4), can(5), can(6) ..."
+          result: "F F F T T T ..."
+          note: >-
+            Hours are 27, 15, 10, 8, 8, 6. The count never rises as r rises, so
+            the predicate flips exactly once, at r = 4 — and 4 is the answer. One
+            flip is what makes the boundary meaningful.
+        - expression: "exhibits {7,2,5,10,8}, g = 2 guides; can(L) = fewest blocks of sum <= L is at most 2; can(17)"
+          result: "false"
+          note: "Greedy blocks: [7,2,5] = 14, then [10] = 10, then [8] = 8. Three blocks, and only two guides."
+        - expression: "same exhibits; can(18)"
+          result: "true"
+          note: >-
+            Greedy blocks: [7,2,5] = 14, then [10,8] = 18. Two blocks. So 18 is
+            feasible and 17 is not — the answer is 18.
+        - expression: "can(x) = `some subset of {3, 5} sums to exactly x`; can(3), can(4), can(5)"
+          result: "T F T"
+          note: >-
+            The counter-example. `exactly` is not monotone: the reachable sums are
+            0, 3, 5, 8, so true and false interleave. Bisecting this returns
+            whichever point the halving happens to land on, with total confidence
+            and no meaning.
+      watch_out:
+        - warning: "A predicate phrased `exactly k` is almost never monotone."
+          why: >-
+            Bisection needs one flip. `at most k parts` is monotone in the ceiling;
+            `exactly k parts` is not, because raising the ceiling eventually lets
+            you use FEWER parts and the predicate goes false again. Rewrite the
+            question as at-most or at-least before you search, or accept that
+            there is no boundary to find.
+        - warning: "Getting the direction backwards costs you the whole range, not one index."
+          why: >-
+            Minimise-the-maximum predicates run false-then-true, so you want the
+            first true and the loop is `hi = mid` / `lo = mid + 1`.
+            Maximise-the-minimum predicates run true-then-false, so you want the
+            last true and the loop is `lo = mid` / `hi = mid - 1` with the round-up
+            midpoint. Run the wrong loop and you converge on the wrong end of the
+            range — no crash, no hang, just a confidently wrong number.
+        - warning: "can() must be OPTIMAL, not merely plausible."
+          why: >-
+            The greedy inside the predicate has to achieve the best possible
+            outcome for that x — the FEWEST blocks under ceiling L, the MOST
+            sensors at separation d. A greedy that is merely reasonable reports
+            infeasible for some feasible x, moving the flip point, and the
+            bisection converges precisely to the wrong boundary. The search is
+            never more correct than can().
+        - warning: "Arithmetic inside can() is where the pattern actually dies."
+          why: >-
+            Hours per crate is ceil(w / r), not w / r. Integer division rounds
+            down, so on {3,6,7,11} with H = 8 the buggy predicate reports 8 hours
+            at r = 3 and the search answers 3 instead of 4. The predicate is still
+            monotone, so nothing hangs and nothing crashes — it just answers a
+            different question, perfectly.
+        - warning: "can() must be cheap and stateless."
+          why: >-
+            It runs 30 to 60 times. Sorting inside it turns O(n log R) into
+            O(n log n log R); leaving a modified array or a stale accumulator
+            behind makes later calls disagree with earlier ones, which destroys
+            monotonicity from the inside. Sort once, before the loop.
+      drills:
+        - id: mono-eval-cider-r3
+          kind: evaluate
+          prompt: >-
+            Crates of {3, 6, 7, 11} kg, press rate r = 3 kg per hour, one crate
+            per hour at most. How many hours does the shift take?
+          options: ["8", "9", "10", "27"]
+          answer: "10"
+          explanation: >-
+            Each crate costs ceil(w / r) hours: ceil(3/3)=1, ceil(6/3)=2,
+            ceil(7/3)=3, ceil(11/3)=4, totalling 10. The partial hour at the end
+            of a crate is still a whole hour, which is why it is a ceiling.
+        - id: mono-eval-cider-r4
+          kind: evaluate
+          prompt: >-
+            Same crates {3, 6, 7, 11}, now with r = 4. How many hours?
+          options: ["6", "7", "8", "10"]
+          answer: "8"
+          explanation: >-
+            ceil(3/4)=1, ceil(6/4)=2, ceil(7/4)=2, ceil(11/4)=3, totalling 8. With
+            a budget of H = 8 this is feasible, and since r = 3 needed 10, the
+            predicate flips at exactly 4 — that is the answer.
+        - id: mono-eval-museum-17
+          kind: evaluate
+          prompt: >-
+            Exhibits {7, 2, 5, 10, 8} in this fixed order. With a ceiling of 17
+            minutes per guide, how many consecutive blocks does the greedy sweep
+            need?
+          options: ["2", "3", "4", "5"]
+          answer: "3"
+          explanation: >-
+            [7,2,5] = 14 and adding 10 would reach 24, so a new block starts:
+            [10] = 10, and adding 8 would reach 18 > 17, so [8]. Three blocks. At
+            a ceiling of 18 it becomes [7,2,5] and [10,8] — two blocks — which is
+            why 18 is the answer for g = 2.
+        - id: mono-prop-flip
+          kind: property
+          prompt: >-
+            What property must can(x) have for bisecting the answer range to mean
+            anything?
+          options:
+            - "once it flips from false to true it never flips back — there is exactly one boundary"
+            - "it must run in O(1), or the search is too slow to help"
+            - "it must be true for at least half of the range"
+            - "it must return the answer itself, not merely yes or no"
+          answer: "once it flips from false to true it never flips back — there is exactly one boundary"
+          explanation: >-
+            Bisection discards half the range on the evidence of a single probe,
+            which is only sound if one probe settles that entire half. Cost
+            matters for the time limit; monotonicity matters for correctness, and
+            without it the loop still terminates and still lies.
+        - id: mono-trap-exactly-k
+          kind: trap
+          prompt: >-
+            A solution bisects x on the predicate `some subset of the weights sums
+            to exactly x`. With weights {3, 5}, what goes wrong?
+          options:
+            - "the reachable sums are 0, 3, 5, 8, so the predicate flips several times and there is no boundary to find"
+            - "subset sums are too slow to compute, so the search times out"
+            - "the predicate is monotone but the bounds are wrong"
+            - "nothing; bisection handles any predicate as long as it is deterministic"
+          answer: "the reachable sums are 0, 3, 5, 8, so the predicate flips several times and there is no boundary to find"
+          explanation: >-
+            can(3) is true, can(4) is false, can(5) is true. Discarding half the
+            range on one probe assumes the half is settled, and here it is not.
+            The loop still ends and still returns a number — that number just
+            means nothing. `exactly` must become `at most` or `at least` first.
+        - id: mono-trap-floor-division
+          kind: trap
+          prompt: >-
+            can(r) is written `long long h = 0; for (int w : ws) h += w / r; return h <= H;`
+            for the press problem. On {3,6,7,11} with H = 8 the search answers 3
+            instead of 4. Why?
+          options:
+            - "integer division rounds down, so a crate needing a partial hour is charged nothing for it"
+            - "h should be an int, and the long long conversion breaks the comparison"
+            - "the predicate is not monotone, so the loop converges arbitrarily"
+            - "the crates must be sorted before the sweep"
+          answer: "integer division rounds down, so a crate needing a partial hour is charged nothing for it"
+          explanation: >-
+            At r = 3 the true cost is 1+2+3+4 = 10 hours, but w / r gives
+            1+2+2+3 = 8 and the predicate wrongly accepts. Write
+            `(w + r - 1) / r`. Note the failure mode: still monotone, so nothing
+            hangs — the search converges perfectly onto the wrong boundary.
+        - id: mono-recall-monotone
+          kind: recall
+          prompt: >-
+            State, as a one-line condition on can, the precondition that makes
+            bisecting the answer legal.
+          answer: "if can(x) then can(x + 1)"
+          accepts:
+            - "ifcan(x)thencan(x+1)"
+            - "can(x)impliescan(x+1)"
+            - "can(x)=>can(x+1)"
+            - "monotone"
+            - "falsethentrue,neverback"
+            - "can(x)->can(x+1)"
+          explanation: >-
+            Feasibility, once gained, is never lost as x rises. The mirror form
+            for maximise-the-minimum is `if can(x) then can(x - 1)`. Either way
+            the predicate has exactly one flip, and that flip is the answer.
+        - id: mono-apply-cider-predicate
+          kind: apply
+          prompt: >-
+            Write the accumulation line inside can(r) for the press problem: the
+            hours crate w costs at rate r, added into `long long h`.
+          answer: "h += (w + r - 1) / r"
+          accepts:
+            - "h+=(w+r-1)/r"
+            - "h+=(w+r-1)/r;"
+            - "h+=w/r+(w%r>0)"
+            - "h+=(w-1)/r+1"
+            - "h+=ceil(w,r)"
+          explanation: >-
+            `(w + r - 1) / r` is integer ceiling division without touching a
+            double. The partial hour at the end of a crate is charged in full,
+            which is what the statement says and what plain `w / r` silently
+            refuses to do.
+
+  # ---------------------------------------------------------------- stage 4
+  - id: stage-answer-space-bounds
+    order: 4
+    pattern: binary-search-answer
+    trial_problem_ids: [museum-guide-split]
+    secret:
+      id: answer-space-bounds
+      name: Bounds That Contain the Answer
+      idiom: "lo = min possible, hi = max possible"
+      memorise: false
+      baseline_drills: 4
+      teaches: >-
+        The predicate tells you how to judge a candidate. The bounds decide which
+        candidates you will ever judge, and if the answer is not inside [lo, hi]
+        the loop returns the nearest bound — no crash, no hang, no warning. So
+        choose them by argument, not by instinct: lo an obviously infeasible or
+        minimal legal value, hi an obviously feasible one. For splitting exhibits
+        among guides, lo is max(t) because no ceiling below the largest single
+        exhibit can ever work, and hi is sum(t) because one guide taking
+        everything always works. Be generous: each doubling of the range costs
+        one extra iteration, so a bound ten times too wide is free. Be legal,
+        though — a bound must be something can() can actually evaluate. Then
+        return the end your loop maintained: with `hi = mid` you return lo, the
+        smallest feasible x; with `lo = mid` and the round-up midpoint you return
+        lo, the largest feasible x. Never return mid.
+      demonstrations:
+        - expression: "exhibits {7,2,5,10,8}, g = 2: lo = max(t), hi = sum(t)"
+          result: "lo = 10, hi = 32"
+          note: >-
+            No ceiling below 10 can work, since the 10-minute exhibit cannot be
+            split. A ceiling of 32 always works, since one guide can take the lot.
+            The answer, 18, lies strictly inside.
+        - expression: "same problem with hi = max(t) = 10 instead, and g = 1"
+          result: "returns 10"
+          note: >-
+            The true answer for one guide is 32. The loop terminates cleanly and
+            reports the clamped bound. This is the failure mode of bad bounds:
+            confident, silent, and wrong.
+        - expression: "can(9) for the same exhibits"
+          result: "false for every g"
+          note: >-
+            A single 10-minute exhibit exceeds the ceiling, so no arrangement
+            exists. Starting lo at 1 instead of max(t) forces can() to detect this
+            itself — and a greedy that merely opens a new block when the current
+            one is full will happily place that exhibit alone and report 4 blocks,
+            which for g = 4 wrongly reads as feasible.
+        - expression: "press problem: lo = 1, hi = max(w) = 11"
+          result: "1 and 11"
+          note: >-
+            r = 0 is not a rate at all — can(0) divides by zero — so lo is 1. At
+            r = max(w) every crate empties within one hour, giving n hours, and
+            n <= H is guaranteed. Obviously feasible, so it is a legal hi.
+        - expression: "loom problem: hi = k * min(t), with k = 5 and t = {2,3}"
+          result: "10"
+          note: >-
+            By second 10 the fastest loom alone has produced 5 bracelets, so hi is
+            certainly feasible. In the real constraints that is 10^9 * 10^9 =
+            10^18, which is why the multiplication must be done in long long.
+        - expression: "while (lo < hi) { mid = lo + (hi - lo) / 2; if (can(mid)) hi = mid; else lo = mid + 1; } return lo;"
+          result: "the smallest feasible x"
+          note: >-
+            lo and hi are equal at exit, so which variable you name does not
+            matter; what matters is that the initial hi was feasible. If it was
+            not, the loop returns it anyway.
+      watch_out:
+        - warning: "Bounds that exclude the answer make the search return a wrong value confidently."
+          why: >-
+            Bisection cannot leave [lo, hi]; it converges to the nearest end
+            instead. `hi = max(a)` for split-the-array is the standard instance —
+            correct for large g, wrong the moment g = 1, where the answer is
+            sum(a). Nothing about the run looks abnormal.
+        - warning: "`int hi = accumulate(a.begin(), a.end(), 0);`"
+          why: >-
+            2*10^5 values near 10^9 sum to 2*10^14, which does not fit an int, and
+            the initial value `0` makes std::accumulate return int no matter what
+            you assign it to. hi comes out negative, can(hi) is false, and the
+            invariant is broken before the first iteration. Use `0LL`.
+        - warning: "lo = 1 when 0 is a legal answer."
+          why: >-
+            If the required separation may legitimately be 0, or a machine may
+            legitimately be idle, a lower bound of 1 removes the answer from the
+            range and the loop returns 1. Ask what the SMALLEST legal answer is,
+            not the smallest interesting one.
+        - warning: "Widening a bound is cheap; making it illegal is not."
+          why: >-
+            Each doubling of the range costs one extra probe, so hi = 10^18 in
+            place of a tight bound is thirty extra can() calls and nothing else.
+            But the bound must still be a value can() can evaluate: lo = 0 for the
+            press rate is a division by zero, not a free safety margin.
+        - warning: "Returning `mid` after the loop, or returning `hi` from a loop that maintained lo."
+          why: >-
+            The loop ends because the range is empty, not because mid landed on
+            the answer. In the `hi = mid` form the answer is lo == hi; in the
+            `lo = mid` / `hi = mid - 1` form it is again lo, but only if the
+            midpoint rounded up. Mixing the two conventions is off by one on
+            nearly every test, including the sample.
+      drills:
+        - id: bnd-eval-museum-lo
+          kind: evaluate
+          prompt: >-
+            Exhibits {7, 2, 5, 10, 8} must be split into consecutive blocks. What
+            is the smallest per-guide ceiling L that ANY split could satisfy?
+          options: ["2", "10", "18", "32"]
+          answer: "10"
+          explanation: >-
+            Blocks are consecutive and no exhibit can be divided, so the 10-minute
+            exhibit alone forces L >= 10. That makes max(t) the natural lo — every
+            smaller candidate is infeasible by construction and probing it is
+            wasted work at best.
+        - id: bnd-eval-museum-answer
+          kind: evaluate
+          prompt: >-
+            Same exhibits {7, 2, 5, 10, 8}, g = 2 guides, blocks consecutive.
+            What is the smallest achievable maximum block sum?
+          options: ["14", "17", "18", "32"]
+          answer: "18"
+          explanation: >-
+            At L = 18 the greedy sweep uses two blocks, [7,2,5] = 14 and
+            [10,8] = 18. At L = 17 it needs three: [7,2,5], [10], [8]. The
+            predicate flips between 17 and 18, and the answer is the first
+            feasible value.
+        - id: bnd-prop-hi-choice
+          kind: property
+          prompt: >-
+            For split-into-g-consecutive-blocks, why is hi = sum(t) rather than
+            hi = max(t) ?
+          options:
+            - "hi must be obviously feasible for every g, and with g = 1 the answer is sum(t) itself"
+            - "sum(t) makes the search faster by increasing the number of iterations"
+            - "max(t) can overflow an int, while sum(t) cannot"
+            - "hi must be a value that actually appears among the t[i]"
+          answer: "hi must be obviously feasible for every g, and with g = 1 the answer is sum(t) itself"
+          explanation: >-
+            The upper bound has to be a candidate you can prove works, whatever
+            the input. One guide taking every exhibit always works and costs
+            sum(t). max(t) is the LOWER bound here, and using it as hi excludes
+            the answer for small g.
+        - id: bnd-trap-hi-max
+          kind: trap
+          prompt: >-
+            A split-the-array solution sets `lo = max(a), hi = max(a)` by mistake
+            and bisects. What does the judge see?
+          options:
+            - "it returns max(a) on every test, correct only when that happens to be the answer, with no crash or hang"
+            - "an infinite loop, since lo == hi at the start"
+            - "a runtime error from calling can() on an empty range"
+            - "the correct answer, since bisection re-derives the bounds from the predicate"
+          answer: "it returns max(a) on every test, correct only when that happens to be the answer, with no crash or hang"
+          explanation: >-
+            `while (lo < hi)` is false immediately, so the answer is whatever lo
+            was. Bisection can never leave the range you gave it — it has no way
+            to discover that the answer was outside. Bounds are a proof
+            obligation, not a formality.
+        - id: bnd-trap-accumulate-int
+          kind: trap
+          prompt: >-
+            `int hi = accumulate(a.begin(), a.end(), 0);` with n = 2*10^5 values
+            near 10^9. What breaks?
+          options:
+            - "the sum 2*10^14 overflows int, hi comes out negative, and can(hi) is false before the loop even starts"
+            - "accumulate needs the range to be sorted first"
+            - "accumulate is O(n log n), so this alone causes the TLE"
+            - "nothing; the assignment to int is a narrowing conversion the compiler handles"
+          answer: "the sum 2*10^14 overflows int, hi comes out negative, and can(hi) is false before the loop even starts"
+          explanation: >-
+            The literal `0` fixes std::accumulate's own accumulator type to int,
+            so widening the variable afterwards is too late. Write
+            `long long hi = accumulate(a.begin(), a.end(), 0LL);`. Small tests all
+            pass, which is the signature of every overflow bug.
+        - id: bnd-recall-loop
+          kind: recall
+          prompt: >-
+            Write the loop body for `smallest feasible x`, given lo, hi and can(),
+            and say which variable you return.
+          answer: "while (lo < hi) { mid = lo + (hi - lo) / 2; if (can(mid)) hi = mid; else lo = mid + 1; } return lo;"
+          accepts:
+            - "while(lo<hi){mid=lo+(hi-lo)/2;if(can(mid))hi=mid;elselo=mid+1;}returnlo;"
+            - "while(lo<hi){longlongmid=lo+(hi-lo)/2;if(can(mid))hi=mid;elselo=mid+1;}returnlo;"
+            - "while(lo<hi){mid=lo+(hi-lo)/2;if(can(mid))hi=mid;elselo=mid+1;}returnlo"
+            - "while(lo<hi){mid=lo+(hi-lo)/2;can(mid)?hi=mid:lo=mid+1;}returnlo;"
+          explanation: >-
+            Round-down midpoint paired with `hi = mid`; the rejecting branch
+            excludes mid with the +1. lo and hi meet at the first feasible value,
+            so returning lo is returning hi — provided the initial hi really was
+            feasible.
+        - id: bnd-apply-loom-bounds
+          kind: apply
+          prompt: >-
+            m looms, loom i finishing one bracelet every t[i] seconds, order of k
+            bracelets. Write the initial upper bound on the answer, in seconds.
+          answer: "(long long)k * *min_element(t.begin(), t.end())"
+          accepts:
+            - "(longlong)k**min_element(t.begin(),t.end())"
+            - "1ll*k**min_element(t.begin(),t.end())"
+            - "(longlong)k*mint"
+            - "k*mint"
+            - "1ll*k*mint"
+            - "k*min(t)"
+          explanation: >-
+            By second k * min(t) the single fastest loom has already made k
+            bracelets on its own, so that second is certainly feasible — a bound
+            proven, not guessed. It reaches 10^9 * 10^9 = 10^18, so the
+            multiplication must happen in 64 bits, not be widened afterwards.
+
+  # ---------------------------------------------------------------- stage 5
+  - id: stage-real-valued-bisection
+    order: 5
+    pattern: binary-search-answer
+    trial_problem_ids: [ridge-sensor-spacing, loom-order-deadline]
+    secret:
+      id: real-valued-bisection
+      name: A Fixed Number of Halvings
+      idiom: "for (int it = 0; it < 100; ++it)"
+      memorise: true
+      baseline_drills: 4
+      teaches: >-
+        When the answer is a real number the integer loop has no `+1` to reach
+        for, and beginners replace it with a tolerance: `while (hi - lo > 1e-9)`.
+        Do not. Doubles are not evenly spaced — near 10^12 two ADJACENT doubles
+        differ by about 1.2 * 10^-4, so that condition can never become false and
+        the program spins until the judge kills it. Count iterations instead. One
+        hundred halvings shrink any starting range by a factor of 2^100; on a
+        range of 10^9 that is 8 * 10^-22, far below both the judge's tolerance and
+        the resolution of the type. A double carries 53 bits of mantissa, so after
+        roughly 60 passes lo and hi are already adjacent and the remaining forty
+        change nothing at all — they cost forty predicate calls and buy you the
+        right never to think about this again. Then print with `fixed` and
+        `setprecision`, because the default stream precision is six SIGNIFICANT
+        digits and will render your answer in scientific notation.
+      demonstrations:
+        - expression: "starting range width 10^9, after 100 halvings"
+          result: "about 7.9 * 10^-22"
+          note: >-
+            10^9 / 2^100. No judge asks for better than 10^-6, so the loop has
+            over-delivered by fifteen orders of magnitude and still cost only 100
+            predicate calls.
+        - expression: "gap between adjacent doubles near 10^12"
+          result: "0.0001220703125"
+          note: >-
+            About 1.2 * 10^-4, which is more than 100000 times larger than 1e-9.
+            `while (hi - lo > 1e-9)` at this magnitude is an infinite loop by
+            construction: lo and hi are already touching and the gap cannot shrink.
+        - expression: "gap between adjacent doubles near 10^9"
+          result: "about 1.2 * 10^-7"
+          note: >-
+            Already larger than 1e-9, so even a range that never leaves 10^9 hangs
+            on that epsilon. The threshold at which the trick fails is much lower
+            than people expect.
+        - expression: "useful halvings on a double, range 10^9"
+          result: "about 53"
+          note: >-
+            log2(10^9 / ulp(10^9)) is about 52.9 — the mantissa width. Iterations
+            beyond that are free insurance, not progress, which is exactly why a
+            round 100 is the standard number.
+        - expression: "cost: 100 * O(n) versus the integer search over [1, 10^18]"
+          result: "100 probes versus 60 probes"
+          note: >-
+            log2(10^18) is about 59.8. Sixty and a hundred are the same number
+            against a two-second limit; the predicate is the only thing that ever
+            costs you.
+        - expression: "cout << ans; with ans = 1234567.25"
+          result: "1.23457e+06"
+          note: >-
+            The default stream precision is six SIGNIFICANT digits, not six
+            decimals. `cout << fixed << setprecision(6) << ans;` prints
+            1234567.250000, which is what the judge is parsing for.
+      watch_out:
+        - warning: "`while (hi - lo > 1e-9)` hangs at large magnitudes."
+          why: >-
+            Floating-point spacing grows with magnitude. Near 10^12 adjacent
+            doubles are 1.2 * 10^-4 apart, so once lo and hi are neighbours the
+            difference is still far above 1e-9 and the midpoint equals one of
+            them — the range stops shrinking and the condition stays true forever.
+            It works on the small sample and hangs on the large test.
+        - warning: "Comparing doubles for equality to terminate — `while (lo != hi)` — is worse."
+          why: >-
+            It ends only if the two values become bit-identical, which the
+            midpoint computation may never produce; and if it does, you cannot say
+            in advance after how many iterations. Termination must not be a matter
+            of luck. Never make a loop bound out of floating-point equality.
+        - warning: "An integer accumulator inside a real-valued can() destroys the flip."
+          why: >-
+            If can(double x) computes with `int` or divides two ints, the value
+            being tested is quietly truncated and every x within one unit gives
+            an identical answer. The predicate becomes a step function on the
+            wrong grid, the boundary moves, and the extra precision from 100
+            iterations is precision about the wrong number.
+        - warning: "Use double, never float."
+          why: >-
+            float has a 24-bit mantissa — about seven significant digits — so on
+            an answer near 10^6 it cannot represent 1e-6 at all. The bisection
+            converges perfectly to a value that was already wrong before the loop
+            started. long double is available if a problem truly needs it; float
+            never is.
+        - warning: "The fixed count is not a licence to skip the bounds argument."
+          why: >-
+            100 halvings of the WRONG interval converge beautifully to the wrong
+            end, exactly as in the integer case. lo must still be provably
+            infeasible or minimal, hi provably feasible. Fixing the iteration
+            count only removes the termination question.
+      drills:
+        - id: real-eval-hundred-halvings
+          kind: evaluate
+          prompt: >-
+            A bisection starts with a range of width 10^9 and runs exactly 100
+            halvings. About how wide is the range at the end?
+          options: ["about 10^-7", "about 10^-9", "about 8 * 10^-22", "exactly 0"]
+          answer: "about 8 * 10^-22"
+          explanation: >-
+            10^9 / 2^100 is roughly 7.9 * 10^-22. In truth the double stops
+            improving after about 53 halvings, when lo and hi become adjacent
+            values — but the arithmetic is why 100 is chosen: it is unarguably
+            enough for any tolerance a judge will ask for.
+        - id: real-eval-ulp-1e12
+          kind: evaluate
+          prompt: >-
+            Roughly how far apart are two ADJACENT double values near 10^12 ?
+          options: ["about 10^-16", "about 10^-9", "about 1.2 * 10^-4", "they are exactly equal"]
+          answer: "about 1.2 * 10^-4"
+          explanation: >-
+            A double has 53 bits of mantissa, so the spacing scales with
+            magnitude: near 10^12 it is 2^-13, about 0.000122. Any termination
+            test demanding a gap below 1e-9 at that magnitude is asking for
+            something the type cannot express.
+        - id: real-prop-fixed-count
+          kind: property
+          prompt: >-
+            What does replacing the epsilon condition with a fixed count of 100
+            iterations actually buy you?
+          options:
+            - "termination is guaranteed regardless of magnitude, and the cost is known in advance"
+            - "extra precision beyond what a double can represent"
+            - "protection against a non-monotone predicate"
+            - "the ability to use float instead of double"
+          answer: "termination is guaranteed regardless of magnitude, and the cost is known in advance"
+          explanation: >-
+            The loop runs 100 times whatever the input, so it cannot hang, and the
+            budget is exactly 100 can() calls. It buys nothing about precision
+            past the mantissa and nothing at all about correctness — monotonicity
+            and bounds remain entirely your problem.
+        - id: real-trap-epsilon
+          kind: trap
+          prompt: >-
+            `while (hi - lo > 1e-9) { double mid = (lo + hi) / 2; if (can(mid)) hi = mid; else lo = mid; }`
+            — fine on the sample, TLE on the big test where the answer is near
+            10^12. What is the mechanism?
+          options:
+            - "adjacent doubles near 10^12 differ by about 1.2 * 10^-4, so the gap can never fall below 1e-9"
+            - "can() is being called too many times, so the constant factor kills it"
+            - "`lo = mid` should be `lo = mid + 1`"
+            - "the midpoint should be lo + (hi - lo) / 2 to avoid overflow"
+          answer: "adjacent doubles near 10^12 differ by about 1.2 * 10^-4, so the gap can never fall below 1e-9"
+          explanation: >-
+            Once lo and hi are neighbouring doubles the midpoint rounds to one of
+            them and the range stops shrinking, while the condition stays true —
+            a genuine infinite loop, reported as TLE. Replace the condition with
+            a fixed 100 iterations and the magnitude stops mattering.
+        - id: real-trap-print-precision
+          kind: trap
+          prompt: >-
+            The bisection converges correctly to 1234567.25 and the solution
+            prints `cout << ans;`. The judge marks it wrong. Why?
+          options:
+            - "the default stream precision is six SIGNIFICANT digits, so it prints 1.23457e+06"
+            - "cout cannot print a double without an explicit cast"
+            - "the answer must be rounded to an integer before printing"
+            - "the bisection is wrong; converging to a fraction proves the predicate was not monotone"
+          answer: "the default stream precision is six SIGNIFICANT digits, so it prints 1.23457e+06"
+          explanation: >-
+            Six significant digits, not six decimals — and the default format
+            switches to scientific notation once the exponent grows. Write
+            `cout << fixed << setprecision(6) << ans;` to get 1234567.250000. All
+            that careful convergence, thrown away on the output line.
+        - id: real-recall-loop-header
+          kind: recall
+          prompt: >-
+            Write the loop header of the real-valued bisection, the one that does
+            not terminate on a tolerance.
+          answer: "for (int it = 0; it < 100; ++it)"
+          accepts:
+            - "for(intit=0;it<100;++it)"
+            - "for(inti=0;i<100;++i)"
+            - "for(intit=0;it<100;it++)"
+            - "for(inti=0;i<100;i++)"
+            - "for(intit=0;it<200;++it)"
+          explanation: >-
+            A fixed count. It cannot hang, its cost is exactly 100 predicate
+            calls, and 100 halvings exhaust a double's mantissa nearly twice over.
+            The exact number is not sacred; the absence of a floating-point
+            termination test is.
+        - id: real-apply-loop-body
+          kind: apply
+          prompt: >-
+            Inside that loop, with doubles lo and hi and a monotone can() that is
+            true for large x, write the body that narrows the range.
+          answer: "double mid = (lo + hi) / 2; if (can(mid)) hi = mid; else lo = mid;"
+          accepts:
+            - "doublemid=(lo+hi)/2;if(can(mid))hi=mid;elselo=mid;"
+            - "doublemid=lo+(hi-lo)/2;if(can(mid))hi=mid;elselo=mid;"
+            - "doublemid=(lo+hi)/2;can(mid)?hi=mid:lo=mid;"
+            - "mid=(lo+hi)/2;if(can(mid))hi=mid;elselo=mid;"
+          explanation: >-
+            No `+1` anywhere — the reals have no next value to skip to, so both
+            branches keep mid. `(lo + hi) / 2` is safe here because doubles do not
+            overflow at contest magnitudes, though `lo + (hi - lo) / 2` costs
+            nothing and loses no accuracy either.
+
+final_test_problem_ids:
+  - burst-window-tally
+  - anthology-page-lookup
+  - museum-guide-split
+  - ridge-sensor-spacing
+  - loom-order-deadline

@@ -31,6 +31,7 @@ from ..game.session import ExerciseResult, begin_exercise, complete_exercise
 from ..learning.mastery import all_mastery
 from ..learning.planner import PlannedItem, build_session
 from ..storage import repositories as repo
+from .journey import JourneyScreen
 from .master import MASTER_CSS, MasterScreen, safe
 
 CSS = (
@@ -141,13 +142,19 @@ class HomeScreen(Screen):
         self.app.push_screen(SessionScreen(review_only=True))
 
     def action_train(self) -> None:
-        """Train under whichever master has unfinished teaching."""
+        """Open the journey map so the student chooses their master."""
         context = self.app.context
-        if not context.masters:
+        teaching = [
+            m for m in context.masters.values() if context.curricula and m.id in context.curricula
+        ]
+        if not teaching:
             self.notify("No masters are teaching yet.", severity="warning")
             return
-        master = next(iter(context.masters.values()))
-        self.app.push_screen(MasterScreen(master, context.curricula))
+        if len(teaching) == 1:
+            # One master is not a choice; skip the menu.
+            self.app.push_screen(MasterScreen(teaching[0], context.curricula))
+        else:
+            self.app.push_screen(JourneyScreen())
 
 
 class SessionScreen(Screen):

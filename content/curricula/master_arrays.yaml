@@ -1,0 +1,1411 @@
+# Warden Ilsa Korrin's teaching plan — the Straight Line, Master of Arrays.
+#
+# Seven secrets across four patterns, taught in order. Every demonstration is a
+# concrete array she has walked by hand; every watch-out is a bug that has cost
+# somebody a contest. The final test names nothing.
+
+master_id: master_arrays
+patterns:
+  - hashing-frequency
+  - prefix-sum
+  - two-pointers
+  - sliding-window
+title: Warden Ilsa Korrin, the Straight Line — Seven Secrets of the Row
+
+opening: >-
+  An array is a row. It has a beginning, an end, and nothing clever in between.
+  You will want to walk it twice. You will want a second loop, and then a third,
+  and you will call that thoroughness. It is not. It is you refusing to decide
+  what you actually need to remember. Seven secrets. Each one replaces a nested
+  loop with a single pass and one small thing carried along. Learn what to
+  carry, and the row answers you the first time you walk it. Do not bring me
+  cleverness. Bring me one pass.
+
+stages:
+  # ---------------------------------------------------------------- stage 0
+  - id: stage-seen-before-insert
+    order: 0
+    pattern: hashing-frequency
+    trial_problem_ids: [turnstile-rescan, crane-paired-crates]
+    secret:
+      id: seen-before-insert
+      name: Ask Before You Answer
+      idiom: "ans += cnt[S - x]; ++cnt[x];"
+      memorise: true
+      baseline_drills: 4
+      teaches: >-
+        You want a pair that adds to S, so you reached for two loops. You did
+        not need one. Fix an element x and its partner is not a search — it is
+        arithmetic: S - x, one value, exactly one. So walk the row once carrying
+        a tally of everything behind you, and at each x ask the tally how many
+        partners it already holds. The order of those two lines is the whole
+        secret. Query first, then insert, and every pair you count is a pair of
+        two distinct positions, counted exactly once, by its later member.
+        Insert first and x is in the tally when you ask about it, so it answers
+        its own question and pairs with itself.
+      demonstrations:
+        - expression: "a = [1, 5, 3, 3, 7], S = 8 — query, then insert"
+          result: "3"
+          note: >-
+            x=1: cnt[7]=0, ans 0. x=5: cnt[3]=0, ans 0. x=3: cnt[5]=1, ans 1.
+            x=3: cnt[5]=1, ans 2. x=7: cnt[1]=1, ans 3. The real pairs are
+            (1,7) and (5,3) twice. Three. The tally never held a future element.
+        - expression: "a = [4, 4], S = 8 — insert, then query"
+          result: "3"
+          note: >-
+            The right answer is 1. Insert first and the first 4 becomes cnt[4]=1
+            before you ask cnt[8-4], so it pairs with itself: ans 1 after one
+            element. The second 4 then sees cnt[4]=2 and adds 2. Query first
+            gives 0 then 1, total 1. Same code, two lines swapped, wrong answer.
+        - expression: "a = [5, 5, 5], S = 10 — query, then insert"
+          result: "3"
+          note: >-
+            0, then 1, then 2. Three pairs among three equal crates, which is
+            C(3,2) = 3. Counting by the later member is what makes duplicates
+            come out right without a single special case.
+        - expression: "a = [3, 1, 4, 1, 5], seen-set, first repeat"
+          result: "the 1 at index 3"
+          note: >-
+            Same shape, simpler question. Test membership, then insert. At index
+            3 the value 1 is already in the set, so index 3 is the answer.
+            Insert first and index 0 would report itself as a repeat.
+        - expression: "n = 200000, every crate the same weight, pairs counted"
+          result: "19999900000"
+          note: >-
+            C(200000, 2) = 19999900000, which is above 2^31 - 1 = 2147483647.
+            The accumulator is long long or the answer is garbage.
+      watch_out:
+        - warning: "Inserting before querying lets an element pair with itself."
+          why: >-
+            The tally is supposed to hold strictly earlier elements. Insert x
+            first and it is no longer earlier — it is present, so cnt[S - x]
+            counts it when x + x == S, and every element whose double is S adds
+            a phantom pair. On a = [4, 4], S = 8 you get 3 instead of 1. Write
+            the query line above the insert line and never reorder them.
+        - warning: "operator[] on a std::map or std::unordered_map INSERTS a default-constructed value just by looking."
+          why: >-
+            `cnt[S - x]` on a missing key does not return 0 and walk away — it
+            default-constructs an entry, so the container grows by one on every
+            miss. A pass over 200000 elements can leave 400000 entries, doubling
+            memory and destroying `cnt.size()` as a count of distinct values.
+            Use `cnt.count(k)` or `cnt.find(k)` when you only mean to read.
+        - warning: "unordered_map with adversarial integer keys degrades to O(n^2)."
+          why: >-
+            libstdc++ hashes an integer to itself and takes it modulo a known
+            prime bucket count, so a setter who knows the prime can send you
+            200000 keys that all land in one bucket and turn every lookup into a
+            list walk. Add a random constant to your hash, or use a sorted
+            vector, or __gnu_pbds::gp_hash_table with a custom hash.
+        - warning: "Counting pairs into an int overflows long before n is large."
+          why: >-
+            The number of pairs grows as n^2/2, so n = 200000 with many equal
+            values reaches 2 * 10^10 while INT_MAX is 2.1 * 10^9. The map is
+            right, the loop is right, and the printed number is wrong. Declare
+            the accumulator `long long` the moment the statement counts pairs.
+      drills:
+        - id: sbi-eval-pairs
+          kind: evaluate
+          prompt: >-
+            a = [1, 5, 3, 3, 7], S = 8. You sweep left to right doing
+            `ans += cnt[S - x];` and only then `++cnt[x];`. What is ans?
+          options: ["1", "2", "3", "4"]
+          answer: "3"
+          explanation: >-
+            The 3 at index 2 sees cnt[5] = 1, the 3 at index 3 sees cnt[5] = 1
+            again, and the 7 sees cnt[1] = 1. Three pairs: (1,7), (5,3), (5,3).
+            Each pair is counted once, by whichever member arrives later.
+        - id: sbi-eval-selfpair
+          kind: evaluate
+          prompt: >-
+            a = [4, 4], S = 8, and the two lines are swapped: `++cnt[x];` first,
+            then `ans += cnt[S - x];`. What does it print?
+          options: ["0", "1", "2", "3"]
+          answer: "3"
+          explanation: >-
+            The first 4 sets cnt[4] = 1 and then reads cnt[4] = 1, so it pairs
+            with itself: ans = 1. The second sets cnt[4] = 2 and reads 2, so
+            ans = 3. The true answer is 1. Query before insert.
+        - id: sbi-eval-triple
+          kind: evaluate
+          prompt: >-
+            a = [5, 5, 5], S = 10, querying before inserting. What is ans?
+          options: ["1", "2", "3", "6"]
+          answer: "3"
+          explanation: >-
+            The tally holds 0, then 1, then 2 earlier fives, so ans goes
+            0 -> 1 -> 3. That is C(3,2) = 3 unordered pairs, produced with no
+            special case for duplicates at all.
+        - id: sbi-prop-why-order
+          kind: property
+          prompt: >-
+            What exactly does the tally contain at the moment you evaluate
+            `cnt[S - x]` in the correct ordering?
+          options:
+            - "every element strictly before x, and nothing else"
+            - "every element of the array, including x"
+            - "every element after x"
+            - "only the elements equal to S - x"
+          answer: "every element strictly before x, and nothing else"
+          explanation: >-
+            That invariant is the proof of correctness. Every pair is counted
+            exactly once — by its later member — and no element can see itself.
+            Break the invariant by inserting first and both guarantees die.
+        - id: sbi-trap-insert-first
+          kind: trap
+          prompt: >-
+            `for (int x : a) { ++cnt[x]; ans += cnt[S - x]; }` overcounts on some
+            inputs and not others. Which inputs?
+          options:
+            - "arrays containing an x with 2*x == S"
+            - "arrays containing negative values"
+            - "arrays where S is odd"
+            - "arrays with no duplicates at all"
+          answer: "arrays containing an x with 2*x == S"
+          explanation: >-
+            When 2*x == S the partner of x is x itself, so the just-inserted
+            copy answers its own query. Every other value is unaffected, which
+            is why the bug survives the samples and dies on a test with an even
+            target and a matching element.
+        - id: sbi-trap-bracket-read
+          kind: trap
+          prompt: >-
+            After a pass that does `if (cnt[S - x]) ans += cnt[S - x];`,
+            `cnt.size()` is far larger than the number of distinct values in a.
+            Why?
+          options:
+            - "operator[] default-constructs an entry for every missing key it is asked about"
+            - "unordered_map always allocates twice the elements inserted"
+            - "cnt.size() counts buckets, not elements"
+            - "the if-condition inserts a copy of x on every iteration"
+          answer: "operator[] default-constructs an entry for every missing key it is asked about"
+          explanation: >-
+            `cnt[k]` is a mutating operation: on a miss it inserts k with value
+            0 and returns a reference to it. Reading with `cnt.count(k)` or
+            `cnt.find(k)` leaves the container alone — and here the whole
+            condition should have been written with `find` once, not `[]` twice.
+        - id: sbi-recall-order
+          kind: recall
+          prompt: >-
+            Write the two statements, in the correct order, that count pairs
+            summing to S as you sweep, using a map cnt and the current value x.
+          answer: "ans += cnt[S - x]; ++cnt[x];"
+          accepts:
+            - "ans+=cnt[s-x];++cnt[x];"
+            - "ans+=cnt[s-x];cnt[x]++;"
+            - "ans+=cnt[s-x];++cnt[x]"
+            - "ans+=cnt[s-x];cnt[x]+=1;"
+          explanation: >-
+            Query, then insert. Reversed it is still two short lines and still
+            compiles, and it counts phantom pairs whenever 2*x equals S. The
+            order is the secret; the map is only bookkeeping.
+        - id: sbi-apply-first-dup
+          kind: apply
+          prompt: >-
+            You sweep a list of ids looking for the first id already presented.
+            `unordered_set<int> seen;` is declared. Write the condition that goes
+            inside `if ( ... ) return x;` before the insert happens.
+          answer: "seen.count(x)"
+          accepts:
+            - "seen.count(x)"
+            - "seen.count(x)>0"
+            - "seen.find(x)!=seen.end()"
+            - "seen.contains(x)"
+          explanation: >-
+            Test membership, return, and only then `seen.insert(x)`. Insert
+            first and the very first id reports itself as a repeat. Note that
+            `count` on a set never inserts, unlike `operator[]` on a map.
+  # ---------------------------------------------------------------- stage 1
+  - id: stage-count-then-decide
+    order: 1
+    pattern: hashing-frequency
+    trial_problem_ids: [glaze-recipe-groups, lantern-pairs-multiple]
+    secret:
+      id: count-then-decide
+      name: Tally First, Decide Second
+      idiom: "++cnt[a[i]]"
+      memorise: true
+      baseline_drills: 4
+      teaches: >-
+        Most questions about a row are questions about how often things occur:
+        the most frequent value, whether anything repeats, how many things are
+        the same up to some rearrangement. Do not answer those while you walk.
+        Walk once, build the tally, then decide with the tally in front of you —
+        one pass to count, one pass over the counts. The second half of this
+        secret is knowing which container to count in. A hash map costs a hash,
+        a bucket lookup and a pointer chase per element; a plain array costs one
+        indexed write. When the values live in a small fixed universe — 26
+        letters, digits, values bounded by 10^6 — use the array. It is ten to
+        forty times faster and it cannot be attacked.
+      demonstrations:
+        - expression: "tally of \"banana\""
+          result: "a:3, b:1, n:2"
+          note: >-
+            One pass, six increments, and every question about the word is now
+            answerable without touching the word again: most common letter, is
+            it a palindrome candidate, how many odd counts.
+        - expression: "sorted(\"banana\") vs sorted(\"nabana\")"
+          result: "\"aaabnn\" both times"
+          note: >-
+            Two strings are rearrangements of each other exactly when their
+            tallies match, so the tally IS the canonical key. Sorting the
+            letters produces the same key more cheaply to compare.
+        - expression: "a = [4, 4, 2, 4, 2], most frequent value"
+          result: "4, occurring 3 times"
+          note: >-
+            cnt = {4: 3, 2: 2}. The tally is built in one pass over 5 elements,
+            and the answer is then a pass over 2 entries, not over the array.
+        - expression: "int cnt[1000001] — memory"
+          result: "about 3.8 MB"
+          note: >-
+            4 bytes times 10^6 + 1. Comfortably inside a 256 MB limit, so values
+            bounded by 10^6 should be counted in an array, never a hash map.
+        - expression: "int cnt[1000000001] — memory"
+          result: "about 3.7 GB"
+          note: >-
+            Values up to 10^9 cannot be indexed directly. THAT is the line that
+            forces a hash map — the width of the value range, not the size of n.
+      watch_out:
+        - warning: "`int cnt[26];` declared inside a function is filled with garbage, not zeros."
+          why: >-
+            A local array of a built-in type has indeterminate values; only
+            objects with static storage duration are zero-initialised. Write
+            `int cnt[26] = {};` or `int cnt[26]{};`. The bug is invisible in
+            local testing, where the stack often happens to be zero, and prints
+            nonsense on the judge.
+        - warning: "Clearing a size-10^6 array once per test case costs t * 10^6."
+          why: >-
+            With t up to 10^5 test cases that is 10^11 writes and the time limit
+            is gone, even though each individual test is tiny. Clear only the
+            keys you actually touched — re-walk the input and zero those slots —
+            or stamp each slot with the test-case number instead of clearing.
+        - warning: "A tally forgets where things were."
+          why: >-
+            The moment the statement says the chosen elements must be adjacent,
+            a frequency map alone cannot answer it: it knows how many, never
+            where. That is the boundary between this secret and the window. If
+            you find yourself storing positions in the values, you have left
+            plain counting behind.
+        - warning: "Counting into a hash map when the values are bounded is a self-inflicted constant factor."
+          why: >-
+            An unordered_map lookup is a hash, a modulo, a bucket load and at
+            least one pointer dereference — routinely 10x to 40x an array index,
+            and worse under adversarial keys. On 2 * 10^5 elements you will
+            survive it; inside a loop that runs 10^6 times you will not.
+      drills:
+        - id: ctd-eval-banana
+          kind: evaluate
+          prompt: >-
+            After one pass building a tally over the letters of "banana", what
+            is cnt['a'] - cnt['n'] ?
+          options: ["0", "1", "2", "3"]
+          answer: "1"
+          explanation: >-
+            "banana" holds three a's, two n's and one b, so 3 - 2 = 1. One pass
+            of six increments answers every later question about the word.
+        - id: ctd-eval-mode
+          kind: evaluate
+          prompt: >-
+            a = [4, 4, 2, 4, 2]. After the tally is built, how many times does
+            the most frequent value occur?
+          options: ["2", "3", "4", "5"]
+          answer: "3"
+          explanation: >-
+            cnt = {4: 3, 2: 2}. Building costs one pass over five elements;
+            finding the maximum then costs a pass over two entries, not another
+            pass over the array.
+        - id: ctd-eval-memory
+          kind: evaluate
+          prompt: >-
+            Values in the input satisfy 0 <= v <= 10^9 and n <= 2 * 10^5. Roughly
+            how much memory would `int cnt[1000000001];` need?
+          options: ["800 KB", "3.8 MB", "3.7 GB", "it is exactly n ints"]
+          answer: "3.7 GB"
+          explanation: >-
+            4 bytes times 10^9 is about 3.7 GB, far past any judge's limit. The
+            value RANGE decides array-versus-map, not n. Bound the values by
+            10^6 and `int cnt[1000001]` is only 3.8 MB and much faster.
+        - id: ctd-prop-array-vs-map
+          kind: property
+          prompt: >-
+            Which single fact in a statement licenses `int cnt[N]` instead of an
+            unordered_map?
+          options:
+            - "the values are bounded by a small constant, so they can index an array directly"
+            - "n is small"
+            - "the values are all distinct"
+            - "the array is sorted"
+          answer: "the values are bounded by a small constant, so they can index an array directly"
+          explanation: >-
+            Direct indexing needs a small universe of KEYS. n being small does
+            not help if the keys reach 10^9, and n being huge does not hurt if
+            the keys are 'a'..'z'. Read the constraint on the value, not on the
+            length.
+        - id: ctd-trap-uninit
+          kind: trap
+          prompt: >-
+            `int solve(string s) { int cnt[26]; for (char c : s) ++cnt[c - 'a']; ... }`
+            works locally and prints nonsense on the judge. Why?
+          options:
+            - "a local array of int is not zero-initialised, so the counts start from garbage"
+            - "c - 'a' is negative for lowercase letters"
+            - "an array of 26 ints is too large for the stack"
+            - "++ on an array element is undefined behaviour"
+          answer: "a local array of int is not zero-initialised, so the counts start from garbage"
+          explanation: >-
+            Only static-storage objects are zero-initialised. Write
+            `int cnt[26] = {};`. Local testing frequently hands you a zeroed
+            stack page, which is exactly why this bug reaches the judge alive.
+        - id: ctd-trap-clear
+          kind: trap
+          prompt: >-
+            t test cases, t up to 10^5, each with n <= 10 values below 10^6. The
+            solution does `memset(cnt, 0, sizeof cnt);` at the top of each case
+            and times out. What is the cost?
+          options:
+            - "about t * 10^6 = 10^11 writes, all of it clearing untouched slots"
+            - "memset is O(1) and cannot be the problem"
+            - "the sum of n over all cases is too large"
+            - "memset on an int array sets each element to 1, not 0"
+          answer: "about t * 10^6 = 10^11 writes, all of it clearing untouched slots"
+          explanation: >-
+            Each case touches at most 10 slots and then wipes a million. Re-walk
+            the case's own input and zero just those slots — O(n) per case — or
+            stamp each slot with the case index and treat a stale stamp as zero.
+        - id: ctd-recall-tally
+          kind: recall
+          prompt: >-
+            Write the single statement inside a sweep that records one more
+            occurrence of a[i] in the tally cnt.
+          answer: "++cnt[a[i]]"
+          accepts:
+            - "++cnt[a[i]];"
+            - "cnt[a[i]]++;"
+            - "++cnt[a[i]]"
+            - "cnt[a[i]]++"
+            - "cnt[a[i]]+=1;"
+          explanation: >-
+            One indexed increment, one pass, and every frequency question is
+            then answerable from cnt alone. Here `operator[]` inserting on a
+            miss is exactly what you want — you are writing, not reading.
+        - id: ctd-apply-anagram-key
+          kind: apply
+          prompt: >-
+            You must group recipes that are rearrangements of one another. Given
+            `string s`, write the statement that turns s into the canonical key
+            you will bucket by, using only the standard library on s itself.
+          answer: "sort(s.begin(), s.end())"
+          accepts:
+            - "sort(s.begin(),s.end())"
+            - "sort(all(s))"
+            - "ranges::sort(s)"
+            - "std::sort(s.begin(),s.end())"
+          explanation: >-
+            Sorting the letters makes every rearrangement produce an identical
+            string, which is then a hash-map key. The 26-count vector is the
+            other canonical key and is asymptotically better; both turn
+            "are these the same up to reordering" into plain equality.
+  # ---------------------------------------------------------------- stage 2
+  - id: stage-prefix-index-shift
+    order: 2
+    pattern: prefix-sum
+    trial_problem_ids: [greenhouse-bench-totals]
+    secret:
+      id: prefix-index-shift
+      name: The Shifted Prefix
+      idiom: "pre[r + 1] - pre[l]"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        You are asked for the total of a[l..r] two hundred thousand times. You
+        walked the range each time. You did not need to. Build one table where
+        pre[i] is the sum of the first i elements — the FIRST i, not up to index
+        i — and any range total is one subtraction. The n+1 convention is not
+        decoration. pre has n+1 entries and pre[0] = 0, because the sum of the
+        first zero elements is zero, and that single extra slot is what removes
+        every off-by-one and every `if (l == 0)` from your code. Learn the shape
+        as one object: the table is one longer than the array, and the answer is
+        pre[r+1] - pre[l].
+      demonstrations:
+        - expression: "a = [3, 1, 4, 1, 5] -> pre"
+          result: "[0, 3, 4, 8, 9, 14]"
+          note: >-
+            Six entries for five elements. pre[0] = 0, pre[1] = 3, pre[2] = 4,
+            pre[3] = 8, pre[4] = 9, pre[5] = 14. Built by
+            `pre[i + 1] = pre[i] + a[i]`.
+        - expression: "sum of a[1..3] = pre[4] - pre[1]"
+          result: "9 - 3 = 6"
+          note: "a[1] + a[2] + a[3] = 1 + 4 + 1 = 6. Correct."
+        - expression: "sum of a[0..4] = pre[5] - pre[0]"
+          result: "14 - 0 = 14"
+          note: >-
+            The whole array, and l = 0 needed no special case whatsoever. That
+            is precisely what pre[0] = 0 was put there to buy.
+        - expression: "sum of a[2..2] = pre[3] - pre[2]"
+          result: "8 - 4 = 4"
+          note: "A single element, and the formula still holds: a[2] = 4."
+        - expression: "the wrong formula: pre[r] - pre[l] for l = 1, r = 3"
+          result: "8 - 3 = 5"
+          note: >-
+            The true total is 6. Writing pre[r] instead of pre[r+1] silently
+            drops a[r] — here the 1 at index 3. Off by exactly one element, on
+            every query, forever.
+        - expression: "n = 10^5 values of 10^9, final prefix entry"
+          result: "10^14"
+          note: >-
+            INT_MAX is 2147483647. 10^14 does not fit and never will. The prefix
+            array is `vector<long long>`, not `vector<int>`.
+      watch_out:
+        - warning: "pre[r + 1] - pre[l] is wrong the moment you write pre[r] - pre[l]."
+          why: >-
+            pre[i] is the sum of the first i elements, so it stops BEFORE index
+            i. pre[r] - pre[l] is the sum of a[l..r-1] — one element short at the
+            right edge, every single time. On a = [3,1,4,1,5] and (l,r) = (1,3)
+            it gives 5 where the answer is 6. If you catch yourself special-
+            casing l = 0, you have written the other convention by accident.
+        - warning: "Prefix sums of 10^5 values up to 10^9 overflow int."
+          why: >-
+            The individual values fit comfortably; the running total does not.
+            10^5 * 10^9 = 10^14 against an INT_MAX of about 2.1 * 10^9. Signed
+            overflow is undefined behaviour, so you do not even get a reliable
+            wrong answer. Declare the prefix array `long long` on sight.
+        - warning: "A prefix array is only valid while the underlying array is frozen."
+          why: >-
+            One update to a[i] invalidates every pre[j] with j > i, so a single
+            write costs O(n) to repair. Precomputation is licensed by the
+            statement saying the data is static, or that all updates precede all
+            queries. Interleave reads and writes and you need a Fenwick tree.
+        - warning: "The 2-D form needs inclusion-exclusion, not two subtractions."
+          why: >-
+            A sub-rectangle is P[r2+1][c2+1] - P[r1][c2+1] - P[r2+1][c1] +
+            P[r1][c1]. The final `+` is not optional — the top-left block is
+            removed twice by the two middle terms and must be added back once.
+            Same n+1 convention, in both dimensions.
+      drills:
+        - id: pix-eval-range
+          kind: evaluate
+          prompt: >-
+            a = [3, 1, 4, 1, 5], so pre = [0, 3, 4, 8, 9, 14]. What is the sum of
+            a[1..3] ?
+          options: ["5", "6", "8", "9"]
+          answer: "6"
+          explanation: >-
+            pre[4] - pre[1] = 9 - 3 = 6, and indeed 1 + 4 + 1 = 6. The answer 5
+            is what you get from the wrong formula pre[3] - pre[1], which drops
+            a[3].
+        - id: pix-eval-whole
+          kind: evaluate
+          prompt: >-
+            With pre = [0, 3, 4, 8, 9, 14], what is the sum of a[0..4] ?
+          options: ["9", "11", "14", "17"]
+          answer: "14"
+          explanation: >-
+            pre[5] - pre[0] = 14 - 0 = 14. Because pre[0] is 0, l = 0 goes
+            through the same expression as every other l — no branch, no special
+            case. That is the entire reason for the extra leading entry.
+        - id: pix-eval-single
+          kind: evaluate
+          prompt: >-
+            With pre = [0, 3, 4, 8, 9, 14], what is the sum of a[2..2] ?
+          options: ["1", "4", "5", "8"]
+          answer: "4"
+          explanation: >-
+            pre[3] - pre[2] = 8 - 4 = 4, which is a[2]. A one-element range is
+            not a special case either; l = r simply makes the two indices
+            adjacent.
+        - id: pix-eval-size
+          kind: evaluate
+          prompt: >-
+            An array has n = 200000 elements. How many entries must the prefix
+            array hold?
+          options: ["199999", "200000", "200001", "400000"]
+          answer: "200001"
+          explanation: >-
+            n + 1. pre[0] = 0 for the empty prefix and pre[n] for the whole
+            array, and pre[r+1] with r = n-1 must be a legal index. Size it n and
+            the last query walks off the end.
+        - id: pix-prop-zero
+          kind: property
+          prompt: >-
+            What does the leading pre[0] = 0 actually buy you?
+          options:
+            - "the l = 0 query needs no special case, because pre[l] is a real entry"
+            - "it makes the prefix array sorted"
+            - "it prevents integer overflow in the running total"
+            - "it lets you index the array from 1 in C++"
+          answer: "the l = 0 query needs no special case, because pre[l] is a real entry"
+          explanation: >-
+            Without it you would need `l ? pre[r+1] - pre[l] : pre[r+1]`, and
+            that branch is where the off-by-one lives. One extra slot deletes an
+            entire class of bug. It does nothing for sortedness or overflow.
+        - id: pix-trap-offbyone
+          kind: trap
+          prompt: >-
+            `cout << pre[r] - pre[l];` with pre built as pre[i+1] = pre[i] + a[i].
+            What is wrong, and by how much?
+          options:
+            - "it computes a[l..r-1], dropping a[r] on every query"
+            - "it computes a[l+1..r], dropping a[l] on every query"
+            - "it is correct only when l is 0"
+            - "it is correct; the two conventions are interchangeable"
+          answer: "it computes a[l..r-1], dropping a[r] on every query"
+          explanation: >-
+            pre[i] stops before index i, so the right end must be r+1. On
+            a = [3,1,4,1,5] with (l,r) = (1,3) the buggy line prints 5 instead of
+            6. It is off by exactly the value at the right edge — which is 0 only
+            when a[r] happens to be 0, so the samples may well pass.
+        - id: pix-trap-overflow
+          kind: trap
+          prompt: >-
+            n = 10^5, each 0 <= a[i] <= 10^9, and the prefix array is
+            `vector<int> pre(n + 1);`. What happens?
+          options:
+            - "the running total reaches 10^14 and overflows a 32-bit int"
+            - "the vector allocation fails"
+            - "nothing; each individual a[i] fits in an int"
+            - "the queries are correct but slow"
+          answer: "the running total reaches 10^14 and overflows a 32-bit int"
+          explanation: >-
+            Each element fits; the accumulation does not. 10^5 * 10^9 = 10^14
+            against INT_MAX 2147483647. Signed overflow is undefined behaviour,
+            so the wrong answer is not even reproducible. Use
+            `vector<long long>`.
+        - id: pix-recall-formula
+          kind: recall
+          prompt: >-
+            Write the expression for the sum of a[l..r] inclusive, using a prefix
+            array pre of size n+1 with pre[0] = 0.
+          answer: "pre[r + 1] - pre[l]"
+          accepts:
+            - "pre[r+1]-pre[l]"
+            - "pre[r+1]-pre[l];"
+            - "(pre[r+1]-pre[l])"
+          explanation: >-
+            Right end shifted by one, left end not. Memorise the asymmetry — it
+            is the single most common index bug in the whole pattern, and the
+            shape never changes regardless of the problem.
+        - id: pix-apply-build
+          kind: apply
+          prompt: >-
+            `vector<long long> pre(n + 1, 0);` is declared. Write the single
+            statement inside `for (int i = 0; i < n; ++i)` that fills it.
+          answer: "pre[i + 1] = pre[i] + a[i]"
+          accepts:
+            - "pre[i+1]=pre[i]+a[i];"
+            - "pre[i+1]=pre[i]+a[i]"
+            - "pre[i+1]=a[i]+pre[i];"
+          explanation: >-
+            Write to i+1, read from i. Writing `pre[i] = pre[i-1] + a[i]` is the
+            other convention and forces the loop to start at 1 and the query to
+            special-case l = 0. Pick this one and stop thinking about it.
+  # ---------------------------------------------------------------- stage 3
+  - id: stage-difference-array
+    order: 3
+    pattern: prefix-sum
+    trial_problem_ids: [sleeper-berth-bookings]
+    secret:
+      id: difference-array
+      name: The Difference Array
+      idiom: "d[l] += v; d[r + 1] -= v;"
+      memorise: true
+      baseline_drills: 4
+      teaches: >-
+        The prefix table made every range QUESTION cost O(1). Run the same idea
+        backwards and every range UPDATE costs O(1) too. "Add v to every element
+        of a[l..r]" is really only two facts: from index l the total goes up by
+        v, and from index r+1 it stops going up by v. Record those two numbers
+        and nothing else. When every update is in, walk the array once
+        accumulating a running total, and the array materialises. m updates and
+        n cells cost O(n + m) instead of O(n*m). The price is absolute: all
+        writes must happen before any read, because the array does not exist
+        until the final scan runs.
+      demonstrations:
+        - expression: "n = 5, d of size 6, all zero; apply add 2 to a[1..3]"
+          result: "d = [0, 2, 0, 0, -2, 0]"
+          note: "d[1] += 2 and d[4] -= 2. Two writes, whatever the length of the range."
+        - expression: "then apply add 5 to a[0..1]"
+          result: "d = [5, 2, -5, 0, -2, 0]"
+          note: "d[0] += 5 and d[2] -= 5. Still two writes. The array itself is untouched."
+        - expression: "scan: run += d[i], a[i] = run"
+          result: "a = [5, 7, 2, 2, 0]"
+          note: >-
+            run goes 5, 7, 2, 2, 0. Applying both updates elementwise gives
+            exactly [5, 7, 2, 2, 0] — the +5 covers indices 0..1, the +2 covers
+            1..3, and index 4 was never touched.
+        - expression: "r = n - 1 = 4, so the update writes d[5]"
+          result: "legal, because d has n + 1 = 6 entries"
+          note: >-
+            An update ending at the last index must still be able to write its
+            stop marker. Size d as n and that write is out of bounds — usually
+            silent, occasionally a crash.
+        - expression: "m = 2*10^5 updates over n = 2*10^5 cells, elementwise"
+          result: "4 * 10^10 operations"
+          note: >-
+            That is the trap the bounds are set to punish. The difference array
+            does the same job in 4 * 10^5 operations plus one final pass.
+      watch_out:
+        - warning: "A difference array must be fully built before it is scanned."
+          why: >-
+            d holds deltas, not values, so before the accumulating pass d[i] is
+            not a[i] and never was. Reading a value between updates gives you a
+            single delta, not a total. If the statement interleaves updates and
+            queries, this technique does not apply at all — that is a Fenwick or
+            segment tree.
+        - warning: "d must have n + 1 entries, because r + 1 can be n."
+          why: >-
+            The stop marker for a range ending at the last index lands one past
+            the end. Sizing d as n makes `d[r + 1] -= v` a write outside the
+            allocation: undefined behaviour, and typically silent corruption of
+            whatever the allocator put next. Allocate n + 2 if you also index
+            from 1 and want to stop worrying.
+        - warning: "Mixing 1-based statement indices with a 0-based array is where this secret dies."
+          why: >-
+            Statements about berths and days are usually 1-based, C++ arrays are
+            0-based, and the formula d[r+1] already contains a +1 of its own.
+            Convert once, at input, and write down which convention you chose.
+            Two +1s or none look identical in the code and differ by one cell.
+        - warning: "The materialising scan accumulates; it does not copy."
+          why: >-
+            `a[i] = d[i]` gives you the deltas, which is a plausible-looking
+            array of mostly zeros with a few spikes. The scan is
+            `run += d[i]; a[i] = run;`. Forgetting the running total is the
+            second most common way this is written wrong.
+      drills:
+        - id: dfa-eval-materialise
+          kind: evaluate
+          prompt: >-
+            n = 5, a starts all zero. Apply "add 2 to a[1..3]" then
+            "add 5 to a[0..1]" with a difference array, then scan. What is a?
+          options:
+            - "[5, 7, 2, 2, 0]"
+            - "[5, 2, -5, 0, -2]"
+            - "[5, 7, 2, 0, 0]"
+            - "[7, 7, 2, 2, 0]"
+          answer: "[5, 7, 2, 2, 0]"
+          explanation: >-
+            d ends as [5, 2, -5, 0, -2, 0]; the running total goes 5, 7, 2, 2, 0.
+            Index 1 gets both updates (2 + 5 = 7), index 4 gets neither. The
+            second option is d itself — the deltas, not the values.
+        - id: dfa-eval-writes
+          kind: evaluate
+          prompt: >-
+            m = 200000 updates, each covering up to n = 200000 cells. How many
+            array writes does the difference array perform during the update
+            phase?
+          options: ["200000", "400000", "40000000000", "one per covered cell"]
+          answer: "400000"
+          explanation: >-
+            Two per update, regardless of how wide the range is — that is the
+            entire saving. The elementwise approach would perform up to
+            4 * 10^10 writes, which is the time limit several times over.
+        - id: dfa-eval-size
+          kind: evaluate
+          prompt: >-
+            n = 5 and an update covers a[2..4]. Which index does the stop marker
+            write to?
+          options: ["4", "5", "6", "no stop marker is needed"]
+          answer: "5"
+          explanation: >-
+            r + 1 = 5, one past the last cell. That write must be legal, so d
+            needs n + 1 = 6 entries. It is never read by the scan over
+            0..n-1, but it must exist.
+        - id: dfa-prop-licence
+          kind: property
+          prompt: >-
+            Which sentence in a statement licenses a difference array?
+          options:
+            - "no intermediate state is ever inspected — all updates arrive before any read"
+            - "the values are non-negative"
+            - "the ranges are given in sorted order"
+            - "n is at most 200000"
+          answer: "no intermediate state is ever inspected — all updates arrive before any read"
+          explanation: >-
+            The array only exists after the final scan, so any read in the
+            middle is meaningless. Deferred reads are the precondition;
+            non-negativity and sorted ranges are irrelevant here, and the bound
+            on n merely tells you the elementwise version will not pass.
+        - id: dfa-trap-early-read
+          kind: trap
+          prompt: >-
+            A solution does `d[l] += v; d[r+1] -= v;` per update and prints d[3]
+            after the second update, expecting a[3]. What does it actually print?
+          options:
+            - "the sum of the deltas that start exactly at index 3, not the value at 3"
+            - "the correct value, since d and a agree at every index"
+            - "always zero"
+            - "the value at index 2"
+          answer: "the sum of the deltas that start exactly at index 3, not the value at 3"
+          explanation: >-
+            d[i] records only the change that begins at i. The value at 3 is the
+            running total d[0] + d[1] + d[2] + d[3], which exists only after the
+            accumulating scan. There is no way to read a single cell early
+            without summing the prefix of d.
+        - id: dfa-trap-size
+          kind: trap
+          prompt: >-
+            `vector<long long> d(n);` and updates use `d[r + 1] -= v;`. Which
+            update corrupts memory?
+          options:
+            - "any update with r = n - 1, because it writes d[n]"
+            - "any update with l = 0, because it writes d[-1]"
+            - "any update with l == r"
+            - "none; vector grows automatically on write"
+          answer: "any update with r = n - 1, because it writes d[n]"
+          explanation: >-
+            A range ending at the last cell puts its stop marker one past the
+            end, and `operator[]` on a vector does no bounds checking and does
+            not grow. Declare `vector<long long> d(n + 1);`. Note that l = 0 is
+            fine — it writes d[0].
+        - id: dfa-recall-update
+          kind: recall
+          prompt: >-
+            Write the two statements that record "add v to every element of
+            a[l..r]" into a difference array d.
+          answer: "d[l] += v; d[r + 1] -= v;"
+          accepts:
+            - "d[l]+=v;d[r+1]-=v;"
+            - "d[l]+=v;d[r+1]-=v"
+            - "d[r+1]-=v;d[l]+=v;"
+          explanation: >-
+            Start adding here, stop adding just past there. Two writes, O(1) per
+            update, no matter how wide the range. Commit the +1 on the right —
+            it is the same asymmetry as pre[r + 1].
+        - id: dfa-apply-scan
+          kind: apply
+          prompt: >-
+            `long long run = 0;` is declared. Write the body of
+            `for (int i = 0; i < n; ++i)` that materialises the array a from the
+            difference array d.
+          answer: "run += d[i]; a[i] = run;"
+          accepts:
+            - "run+=d[i];a[i]=run;"
+            - "run+=d[i];a[i]=run"
+            - "a[i]=(run+=d[i]);"
+          explanation: >-
+            Accumulate, then store. `a[i] = d[i]` would hand back the deltas —
+            an array of mostly zeros with a few spikes, which looks wrong enough
+            to catch but only if you actually look.
+  # ---------------------------------------------------------------- stage 4
+  - id: stage-converge-and-discard
+    order: 4
+    pattern: two-pointers
+    trial_problem_ids: [voucher-stamp-pair, canal-tarpaulin-span, drone-triple-lift]
+    secret:
+      id: converge-and-discard
+      name: The Exchange Argument
+      idiom: "if (a[l] + a[r] < S) ++l; else --r;"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        Two indices, one at each end of a sorted row, moving inwards. Everyone
+        can type that. Almost nobody can say why it is correct, and without the
+        why you are guessing. Here is the why. On a sorted array, if
+        a[l] + a[r] < S then a[l] paired with anything still available is even
+        smaller, because a[r] is the largest partner left — so a[l] belongs to no
+        solution at all and can be thrown away forever. That is the exchange
+        argument: one comparison eliminates not one pair but an entire row of
+        pairs. Each index moves at most n times, so the whole O(n^2) search
+        collapses to one linear sweep. Sortedness is not decoration here; it is
+        the premise the proof runs on.
+      demonstrations:
+        - expression: "a = [1, 3, 4, 6, 8, 11], S = 10, l = 0, r = 5"
+          result: "1 + 11 = 12 > 10, so --r"
+          note: >-
+            11 is the largest partner in the row. Nothing pairs with it to reach
+            exactly 10 except a value below 1, and there is none — 11 is finished.
+        - expression: "l = 0, r = 4"
+          result: "1 + 8 = 9 < 10, so ++l"
+          note: >-
+            The exchange argument in the other direction: 8 is now the largest
+            partner still available to the 1, and even that falls short. The 1
+            can never reach 10 with anything remaining. Discard it.
+        - expression: "the rest of the sweep"
+          result: "3+8=11 -> --r; 3+6=9 -> ++l; 4+6=10 found"
+          note: >-
+            Five comparisons on a six-element array, and the pair (4, 6) is the
+            only one summing to 10. The double loop would have tried fifteen.
+        - expression: "counting pairs with sum <= 12 in the same array"
+          result: "10"
+          note: >-
+            1+11<=12 adds r-l = 5 pairs at once (1 with each of 3,4,6,8,11) then
+            ++l; 3+11 overshoots so --r; 3+8 adds 3; 4+8 adds 2; 6+8 overshoots
+            and the indices meet. 5 + 3 + 2 = 10, which is every pair but
+            (3,11), (4,11), (6,11), (8,11) and (6,8). Bulk counting, not testing.
+        - expression: "h = [1, 8, 6, 2, 5, 4, 8, 3, 7], widest-first sweep"
+          result: "49"
+          note: >-
+            First measure (8-0) * min(1,7) = 8, then discard the height-1 side —
+            every other pair using it is narrower AND still capped at 1. The
+            best found is (8-1) * min(8,7) = 49 between index 1 and index 8.
+        - expression: "w[i] up to 10^9, three of them summed in an int"
+          result: "3 * 10^9, overflow"
+          note: >-
+            INT_MAX is 2147483647. Two values fit, three do not. In a triple
+            sweep the comparison itself must be done in long long.
+      watch_out:
+        - warning: "The discard argument is a theorem about sorted data. On an unsorted array it is simply false."
+          why: >-
+            "Everything left of r is no larger" is what proves a[l] hopeless.
+            Remove sortedness and a huge value may still be sitting to the left
+            of r, so discarding a[l] discards a real solution. If the problem
+            demands ORIGINAL indices you cannot sort, and the tool is a hash map
+            instead.
+        - warning: "`while (l <= r)` lets an element pair with itself."
+          why: >-
+            At l == r the code evaluates a[l] + a[l], and for an even target with
+            a matching element it reports a pair of one crate with itself. The
+            loop condition for distinct pairs is `while (l < r)`. This is the
+            same self-pairing bug as inserting before querying, wearing different
+            clothes.
+        - warning: "Moving both pointers on a match silently skips pairs when duplicates exist."
+          why: >-
+            On a = [2, 2, 2, 2] with S = 4 the answer is six pairs, and
+            `++l; --r;` on every hit finds two. When duplicates are possible you
+            must count the block: find how many equal values sit at each end and
+            multiply, or advance one pointer only.
+        - warning: "a[l] + a[r] can overflow int even when every element fits."
+          why: >-
+            Two values of 10^9 sum to 2 * 10^9, which is under INT_MAX by a hair;
+            three sum to 3 * 10^9, which is not. In a triple sweep, or with
+            values up to 2 * 10^9, the comparison must be `(long long)a[l] +
+            a[r] + a[k] <= L`. Cast the comparison, not just the accumulator.
+      drills:
+        - id: cad-eval-first-move
+          kind: evaluate
+          prompt: >-
+            a = [1, 3, 4, 6, 8, 11] sorted, S = 10, l = 0, r = 5. What is the
+            first move?
+          options:
+            - "1 + 11 = 12 overshoots, so retract r"
+            - "1 + 11 = 12 overshoots, so advance l"
+            - "1 + 11 = 12 falls short, so advance l"
+            - "start from the middle instead"
+          answer: "1 + 11 = 12 overshoots, so retract r"
+          explanation: >-
+            An overshoot condemns the LARGER end: 1 is the smallest partner
+            available to 11, so if even that pairing exceeds S, nothing reaches
+            exactly S with 11. Retracting r discards 11 and every pair it is in.
+        - id: cad-eval-steps
+          kind: evaluate
+          prompt: >-
+            Same array and S = 10. How many comparisons does the converging sweep
+            make before it finds a pair?
+          options: ["3", "5", "6", "15"]
+          answer: "5"
+          explanation: >-
+            12 -> --r, 9 -> ++l, 11 -> --r, 9 -> ++l, then 4 + 6 = 10. Five
+            comparisons where the double loop would have tried C(6,2) = 15. Each
+            index moves at most n times in total, so the sweep is O(n).
+        - id: cad-eval-bulk
+          kind: evaluate
+          prompt: >-
+            a = [1, 3, 4, 6, 8, 11], count pairs with sum <= 12 by adding
+            (r - l) whenever a[l] + a[r] <= 12 and then advancing l. What total?
+          options: ["7", "9", "10", "15"]
+          answer: "10"
+          explanation: >-
+            1+11 adds 5, 3+8 adds 3, 4+8 adds 2, and the rest overshoot: 10.
+            When the largest partner already fits, every partner between l and r
+            fits too, so a whole block is certified by one comparison. That bulk
+            step is what makes triple-counting O(n^2) instead of O(n^2 log n).
+        - id: cad-prop-exchange
+          kind: property
+          prompt: >-
+            On a sorted array, a[l] + a[r] < S. What has that one comparison
+            proved?
+          options:
+            - "a[l] cannot be in any solution using the remaining elements, so it may be discarded forever"
+            - "a[r] cannot be in any solution, so r must retract"
+            - "the answer lies strictly between l and r"
+            - "nothing beyond that this particular pair fails"
+          answer: "a[l] cannot be in any solution using the remaining elements, so it may be discarded forever"
+          explanation: >-
+            a[r] is the largest partner still on offer. If a[l] falls short even
+            with it, it falls short with everything smaller. That is the exchange
+            argument, and it eliminates a whole row of pairs — not one pair —
+            which is exactly where the factor of n goes.
+        - id: cad-trap-unsorted
+          kind: trap
+          prompt: >-
+            The converging sweep is run on an UNSORTED array and reports "no
+            pair" on an array that contains one. Why?
+          options:
+            - "the proof that a[l] is hopeless assumes every remaining partner is <= a[r], which unsorted data does not guarantee"
+            - "the loop condition should be l <= r"
+            - "the sweep must start from the middle on unsorted data"
+            - "unsorted arrays need three pointers"
+          answer: "the proof that a[l] is hopeless assumes every remaining partner is <= a[r], which unsorted data does not guarantee"
+          explanation: >-
+            Without order, a huge value may still sit between l and r, so
+            discarding a[l] on a shortfall throws away a genuine solution. Sort
+            first — or, if the answer must be reported in the original indices,
+            abandon this pattern and use a hash map of value to index.
+        - id: cad-trap-self-pair
+          kind: trap
+          prompt: >-
+            `while (l <= r) { if (a[l] + a[r] == S) return {l, r}; ... }` on
+            a = [1, 4, 5], S = 8 returns a "pair". Which one, and why is it wrong?
+          options:
+            - "(1, 1) — the element 4 paired with itself, because l == r is allowed"
+            - "(0, 2) — 1 + 5 = 6, which is not 8"
+            - "it correctly returns no pair"
+            - "(2, 2) — 5 + 5 = 10, which is not 8"
+          answer: "(1, 1) — the element 4 paired with itself, because l == r is allowed"
+          explanation: >-
+            1 + 5 = 6 falls short so l advances to 1; 4 + 5 = 9 overshoots so r
+            retracts to 1; now l == r == 1 and 4 + 4 = 8 passes the test. Two
+            DISTINCT elements means `while (l < r)` — the same self-pairing
+            failure as inserting into the tally before querying it.
+        - id: cad-recall-step
+          kind: recall
+          prompt: >-
+            Write the single statement inside `while (l < r)` that moves the
+            correct index when looking for a pair summing to S in a sorted array.
+          answer: "if (a[l] + a[r] < S) ++l; else --r;"
+          accepts:
+            - "if(a[l]+a[r]<s)++l;else--r;"
+            - "if(a[l]+a[r]<s)l++;else r--;"
+            - "a[l]+a[r]<s?++l:--r;"
+            - "if(a[l]+a[r]<s)++l;else--r"
+          explanation: >-
+            Short means the small end is exhausted; long means the large end is.
+            Handle the equality case before this line, or the `else` will retract
+            r on an exact hit and walk straight past the answer.
+        - id: cad-apply-count-le
+          kind: apply
+          prompt: >-
+            Counting pairs with sum at most L in a sorted array. Inside
+            `while (l < r)`, when a[l] + a[r] <= L, write the statement that
+            counts every pair certified by that one comparison and advances.
+          answer: "ans += r - l; ++l;"
+          accepts:
+            - "ans+=r-l;++l;"
+            - "ans+=r-l;l++;"
+            - "ans+=(r-l);++l;"
+            - "ans+=r-l;++l"
+          explanation: >-
+            a[l] pairs with every index from l+1 to r, which is r - l partners,
+            all of them at most a[r] and therefore all admissible. Counting them
+            one at a time is the log factor you are trying not to pay, and `ans`
+            must be long long.
+  # ---------------------------------------------------------------- stage 5
+  - id: stage-window-invariant
+    order: 5
+    pattern: sliding-window
+    trial_problem_ids: [signal-run-k-frequencies, courier-fuel-window]
+    secret:
+      id: window-invariant
+      name: Shrink With While
+      idiom: "while (invalid) evict(a[l++]);"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        A window is two indices moving the same way, and one sentence you must
+        be able to state at every instant: after processing index r, [l, r] is
+        the longest valid window ending at r. Everything follows from that
+        sentence. Add a[r] to the state, then shrink from the left until it is
+        true again — and shrink with `while`, not `if`. One eviction restores
+        validity only when adding one element broke it by exactly one unit, and
+        that is not the general case: a single new element can force four
+        evictions, or twenty. The nested loop looks quadratic and is not, because
+        l only ever increases: every index enters once and leaves once, so the
+        inner loop runs at most n times across the entire sweep.
+      demonstrations:
+        - expression: "a = [1, 2, 1, 3, 3, 4], k = 2 distinct, r reaches 3"
+          result: "two evictions"
+          note: >-
+            The window was [0,2] = [1,2,1]. Adding the 3 makes three distinct.
+            Evicting a[0]=1 leaves cnt[1]=1, so it is STILL three distinct.
+            Evicting a[1]=2 drops it to two. One eviction was not enough.
+        - expression: "the same sweep, longest window with at most 2 distinct"
+          result: "3"
+          note: >-
+            Windows [0,2], [2,4] and [3,5] all have length 3 and two distinct
+            values; nothing longer exists. l moves 0,0,0,2,2,3 — forward only.
+        - expression: "a = [1, 1, 1, 10], C = 9, shortest run with sum > 9"
+          result: "1"
+          note: >-
+            At r = 3 the sum is 13. The `while` shrinks four times, recording
+            lengths 4, 3, 2 and finally 1 for the run [10] alone. The answer is 1.
+        - expression: "the same input with `if` instead of `while`"
+          result: "4"
+          note: >-
+            One eviction, sum 12, loop exits, answer 4. Four times too long, on
+            a four-element array. The bug is one keyword and it never crashes.
+        - expression: "counting: a = [1, 2, 1, 3, 3, 4], k = 2, sum of window lengths"
+          result: "14 with while, 15 with if"
+          note: >-
+            1+2+3+2+3+3 = 14, which is the true number of subarrays with at most
+            two distinct values. The `if` version leaves an invalid window of
+            length 3 at r = 3 and reports 15.
+        - expression: "a = [5, -5, 3], longest run with sum <= 3"
+          result: "window says 2, the truth is 3"
+          note: >-
+            The whole array sums to 3. But at r = 0 the sum 5 exceeds 3, so l
+            advances past index 0 and can never return. Negatives destroy the
+            monotonicity the window is built on.
+      watch_out:
+        - warning: "Shrinking a window with `if` instead of `while` breaks when two evictions are needed."
+          why: >-
+            Adding one element can violate the constraint by more than one unit —
+            a single large value can exceed a sum budget by a factor of ten, and
+            a new distinct value is not removed by evicting a duplicate. On
+            a = [1,1,1,10] with C = 9 the `while` version answers 1 and the `if`
+            version answers 4. Nothing crashes and nothing warns you.
+        - warning: "A sliding window on sums is invalid the moment negative values are allowed."
+          why: >-
+            The window needs the constraint to be monotone in length: extending
+            must only ever make things worse, so that shrinking is the only
+            repair. With negatives, extending can IMPROVE the sum, so an index
+            you gave up on the left may have belonged to the answer after all —
+            and l never goes backwards. On [5, -5, 3] with a budget of 3 the
+            window reports 2 where the answer is 3. Negatives mean prefix sums
+            and a hash map.
+        - warning: "The inner while looks like a nested loop and is not O(n^2)."
+          why: >-
+            l only increases, and it can increase at most n times over the entire
+            sweep, so the total work in the inner loop is bounded by n regardless
+            of how it clusters. Rewriting it as a `for` over the window to
+            "avoid the nesting" is the change that actually makes it quadratic.
+        - warning: "Record the answer at the right instant — after the restore, not before."
+          why: >-
+            For a LONGEST window you record after shrinking, when [l, r] is valid
+            again. For a SHORTEST window you record inside the shrink loop, while
+            the window still satisfies the condition, just before the eviction
+            that breaks it. Putting the record in the wrong place gives an
+            answer that is plausible, off by a little, and passes the samples.
+        - warning: "Removing from the state must exactly undo adding to it."
+          why: >-
+            With a distinct-value counter the eviction is `if (--cnt[a[l]] == 0)
+            --distinct;` — decrement the count first, and only lower `distinct`
+            when the count actually reaches zero. Lowering it on every eviction
+            makes the window think it has room it does not have, and the answer
+            comes out too large.
+      drills:
+        - id: win-eval-evictions
+          kind: evaluate
+          prompt: >-
+            a = [1, 2, 1, 3, 3, 4] with at most k = 2 distinct values. When r
+            reaches index 3, how many elements must leave from the left?
+          options: ["0", "1", "2", "3"]
+          answer: "2"
+          explanation: >-
+            The window [1,2,1] gains a 3 and holds three distinct values.
+            Evicting the first 1 does nothing — a second 1 remains — so the 2
+            must go as well. Exactly the case an `if` cannot handle.
+        - id: win-eval-longest
+          kind: evaluate
+          prompt: >-
+            Same array a = [1, 2, 1, 3, 3, 4], k = 2. What is the length of the
+            longest window with at most 2 distinct values?
+          options: ["2", "3", "4", "6"]
+          answer: "3"
+          explanation: >-
+            [1,2,1], [1,3,3] and [3,3,4] all reach 3 and nothing reaches 4. The
+            left index moves 0,0,0,2,2,3 across the sweep — forward only, which
+            is what keeps the whole thing linear.
+        - id: win-eval-shortest
+          kind: evaluate
+          prompt: >-
+            a = [1, 1, 1, 10], C = 9. What is the length of the shortest run of
+            consecutive elements whose sum is strictly greater than 9?
+          options: ["1", "2", "3", "4"]
+          answer: "1"
+          explanation: >-
+            The single element 10 exceeds 9 by itself. At r = 3 the window sum is
+            13 and the shrink loop must run four times, recording 4, 3, 2 and 1
+            before the sum drops to 0.
+        - id: win-prop-invariant
+          kind: property
+          prompt: >-
+            State the invariant that holds after index r has been processed.
+          options:
+            - "[l, r] is the longest valid window ending at r"
+            - "[l, r] is the longest valid window in the whole array so far"
+            - "[l, r] contains exactly k distinct values"
+            - "l is the smallest index that has not yet been examined"
+          answer: "[l, r] is the longest valid window ending at r"
+          explanation: >-
+            Ending at r — that is the load-bearing phrase. The global best is a
+            separate variable you update each step. Confusing the two is why
+            people record the answer in the wrong place.
+        - id: win-prop-amortised
+          kind: property
+          prompt: >-
+            The shrink loop is nested inside the sweep. Why is the whole thing
+            still O(n)?
+          options:
+            - "l only ever increases, so all the shrink steps together number at most n"
+            - "the inner loop runs at most k times per step"
+            - "the window has bounded size, so the inner loop is O(1)"
+            - "it is not O(n); it is O(n log n)"
+          answer: "l only ever increases, so all the shrink steps together number at most n"
+          explanation: >-
+            Amortised analysis: every index is evicted at most once over the
+            entire sweep, so the inner loop's total work is bounded by n no
+            matter how it clusters. A single step may evict twenty elements and
+            the bound still holds.
+        - id: win-trap-if
+          kind: trap
+          prompt: >-
+            `s += a[r]; if (s > C) { best = min(best, r - l + 1); s -= a[l++]; }`
+            on a = [1, 1, 1, 10] with C = 9. What does it print, and why?
+          options:
+            - "4 — one eviction leaves the sum at 12, still above C, and the loop exits"
+            - "1 — it is correct"
+            - "0 — best is never assigned"
+            - "3 — it misses only the final element"
+          answer: "4 — one eviction leaves the sum at 12, still above C, and the loop exits"
+          explanation: >-
+            The 10 blows past C by 4, so one eviction of a 1 cannot restore
+            anything. `while` shrinks four times and records 1. One keyword,
+            four times the answer, no crash and no warning.
+        - id: win-trap-negatives
+          kind: trap
+          prompt: >-
+            a = [5, -5, 3], and you want the longest run with sum at most 3. The
+            window reports 2. What is the true answer and what went wrong?
+          options:
+            - "3 — the whole array sums to 3, but l advanced past index 0 and never returns"
+            - "2 — the window is correct"
+            - "1 — only single elements qualify"
+            - "3 — the sum must be accumulated as long long"
+          answer: "3 — the whole array sums to 3, but l advanced past index 0 and never returns"
+          explanation: >-
+            5 alone exceeds the budget, so the window abandons index 0 — but
+            extending across the -5 would have rescued it. With negatives the
+            constraint is not monotone in window length and no single sweep
+            exists. Prefix sums plus a hash map is the tool.
+        - id: win-recall-shrink
+          kind: recall
+          prompt: >-
+            Write the loop that restores the window's validity by evicting from
+            the left, given a boolean condition `invalid` and an evict step.
+          answer: "while (invalid) evict(a[l++]);"
+          accepts:
+            - "while(invalid)evict(a[l++]);"
+            - "while(invalid){evict(a[l]);++l;}"
+            - "while(invalid){evict(a[l]);l++;}"
+            - "while(invalid)evict(a[l++])"
+          explanation: >-
+            `while`, never `if`. The keyword is the secret: one added element can
+            break the constraint by any amount, so the repair must be allowed to
+            run as many times as it needs.
+        - id: win-apply-evict-distinct
+          kind: apply
+          prompt: >-
+            The window tracks `int distinct` and a map cnt. Write the eviction
+            body that removes a[l] and keeps `distinct` correct.
+          answer: "if (--cnt[a[l]] == 0) --distinct; ++l;"
+          accepts:
+            - "if(--cnt[a[l]]==0)--distinct;++l;"
+            - "if(--cnt[a[l]]==0)distinct--;l++;"
+            - "if(--cnt[a[l]]==0)--distinct;l++;"
+            - "cnt[a[l]]--;if(cnt[a[l]]==0)--distinct;++l;"
+          explanation: >-
+            Decrement the count, and lower `distinct` only when that count hits
+            zero. Lowering it on every eviction makes the window believe it has
+            room it does not, and the reported length grows past the truth.
+  # ---------------------------------------------------------------- stage 6
+  - id: stage-at-most-k-trick
+    order: 6
+    pattern: sliding-window
+    trial_problem_ids: [warehouse-shelf-swaps, signal-run-k-frequencies]
+    secret:
+      id: at-most-k-trick
+      name: Exactly Is Two At-Mosts
+      idiom: "atMost(k) - atMost(k - 1)"
+      memorise: true
+      baseline_drills: 4
+      teaches: >-
+        "Exactly k" cannot be windowed. The window needs a constraint that only
+        ever gets worse as you extend, so that shrinking is the one repair — and
+        "exactly k distinct" fails that outright: extend and you may go from
+        exactly k to too many, shrink and you drop to too few. There is no
+        direction to push in. "At most k" has no such problem: extending can only
+        add distinct values, so the constraint is monotone and the ordinary
+        window handles it. So stop trying to write exactly(k). Write atMost(k),
+        which counts every subarray with k or fewer, then subtract atMost(k-1),
+        which counts every subarray with k-1 or fewer. What is left is precisely
+        the subarrays with exactly k. Two monotone passes replace one impossible
+        one.
+      demonstrations:
+        - expression: "a = [1, 2, 1, 2, 3], atMost(2) by summing r - l + 1"
+          result: "12"
+          note: >-
+            Window lengths as r advances: 1, 2, 3, 4, 2. Sum 12. At r = 4 the 3
+            arrives and three evictions are needed to get back to two distinct.
+        - expression: "the same array, atMost(1)"
+          result: "5"
+          note: >-
+            Every window collapses to a single element because no two adjacent
+            values are equal: 1 + 1 + 1 + 1 + 1 = 5.
+        - expression: "exactly(2) = atMost(2) - atMost(1)"
+          result: "12 - 5 = 7"
+          note: >-
+            The seven subarrays with exactly two distinct values are [1,2],
+            [2,1], [1,2] (indices 2..3), [1,2,1], [2,1,2], [1,2,1,2] and [2,3].
+            Counted by hand: seven. The subtraction is exact, not approximate.
+        - expression: "b = [1, 1, 2, 1, 1], subarrays with exactly 3 odd values"
+          result: "atMost(3) - atMost(2) = 14 - 12 = 2"
+          note: >-
+            The same trick over a different key — count of odd elements instead
+            of count of distinct values. The two qualifying subarrays are
+            [1,1,2,1] and [1,2,1,1].
+        - expression: "why r - l + 1 is the right thing to add"
+          result: "the number of valid windows ENDING at r"
+          note: >-
+            Once [l, r] is the longest valid window ending at r, every suffix of
+            it is also valid, and there are r - l + 1 of them. Summing over r
+            counts every valid subarray exactly once.
+        - expression: "n = 200000, all values equal, total subarrays"
+          result: "20000100000"
+          note: >-
+            n(n+1)/2 = 2 * 10^10, well past INT_MAX. Counting problems need a
+            long long accumulator in both passes and in the subtraction.
+      watch_out:
+        - warning: "The subtraction works for COUNTING and never for maximising."
+          why: >-
+            longest-atMost(k) minus longest-atMost(k-1) is a difference of two
+            lengths and means nothing at all — the longest window with exactly k
+            distinct values is not the difference of two longest windows. The
+            identity is set arithmetic: {at most k} minus {at most k-1} equals
+            {exactly k}, and only cardinalities subtract.
+        - warning: "k = 0 makes the second call atMost(-1), which must return 0."
+          why: >-
+            A window can never hold fewer than zero distinct values, so the
+            answer is zero — but a naive atMost with a `while (distinct > k)`
+            loop and k = -1 will evict until l passes r and may index a[l] out of
+            bounds or loop forever. Guard the entry: `if (k < 0) return 0;`.
+        - warning: "Both passes must count the same object."
+          why: >-
+            atMost must return a count of subarrays in both calls — the same
+            accumulator rule, `ans += r - l + 1`, in both. Writing one pass to
+            count subarrays and the other to count positions or lengths produces
+            a difference that is dimensionally meaningless and often nearly
+            right, which is the worst kind of wrong.
+        - warning: "Two passes over the array is still O(n)."
+          why: >-
+            People contort themselves to answer exactly(k) in one sweep because
+            two passes "feels" wasteful. 2n is n. The one-pass version is harder
+            to write, harder to prove, and no faster; the constant factor you are
+            protecting does not exist.
+      drills:
+        - id: amk-eval-atmost2
+          kind: evaluate
+          prompt: >-
+            a = [1, 2, 1, 2, 3]. Running the at-most-2-distinct window and
+            accumulating `ans += r - l + 1` each step, what is ans?
+          options: ["7", "10", "12", "15"]
+          answer: "12"
+          explanation: >-
+            The window lengths are 1, 2, 3, 4, 2 and they sum to 12. At r = 4 the
+            new value 3 forces three evictions before two distinct values remain,
+            leaving the window [2, 3].
+        - id: amk-eval-exactly
+          kind: evaluate
+          prompt: >-
+            For the same array, atMost(2) = 12 and atMost(1) = 5. How many
+            subarrays hold exactly 2 distinct values?
+          options: ["5", "7", "12", "17"]
+          answer: "7"
+          explanation: >-
+            12 - 5 = 7. Every subarray counted by atMost(2) has 1 or 2 distinct
+            values; removing those with 1 leaves exactly those with 2. The seven
+            are [1,2], [2,1], [1,2], [1,2,1], [2,1,2], [1,2,1,2] and [2,3].
+        - id: amk-eval-suffixes
+          kind: evaluate
+          prompt: >-
+            The window is [l, r] = [2, 5] and valid. How many valid subarrays
+            END at index 5?
+          options: ["1", "3", "4", "6"]
+          answer: "4"
+          explanation: >-
+            r - l + 1 = 4: the subarrays starting at 2, 3, 4 and 5. Every suffix
+            of a valid window is valid too, because dropping elements can only
+            relax an at-most constraint. That is why the accumulation is a single
+            addition rather than a loop.
+        - id: amk-prop-monotone
+          kind: property
+          prompt: >-
+            Why can a window not answer "exactly k distinct" directly?
+          options:
+            - "the constraint is not monotone in window length — extending overshoots and shrinking undershoots"
+            - "counting distinct values needs a hash map, which windows cannot use"
+            - "exactly-k subarrays need not be contiguous"
+            - "it can, provided you shrink with while instead of if"
+          answer: "the constraint is not monotone in window length — extending overshoots and shrinking undershoots"
+          explanation: >-
+            A window repairs itself in exactly one direction, so it needs a
+            constraint that only worsens as the window grows. "At most k" is
+            monotone; "exactly k" is not, and there is no direction to push in.
+            Hence two monotone passes instead of one impossible one.
+        - id: amk-trap-longest
+          kind: trap
+          prompt: >-
+            A solution wants the LONGEST subarray with exactly k distinct values
+            and computes `longestAtMost(k) - longestAtMost(k - 1)`. What is wrong?
+          options:
+            - "the identity subtracts cardinalities of sets; two lengths cannot be subtracted meaningfully"
+            - "it should be longestAtMost(k) + longestAtMost(k - 1)"
+            - "longestAtMost is not computable with a window"
+            - "nothing; it is the standard technique"
+          answer: "the identity subtracts cardinalities of sets; two lengths cannot be subtracted meaningfully"
+          explanation: >-
+            {at most k} minus {at most k-1} equals {exactly k} as SETS, so only
+            their sizes subtract. For a longest-with-exactly-k question you need
+            a different technique entirely — typically a window that tracks both
+            an at-most-k and an at-most-(k-1) left boundary at once.
+        - id: amk-trap-kzero
+          kind: trap
+          prompt: >-
+            The input allows k = 0, and the code returns
+            `atMost(k) - atMost(k - 1)`. What happens inside atMost(-1)?
+          options:
+            - "`while (distinct > -1)` never terminates its shrinking and walks l past r"
+            - "it returns the same value as atMost(0)"
+            - "the compiler rejects a negative argument"
+            - "nothing; distinct is never negative so the loop is skipped"
+          answer: "`while (distinct > -1)` never terminates its shrinking and walks l past r"
+          explanation: >-
+            distinct is at least 0, which is always greater than -1, so the
+            shrink loop evicts until it runs off the end. Guard the function:
+            `if (k < 0) return 0;` — there are no subarrays with fewer than zero
+            distinct values.
+        - id: amk-recall-identity
+          kind: recall
+          prompt: >-
+            Write the expression that counts the subarrays with exactly k of
+            something, given a helper atMost.
+          answer: "atMost(k) - atMost(k - 1)"
+          accepts:
+            - "atmost(k)-atmost(k-1)"
+            - "atmost(k)-atmost(k-1);"
+            - "f(k)-f(k-1)"
+            - "atmostk-atmostk1"
+          explanation: >-
+            Two monotone passes, one subtraction. Memorise it as a conversion
+            rule: any non-monotone "exactly" becomes two monotone "at mosts", and
+            the window you already know how to write does the rest.
+        - id: amk-apply-accumulate
+          kind: apply
+          prompt: >-
+            Inside atMost, after the shrink loop has restored the window, write
+            the statement that adds this step's contribution to the count.
+          answer: "ans += r - l + 1;"
+          accepts:
+            - "ans+=r-l+1;"
+            - "ans+=r-l+1"
+            - "ans+=(r-l+1);"
+            - "ans=ans+r-l+1;"
+          explanation: >-
+            One addition per index r, counting every valid subarray that ends
+            there. It must come AFTER the shrink, when [l, r] is valid again, and
+            `ans` must be long long — n(n+1)/2 reaches 2 * 10^10 at n = 200000.
+
+final_test_problem_ids:
+  - turnstile-rescan
+  - crane-paired-crates
+  - reservoir-net-change
+  - drill-core-balance
+  - bead-ribbon-trim
+  - courier-fuel-window
