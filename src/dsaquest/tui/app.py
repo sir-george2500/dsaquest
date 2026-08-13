@@ -34,6 +34,13 @@ from ..game.modes.complete import (
     judge_source,
     parse_holes,
 )
+from ..game.modes.recall import (
+    auto_match,
+    canonical_answer,
+    expected_phrases,
+)
+from ..game.modes.recall import build_round as build_recall
+from ..game.modes.recall import grade as grade_recall
 from ..game.session import ExerciseResult, begin_exercise, complete_exercise
 from ..judge import workspace
 from ..learning.mastery import all_mastery
@@ -229,6 +236,8 @@ class SessionScreen(Screen):
 
         if item.mode is GameMode.HUNTER:
             self.present_hunter(item)
+        elif item.mode is GameMode.RECALL:
+            self.present_recall(item)
         else:
             self.present_completion(item)
 
@@ -261,6 +270,95 @@ class SessionScreen(Screen):
         options = self.query_one("#options", Vertical)
         for position, (label, option) in enumerate(round_.labelled()):
             options.mount(Button(f"{label}.  {safe(option.name)}", id=f"opt{position}"))
+
+    def present_recall(self, item: PlannedItem) -> None:
+        """Mode B: the pattern is named, and everything else must come from memory."""
+        context: AppContext = self.app.context
+        pattern = context.library[item.pattern_id]
+        round_ = build_recall(pattern)
+        seed = int(datetime.now(UTC).timestamp() * 1000) % 2**31
+
+        self.current = round_
+        self.attempt_id = begin_exercise(
+            context.conn,
+            pattern_id=item.pattern_id,
+            mode=GameMode.RECALL,
+            seed=seed,
+            difficulty=item.difficulty,
+        )
+        self.started_at = datetime.now(UTC)
+
+        self.query_one("#prompt", Static).update(
+            f"[dim]{self.index + 1}/{len(self.queue)}  ·  {item.reason}  ·  recall[/]\n"
+            f"[b]{safe(pattern.name)}[/]   [dim](ctrl+s when you have written it)[/]"
+        )
+        self.query_one("#statement", Static).update(
+            "From memory:\n\n"
+            "  · what signals in a statement reveal it\n"
+            "  · the invariant that makes it correct\n"
+            "  · its time and space complexity\n"
+            "  · what usually goes wrong\n\n"
+            "[dim]Nothing is checked until you commit.[/]"
+        )
+        editor = TextArea("", id="editor", show_line_numbers=False)
+        self.query_one("#options", Vertical).mount(editor)
+        self.set_timer(0.1, editor.focus)
+
+    def submit_recall(self) -> None:
+        from ..game.modes.recall import RecallRound
+
+        if not isinstance(self.current, RecallRound):
+            return
+        try:
+            written = self.query_one("#editor", TextArea).text
+        except Exception:
+            return
+
+        context: AppContext = self.app.context
+        item = self.queue[self.index]
+        outcome = grade_recall(self.current, written, auto_match(self.current, written))
+        elapsed = int((datetime.now(UTC) - self.started_at).total_seconds() * 1000)
+
+        recorded = complete_exercise(
+            context.conn,
+            self.attempt_id,
+            ExerciseResult(
+                correct=outcome.correct,
+                duration_ms=elapsed,
+                self_grade=outcome.self_grade,
+                essential_missed=outcome.essential_missed,
+            ),
+            library=context.library,
+            scheduler=context.scheduler,
+            pattern_id=item.pattern_id,
+            mode=GameMode.RECALL,
+            difficulty=item.difficulty,
+        )
+        self.record(recorded, outcome.correct)
+
+        body = []
+        if outcome.correct:
+            body.append(f"[b green]Held.[/]  {outcome.credited}/{outcome.total} points")
+        else:
+            body.append(
+                f"[b red]Not held.[/]  {outcome.credited}/{outcome.total} points — "
+                f"an essential one is missing"
+            )
+        body.append("")
+        for result in outcome.results:
+            mark = "[green]+[/]" if result.credited else "[red]-[/]"
+            star = "[b]*[/]" if result.point.essential else " "
+            body.append(f"  {mark}{star} {safe(result.point.prompt)}")
+            if not result.credited and result.point.essential:
+                phrases = expected_phrases(result.point)
+                if phrases:
+                    body.append(f"      [dim]looked for {safe(phrases)}[/]")
+
+        body += ["", "[b]What the master would have said[/]", ""]
+        body.append(f"[dim]{safe(canonical_answer(self.current.pattern))}[/]")
+        body.append(f"\n[dim]{recorded.xp.explain()}[/]")
+
+        self.show_feedback("\n".join(body), correct=outcome.correct)
 
     def present_completion(self, item: PlannedItem) -> None:
         context: AppContext = self.app.context
@@ -404,7 +502,14 @@ class SessionScreen(Screen):
         )
 
     def action_submit_code(self) -> None:
-        if self.awaiting_advance or not isinstance(self.current, tuple):
+        if self.awaiting_advance:
+            return
+        from ..game.modes.recall import RecallRound
+
+        if isinstance(self.current, RecallRound):
+            self.submit_recall()
+            return
+        if not isinstance(self.current, tuple):
             return
         if self.edited_source is not None:
             self.query_one("#prompt", Static).update("[yellow]Compiling and running…[/]")

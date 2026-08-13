@@ -34,8 +34,8 @@ from .mastery import PatternMastery, all_mastery
 #: Which mode exercises each scheduled dimension in the MVP.
 _MODE_FOR: dict[Dimension, GameMode] = {
     Dimension.RECOGNITION: GameMode.HUNTER,
+    Dimension.RECALL: GameMode.RECALL,
     Dimension.IMPLEMENTATION: GameMode.COMPLETE,
-    # Recall (Mode B) is not in the MVP; its cards simply are not scheduled yet.
 }
 
 
