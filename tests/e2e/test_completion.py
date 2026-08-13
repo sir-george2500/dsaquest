@@ -196,6 +196,21 @@ def _segment_colour(editor: TextArea, row: int, needle: str):
     return None
 
 
+def _line_colours(editor: TextArea, row: int) -> set:
+    """Every distinct colour painted on a rendered line.
+
+    Counting colours rather than probing one token: the better the highlight
+    query, the more finely a line is split into segments, so any assertion that
+    a particular substring survives as one contiguous segment gets *more*
+    fragile as highlighting improves. Distinct-colour count moves the right way.
+    """
+    return {
+        segment.style.color
+        for segment in editor.render_line(row)
+        if segment.style is not None and segment.style.color is not None and segment.text.strip()
+    }
+
+
 # --------------------------------------------------------------------------
 # Driving the screens
 # --------------------------------------------------------------------------
@@ -355,15 +370,17 @@ def test_entering_a_completion_exercise_mounts_an_editor_that_takes_typing(conte
 def test_the_editor_highlights_cpp_when_the_grammar_is_available(context):
     """Colour is a nicety, and losing it must never cost the exercise.
 
-    So this asserts both halves of that contract: where ``tree-sitter-cpp`` is
+    So this asserts both halves of that contract: where the grammar is
     installed the editor really is parsing C++ and really is painting it, and
     where it is not the editor still exists and still takes text.
 
-    The snippet is C++ rather than C on purpose. ``tree-sitter-cpp`` ships only
-    the C++ *delta* over the C grammar's highlight queries, and nothing loads
-    the C half, so ``int``, ``for``, ``return``, literals and comments are not
-    captured at all — a hole filled with C-shaped code comes out monochrome.
-    ``auto`` and ``class`` are captured, so they are what this measures.
+    The line under test is ordinary C++ — a type, a keyword, an identifier, a
+    literal and a comment — not the exotic corners. ``tree-sitter-cpp`` ships
+    only the C++ *delta* over the C grammar's queries, so for a long time
+    ``int``, ``for``, ``return``, literals and comments were captured by
+    nothing at all and a hole filled with C-shaped code came out monochrome
+    while the editor still reported itself syntax-aware. Loading the C base
+    alongside the delta is what fixed that, and this line is what proves it.
     """
     _put_one_completion_on_the_review_pile(context, TEMPLATE_PATTERN)
 
@@ -374,7 +391,10 @@ def test_the_editor_highlights_cpp_when_the_grammar_is_available(context):
             screen = await _open_a_completion_exercise(app, pilot)
             editor = _editor(screen)
 
-            editor.text = "auto it = pos.find(need);\nclass Counter { };\n"
+            editor.text = (
+                "int best = 0;  // ordinary C++, not the exotic corners\n"
+                "auto it = pos.find(need);\n"
+            )
             # Park the cursor off the line under inspection: the cursor splits
             # the segment it sits on, and would split the word being measured.
             editor.move_cursor((2, 0))
@@ -388,10 +408,13 @@ def test_the_editor_highlights_cpp_when_the_grammar_is_available(context):
             assert editor.language == "cpp"
             assert editor.is_syntax_aware, "the editor is not parsing what the player types"
 
-            keyword = _segment_colour(editor, 0, "auto")
-            code = _segment_colour(editor, 0, "pos.find")
-            assert keyword is not None and code is not None
-            assert keyword != code, "C++ is registered but nothing is painted"
+            colours = _line_colours(editor, 0)
+            assert len(colours) >= 3, (
+                "an ordinary line of C++ came out in "
+                f"{len(colours)} colour(s) — the editor says it is syntax-aware "
+                "but is painting almost nothing"
+            )
+            assert _segment_colour(editor, 1, "auto") is not None
 
     _run(scenario())
 

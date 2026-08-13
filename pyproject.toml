@@ -15,6 +15,7 @@ dependencies = [
     "pyyaml>=6.0",
     "fsrs>=6.0",
     "platformdirs>=4.0",
+    "tree-sitter-c>=0.23",
 ]
 
 [project.optional-dependencies]

@@ -9,6 +9,15 @@ So the grammar is registered explicitly from ``tree-sitter-cpp``, and every step
 of that is allowed to fail quietly. A missing grammar, an incompatible query
 file, a tree-sitter version that rejects a predicate — none of these should stop
 someone practising. They lose colour, not the exercise.
+
+The highlight query needs both packages. ``tree-sitter-cpp``'s
+``highlights.scm`` is a *delta* over ``tree-sitter-c``'s — seventy lines
+covering ``class``, ``namespace``, ``template``, ``auto`` and little else. On
+its own it captures **nothing** in ordinary code: no types, no keywords, no
+numbers, no comments. Measured on ``int main() { int a[3]; ... }``, the C++
+query alone produced 0 captures and the two concatenated produced 31. Without
+the C base the editor is monochrome while still reporting itself as
+syntax-aware, which is the worst of both.
 """
 
 from __future__ import annotations
@@ -28,8 +37,6 @@ def _cpp_grammar() -> tuple[object, str] | None:
     editor mount is wasted work, and because a failure will keep failing.
     """
     try:
-        import pathlib
-
         import tree_sitter
         import tree_sitter_cpp
     except ImportError:
@@ -37,15 +44,43 @@ def _cpp_grammar() -> tuple[object, str] | None:
 
     try:
         language = tree_sitter.Language(tree_sitter_cpp.language())
-        query = pathlib.Path(tree_sitter_cpp.__file__).parent / "queries" / "highlights.scm"
-        if not query.is_file():
-            matches = list(pathlib.Path(tree_sitter_cpp.__file__).parent.rglob("highlights.scm"))
-            if not matches:
-                return None
-            query = matches[0]
-        return language, query.read_text(encoding="utf-8")
     except Exception:
         return None
+
+    # C first, then the C++ delta on top. If the C base is missing we still
+    # register what we have: partial colour beats none, and the editor works
+    # either way.
+    sources = []
+    try:
+        import tree_sitter_c
+
+        sources.append(_highlights_of(tree_sitter_c))
+    except Exception:
+        pass
+    sources.append(_highlights_of(tree_sitter_cpp))
+
+    query = "\n".join(part for part in sources if part)
+    return (language, query) if query else None
+
+
+def _highlights_of(module: object) -> str:
+    """A grammar package's highlights.scm, or empty if it does not ship one."""
+    import pathlib
+
+    try:
+        root = pathlib.Path(module.__file__).parent  # type: ignore[attr-defined]
+    except Exception:
+        return ""
+    path = root / "queries" / "highlights.scm"
+    if not path.is_file():
+        matches = sorted(root.rglob("highlights.scm"))
+        if not matches:
+            return ""
+        path = matches[0]
+    try:
+        return path.read_text(encoding="utf-8")
+    except Exception:
+        return ""
 
 
 def cpp_highlighting_available() -> bool:
