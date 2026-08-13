@@ -373,7 +373,9 @@ class SessionScreen(Screen):
                     body.append(f"      [dim]looked for {safe(phrases)}[/]")
 
         body += ["", "[b]What the master would have said[/]", ""]
-        body.append(f"[dim]{safe(canonical_answer(self.current.pattern))}[/]")
+        body.append(
+            f"[dim]{safe(canonical_answer(self.current.pattern, library=context.library))}[/]"
+        )
         body.append(f"\n[dim]{recorded.xp.explain()}[/]")
 
         self.show_feedback("\n".join(body), correct=outcome.correct)

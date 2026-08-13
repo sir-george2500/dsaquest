@@ -26,6 +26,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from ...content.loader import PatternLibrary
 from ...domain.enums import Rating
 from ...domain.pattern import Pattern, RubricPoint
 
@@ -155,18 +156,41 @@ def grade(
     return RecallOutcome(results=results, self_grade=self_grade, answer=answer)
 
 
-def canonical_answer(pattern: Pattern) -> str:
-    """What the master would have said — shown after the learner commits."""
+def canonical_answer(pattern: Pattern, *, library: PatternLibrary | None = None) -> str:
+    """What the master would have said — shown after the learner commits.
+
+    Every cue is followed by its authored ``note``, which is the *reason* the
+    cue means what it means: "No contiguity means no window." Those notes were
+    written for all 126 cues in the library and shown by ``dsa pattern``, but
+    this panel — the one a learner actually reads, at the moment they have just
+    failed to recall something — printed the bare cue and dropped the reason.
+    A cue without its reason is a fact to memorise, which is the exact habit
+    this product exists to break.
+
+    ``library`` is optional and only used to name the pattern an anti-signal
+    points at. Without it the raw id is printed, which is still true, just
+    uglier; a missing library must not cost the learner the explanation.
+    """
+
+    def named(pattern_id: str) -> str:
+        if library is not None and pattern_id in library:
+            return library[pattern_id].name
+        return pattern_id
+
     lines = [f"{pattern.name}", ""]
 
     lines.append("SIGNALS")
     for signal in sorted(pattern.signals, key=lambda s: -s.strength):
         lines.append(f"  {'*' * signal.strength} {signal.cue}")
+        if signal.note.strip():
+            lines.append(f"      {signal.note.strip()}")
 
     if pattern.anti_signals:
         lines += ["", "RULES IT OUT"]
         for anti in pattern.anti_signals:
-            lines.append(f"  {anti.cue}  ->  {anti.instead}")
+            lines.append(f"  {anti.cue}  ->  {named(anti.instead)}")
+            if anti.note.strip():
+                lines.append(f"      {anti.note.strip()}")
 
     lines += [
         "",
