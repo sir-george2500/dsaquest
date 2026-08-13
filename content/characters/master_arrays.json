@@ -1,0 +1,173 @@
+{
+  "id": "master_arrays",
+  "name": "MASTER OF ARRAYS",
+  "title": "Warden Ilsa Korrin, the Straight Line",
+  "region": "plains-of-arrays",
+  "patterns": [
+    "hashing-frequency",
+    "prefix-sum",
+    "two-pointers",
+    "sliding-window"
+  ],
+  "personality": {
+    "warmth": 0.2,
+    "verbosity": 0.3,
+    "praise_threshold": 0.85
+  },
+  "gate": {
+    "recognition": 0.75,
+    "understanding": 0.7,
+    "implementation": 0.75,
+    "retention": 0.7
+  },
+  "placeholders": {
+    "days": "whole days since the relevant event — the student's last visit, a past failure on this problem, or the length of the current unbroken practice streak",
+    "streak": "number of consecutive correct drills in the current run",
+    "attempts": "how many attempts the student previously needed on this problem",
+    "requirement": "name of the gate dimension that is short: recognition, understanding, implementation, or retention",
+    "shortfall": "how far the short gate dimension sits below its threshold, as a percentage",
+    "total": "number of problems in the final test",
+    "required": "how many must be answered correctly to pass"
+  },
+  "dialogue": {
+    "greeting_first": [
+      "You are at the entrance. Everything past me is harder than me.",
+      "An array is a row of things, in order. That is the whole definition. Most of what you learn after me is built on that one sentence.",
+      "I am the first master you meet. Not the hardest. The one you cannot walk around.",
+      "Sit. You will want to be clever here. Do not be. Not yet."
+    ],
+    "greeting_returning": [
+      "Again.",
+      "You came back. Sit.",
+      "Begin. Same row, further along.",
+      "Hands on the keys."
+    ],
+    "greeting_after_gap": [
+      "{days} days. The array did not reorder itself while you were gone. Begin.",
+      "You were away {days} days. We start one step back. That is not a punishment, it is arithmetic.",
+      "{days} days. Long enough that the hand forgets before the head does. Drills first.",
+      "Gone {days} days, and back anyway. That is the part that counts. Sit."
+    ],
+    "lesson_intro": [
+      "One idea. It removes a loop. Watch.",
+      "This is simpler than you are expecting. That is the lesson, not an aside.",
+      "I name the technique now. Nothing is hidden yet.",
+      "A small idea. It carries you across half this region."
+    ],
+    "lesson_memorise": [
+      "Keep this one. You will reach for it weekly.",
+      "Learn it until you stop reading it.",
+      "You will not have time to rederive this later. Take it now.",
+      "This goes in the hand, not in your notes."
+    ],
+    "drill_correct": [
+      "Correct.",
+      "Good.",
+      "Next.",
+      "Yes."
+    ],
+    "drill_wrong": [
+      "No. Your window grew and never shrank. Shrinking is the other half of the pattern.",
+      "Wrong. The prefix array is one longer than the input. Count the boundaries again.",
+      "That is not it. Read it again. The answer is in the first sentence.",
+      "No. You moved the wrong pointer. Ask which end can never improve the answer, and retract that one.",
+      "Wrong. You counted the element as its own partner. Query the map first, insert after."
+    ],
+    "drill_streak": [
+      "{streak} in a row. The hand is starting to move ahead of the head. Continue.",
+      "Steady. Hold that.",
+      "{streak} straight. Do not slow down to admire it.",
+      "Good rhythm. Keep it."
+    ],
+    "trial_intro": [
+      "No name this time. Read it and choose.",
+      "I tell you nothing here. The constraints already did.",
+      "The label comes off from here. Decide for yourself.",
+      "One problem. No hint. Begin."
+    ],
+    "fail_wrong_pattern": [
+      "Wrong tool. The values go negative, and a window cannot survive that. Prefix sums and a map. Look again.",
+      "You reached for a second loop. You did not need one. Reread the constraints and pick again.",
+      "That was clever, and it was wrong. The array was already sorted. That was the whole hint.",
+      "No. Nothing in that statement was contiguous, so a window had nothing to slide over. Back to the signals — we read them together."
+    ],
+    "fail_timeout": [
+      "Time. You had the idea and would not commit to it.",
+      "Time ran out. You knew this one. Knowing it slowly is a fluency problem, and drills fix that.",
+      "Time. Nothing you wrote was wrong. It was late. Again.",
+      "Time. You spent it hunting for something complicated. There was nothing complicated here."
+    ],
+    "fail_wrong_answer": [
+      "Right approach. Wrong bounds. Your loop reads one past the end.",
+      "The idea held. The code did not. Test it on an array of length one.",
+      "Correct technique, broken edge. Run it again with every element equal.",
+      "You had it. The empty prefix — sum zero, seen once — was missing. Put it in and resubmit.",
+      "Off by one is still off. Trace three elements by hand, then submit again."
+    ],
+    "success": [
+      "That is correct. Continue.",
+      "It holds. Next.",
+      "Accepted. Move on.",
+      "Done. The next one is less forgiving."
+    ],
+    "success_fast": [
+      "Fast, and nothing wasted. Good.",
+      "You saw it in the first sentence. That is what I wanted.",
+      "One pass, one answer. Continue.",
+      "No hesitation. The drills did that."
+    ],
+    "praise_exceptional": [
+      "That was well done. You saw the trap before it appeared.",
+      "Clean, one pass, correct at both ends. It is the ends that catch people.",
+      "You reached for nothing you did not need. That is harder than it sounds.",
+      "That is the best you have done here. You did not guess. You knew."
+    ],
+    "praise_major": [
+      "I have stood at this entrance a long time. Most who come through it once never come through it again. You kept returning, and you stopped reaching for tools you did not need. You have earned my respect.",
+      "I am the first master, so I will tell you what that means. Everything after me is harder, and nothing after me is different — read it, find the simple thing, do it once. You can do that now. You have earned my respect.",
+      "You arrived wanting the problems to be complicated. You leave knowing they are not. I do not say this often and I will not say it twice: you have earned my respect."
+    ],
+    "memorisation_detected": [
+      "You remember this answer. You do not understand this technique. Those are different, and the difference is visible from where I stand. A different problem.",
+      "You pass the problems you have seen and fail their variants. That gap is memory, not skill. We go back one step.",
+      "Change the skin and you are lost. That means you learned a solution and not a pattern. Try this one instead."
+    ],
+    "improvement_noticed": [
+      "You failed this {days} days ago. Today you solved it. That is improvement. Continue.",
+      "You needed {attempts} attempts on this once. Today, one. I noticed.",
+      "This was the thing that stopped you. It does not stop you now. Remember that the next time something does.",
+      "Straighter than last time. Fewer loops, fewer guesses. Good."
+    ],
+    "commitment_noticed": [
+      "{days} days without missing one. Most stop before now. You did not.",
+      "A great many beginners walk into these plains. I remember the ones who came back. You are one of them.",
+      "You have returned after every failure so far. I am counting. Keep going.",
+      "Talent walks in here every week. Attendance is the part I cannot teach, and you brought your own."
+    ],
+    "gate_locked": [
+      "Not yet. {requirement} is short by {shortfall} percent. Come back when it is not.",
+      "The gate holds. Recognition is short — you know the four techniques, you do not yet see which one a problem is asking for.",
+      "No. Understanding is short. You can write it and you cannot explain it. I need both.",
+      "Implementation is short. The idea is right and the bounds are wrong. Drill, then return.",
+      "Retention is short. What you had last week you have already dropped. Review first, then the gate."
+    ],
+    "gate_open": [
+      "The gate is open. Come when you are ready.",
+      "Nothing is short any more. The final test waits.",
+      "Enough. You may attempt it.",
+      "You meet the requirements. The rest is your decision."
+    ],
+    "final_test_intro": [
+      "I will not tell you which technique to use. That was the point of every drill before this.",
+      "{total} problems. Nothing named. Read each one twice, then choose.",
+      "No help from me now. Only what you carry.",
+      "The signals are in the constraints. They always were. Begin."
+    ],
+    "victory": [
+      "It is done. The plains are behind you.",
+      "You passed. I guard this entrance; I do not follow you past it. Go.",
+      "Finished. Everything after this assumes you have what I taught you. You do.",
+      "That is mastery of the simple things. Nothing you meet later will be simpler. Go."
+    ]
+  }
+}

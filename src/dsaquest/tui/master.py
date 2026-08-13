@@ -509,7 +509,16 @@ class MasterScreen(Screen):
             self.notify("Every secret must be drilled and tested first.", severity="warning")
             return
         self.exam = ft.open_test(context.conn, context.bank, self.curriculum, seed=self._seed())
-        self.say(speak(context.conn, self.master, "final_test_intro", seed=self._seed()))
+        self.say(
+            speak(
+                context.conn,
+                self.master,
+                "final_test_intro",
+                seed=self._seed(),
+                total=self.exam.total,
+                required=self.exam.required,
+            )
+        )
         self.next_exam_round()
 
     def next_exam_round(self) -> None:

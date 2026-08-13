@@ -1,0 +1,173 @@
+{
+  "id": "master_search",
+  "name": "MASTER OF SEARCH",
+  "title": "Adjudicator Sevrin Kol, the Halving",
+  "region": "halls-of-search",
+  "personality": {
+    "warmth": 0.05,
+    "verbosity": 0.2,
+    "praise_threshold": 0.9
+  },
+  "gate": {
+    "recognition": 0.8,
+    "understanding": 0.75,
+    "implementation": 0.8,
+    "retention": 0.75
+  },
+  "placeholders": {
+    "days": "whole days since the relevant event — the student's last visit, a past failure, or the length of the current practice streak",
+    "streak": "number of consecutive correct drills in the current run",
+    "attempts": "how many attempts the student previously needed on this problem",
+    "secret": "name of the secret being taught or tested in this stage",
+    "idiom": "the memorisable form of the secret — the line the student is to keep in the hand",
+    "score": "problems answered correctly in the final test",
+    "total": "problems in the final test",
+    "requirement": "name of the gate dimension that is short: recognition, understanding, implementation, or retention",
+    "shortfall": "how far the short gate dimension sits below its threshold, as a percentage"
+  },
+  "dialogue": {
+    "greeting_first": [
+      "You are here for search. Sit.",
+      "I will ask one question of everything you write. How many operations.",
+      "A linear scan is an answer. It is almost never the answer.",
+      "You will learn to discard half the world at a time and lose nothing worth keeping."
+    ],
+    "greeting_returning": [
+      "Again.",
+      "Sit. Begin.",
+      "You returned. The interval is where you left it.",
+      "Hands ready. Halve it."
+    ],
+    "greeting_after_gap": [
+      "{days} days. Nothing here narrowed while you were absent.",
+      "Away {days} days. We resume one step back. That is the cost, not a punishment.",
+      "{days} days. Recall halves faster than skill. I will measure both.",
+      "Gone {days} days. I do not scold. I only record. Begin."
+    ],
+    "lesson_intro": [
+      "{secret}. Watch once.",
+      "One rule: {secret}. It removes half the work at every step.",
+      "{secret}. Attend to the boundary, not the loop.",
+      "This is small. It collapses a class of problems. {secret}."
+    ],
+    "lesson_memorise": [
+      "Memorise it. {idiom}",
+      "{idiom} Keep it in the hand, not in notes.",
+      "You will not derive this under a clock. Take it now: {idiom}",
+      "{idiom} Repeat it until you no longer read it."
+    ],
+    "drill_correct": [
+      "Correct.",
+      "Continue.",
+      "Yes.",
+      "Next."
+    ],
+    "drill_wrong": [
+      "No. Your invariant broke. State what is true of lo and hi, then answer again.",
+      "Wrong. That midpoint overflows. Use lo + (hi - lo) / 2 and retry.",
+      "No. That loop does not terminate when the interval is two wide. Trace it by hand.",
+      "Wrong boundary. You returned the first true. I asked for the last. Again.",
+      "No. The predicate must be monotonic before you may halve. Check that first."
+    ],
+    "drill_streak": [
+      "{streak} in a row. The interval closes without you thinking about it. Continue.",
+      "Steady. Hold that pace.",
+      "{streak} correct. That is fluency, not luck. Do not slow now.",
+      "Good rhythm. Keep it."
+    ],
+    "trial_intro": [
+      "I name nothing now. Read the constraints and decide.",
+      "No label. Choose the technique yourself.",
+      "You are alone with the problem. The bounds will tell you what to do.",
+      "Decide. Then be prepared to defend the decision."
+    ],
+    "fail_wrong_pattern": [
+      "Wrong technique. The bounds were 10 to the ninth and the order was given. That was the signal.",
+      "No. You searched the array. It was the answer you should have been searching.",
+      "That approach cannot pass here at any speed. Back to the constraints. We read them together.",
+      "Wrong choice. Ask what is monotonic in this problem, then choose again."
+    ],
+    "fail_timeout": [
+      "Time. Your solution works. It is slow. Find the logarithmic solution.",
+      "Time. You scanned where you could have halved. That is the whole diagnosis. Again.",
+      "Time. Nothing you wrote was incorrect. It was linear. Here that is enough to fail.",
+      "Time. The knowledge is present, the speed is not. That is a drill problem, and drills fix it."
+    ],
+    "fail_wrong_answer": [
+      "Right technique. Wrong boundary. You are off by one on the high side.",
+      "The idea held, the loop did not. Test it on an array of two.",
+      "Correct approach, broken edge. Check the case where the answer is the first element.",
+      "You chose well and executed badly. That is the cheaper failure. Repair it and return.",
+      "Your predicate is not monotonic as written. Fix the predicate, not the search."
+    ],
+    "success": [
+      "Correct. Continue.",
+      "It holds. Next.",
+      "Accepted. Slow, but accepted. The next interval is narrower.",
+      "Correct. Move on."
+    ],
+    "success_fast": [
+      "Logarithmic and correct. Good.",
+      "Fast, and nothing wasted. Continue.",
+      "You halved immediately. Good.",
+      "No wasted operations. That is the standard here."
+    ],
+    "praise_exceptional": [
+      "That was well done. You searched the answer, not the array.",
+      "Correct at both boundaries, and quick. Few manage the boundaries at all.",
+      "Your best work in this hall. You did not guess the invariant. You held it.",
+      "Nothing wrong, nothing wasted. I have no correction to offer."
+    ],
+    "praise_major": [
+      "I have measured many students. Most are fast once, and then absent. You were neither. {score} of {total}, at the first sitting. You have earned my respect.",
+      "You arrived solving in n operations and stopping there. You do not stop there now. That change was work, not talent, and work is the only thing I weigh. You have earned my respect.",
+      "I do not encourage. I weigh, and I rule. I have weighed you: first attempt, {score} of {total}, nothing wasted. The ruling is that you have earned my respect."
+    ],
+    "memorisation_detected": [
+      "You recall answers. You do not hold the invariant. Those are different things. Another problem.",
+      "The problems you have seen, you pass. The fresh ones, you fail. That is memory, not search. We go back one step.",
+      "You remember where the boundary fell last time. You cannot derive it. So I will move it."
+    ],
+    "improvement_noticed": [
+      "You failed this {days} days ago. Today you solved it. Recorded.",
+      "You needed {attempts} attempts once. Today, one. That is improvement.",
+      "This was linear when you last sat here. It is not now.",
+      "What stopped you does not stop you. Note the method, not the relief."
+    ],
+    "commitment_noticed": [
+      "{days} days without a gap. Most stop before now. You did not.",
+      "You return after every failure. I am counting.",
+      "Talent is common. Attendance is not. Continue.",
+      "Consistency is the one thing I cannot teach. You brought it yourself."
+    ],
+    "gate_locked": [
+      "Not yet. {requirement} is short by {shortfall} percent. Return when it is not.",
+      "The gate holds. Recognition is short — you know the halving, you do not yet see when it applies.",
+      "No. Understanding is short. You can write the loop. You cannot state its invariant.",
+      "Implementation is short. The idea is sound and the boundaries are not. Drill, then return.",
+      "Retention is short. Last week's work has already decayed. Review first."
+    ],
+    "gate_open": [
+      "The gate is open. Come when you are ready.",
+      "You meet the thresholds. The final test waits.",
+      "Nothing is short any more. The timing is yours to choose.",
+      "Enough. You may sit for it."
+    ],
+    "final_test_intro": [
+      "I name no technique here. That was the point of every drill before this.",
+      "Three problems. Nothing labelled. The clock runs.",
+      "No help from me. Only what you carry.",
+      "Read the constraints. They are the only hint you are given."
+    ],
+    "victory": [
+      "{score} of {total}. Passed. Go.",
+      "It is done. You do not scan where you can halve. That was all I had to teach.",
+      "Passed. The next master will assume you can do this. He will be right.",
+      "Finished. Carry the invariant out with you."
+    ]
+  },
+  "patterns": [
+    "binary-search",
+    "binary-search-answer"
+  ]
+}

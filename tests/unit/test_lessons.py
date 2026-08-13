@@ -413,3 +413,52 @@ def test_greeting_marks_the_master_as_having_seen_you(conn, masters):
     assert repo.days_since_seen(conn, MASTER_ID) is None
     greet(conn, masters[MASTER_ID], seed=0)
     assert repo.days_since_seen(conn, MASTER_ID) == 0
+
+
+# --------------------------------------------------------------------------
+# Placeholders
+# --------------------------------------------------------------------------
+
+
+def test_unsupplied_placeholders_are_removed_not_printed(masters):
+    """One pool is spoken from several places, and they know different things.
+
+    ``fail_wrong_pattern`` fires from both a trial and a final test. Forcing
+    every call site to supply every key an author might use is fragile; showing
+    the learner ``You needed {score} of {total}`` reads as a bug in a moment
+    meant to carry weight.
+    """
+    master = next(iter(masters.values()))
+    for pool in master.dialogue:
+        rendered = speak(None, master, pool, seed=0)
+        assert "{" not in rendered and "}" not in rendered, (master.id, pool, rendered)
+
+
+def test_substitution_leaves_no_double_spaces(masters):
+    master = next(iter(masters.values()))
+    for pool in master.dialogue:
+        rendered = speak(None, master, pool, seed=1)
+        assert "  " not in rendered, (pool, rendered)
+        assert rendered == rendered.strip()
+
+
+def test_supplied_placeholders_still_substitute(masters):
+    master = masters[MASTER_ID]
+    rendered = speak(None, master, "drill_streak", seed=0, streak=9)
+    assert "{streak}" not in rendered
+
+
+def test_every_master_has_a_distinct_title_and_portrait(masters):
+    titles = [m.title for m in masters.values()]
+    assert len(set(titles)) == len(titles), titles
+    portraits = [m.portrait for m in masters.values()]
+    assert len(set(portraits)) == len(portraits), "two masters share a portrait"
+
+
+def test_no_two_masters_govern_the_same_pattern(masters):
+    """Contradictory instruction, and 'who do I train under?' becomes ambiguous."""
+    seen: dict[str, str] = {}
+    for master in masters.values():
+        for pattern in master.patterns:
+            assert pattern not in seen, f"{pattern} claimed by {seen[pattern]} and {master.id}"
+            seen[pattern] = master.id

@@ -16,6 +16,7 @@ Two rules govern how a master speaks:
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from dataclasses import dataclass
 from functools import cached_property
@@ -180,8 +181,8 @@ def speak(
     ``conn`` may be ``None`` for previews and tests, in which case nothing is
     recorded and the choice is purely seeded.
 
-    Unknown placeholders in a line are left as-is rather than raising: a missing
-    substitution should look slightly odd, not crash a training session.
+    Placeholders the caller does not supply are removed rather than printed —
+    see :func:`_substitute`.
     """
     lines = master.pool(pool)
     rng = Random(seed if seed is not None else 0)
@@ -209,10 +210,25 @@ def speak(
     return _substitute(lines[index], placeholders)
 
 
+#: A placeholder the author wrote but the caller did not supply.
+_UNRESOLVED = re.compile(r"\s*\{[a-z_][a-z0-9_]*\}")
+
+
 def _substitute(line: str, values: dict[str, object]) -> str:
+    """Fill placeholders, and drop any the caller did not supply.
+
+    The same pool is spoken from more than one place — ``fail_wrong_pattern``
+    fires from both a trial and a final test, and those know different things.
+    Rather than force every call site to pass every key an author might use,
+    unresolved placeholders are removed along with the space before them.
+
+    Leaving them visible would print ``You needed {score} of {total}`` at the
+    learner, which reads as a bug in a moment that is supposed to carry weight.
+    """
     for key, value in values.items():
         line = line.replace("{" + key + "}", str(value))
-    return line
+    line = _UNRESOLVED.sub("", line)
+    return re.sub(r"\s{2,}", " ", line).strip()
 
 
 def greeting_pool(days_since_seen: int | None) -> str:
