@@ -31,8 +31,10 @@ from ..game.session import ExerciseResult, begin_exercise, complete_exercise
 from ..learning.mastery import all_mastery
 from ..learning.planner import PlannedItem, build_session
 from ..storage import repositories as repo
+from .master import MASTER_CSS, MasterScreen
 
-CSS = """
+CSS = (
+    """
 Screen { background: $surface; }
 
 #banner {
@@ -66,12 +68,15 @@ Screen { background: $surface; }
 .good { color: $success; text-style: bold; }
 .bad { color: $error; text-style: bold; }
 """
+    + MASTER_CSS
+)
 
 
 class HomeScreen(Screen):
     BINDINGS = [
         Binding("p", "practice", "Practice"),
         Binding("r", "review", "Review due"),
+        Binding("t", "train", "Train under a master"),
         Binding("q", "quit", "Quit"),
     ]
 
@@ -134,6 +139,15 @@ class HomeScreen(Screen):
 
     def action_review(self) -> None:
         self.app.push_screen(SessionScreen(review_only=True))
+
+    def action_train(self) -> None:
+        """Train under whichever master has unfinished teaching."""
+        context = self.app.context
+        if not context.masters:
+            self.notify("No masters are teaching yet.", severity="warning")
+            return
+        master = next(iter(context.masters.values()))
+        self.app.push_screen(MasterScreen(master, context.curricula))
 
 
 class SessionScreen(Screen):
@@ -431,8 +445,11 @@ class DsaQuestApp(App):
         self.context = context
         self.review_only = review_only
         self.session_size = session_size
+        self.pending_screen = None
 
     def on_mount(self) -> None:
         self.push_screen(HomeScreen())
-        if self.review_only:
+        if self.pending_screen is not None:
+            self.push_screen(self.pending_screen)
+        elif self.review_only:
             self.push_screen(SessionScreen(review_only=True))

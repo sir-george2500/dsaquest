@@ -238,3 +238,48 @@ def doctor(db: DbOption = None) -> None:
 
 if __name__ == "__main__":  # pragma: no cover
     app()
+
+
+@app.command()
+def train(
+    master: Annotated[
+        str | None, typer.Argument(help="Master id, e.g. master_bits. Omit to list them.")
+    ] = None,
+    db: DbOption = None,
+) -> None:
+    """Train under a master: he teaches a secret, drills it, then tests you."""
+    from .render import console
+
+    context = _context(db)
+    try:
+        if not context.masters:
+            console.print("[yellow]No masters are teaching yet.[/]")
+            raise typer.Exit(1)
+
+        if master is None:
+            console.print("[bold]Masters accepting students[/]\n")
+            for found in context.masters.values():
+                from ..storage import repositories as repo
+
+                respect = repo.get_respect(context.conn, found.id)
+                console.print(f"  [b]{found.id}[/]  {found.title}")
+                console.print(
+                    f"      teaches [cyan]{found.pattern}[/]   [bright_black]respect {respect}[/]\n"
+                )
+            console.print("[dim]dsa train <master_id>[/]")
+            return
+
+        if master not in context.masters:
+            console.print(f"[red]Unknown master[/] {master!r}")
+            console.print("Known: " + ", ".join(context.masters))
+            raise typer.Exit(1)
+
+        from ..tui.app import DsaQuestApp
+        from ..tui.master import MasterScreen
+
+        chosen = context.masters[master]
+        application = DsaQuestApp(context)
+        application.pending_screen = MasterScreen(chosen, context.curricula)
+        application.run()
+    finally:
+        context.close()
