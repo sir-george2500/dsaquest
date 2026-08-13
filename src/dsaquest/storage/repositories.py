@@ -781,3 +781,59 @@ def days_since_seen(conn: sqlite3.Connection, master_id: str) -> int | None:
     if row is None:
         return None
     return (datetime.now(UTC) - datetime.fromisoformat(row[0])).days
+
+
+def record_timing(
+    conn: sqlite3.Connection,
+    attempt_id: int,
+    *,
+    breakdown: dict[str, int],
+    limit_ms: int | None = None,
+    timed_out: bool = False,
+    pressure_stage: int | None = None,
+) -> None:
+    """Persist where the time went, and the clock that was in force.
+
+    ``limit_ms`` is stored on the attempt rather than recomputed later, so a
+    future change to the par table cannot retroactively rewrite whether a past
+    attempt timed out.
+    """
+    with transaction(conn):
+        conn.execute(
+            "UPDATE attempt SET limit_ms = ?, timed_out = ?, pressure_stage = ? WHERE id = ?",
+            (limit_ms, int(timed_out), pressure_stage, attempt_id),
+        )
+        for phase, duration in breakdown.items():
+            if duration <= 0:
+                continue
+            conn.execute(
+                "INSERT OR REPLACE INTO phase_timing (attempt_id, phase, duration_ms) "
+                "VALUES (?, ?, ?)",
+                (attempt_id, phase, duration),
+            )
+
+
+def phase_breakdown(conn: sqlite3.Connection, attempt_id: int) -> dict[str, int]:
+    rows = conn.execute(
+        "SELECT phase, duration_ms FROM phase_timing WHERE attempt_id = ?", (attempt_id,)
+    ).fetchall()
+    return {row["phase"]: row["duration_ms"] for row in rows}
+
+
+def timeout_rate(conn: sqlite3.Connection, pattern_id: str, *, window: int = 20) -> float | None:
+    """Share of recent finished attempts that ran out of clock.
+
+    A rising rate means the material is understood but not yet fluent, which is
+    a different problem from getting it wrong and wants a different remedy.
+    """
+    rows = conn.execute(
+        """
+        SELECT timed_out FROM attempt
+         WHERE pattern_id = ? AND finished_at IS NOT NULL
+         ORDER BY started_at DESC LIMIT ?
+        """,
+        (pattern_id, window),
+    ).fetchall()
+    if not rows:
+        return None
+    return sum(row["timed_out"] for row in rows) / len(rows)

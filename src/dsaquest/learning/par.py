@@ -27,13 +27,21 @@ _MINUTE = 60 * _SECOND
 #: completion is tighter because a cloze hole in a template you know should be
 #: near-automatic.
 _BASE_MS: dict[GameMode, int] = {
-    GameMode.HUNTER: 90 * _SECOND,
-    GameMode.DUEL: 2 * _MINUTE,
+    GameMode.HUNTER: 150 * _SECOND,
+    GameMode.DUEL: 4 * _MINUTE,
     GameMode.RECALL: 2 * _MINUTE,
     GameMode.COMPLETE: 6 * _MINUTE,
     GameMode.SOLVE: 20 * _MINUTE,
     GameMode.BOSS: 60 * _MINUTE,
 }
+
+#: No task targets less than this, whatever the difficulty scaling says.
+#:
+#: A recognition round is not a reflex test: the learner has to *read a problem
+#: statement* before they can recognise anything. Scaling an easy round down to
+#: 54 seconds was asking them to skim, which trains the opposite of what this
+#: mode exists for.
+MIN_PAR_MS = 75 * _SECOND
 
 #: Multiplier per difficulty. Easy solve lands at 12 min, hard at 36, expert at
 #: 56 — inside the 8-15 / 30-60 bands the design calls for.
@@ -58,7 +66,7 @@ PHASE_SHARE: dict[str, float] = {
 
 def par_ms(mode: GameMode, difficulty: Difficulty = Difficulty.MEDIUM) -> int:
     """Target duration in milliseconds. Not a deadline — see ``timing.limits``."""
-    return int(_BASE_MS[mode] * _DIFFICULTY_SCALE[difficulty])
+    return max(MIN_PAR_MS, int(_BASE_MS[mode] * _DIFFICULTY_SCALE[difficulty]))
 
 
 def phase_targets(mode: GameMode, difficulty: Difficulty = Difficulty.MEDIUM) -> dict[str, int]:

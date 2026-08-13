@@ -52,6 +52,11 @@ class ExerciseResult:
     self_grade: Rating | None = None
     essential_missed: bool = False
     mistakes: tuple[MistakeCode, ...] = field(default_factory=tuple)
+    timed_out: bool = False
+    """The deadline passed. A speed result — it never rates as forgotten."""
+    phase_breakdown: dict[str, int] = field(default_factory=dict)
+    limit_ms: int | None = None
+    pressure_stage: int | None = None
     source: str | None = None
     tests_passed: int = 0
     tests_total: int = 0
@@ -138,6 +143,7 @@ def complete_exercise(
             verdict=result.verdict,
             self_grade=result.self_grade,
             essential_missed=result.essential_missed,
+            timed_out=result.timed_out,
         )
     )
 
@@ -183,6 +189,16 @@ def complete_exercise(
             repo.record_mistake(conn, attempt_id=attempt_id, pattern_id=pattern_id, code=code)
         xp_total = repo.add_xp(conn, xp.total) if xp.total else xp_before
         streak = repo.touch_streak(conn, "daily", today=local_today)
+
+    if result.phase_breakdown or result.limit_ms is not None:
+        repo.record_timing(
+            conn,
+            attempt_id,
+            breakdown=result.phase_breakdown,
+            limit_ms=result.limit_ms,
+            timed_out=result.timed_out,
+            pressure_stage=result.pressure_stage,
+        )
 
     # The scheduler update runs in its own transaction inside apply_review.
     updated_card: CardRecord | None = None

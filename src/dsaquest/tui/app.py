@@ -31,7 +31,7 @@ from ..game.session import ExerciseResult, begin_exercise, complete_exercise
 from ..learning.mastery import all_mastery
 from ..learning.planner import PlannedItem, build_session
 from ..storage import repositories as repo
-from .master import MASTER_CSS, MasterScreen
+from .master import MASTER_CSS, MasterScreen, safe
 
 CSS = (
     """
@@ -236,13 +236,13 @@ class SessionScreen(Screen):
             f"{round_.problem.difficulty.value}[/]"
         )
         self.query_one("#statement", Static).update(
-            f"[b]{round_.problem.title}[/]\n\n{round_.problem.statement.strip()}\n\n"
-            f"[dim]{round_.problem.constraints.strip()}[/]\n\n"
+            f"[b]{safe(round_.problem.title)}[/]\n\n{safe(round_.problem.statement.strip())}\n\n"
+            f"[dim]{safe(round_.problem.constraints.strip())}[/]\n\n"
             f"[b]Which pattern should you use?[/]"
         )
         options = self.query_one("#options", Vertical)
         for position, (label, option) in enumerate(round_.labelled()):
-            options.mount(Button(f"{label}.  {option.name}", id=f"opt{position}"))
+            options.mount(Button(f"{label}.  {safe(option.name)}", id=f"opt{position}"))
 
     def present_completion(self, item: PlannedItem) -> None:
         context: AppContext = self.app.context
@@ -266,7 +266,9 @@ class SessionScreen(Screen):
             f"[dim]{self.index + 1}/{len(self.queue)}  ·  {item.reason}  ·  "
             f"{pattern.name}[/]\n[b]TODO: {hole.prompt}[/]   [dim](ctrl+s to submit)[/]"
         )
-        self.query_one("#statement", Static).update(f"[dim]{exercise_source(source, hole.id)}[/]")
+        self.query_one("#statement", Static).update(
+            f"[dim]{safe(exercise_source(source, hole.id))}[/]"
+        )
         editor = TextArea(
             "", language="cpp", id="editor", show_line_numbers=True, tab_behavior="indent"
         )
@@ -324,10 +326,10 @@ class SessionScreen(Screen):
                 f"not {context.library[feedback.chosen_pattern_id].name}."
             )
             if feedback.has_tell:
-                body.append(f"\n[b]How to tell:[/]\n{feedback.tell}")
-        body.append(f"\n[b]Why:[/]\n{feedback.why.strip()}")
+                body.append(f"\n[b]How to tell:[/]\n{safe(feedback.tell)}")
+        body.append(f"\n[b]Why:[/]\n{safe(feedback.why.strip())}")
         if feedback.signals:
-            body.append("\n[b]Cues present:[/] " + ", ".join(feedback.signals))
+            body.append("\n[b]Cues present:[/] " + ", ".join(safe(s) for s in feedback.signals))
         if feedback.classic_ref:
             body.append(f"\n[dim]Drills: {feedback.classic_ref}[/]")
         body.append(f"\n[dim]{outcome.xp.explain()}[/]")
