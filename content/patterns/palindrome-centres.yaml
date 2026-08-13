@@ -1,0 +1,185 @@
+id: palindrome-centres
+name: Palindromes by Their Centres
+world: 11
+order: 3
+tagline: >-
+  A palindrome is defined by its middle, not by its ends — so enumerate the
+  2n-1 centres and grow outwards, instead of the O(n^2) pairs of endpoints.
+
+prerequisites:
+  - two-pointers
+
+signals:
+  - cue: count, or find the longest, substring that reads the same forwards and backwards
+    strength: 3
+    note: >-
+      The defining property is symmetry about a middle. Every palindromic
+      substring grows outwards from exactly one of the 2n-1 centres, so the
+      centres are a complete enumeration and nothing is missed by walking them.
+  - cue: the string is short enough that n^2 character comparisons will finish
+    strength: 3
+    note: >-
+      Expanding by hand from every centre is O(n^2) and is the right answer up
+      to about n = 5000. Reaching for Manacher below that is effort spent on
+      the wrong risk.
+  - cue: n is 1e5 or more and the answer still concerns every palindrome
+    strength: 3
+    note: >-
+      On an all-equal string of length 1e5, expanding from centres is about
+      5e9 comparisons and will not finish. That constraint is the setter
+      asking for the linear method.
+  - cue: two arrays of radii would answer the question, one for odd lengths and one for even
+    strength: 2
+    note: >-
+      d1[i] and d2[i] are the whole result. Both the count of palindromic
+      substrings and the test "is s[l..r] a palindrome" fall straight out of
+      them with no further pass.
+
+anti_signals:
+  - cue: the pieces need not be contiguous — a palindromic subsequence
+    instead: two-sequence-dp
+    note: >-
+      Dropping contiguity destroys the centre. A palindromic subsequence is an
+      interval DP over the original string against its own reverse, not a scan.
+  - cue: you must only TEST whether one given range is a palindrome
+    instead: string-hashing
+    note: >-
+      One comparison of a forward fingerprint against a reversed one settles a
+      single range in O(1). Enumerating every palindrome is a different job.
+  - cue: the repeated structure sought is a border — a prefix equal to a suffix
+    instead: prefix-function
+    note: >-
+      A border compares two pieces of the SAME orientation. A palindrome
+      equals its own reverse. The two look alike in prose and are not alike.
+
+confusable_with:
+  - pattern_id: prefix-function
+    tell: >-
+      Ask whether the thing you are looking for reads the same backwards. A
+      border is a prefix equal to a suffix of the same orientation; a
+      palindrome equals its own reverse and grows from a centre rather than
+      from an end.
+  - pattern_id: string-hashing
+    tell: >-
+      Ask whether you are TESTING a candidate or FINDING all of them. Comparing
+      a range against its reverse is one hash lookup; producing every maximal
+      palindrome, or counting them, is a scan over centres.
+  - pattern_id: two-pointers
+    tell: >-
+      Both walk outwards from a position, but two pointers start at the two
+      ends of a range and converge, while this starts in the middle of one and
+      diverges. If the two indices are moving apart, you are on a centre.
+
+invariant: >-
+  After the centre at position i is processed, d1[i] is the exact number of odd
+  palindromes centred at character i and d2[i] the exact number of even ones
+  centred in the gap before i — and in Manacher's form, [l, r] is the rightmost
+  palindrome found so far, so any centre inside it may be seeded from its
+  mirror without re-comparing a single character already known to match.
+
+complexity:
+  time: O(n^2) expanding from centres; O(n) with Manacher
+  space: O(n) for the two radius arrays
+  note: >-
+    The quadratic form is not a mistake below n = 5000; it is shorter, and
+    shorter is a real property under a clock. Above it the linear form is the
+    only one that finishes.
+
+data_structures:
+  - two integer arrays of radii, d1 and d2
+  - the string itself, indexed directly
+
+cpp_facilities:
+  - std::string and plain indexing; s[i] == s[j] is the whole comparison
+  - std::max to keep the best length seen while scanning
+  - "guard the ends with while (l >= 0 && r < n && s[l] == s[r])"
+  - std::string_view when the answer is a substring and copying it would dominate
+
+traps:
+  - description: >-
+      Handling only odd-length palindromes, because "abcba" is the example
+      everyone pictures.
+    mistake_code: BOUNDS_MISSED_CASE
+    symptom: >-
+      "aa" and "abba" are missed entirely. The count is short on any string
+      with a repeated adjacent character, and the longest-palindrome answer is
+      wrong whenever the true answer has even length.
+  - description: >-
+      Letting the expansion run off either end of the string.
+    mistake_code: CPP_OUT_OF_BOUNDS
+    symptom: >-
+      A read outside the string. It often does not crash — it compares against
+      whatever byte follows — so the answer is quietly too long rather than
+      obviously broken.
+  - description: >-
+      Confusing the radius with the length. d1[i] counts the palindromes
+      centred at i, which is also the radius including the centre itself.
+    mistake_code: BOUNDS_OFF_BY_ONE
+    symptom: >-
+      Lengths come out one or two short, or the reconstructed substring is
+      off-centre by one.
+
+recall_rubric:
+  - key: centre-not-ends
+    prompt: Say what defines a palindrome, and how many candidates that gives you.
+    essential: true
+    accepts:
+      - 2n - 1 centres
+      - centre
+      - middle
+      - n characters and n-1 gaps
+  - key: odd-and-even
+    prompt: Say why one array of radii is not enough.
+    essential: true
+    accepts:
+      - odd and even
+      - d1 and d2
+      - even palindromes have no middle character
+      - gap between characters
+  - key: invariant
+    prompt: State the invariant Manacher maintains.
+    essential: true
+    accepts:
+      - rightmost palindrome
+      - mirror
+      - clamp
+      - never re-compare
+  - key: complexity
+    prompt: Give the time and space complexity of both forms.
+    essential: false
+    accepts:
+      - o(n^2)
+      - o(n)
+      - linear
+      - quadratic
+  - key: bounds
+    prompt: Name the guard the expansion loop needs.
+    essential: false
+    accepts:
+      - l >= 0
+      - r < n
+      - both ends
+  - key: what-falls-out
+    prompt: Name something the radius arrays answer without another pass.
+    essential: false
+    accepts:
+      - sum of the radii
+      - number of palindromic substrings
+      - is s[l..r] a palindrome
+      - longest
+
+template_file: palindrome-centres.cpp
+template_notes: >-
+  The first hole is the quadratic form and is the one to write first, because
+  it is the definition made literal: for each of the 2n-1 centres, push both
+  ends outwards while they agree. The second and third holes are Manacher's
+  odd and even passes, and they are the same idea twice — seed from the mirror
+  inside the rightmost known palindrome, clamp to its remaining reach, extend
+  by direct comparison, then move the window when it reaches further right.
+  The even pass differs only in where the centre sits, which is why its left
+  end starts one further out.
+
+related:
+  - prefix-function
+  - string-hashing
+  - two-pointers

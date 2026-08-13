@@ -1,0 +1,252 @@
+id: trie
+name: The Prefix Tree
+world: 11
+order: 2
+tagline: >-
+  Store a set of sequences as one tree in which the path to a node spells it —
+  then every question about shared beginnings is a walk of length |query|,
+  however many things are stored.
+
+prerequisites:
+  - hashing-frequency
+
+signals:
+  - cue: a set of words is queried by PREFIX — how many start with this, does any start with this
+    strength: 3
+    note: >-
+      No hash map answers a prefix question at any price; it can only answer
+      about keys it holds whole. A tree whose paths are prefixes answers it by
+      walking, in time proportional to the query alone.
+  - cue: the total length of all the strings is bounded, but the number of strings is large
+    strength: 3
+    note: >-
+      The bound on the SUM of lengths is the setter telling you the structure
+      is sized by characters, not by words. That is the trie's memory model
+      written into the constraints.
+  - cue: repeatedly find the longest stored word that is a prefix of a query
+    strength: 3
+    note: >-
+      Walk the query down the tree and remember the last node marked as a word
+      end. Dictionary segmentation, routing tables and tokenisers are all this.
+  - cue: maximise or minimise a XOR against a set of numbers
+    strength: 3
+    note: >-
+      The bits of a number are a sequence compared left to right, so the same
+      tree stores them. Walking down taking the opposite bit where possible is
+      forced, because one high bit outweighs everything below it.
+  - cue: many strings share long beginnings and the same prefix work is being repeated
+    strength: 2
+    note: >-
+      The shared chain is stored once and walked once. If the statement makes a
+      point of the words being similar, that is the shape being described.
+  - cue: words must be produced in lexicographic order, or counted below some ordering bound
+    strength: 2
+    note: >-
+      A depth-first walk in child order visits the stored words in
+      lexicographic order, which no hash structure offers.
+
+anti_signals:
+  - cue: only whole-word equality is ever asked, and nothing about prefixes
+    instead: hashing-frequency
+    note: >-
+      An unordered_set does that in one line with a fraction of the memory. A
+      trie earns its 104 bytes per node only when the shared beginnings are
+      actually being used.
+  - cue: one pattern must be found inside one long text
+    instead: prefix-function
+    note: >-
+      One string against one string needs no dictionary. Build the border array
+      and scan; the tree only starts paying when there are many patterns or
+      many queries.
+  - cue: arbitrary interior substrings must be compared with each other
+    instead: string-hashing
+    note: >-
+      A prefix tree is indexed from the start of each stored string. Comparing
+      s[3..9] with s[40..46] is not a prefix question and the tree has no entry
+      point for it.
+  - cue: the pieces sought read the same forwards and backwards
+    instead: palindrome-centres
+    note: >-
+      Palindromes are found from their middles outwards, which is the one
+      direction a prefix tree cannot walk.
+  - cue: the strings are numbers and the question is about their order or a range of values
+    instead: binary-search
+    note: >-
+      A sorted array answers "how many are below x" directly. Reach for the
+      bit tree only when the operation is XOR, which no ordering respects.
+
+confusable_with:
+  - pattern_id: prefix-function
+    tell: >-
+      Count the strings in the problem. Two — a pattern and a text — means the
+      border array; a whole dictionary that queries arrive against, again and
+      again, means the tree.
+  - pattern_id: string-hashing
+    tell: >-
+      Ask whether the question is "are these equal" or "what shares a
+      beginning with this". A fingerprint answers only the first and answers it
+      in O(1); the second needs the structure that a fingerprint deliberately
+      throws away.
+
+invariant: >-
+  Every node stands for exactly one distinct prefix of the inserted set, its
+  pass counter equals the number of inserted words having that prefix, and its
+  end counter equals the number of inserted words equal to it — so both are
+  already correct at the moment a walk arrives, and no subtree is ever visited
+  to answer a query.
+
+complexity:
+  time: O(L)
+  space: O(L * A)
+  note: >-
+    L is the total length of everything inserted and A the alphabet size. Each
+    insert or query is O(|w|), independent of how many words are stored — that
+    independence is the reason to pay for it. The space term is the sting: with
+    26 int children per node, 1e6 characters of input is about 99 MiB before
+    anything else exists, and over a 62-character alphabet the same input needs
+    about 236 MiB and is dead on arrival.
+
+data_structures:
+  - a vector of fixed-size children arrays, indexed by node number
+  - a pass counter and an end counter per node
+  - node 0 as the root, so child 0 is free to mean "absent"
+  - a binary trie over the bits of an integer, most significant first
+
+cpp_facilities:
+  - std::vector<std::array<int, 26>> with value-initialised children
+  - std::map<char, int> per node when the alphabet is large and the tree sparse
+  - reserve() on the node vector when the total length is known in advance
+  - an explicit stack or an index loop instead of recursion on deep chains
+
+traps:
+  - description: >-
+      Holding a reference or pointer to a node across an insertion that grows
+      the node vector.
+    mistake_code: CPP_ITERATOR_INVALIDATION
+    symptom: >-
+      Silent corruption or a crash that moves when the input changes.
+      `auto& node = nodes[v];` followed by `nodes.push_back(...)` leaves the
+      reference dangling if the vector reallocates, and it reallocates on
+      exactly the inputs that grow the tree — the large ones. Store the index,
+      never the reference.
+  - description: >-
+      No end-of-word marker, so a prefix of a stored word is reported as
+      stored.
+    mistake_code: CPP_UNINITIALISED_VALUE
+    symptom: >-
+      Insert "card" and the structure claims to contain "car", "ca" and "c".
+      Every test whose dictionary happens to be prefix-free passes, which is
+      most hand-written tests.
+  - description: >-
+      A 26-way children array per node against a total input length near 1e6.
+    mistake_code: COMPLEX_TOO_MUCH_MEMORY
+    symptom: >-
+      Memory limit exceeded with a correct algorithm: 26 * 4 bytes per node
+      times a million nodes is about 99 MiB. Over a mixed-case or alphanumeric
+      alphabet it is 236 MiB. A map per node trades that for a log factor.
+  - description: >-
+      Indexing children by c - 'a' on input that also contains capitals,
+      digits, spaces or punctuation.
+    mistake_code: CPP_OUT_OF_BOUNDS
+    symptom: >-
+      No crash, just wrong answers on the tests containing those characters —
+      a negative or too-large index reads and writes past the array and
+      corrupts a neighbouring node instead of failing.
+  - description: >-
+      Inserting or walking recursively on a chain a million characters long.
+    mistake_code: COMPLEX_RECURSION_DEPTH
+    symptom: >-
+      Stack overflow, reported as a plain runtime error with no line number, on
+      the single test where one string is enormous. The iterative walk is the
+      same four lines and has no depth at all.
+  - description: >-
+      Using a trie where a hash set was asked for — whole-word lookups only,
+      no prefix question anywhere in the statement.
+    mistake_code: COMPLEX_TOO_MUCH_MEMORY
+    symptom: >-
+      Correct, thirty lines longer than it needed to be, and occasionally over
+      the memory limit. The tell is that the node children are never used for
+      anything except reaching the end of a word.
+
+recall_rubric:
+  - key: what-a-node-is
+    prompt: >-
+      Say what one node represents and what the path from the root spells.
+    essential: true
+    accepts:
+      - one distinct prefix
+      - the path spells the string
+      - shared beginnings stored once
+      - prefix tree
+  - key: end-marker
+    prompt: >-
+      Explain why a node needs an end-of-word flag or counter, with an example
+      of a word inside a word.
+    essential: true
+    accepts:
+      - a word can end inside another
+      - car inside card
+      - end flag
+      - otherwise prefixes look stored
+  - key: two-counters
+    prompt: >-
+      Name the two counters kept per node and the question each answers.
+    essential: false
+    accepts:
+      - pass count
+      - how many words go through
+      - end count
+      - how many words stop here
+  - key: cost
+    prompt: >-
+      Give the cost of insert and query, and say what it does NOT depend on.
+    essential: true
+    accepts:
+      - o(length of the word)
+      - independent of how many words
+      - o(|w|)
+      - does not depend on n
+  - key: memory
+    prompt: >-
+      State the memory model and the alphabet's effect on it.
+    essential: false
+    accepts:
+      - nodes times alphabet
+      - 26 ints per node
+      - total length bounds the nodes
+      - map when the alphabet is large
+  - key: binary-trie
+    prompt: >-
+      Describe the bit version and the greedy walk that maximises a XOR.
+    essential: false
+    accepts:
+      - bits most significant first
+      - take the opposite bit
+      - greedy from the top
+      - xor
+  - key: when-not-to
+    prompt: >-
+      Name the case where a hash set is the right answer instead.
+    essential: false
+    accepts:
+      - only whole-word lookups
+      - no prefix question
+      - unordered_set
+      - cheaper memory
+
+template_file: trie.cpp
+template_notes: >-
+  Child 0 means absent, because node 0 is the root and can never be anybody's
+  child — the array then needs no fill loop and the convention cannot be
+  forgotten halfway through a contest. The two counters are maintained during
+  insertion so that no query ever descends a subtree; if you find yourself
+  walking children to answer a count, the counter you needed was not kept. The
+  binary trie at the end is the same structure over the bits of an integer, and
+  it is there to make the point that this pattern is about sequences compared
+  left to right, not about words.
+
+related:
+  - prefix-function
+  - string-hashing
+  - hashing-frequency
+  - bit-manipulation

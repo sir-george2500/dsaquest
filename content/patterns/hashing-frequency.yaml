@@ -89,6 +89,12 @@ confusable_with:
       or merely which members of a fixed universe of at most twenty are present?
       Counting occurrences needs a map; membership over a tiny universe is one
       integer, because a bitmask IS the set and has no room for a count.
+  - pattern_id: string-hashing
+    tell: >-
+      Are you counting WHOLE keys, or comparing SUBSTRINGS of one long string?
+      A frequency map holds keys it was given and knows nothing about their
+      pieces. Polynomial hashing exists to fingerprint any range of a string in
+      constant time, which is a question about substrings, not about tallies.
 
 invariant: >-
   At the moment index i is examined, the map holds the tally of exactly the

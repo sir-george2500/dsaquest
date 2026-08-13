@@ -1,0 +1,149 @@
+# Problems that are really The Walk That Bends Once.
+#
+# The word "longest" is allowed and unavoidable; the words that would give the
+# game away are "two searches" and any mention of a highest point. What each
+# statement has to carry is that BOTH ends are free — the moment a statement
+# names its two endpoints it has stopped being this pattern and become a path
+# query.
+
+- id: longest-trail-of-the-wood
+  pattern: tree-diameter
+  title: The Long Trail
+  difficulty: medium
+  statement: >-
+    A wood contains n glades joined by n-1 walking paths, laid out so that every
+    glade is reachable from every other. A ranger wants to advertise the longest
+    walk in the wood: he must name two glades and the number of paths on the
+    single route between them, and no other pair of glades may have a longer
+    route. Report that number of paths. If the wood has one glade the answer is
+    zero.
+  constraints: |
+    1 <= n <= 200000
+    the paths are given as n-1 lines "u v", in arbitrary order
+    the wood may be a single chain, or one glade with 199999 neighbours
+  signals_present:
+    - the two ends of the walk are not given — the ranger must find them
+    - n glades and n-1 paths with everything reachable, so the route between any pair is unique
+    - the answer is a single length maximised over every pair
+    - both a chain and a star are called out as possible shapes
+  decoy_signals:
+    - "\"the longest route between two glades\" invites answering per pair, which needs the pairs enumerated"
+    - the star warning invites believing that the answer always runs through the busiest glade
+    - "\"longest walk\" in a general network is a famously hard problem, which invites abandoning the direct approach"
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Pick any glade and call it the top of the wood. Every route in the wood
+        now has a single highest glade on it. What does the route look like on
+        either side of that glade?
+    - text: >-
+        Two downward chains, glued. So at each glade the best route bending
+        there is its deepest branch plus its second deepest — and the answer is
+        the largest of those over all glades, not just over the one you picked.
+    - text: >-
+        Or: walk to the farthest glade from anywhere, then walk to the farthest
+        glade from THAT. The second distance is the answer, and it works only
+        because there is exactly one route between any two glades.
+      reveals_pattern: true
+  why: >-
+    Both ends free is the tell. Rooting the wood anywhere gives every route a
+    highest glade, and above that glade the route is two downward chains — so
+    keeping the best two branches at each glade and maximising over all of them
+    is one pass. The star warning is there because the shortcut of "look at the
+    busiest glade" is wrong in general, and the chain warning because a
+    recursive pass of 2*10^5 frames is the other way to fail this.
+  classic_ref: CPH 14.2, algorithms 1 and 2
+
+- id: herald-post-of-the-wood
+  pattern: tree-diameter
+  title: Where the Herald Stands
+  difficulty: hard
+  statement: >-
+    A wood of n glades and n-1 paths, every glade reachable from every other. A
+    single herald is to be posted in one glade. News travels one path per hour,
+    in every direction at once, so the time for the news to reach the whole wood
+    is the number of paths from the herald to whichever glade is farthest from
+    him. Choose the glade that makes that time as small as possible and report
+    the time. The herald may stand in any glade, including a glade at the very
+    edge of the wood.
+  constraints: |
+    1 <= n <= 200000
+    the paths are given as n-1 lines "u v"
+    trying every glade as the post and searching from each is far too slow
+  signals_present:
+    - one place is chosen so that the worst journey from it is smallest
+    - n glades and n-1 paths with everything reachable
+    - the cost is measured to the FARTHEST glade, not summed over all glades
+    - the statement rules out trying every glade and searching from each
+  decoy_signals:
+    - "\"place one point so the total is smallest\" is a different objective with a different answer — this one is a worst case, not a total"
+    - "\"as small as possible\" over a numeric answer invites searching over candidate times and testing feasibility"
+    - the herald being allowed at the edge invites believing the answer is attained somewhere central by definition rather than by proof
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Suppose you already knew the two glades that are farthest apart in the
+        whole wood. Where would you put the herald, and why could no other
+        glade be better?
+    - text: >-
+        On the route between them, in the middle: any post must be at least
+        half that route away from one of those two ends, and the middle attains
+        it. So the answer is that route's length, halved and rounded up.
+    - text: >-
+        Find the longest route first — farthest glade from anywhere, then
+        farthest from that — and report ceil(L / 2). Or compute every glade's
+        worst journey as the larger of its distances to the two ends.
+      reveals_pattern: true
+  why: >-
+    "Smallest worst case" is the radius, and the radius of a wood is always half
+    its longest route rounded up: no post can beat that bound, because it must
+    be at least half the route from one of its two ends, and the middle glade
+    of that route attains it. So the problem reduces entirely to finding the
+    longest route. Note the decoy carefully — minimising the TOTAL journey is a
+    different question with a different answer.
+  classic_ref: CPH 14.2, radius and centre from the diameter
+
+- id: beacon-reach-tally
+  pattern: tree-diameter
+  title: The Beacon Tally
+  difficulty: hard
+  statement: >-
+    A wood of n glades and n-1 paths, all reachable from one another. A beacon
+    is to be lit in every glade in turn, and for each one the clerk records how
+    many paths away the most distant glade is. Report all n recorded numbers, in
+    order of glade number. With n at 200000 a separate search from each glade is
+    out of the question.
+  constraints: |
+    1 <= n <= 200000
+    the paths are given as n-1 lines "u v"
+    the answers must all be produced within a single pass or two over the wood
+  signals_present:
+    - the distance to the farthest glade is wanted, and wanted for every glade
+    - n glades and n-1 paths with everything reachable
+    - a search from each glade is explicitly ruled out by the bound
+    - nothing constrains which glades may be used, so the routes are unrestricted
+  decoy_signals:
+    - "\"for every glade\" invites a fold over the glades beyond it, which answers only the downward half"
+    - "\"the most distant glade\" reads as n independent questions rather than two"
+    - the size bound invites an ancestor structure and per-glade queries, which is a log factor and a much harder implementation
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        For one particular glade, where does its farthest glade tend to sit?
+        Try it by hand on a chain of five, then on a star.
+    - text: >-
+        It is always one of the two ends of the wood's longest route. Nothing
+        hanging off that route can be farther from anywhere, or it would have
+        made a longer route itself.
+    - text: >-
+        Find the longest route's two ends, take the distance array from each,
+        and every glade's answer is the larger of its two entries.
+      reveals_pattern: true
+  why: >-
+    The farthest glade from ANY glade is an endpoint of a longest route — that
+    is the same exchange argument that makes the two-search method correct, used
+    for all n answers rather than for one. So two distance arrays and a maximum
+    per glade finish it, where the obvious method is a search per glade and
+    O(n^2). Notice that the downward fold alone cannot do this: a glade's
+    farthest neighbour is usually behind it, not below it.
+  classic_ref: CPH 14.3, all longest paths

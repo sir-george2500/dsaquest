@@ -1,0 +1,77 @@
+# Sample inputs for Sage Orenna Thal's templates — Mode C differential judging.
+#
+# No expected outputs: the intact template is the oracle. What these inputs
+# have to be is DISCRIMINATING, and on trees that means something specific.
+# A tree that is a path cannot tell a two-best fold from a single-best one,
+# and a tree whose longest route happens to pass through vertex 1 cannot tell
+# "maximise over every vertex" from "look at the root". So every set below
+# contains at least one branching tree whose interesting structure is nowhere
+# near the root, alongside a chain, a star and the single vertex.
+
+subtree-aggregation.cpp:
+  # n / n-1 lines "u v" / n values
+  # The chapter-14 tree: root 1, children 2 3 4, then 5 6 under 2 and 7 under 4.
+  # Subtree sizes 7 3 1 2 1 1 1; the pairwise-distance total is 46.
+  - "7\n1 2\n1 3\n1 4\n2 5\n2 6\n4 7\n1 1 1 1 1 1 1\n"
+  # A chain, given in an order that is neither rooted nor sorted, so a solution
+  # that trusts the printed direction of each edge line comes apart.
+  - "6\n4 5\n2 1\n3 2\n5 6\n3 4\n7 -3 0 11 -11 4\n"
+  # A star: one vertex of degree 5, so the fold has five children at once and
+  # the pairwise total is 5*1*(6-1) = 25 rather than anything path-shaped.
+  - "6\n1 2\n1 3\n1 4\n1 5\n1 6\n1 2 3 4 5 6\n"
+  # Two vertices: the smallest input on which forgetting the parent guard
+  # recurses forever.
+  - "2\n2 1\n1000000000 1000000000\n"
+  # A single vertex: no edges at all, and every total is its own value.
+  - "1\n42\n"
+
+tree-diameter.cpp:
+  # n / n-1 lines "u v"
+  # The longest route is 5-3-2-4-6 and it never touches vertex 1, so reading
+  # the answer off the root gives 3 where the truth is 4.
+  - "6\n1 2\n2 3\n2 4\n3 5\n4 6\n"
+  # The chapter-14 tree. Longest route 4, bending at vertex 1, radius 2.
+  - "7\n1 2\n1 3\n1 4\n2 5\n2 6\n4 7\n"
+  # A chain of 7, where the height and the longest route coincide — included
+  # precisely because it CANNOT separate the two, so it must not be alone.
+  - "7\n1 2\n2 3\n3 4\n4 5\n5 6\n6 7\n"
+  # A star: every route is 2 long and every leaf has eccentricity 2.
+  - "5\n3 1\n3 2\n3 4\n3 5\n"
+  # A single vertex: the longest route is 0 edges, and the radius is 0.
+  - "1\n"
+
+tree-dp.cpp:
+  # n / n-1 lines "u v" / n weights
+  # The star that breaks every greedy: the centre is worth 3 and the three
+  # leaves are worth 2 each, so taking the best vertex first scores 3 of 6.
+  - "4\n1 2\n1 3\n1 4\n3 2 2 2\n"
+  # The chapter-14 tree with unit weights: 4 vertices chosen, 38 legal choices
+  # in all, and 3 vertices needed to touch every edge.
+  - "7\n1 2\n1 3\n1 4\n2 5\n2 6\n4 7\n1 1 1 1 1 1 1\n"
+  # A chain of 4 with a heavy middle, which separates "sum the children's
+  # skip" from "sum the best of each child".
+  - "4\n1 2\n2 3\n3 4\n4 5 5 4\n"
+  # Large weights on a deeper branching tree: the total passes 2^31, so an int
+  # accumulator turns negative here and nowhere above.
+  - "5\n1 2\n2 3\n3 4\n4 5\n1000000000 1 1000000000 1 1000000000\n"
+  # A single vertex: it is chosen, there are two arrangements, and no edge
+  # needs covering.
+  - "1\n9\n"
+
+binary-lifting.cpp:
+  # n / n-1 lines "u v" / q / q lines "u w k"
+  # A tree four levels deep with two full branches: 8 and 10 meet at 2, 9 and
+  # 11 meet at the root, and 8 and 9 are siblings under 4.
+  - "11\n1 2\n1 3\n2 4\n2 5\n4 8\n4 9\n5 10\n3 6\n3 7\n6 11\n5\n8 10 1\n9 11 2\n8 9 3\n11 7 3\n8 4 1\n"
+  # A chain of 9. The 5th ancestor of 9 is 4, reached in two jumps because
+  # 5 is 101 in binary — and every query here is an ancestor query, which is
+  # the case a missing early return gets wrong.
+  - "9\n1 2\n2 3\n3 4\n4 5\n5 6\n6 7\n7 8\n8 9\n4\n9 1 5\n9 5 8\n5 9 100\n1 9 0\n"
+  # A star: every pair of leaves meets at the centre, and every climb of more
+  # than one step must saturate rather than run off the top.
+  - "5\n1 2\n1 3\n1 4\n1 5\n3\n2 3 1\n4 5 7\n1 1 3\n"
+  # Two vertices: the smallest tree with a depth difference at all.
+  - "2\n1 2\n2\n2 1 1\n1 2 4\n"
+  # A single vertex, asked about itself, climbing further than the tree is
+  # tall.
+  - "1\n1\n1 1 5\n"

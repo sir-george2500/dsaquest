@@ -1,0 +1,230 @@
+id: segment-tree
+name: Any Merge, Any Range
+world: 6
+order: 3
+tagline: >-
+  Store every node's answer for its own stretch, and any range becomes log n
+  whole nodes combined — no subtraction, so no inverse is ever required.
+
+prerequisites:
+  - fenwick-tree
+
+signals:
+  - cue: the minimum, maximum or gcd of a range, with the values changing between queries
+    strength: 3
+    note: >-
+      The decisive cue. None of those can be undone, so no pair of prefixes can
+      be subtracted and only a structure holding each node's own answer will do.
+  - cue: a whole range is updated at once, and ranges are also queried
+    strength: 3
+    note: >-
+      Range update plus range query is lazy propagation: the log n nodes that
+      tile the range each carry a tag, pushed down only when something needs to
+      descend past them.
+  - cue: the answer for a stretch is built by combining the answers for its two halves
+    strength: 3
+    note: >-
+      That sentence is the definition of an associative merge, and associativity
+      plus an identity is all this structure asks of an operation.
+  - cue: find the first position at or after l where some condition holds, under updates
+    strength: 2
+    note: >-
+      Descend the tree instead of querying repeatedly: at each node ask whether
+      the left child can contain the answer. O(log n) rather than O(log^2 n).
+  - cue: the merged quantity is a small struct rather than one number
+    strength: 2
+    note: >-
+      "The best subarray sum in this range" needs prefix, suffix, total and
+      best per node. A Fenwick has nowhere to put four numbers that must be
+      combined by a rule.
+  - cue: n and q both up to 2e5, with per-query work that looks linear
+    strength: 1
+    note: >-
+      Weak alone. It says a log factor is needed and nothing about which of the
+      three structures in this vault supplies it.
+
+anti_signals:
+  - cue: the operation is a sum, a count or an xor, and only single positions are updated
+    instead: fenwick-tree
+    note: >-
+      Four lines against sixty, and eight times less memory. Both are O(log n);
+      only one of them can be written correctly under a clock at minute fifty.
+  - cue: the array never changes at all
+    instead: prefix-sum
+    note: >-
+      A static array wants a static table. For range minima on a static array a
+      sparse table answers in O(1) after O(n log n) preprocessing, which no
+      tree does.
+  - cue: the extreme of a bag with no positions, taken repeatedly
+    instead: heap-extraction
+    note: >-
+      "The largest remaining" is not a range query. If nothing in the statement
+      says WHERE an element sits, there is no interval to build a tree over.
+  - cue: the nearest value to x among those currently present
+    instead: ordered-set
+    note: >-
+      That is an ordering over values, not over positions. A balanced set is
+      the structure whose keys are the values themselves.
+
+confusable_with:
+  - pattern_id: fenwick-tree
+    tell: >-
+      Ask what the query is asking for. If it can be written as a difference of
+      two prefixes, a Fenwick does it in four lines; if it cannot — minimum,
+      maximum, gcd, the best subarray — the difference does not exist and this
+      is the structure.
+  - pattern_id: heap-extraction
+    tell: >-
+      Ask whether positions exist. A segment tree answers about an interval of
+      an array; a heap answers about a bag whose elements have no address. If
+      the statement never says where a value sits, there is no range to query.
+
+invariant: >-
+  Every node holds the merge of its whole stretch, so any query range is
+  covered exactly by O(log n) nodes and no element is counted twice or missed.
+
+complexity:
+  time: O((n + q) log n)
+  space: O(n)
+  note: >-
+    2n cells for the iterative bottom-up form, 4n for the recursive form —
+    4n because the recursion splits at the midpoint and for an n that is not a
+    power of two the deepest index overshoots 2n. Lazy propagation keeps every
+    operation O(log n) however long the updated range is.
+
+data_structures:
+  - an array of 2n cells, leaves at n through 2n-1, parent of i at i/2
+  - a recursive tree of 4n cells, with a lazy tag beside every node
+  - a per-node struct, when the merged answer is more than one number
+  - a merge function and its identity, which are the only two things it needs
+
+cpp_facilities:
+  - std::max, std::min and std::gcd as the merge
+  - "LLONG_MIN and LLONG_MAX as identities, never 0"
+  - a lambda or a struct for the merge, so one tree serves several operations
+  - std::vector<long long> for the tags, sized alongside the values
+
+traps:
+  - description: >-
+      Using 0 as the identity for a maximum, or for a gcd, or for a minimum.
+    mistake_code: CPP_UNINITIALISED_VALUE
+    symptom: >-
+      A query returns a value that is not in the array at all. The maximum of
+      [-5, -2, -9] comes back as 0. Invisible on any test whose values are
+      positive, which is most of them.
+  - description: >-
+      Sizing the recursive tree at 2n instead of 4n.
+    mistake_code: CPP_OUT_OF_BOUNDS
+    symptom: >-
+      Correct for every n that is a power of two and a segfault or silent
+      corruption for the others — so it passes n = 8 and dies on n = 5.
+  - description: >-
+      Applying a lazy tag to the child's tag but not to the child's own answer,
+      or the reverse.
+    mistake_code: INVARIANT_COUNTER_NOT_DECREMENTED
+    symptom: >-
+      Update the answer only and the debt stops one level down, so
+      deeper queries miss it. Update the tag only and every query that stops at
+      that node reads a stale value. Both give an answer that is right on
+      short ranges and wrong on long ones.
+  - description: >-
+      Failing to push pending tags down before descending in a query.
+    mistake_code: INVARIANT_STALE_DEQUE_INDEX
+    symptom: >-
+      The first query after a range update is right; the second, which descends
+      further, reads the pre-update values. The tell is that reordering the
+      queries changes the answers.
+  - description: >-
+      Using the bottom-up iterative query for a merge that is not commutative.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      The loop combines nodes from both ends in interleaved order, which is
+      invisible for min, max, sum and gcd and wrong for matrix products or
+      string concatenation. Accumulate the left and right sides separately.
+  - description: >-
+      Building a segment tree where a Fenwick or a static table would serve.
+    mistake_code: COMPLEX_TOO_MUCH_MEMORY
+    symptom: >-
+      Not a wrong answer — a correct one delivered forty minutes late, with
+      four times the memory and every one of the traps above still live.
+      The cost of this pattern is paid in author time, and that is the cost to
+      weigh before writing line one.
+
+recall_rubric:
+  - key: the-shape
+    prompt: State what every node of the tree holds.
+    essential: true
+    accepts:
+      - the answer for its own range
+      - the merge of its two children
+      - the value over that stretch
+      - each node covers an interval
+  - key: what-it-requires
+    prompt: >-
+      Name the two properties the operation must have, and give an operation
+      that fails one.
+    essential: true
+    accepts:
+      - associativity and an identity
+      - subtraction is not associative
+      - merge(merge(a,b),c) = merge(a,merge(b,c))
+      - neutral element
+  - key: versus-fenwick
+    prompt: >-
+      Say what a Fenwick tree cannot do that this can, and why.
+    essential: true
+    accepts:
+      - no inverse is needed
+      - a fenwick subtracts two prefixes
+      - minimum has no subtraction
+      - ranges are combined not differenced
+  - key: identity
+    prompt: >-
+      Give the identity for a maximum tree and say what goes wrong with the
+      obvious choice.
+    essential: false
+    accepts:
+      - llong_min
+      - 0 is not neutral for max
+      - the empty range must return it
+      - negative values break a zero identity
+  - key: lazy
+    prompt: State what a lazy tag is and when it is pushed down.
+    essential: false
+    accepts:
+      - a pending update for the whole subtree
+      - pushed when a call descends past the node
+      - the node's answer is corrected immediately
+      - deferred range update
+  - key: sizing
+    prompt: Say how large the arrays must be, and why.
+    essential: false
+    accepts:
+      - 4n for the recursive form
+      - 2n for the iterative form
+      - n not a power of two overshoots
+      - the recursion splits at the midpoint
+  - key: complexity
+    prompt: Give the cost of a query, a point update and a lazy range update.
+    essential: false
+    accepts:
+      - o(log n) each
+      - log n nodes tile any range
+      - o(n) build
+      - lazy keeps range updates logarithmic
+
+template_file: segment-tree.cpp
+template_notes: >-
+  Two forms, and the second one exists because the first cannot do range
+  updates. Form 1 is the iterative tree: the two holes are the climb and the
+  tile, and the identity is declared at the top of the struct on purpose —
+  read it, then ask yourself what a query over an empty range should return.
+  Form 2 is lazy propagation, with the push-down left open because it is the
+  one function where doing half the job produces answers that are right often
+  enough to reach the judge.
+
+related:
+  - fenwick-tree
+  - prefix-sum
+  - binary-search
+  - ordered-set

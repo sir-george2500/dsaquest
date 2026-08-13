@@ -1,0 +1,59 @@
+# Sample inputs for Keeper Maelin Vore's four templates — Mode C differential
+# judging.
+#
+# No expected outputs, on purpose: the intact template is the oracle. What
+# these inputs must be is DISCRIMINATING, and in this region that means one
+# thing above all — duplicates. Every silent wrong answer the Keeper warns
+# about (erase-by-value taking every copy, prefix(rank) counting equals as
+# inversions, a plain set swallowing a repeat) is invisible on distinct data,
+# so every case below either repeats a value or degenerates in some other way.
+
+heap-extraction.cpp:
+  # n k / n values | m / m weights | p / p values for the running median
+  # The k-largest stream is deliberately unsorted and contains a duplicate, so
+  # a max-heap of size k (which would keep the k SMALLEST) is separated from a
+  # min-heap of size k. The weights are given in an order where joining left to
+  # right costs 42 and joining the two smallest costs 29.
+  - "6 3\n5 1 9 3 7 2\n4\n10 1 2 5\n4\n5 15 1 3\n"
+  - "7 3\n4 4 4 4 4 4 4\n5\n1 1 1 1 1\n5\n7 7 7 7 7\n"   # every value equal
+  - "1 1\n42\n1\n7\n1\n9\n"                              # single of everything
+  - "5 5\n9 8 7 6 5\n2\n1000000000 1000000000\n6\n1 2 3 4 5 6\n"  # k = n, even median
+  - "4 0\n1 2 3 4\n0\n0\n"                               # k = 0, nothing to join, no medians
+
+ordered-set.cpp:
+  # n / n values | q / q probes | d / d values to erase one copy of
+  # | p w / p values for the window
+  # The multiset holds 7 twice, so erase-one versus erase-all is separated by
+  # the third section; the probes cover both edges (below everything, above
+  # everything) and an exact match, which is where lower_bound-and-step-back
+  # differs from upper_bound-and-step-back.
+  - "5\n2 7 7 13 20\n5\n1 7 8 13 25\n3\n7 7 99\n8 3\n1 3 -1 -3 5 3 6 7\n"
+  - "4\n5 5 5 5\n3\n5 4 6\n2\n5 5\n5 2\n5 5 5 5 5\n"     # all equal, everywhere
+  - "1\n0\n3\n-1 0 1\n1\n0\n1 1\n-7\n"                   # single element, then emptied
+  - "6\n-9 -9 -1 0 4 4\n4\n-100 -9 3 100\n2\n-9 4\n6 6\n3 1 4 1 5 9\n"  # negatives, window = n
+  - "3\n1 2 3\n1\n2\n1\n99\n4 5\n1 2 3 4\n"              # erase a missing value, window wider than the row
+
+fenwick-tree.cpp:
+  # n q / n values / q commands (1 pos delta | 2 l r) | m / m values
+  # The first case is the array from the handbook's own worked example, so the
+  # printed prefixes can be checked against it by hand. The inversion inputs
+  # include a run of equal values, which is exactly where prefix(rank) and
+  # prefix(rank - 1) disagree.
+  - "8 5\n3 2 -1 6 5 4 -3 3\n2 1 7\n2 1 4\n2 5 7\n1 3 10\n2 1 7\n5\n5 1 4 2 8\n"
+  - "5 4\n0 0 0 0 0\n1 1 7\n1 5 -7\n2 1 5\n2 3 3\n6\n2 2 2 2 2 2\n"   # equal values: zero inversions
+  - "1 3\n1000000000\n2 1 1\n1 1 1000000000\n2 1 1\n4\n4 3 2 1\n"      # single cell, fully reversed
+  - "4 2\n-5 -5 -5 -5\n2 2 3\n1 4 1000000000\n7\n1000000000 1 1000000000 1 5 5 0\n"  # wide values, many ties
+  - "3 1\n1 2 3\n2 1 3\n1\n7\n"                                        # nothing to invert
+
+segment-tree.cpp:
+  # n q / n values / q commands (1 pos value | 2 l r)
+  # | m s / m values / s commands (1 l r delta | 2 l r)
+  # Case two is all-negative on purpose: a maximum tree built with 0 as its
+  # identity answers 0 there, and no positive test will ever show it. Case
+  # three has n = 5, which is not a power of two — a recursive tree sized 2n
+  # instead of 4n runs off the end on exactly that.
+  - "8 4\n3 1 4 1 5 9 2 6\n2 2 5\n2 0 3\n1 1 100\n2 0 3\n8 5\n3 1 4 1 5 9 2 6\n2 0 7\n1 1 3 10\n2 0 7\n2 1 3\n2 4 7\n"
+  - "4 3\n-5 -2 -9 -2\n2 0 3\n1 2 -100\n2 0 3\n4 3\n-5 -2 -9 -2\n2 0 3\n1 0 3 -1\n2 0 3\n"
+  - "5 3\n7 7 7 7 7\n2 0 4\n1 4 -1\n2 3 4\n5 4\n7 7 7 7 7\n2 0 4\n1 2 2 5\n2 2 2\n2 0 4\n"
+  - "1 2\n42\n2 0 0\n1 0 -42\n1 2\n42\n2 0 0\n1 0 0 8\n"
+  - "6 2\n1 1 1 1 1 1\n2 0 5\n2 3 3\n6 3\n1 1 1 1 1 1\n1 0 5 1000000000\n2 0 5\n2 2 4\n"

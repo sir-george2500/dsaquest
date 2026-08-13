@@ -1,0 +1,231 @@
+id: euclidean-gcd
+name: The Remainder Is the Whole Method
+world: 10
+order: 2
+tagline: >-
+  Replace (a, b) by (b, a mod b) until the second is zero — every common
+  divisor survives the step, so the answer does, and it takes O(log n) steps.
+
+prerequisites:
+  - modular-arithmetic
+
+signals:
+  - cue: two or more cycles that repeat with different periods and must coincide
+    strength: 3
+    note: >-
+      "When do they line up again" is the lowest common multiple, and lcm is
+      computed through the gcd — there is no direct formula for it.
+  - cue: something must be cut, tiled or grouped into equal parts with nothing left over
+    strength: 3
+    note: >-
+      The largest such part divides every length, so it divides their greatest
+      common divisor, and the gcd is therefore the answer rather than a step
+      towards it.
+  - cue: "\"can exactly t be measured\", or an equation a*x + b*y = c over integers"
+    strength: 3
+    note: >-
+      Solvable exactly when the greatest common divisor of a and b divides c.
+      Extended Euclid then produces the pair (x, y) that does it.
+  - cue: a set of positions or values that must all be congruent to each other modulo some step
+    strength: 2
+    note: >-
+      Any step that works divides every pairwise difference, so the largest is
+      the gcd of the differences. Anchoring on the first value is enough —
+      there is no need for all pairs.
+  - cue: an inverse is needed and the modulus is composite, or is never called prime
+    strength: 2
+    note: >-
+      Fermat has nothing to say about a composite modulus. Extended Euclid
+      produces the inverse when one exists and reports gcd > 1 when none does.
+  - cue: fractions that must be reduced, or ratios compared without floating point
+    strength: 1
+    note: >-
+      Weak alone. Dividing both parts by their gcd is the canonical form, but
+      plenty of problems mention fractions and want something else entirely.
+
+anti_signals:
+  - cue: the modulus is given and the task is to keep a running value small
+    instead: modular-arithmetic
+    note: >-
+      The remainder is being used to REDUCE there, not to descend. Nothing is
+      being asked about divisors of anything.
+  - cue: the answer needs the full factorisation, or the number of divisors, or all the primes
+    instead: sieve-factorisation
+    note: >-
+      The gcd is one number and Euclid never learns a single prime along the
+      way. That is exactly why it is fast, and exactly why it cannot answer
+      "how many divisors".
+  - cue: the quantity sought is a maximum or minimum decided by a monotone feasibility test
+    instead: binary-search-answer
+    note: >-
+      "The largest k such that ..." with a checkable predicate is a search. The
+      gcd answers a divisibility question, not an optimisation.
+  - cue: items must be grouped by an exact repeated value rather than by a common divisor
+    instead: hashing-frequency
+    note: >-
+      Equal is not the same as commensurable. Counting how many share a value
+      is a map; finding the largest step that fits them all is this.
+
+confusable_with:
+  - pattern_id: modular-arithmetic
+    tell: >-
+      Ask what the remainder is FOR. Reducing a value to keep it inside a given
+      m is arithmetic; feeding the remainder back in as the new pair to
+      discover an unknown divisor is Euclid.
+  - pattern_id: sieve-factorisation
+    tell: >-
+      Ask whether you need to know WHICH primes. gcd and lcm need none of them
+      and run in O(log n); the moment divisor counts, distinct prime factors or
+      Euler's totient appear, factorisation is unavoidable.
+  - pattern_id: fast-exponentiation
+    tell: >-
+      Ask whether the modulus is prime. For a prime modulus a^(m-2) is shorter
+      and both are correct; for a composite one only the extended algorithm
+      works, and it also tells you when the inverse does not exist.
+
+invariant: >-
+  The set of common divisors of the current pair is exactly the set of common
+  divisors of the original pair, and the second component strictly decreases,
+  so the loop terminates with the answer in the first.
+
+complexity:
+  time: O(log min(a, b))
+  space: O(1)
+  note: >-
+    The worst case is a pair of consecutive Fibonacci numbers — gcd(987, 610)
+    takes fourteen steps — which is why the bound is logarithmic rather than
+    merely usually fast. Folding over a row of n values is O(n log C), and in
+    practice the running gcd collapses to a small number within a few elements.
+
+data_structures:
+  - two long longs, replaced in place
+  - a running fold seeded with 0, since gcd(0, x) = x
+  - two output parameters for the Bezout coefficients, when they are needed
+
+cpp_facilities:
+  - std::gcd and std::lcm from <numeric>, C++17
+  - __gcd, the older libstdc++ spelling still seen in editorials
+  - long long, because gcd inputs are routinely 10^18
+  - recursion for the extended form, at depth O(log n) so the stack is safe
+
+traps:
+  - description: >-
+      Computing lcm as `a * b / g` rather than `a / g * b`.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Overflow on inputs whose ANSWER fits comfortably. a = 3 * 10^9 and
+      b = 4 * 10^9 have lcm 1.2 * 10^10, but a * b is 1.2 * 10^19 and passes
+      LLONG_MAX before the division ever happens.
+  - description: >-
+      Folding lcm over a long row without noticing that the true lcm grows like
+      a product.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Silent wrap partway through the row. Coprime values multiply the running
+      lcm outright, so twenty distinct primes are enough. A statement asking
+      for an lcm over many values is nearly always asking for it modulo
+      something, and then you cannot divide and must factorise instead.
+  - description: >-
+      Seeding a gcd fold with the first element and then including it again, or
+      seeding with 1.
+    mistake_code: CPP_UNINITIALISED_VALUE
+    symptom: >-
+      Seeding with 1 makes every answer 1. Seed with 0: gcd(0, x) = x, so the
+      fold needs no special case for the first element and no special case for
+      an empty row.
+  - description: >-
+      Taking the gcd of the raw positions instead of the gcd of their
+      differences.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      Correct only when one of the positions happens to be 0. The step size is
+      constrained by the GAPS, so anchor on any one element and take the gcd of
+      x[i] - x[0].
+  - description: >-
+      Assuming the Bezout coefficients come back non-negative, or that the
+      inverse is already a residue.
+    mistake_code: BOUNDS_SINGLE_ELEMENT
+    symptom: >-
+      A negative answer printed where a residue was required. egcd(3, 7) gives
+      x = -2; the inverse of 3 modulo 7 is -2 + 7 = 5, and the fix-up is the
+      caller's job.
+  - description: >-
+      Calling the recursive gcd with b = 0 handled after the modulo rather than
+      before it.
+    mistake_code: BOUNDS_EMPTY_INPUT
+    symptom: >-
+      A division by zero and a crash on the very first test containing a zero.
+      The b == 0 case is the base case, not an edge case.
+
+recall_rubric:
+  - key: the-step
+    prompt: State the replacement Euclid's algorithm performs and its stopping condition.
+    essential: true
+    accepts:
+      - gcd(a, b) = gcd(b, a mod b)
+      - replace a with b and b with a mod b
+      - stop when b is zero
+      - gcd(a, 0) = a
+  - key: why-it-works
+    prompt: >-
+      Say why the answer is unchanged by the step, in terms of the set of
+      common divisors.
+    essential: true
+    accepts:
+      - every common divisor of a and b divides a mod b
+      - the set of common divisors is the same
+      - the pair changes and the divisors do not
+      - a - kb is divisible by the same numbers
+  - key: the-lcm
+    prompt: >-
+      Give lcm in terms of gcd, and state the order the operations must be
+      written in.
+    essential: true
+    accepts:
+      - a / g * b
+      - divide before multiplying
+      - a*b/gcd but reordered
+      - lcm = ab/gcd
+  - key: bezout
+    prompt: >-
+      State what the extended algorithm returns beyond the gcd, and the
+      condition for a*x + b*y = c to be solvable.
+    essential: false
+    accepts:
+      - x and y with ax + by = g
+      - c must be divisible by the gcd
+      - bezout coefficients
+      - solvable when g divides c
+  - key: complexity
+    prompt: Give the running time and name the worst-case input family.
+    essential: false
+    accepts:
+      - o(log min(a,b))
+      - logarithmic
+      - consecutive fibonacci numbers
+      - fibonacci
+  - key: the-differences
+    prompt: >-
+      Say what to take the gcd OF when a common step over a set of positions is
+      wanted.
+    essential: false
+    accepts:
+      - the differences
+      - x[i] - x[0]
+      - the gaps
+      - pairwise differences
+
+template_file: euclidean-gcd.cpp
+template_notes: >-
+  Form 1 is four lines and one identity, and gcd(a, 0) = a is written as the
+  loop's exit rather than as a guard — that is what makes a fold seeded with 0
+  correct for free. Form 2 exists entirely for the ORDER of two operators;
+  read the two lines of arithmetic in its comment and never write the other
+  order again. Form 3 carries the derivation above the code because the two
+  assignments are impossible to recall correctly and trivial to re-derive: a
+  mod b is a - (a/b)*b, substitute, collect.
+
+related:
+  - modular-arithmetic
+  - fast-exponentiation
+  - sieve-factorisation

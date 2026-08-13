@@ -1,0 +1,278 @@
+id: string-hashing
+name: Polynomial String Hashing
+world: 11
+order: 1
+tagline: >-
+  Read a substring as a number in base B modulo M and every "are these two
+  ranges the same text?" becomes one subtraction — bought with a probability of
+  being wrong that your opponent gets to choose.
+
+prerequisites:
+  - prefix-sum
+  - hashing-frequency
+
+signals:
+  - cue: arbitrary substrings of one string must be compared with each other, many times
+    strength: 3
+    note: >-
+      Two interior ranges, in any order, with no relationship between them. No
+      border array and no prefix tree answers that; a fingerprint per prefix
+      does, in O(1) per comparison after one linear pass.
+  - cue: count the distinct substrings of a given length, or group equal substrings together
+    strength: 3
+    note: >-
+      Equality is the only relation needed and there may be n of them, so
+      replace each substring by one number and put the numbers in a set. The
+      whole problem collapses to counting distinct integers.
+  - cue: compare two substrings lexicographically, or sort a string's suffixes
+    strength: 3
+    note: >-
+      Binary search the length of the common prefix with hashes, then compare
+      the single character after it. O(log n) per comparison with no suffix
+      array anywhere.
+  - cue: two strings must be tested for equality after some transformation (rotation, reversal, a swap)
+    strength: 2
+    note: >-
+      Build the fingerprint table for the transformed string too, and the test
+      is one integer comparison instead of a scan. Doubling the string to get
+      every rotation is the classic use.
+  - cue: a two-dimensional grid where equal rectangles must be found
+    strength: 2
+    note: >-
+      Hash each row, then hash the column of row hashes. The same polynomial
+      idea one dimension up, and there is no border array for grids at all.
+  - cue: the statement's own constraints are large enough that every substring cannot be materialised
+    strength: 1
+    note: >-
+      Weak alone. It only says that comparing text is too slow, which a border
+      array, a prefix tree or a suffix structure might each fix instead.
+
+anti_signals:
+  - cue: the answer must be exact and a wrong answer on one adversarial test is unacceptable
+    instead: prefix-function
+    note: >-
+      Hashing is probabilistic. For plain pattern matching there is a linear,
+      exact alternative that cannot be attacked, and choosing the attackable
+      one to save four lines is a bad trade.
+  - cue: how many times each value, word or character occurs
+    instead: hashing-frequency
+    note: >-
+      That is counting with a hash map, and the key is the object itself. This
+      pattern builds a key FOR a range of text so that ranges can be compared
+      in constant time; the two share the word "hash" and nothing else.
+  - cue: a set of words is queried by prefix, over and over
+    instead: trie
+    note: >-
+      A fingerprint proves two strings are equal. It cannot tell you that one
+      is a prefix of another, cannot walk down shared beginnings, and cannot
+      answer "how many stored words start like this".
+  - cue: the substrings you need must read the same forwards and backwards
+    instead: palindrome-centres
+    note: >-
+      Hashing can TEST a palindrome by comparing the forward and reversed
+      fingerprints, but it will not enumerate the palindromes for you. Their
+      count and their maximal extents come from the centres.
+  - cue: many range sums or range totals over numbers
+    instead: prefix-sum
+    note: >-
+      Same prefix-table shape, different algebra: sums are invertible without a
+      modulus and answer "how much", while a hash answers only "the same or
+      not".
+
+confusable_with:
+  - pattern_id: hashing-frequency
+    tell: >-
+      Ask what the key is a key TO. Counting how often a value appears keys on
+      the value itself and never on a position, so shuffling the input cannot
+      change the answer. A polynomial hash keys on an ordered RANGE of
+      characters, and swapping two of them changes it — that is the whole
+      difference, and it is why one is a tally and the other is a fingerprint.
+  - pattern_id: prefix-function
+    tell: >-
+      Ask whether the comparison is prefix-against-suffix or range-against-
+      range. One pattern in one text with an exact answer required is the
+      border array; arbitrary interior ranges compared in any order is this,
+      and you pay for it with a collision probability.
+  - pattern_id: trie
+    tell: >-
+      Ask whether you need equality or structure. A fingerprint answers "same
+      or not" and nothing else; the moment the question is about shared
+      beginnings, prefix counts, or the longest stored word that starts a
+      query, you need the tree.
+  - pattern_id: palindrome-centres
+    tell: >-
+      Ask whether you are TESTING a candidate or FINDING all of them. Comparing
+      a range against its reverse is one hash lookup; producing every maximal
+      palindrome, or counting them, is a scan over centres.
+
+invariant: >-
+  h[i] is the polynomial value of the prefix of length i modulo M, so for every
+  half-open range the identity h[r] - h[l] * B^(r-l) holds exactly in the
+  modular ring, and two ranges of equal length have equal values whenever their
+  text is equal — the converse being true only with high probability.
+
+complexity:
+  time: O(n + q)
+  space: O(n)
+  note: >-
+    One linear pass builds the prefix and power tables; every substring
+    comparison after that is O(1). Two moduli double both constants and are
+    worth it. A single modulus near 1e18 needs __int128 for the multiply, which
+    is usually slower than two 1e9 moduli in practice.
+
+data_structures:
+  - a prefix table of polynomial values, one entry longer than the string
+  - a table of powers of the base, built alongside it
+  - a pair of hashes under two independent moduli, compared as one value
+  - a set or sort over those pairs, when substrings must be grouped
+
+cpp_facilities:
+  - long long throughout, because B * M already exceeds 32 bits
+  - __int128 when a single modulus near 1e18 is used
+  - mt19937_64 seeded from chrono, to pick the base at run time
+  - std::pair<long long, long long> as the double fingerprint
+  - string::compare to verify a claimed match when correctness must be certain
+
+traps:
+  - description: >-
+      Hashing modulo 2^64 by letting unsigned arithmetic wrap, which is not a
+      random modulus at all.
+    mistake_code: CPP_UNORDERED_MAP_WORST_CASE
+    symptom: >-
+      Accepted for months and then wrong answer on one prepared test. For ANY
+      odd base there is a pair of Thue-Morse strings that collide; with base 31
+      they are 256 characters long, and the attacker never needs to know your
+      base. The same pair separates immediately under a prime modulus.
+  - description: >-
+      One fixed modulus near 1e9, on a problem that compares many substrings
+      with each other.
+    mistake_code: CPP_UNORDERED_MAP_WORST_CASE
+    symptom: >-
+      Wrong answer on a large test only. About 37,000 hashes give an even
+      chance of some pair colliding, and a string of length 300 already has
+      more substrings than that. These two 20-character strings collide under
+      base 31 modulo 1e9+9, both landing on 212006090:
+      bbaaabbbaaaabbabbbba and aabaaababbabaaababab.
+  - description: >-
+      Mapping the first letter of the alphabet to zero, so 'a' contributes
+      nothing.
+    mistake_code: BOUNDS_EMPTY_INPUT
+    symptom: >-
+      "a", "aa", "aaa" and the empty string all hash to 0, and so does every
+      leading run of a-s. A whole family of collisions you built yourself,
+      failing every test with repeated first letters while random tests pass.
+      Map the alphabet to 1..26.
+  - description: >-
+      Taking the difference h[r] - h[l] * p[r - l] modulo M without adding M
+      back when it is negative.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Roughly half of all comparisons fail, because C++ gives the remainder the
+      sign of the dividend: the same substring hashes to 65 in one place and
+      -1000000000 in another. Small tests where the subtraction happens to stay
+      positive all pass.
+  - description: >-
+      Multiplying two values near a modulus of 1e18 in long long.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Signed overflow, which is undefined behaviour rather than a predictable
+      wrap, so the symptom changes when the optimiser does. Two moduli near
+      1e9 give the same collision resistance with no overflow at all.
+  - description: >-
+      Confusing the 1-based prefix table with the 0-based string, usually while
+      copying a formula written for the other convention.
+    mistake_code: BOUNDS_PREFIX_INDEX_SHIFT
+    symptom: >-
+      Every hash is the neighbouring substring's, so the answer is off by one
+      position everywhere and the samples occasionally still pass. With
+      h[0] = 0 and half-open ranges the special case at l = 0 disappears
+      entirely, which is why that convention is worth insisting on.
+
+recall_rubric:
+  - key: the-formula
+    prompt: >-
+      Write the prefix recurrence and the substring formula, including the
+      power of the base.
+    essential: true
+    accepts:
+      - h[i+1] = h[i]*b + s[i]
+      - h[r] - h[l]*p[r-l]
+      - polynomial
+      - base and modulus
+  - key: what-it-buys
+    prompt: >-
+      State the cost of preprocessing and the cost of one substring comparison.
+    essential: true
+    accepts:
+      - o(n) preprocessing
+      - o(1) per comparison
+      - constant time equality
+      - linear then constant
+  - key: collision-direction
+    prompt: >-
+      Say which direction is certain: equal text always means equal hash, equal
+      hash only probably means equal text.
+    essential: true
+    accepts:
+      - equal strings always equal hashes
+      - equal hashes only probably
+      - one way certain
+      - false positive
+  - key: birthday
+    prompt: >-
+      Explain why comparing many substrings with each other is far riskier than
+      comparing one against many, and give the rough threshold.
+    essential: false
+    accepts:
+      - birthday
+      - all pairs
+      - square root of the modulus
+      - about 37000
+      - n^2 / 2m
+  - key: hardening
+    prompt: >-
+      Name the two defences: a random base chosen at run time, and two moduli
+      (or one near 1e18).
+    essential: false
+    accepts:
+      - two moduli
+      - double hash
+      - random base
+      - seeded at run time
+      - 1e18
+  - key: never-2-to-the-64
+    prompt: >-
+      Say why modulo 2^64 is not merely a weaker choice but a broken one.
+    essential: false
+    accepts:
+      - thue-morse
+      - constructed collisions
+      - anti-hash test
+      - not probabilistic
+      - power of two
+  - key: alphabet-mapping
+    prompt: >-
+      State why no character may be mapped to zero.
+    essential: false
+    accepts:
+      - leading run collapses
+      - map a to 1
+      - zero contributes nothing
+      - prefixes collide
+
+template_file: string-hashing.cpp
+template_notes: >-
+  The double hash is the default here, not an upgrade: single-modulus code is
+  written once, passes, and then loses a contest six months later on a test
+  built by somebody who never saw it. The bases are fixed constants only so
+  this file's output is reproducible under the judge — the commented line above
+  them is what a real submission does. Read the collision arithmetic in the
+  header before the code; the two twenty-character strings there are real, and
+  a hash you can hold in your head as fallible is one you will defend.
+
+related:
+  - prefix-function
+  - trie
+  - palindrome-centres
+  - prefix-sum
+  - hashing-frequency

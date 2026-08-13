@@ -1,0 +1,284 @@
+# Problems that are really One Pass Down, Every Answer Up.
+#
+# None of these may use the words "subtree" or "root" — those are the answer,
+# not the cue. What each statement must contain instead is the shape: n places,
+# n-1 links, everything reachable, and a question asked about every place at
+# once. The learner has to notice that "everything beyond this glade" is only a
+# set once a starting point is fixed, and that fixing one costs nothing.
+
+- id: glade-census-rolls
+  pattern: subtree-aggregation
+  title: The Census Rolls
+  difficulty: easy
+  statement: >-
+    A wood contains n glades joined by n-1 walking paths, arranged so that every
+    glade can be reached from every other. The warden's lodge stands in glade 1.
+    A glade is said to be BEHIND glade v if every walk from the lodge to it must
+    pass through v; by this rule every glade is behind itself. For each glade in
+    turn, report how many glades are behind it. Output the n numbers in order of
+    glade number.
+  constraints: |
+    1 <= n <= 200000
+    the paths are given as n-1 lines "u v", in arbitrary order and orientation
+    a walk never uses the same path twice
+  signals_present:
+    - n glades and n-1 paths with everything reachable from everything
+    - the question is asked about every glade, not about one
+    - "\"behind v\" is defined by the walks from one fixed place, so a starting point has already been chosen for you"
+    - n reaches 200000, so answering one glade at a time by walking is dead
+  decoy_signals:
+    - "\"how many can be reached through v\" invites a fresh search from each glade, which is correct and quadratic"
+    - the lodge being in glade 1 looks like a detail of the story rather than the thing that makes the question well posed
+    - n-1 links reads like a constraint on the input rather than a description of its shape
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        What does "n glades, n-1 paths, all reachable" force to be true about
+        the number of different walks between two glades? Answer that before
+        you write anything.
+    - text: >-
+        Exactly one walk, so there are no loops. Now: if you already knew the
+        answer for every glade one step further from the lodge than v, could
+        you get v's answer without walking anywhere?
+    - text: >-
+        You could — v's answer is one plus the answers of its immediate
+        neighbours on the far side. So walk out from the lodge once, and
+        combine on the way back.
+      reveals_pattern: true
+  why: >-
+    "n places, n-1 links, all connected" is the definition of a tree spelled out
+    rather than named, and "every walk from the lodge passes through v" is the
+    definition of the set below v once the lodge is the fixed starting point.
+    The count for a glade is one plus the counts of its children, so a single
+    walk out and back answers all n at once. Answering them one at a time is
+    the same algorithm run n times.
+  classic_ref: CPH 14.1, the count[s] recursion
+
+- id: grove-tithe-ledger
+  pattern: subtree-aggregation
+  title: The Tithe Ledger
+  difficulty: medium
+  statement: >-
+    The same wood of n glades and n-1 paths, with the lodge in glade 1. Glade i
+    yields a[i] baskets of fruit this season, and a[i] may be negative when a
+    glade owes more than it gives. The steward keeps a ledger with one line per
+    glade: the total yield of that glade together with every glade whose only
+    route to the lodge runs through it. Print the n ledger lines in order of
+    glade number.
+  constraints: |
+    1 <= n <= 200000
+    -10^9 <= a[i] <= 10^9
+    a ledger line may fall outside the range of a 32-bit integer
+    the paths are given in arbitrary order and orientation
+  signals_present:
+    - n glades and n-1 paths with everything reachable
+    - a total is asked for at every glade, over the set of glades lying beyond it
+    - the yields may be negative, so nothing about the totals is monotone
+    - the bound warns that a line will not fit in 32 bits
+  decoy_signals:
+    - "\"total over a region\" invites a precomputed table over a row, which is the right idea in the wrong geometry"
+    - negative values invite hunting for a best stretch rather than a fixed total
+    - "\"one line per glade\" looks like n independent questions rather than one pass"
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Write down the ledger line for a glade with no glades beyond it. Now
+        write the line for its immediate neighbour towards the lodge. What did
+        you have to know first?
+    - text: >-
+        The far glade's line, and only that. So the combining step belongs
+        after the walk into a neighbour has finished, not before it.
+    - text: >-
+        Walk out from the lodge once. On the way back, add each glade's total
+        into the neighbour it came from, in long long.
+      reveals_pattern: true
+  why: >-
+    The set the ledger sums over — every glade whose only route to the lodge is
+    through v — is the set the recursion on v owns, and it is disjoint from
+    every sibling's. So the line for v is a[v] plus the lines of its children,
+    and one walk fills all n lines. The negative yields exist to kill any
+    attempt to prune, and the 32-bit warning is the real constraint: 2*10^5
+    glades at 10^9 reach 2*10^14.
+  classic_ref: CPH 18.2, subtree sums
+
+- id: canopy-pair-walks
+  pattern: subtree-aggregation
+  title: Every Pair of Glades
+  difficulty: hard
+  statement: >-
+    A wood has n glades and n-1 paths, every glade reachable from every other.
+    For each unordered pair of distinct glades, count the number of paths on the
+    single walk between them. Report the total over all such pairs. With n at
+    200000 there are nearly two times ten to the tenth pairs, so the pairs
+    cannot be enumerated; the total is nevertheless a single number that fits in
+    64 bits.
+  constraints: |
+    2 <= n <= 200000
+    the paths are given as n-1 lines "u v"
+    the answer can reach roughly 1.3 * 10^15
+  signals_present:
+    - n glades and n-1 paths with everything reachable
+    - a total over all pairs, with the pair count far too large to enumerate
+    - the quantity being totalled is a count of paths walked
+    - the statement says outright that the answer needs 64 bits
+  decoy_signals:
+    - "\"all pairs\" invites two indices converging, which is a technique for a row and not for a wood"
+    - "\"the walk between them\" invites answering pairs one at a time from a precomputed ancestor structure, which is O(n^2) queries"
+    - the size of the pair count invites searching for a formula in n alone, but the answer depends on the shape
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Stop counting pairs. Count something else instead: fix one path of the
+        wood and ask how many of the walks use it.
+    - text: >-
+        Removing that one path leaves exactly two pieces, and a walk uses the
+        path precisely when its two ends lie in different pieces. So the path
+        is used by (size of one piece) times (size of the other).
+    - text: >-
+        Fix any glade as a start, walk out once to get the size of the region
+        beyond each glade, and add up s * (n - s) over every path, in long long.
+      reveals_pattern: true
+  why: >-
+    Swapping the sum over pairs for a sum over paths is the whole problem. Each
+    path, removed, cuts the wood into two pieces of sizes s and n - s, and it is
+    walked by exactly s * (n - s) of the pairs — so the total falls out of the
+    n-1 region sizes that one walk produces. The product alone reaches 10^10 at
+    n = 2*10^5, which is why the 32-bit version of this is wrong on the large
+    tests and right on every sample.
+  classic_ref: the sz * (n - sz) edge-contribution argument
+
+- id: deepest-roll-call
+  pattern: subtree-aggregation
+  title: The Roll Call
+  difficulty: easy
+  statement: >-
+    A wood of n glades and n-1 paths, all reachable from one another, with the
+    lodge in glade 1. A herald standing in glade v must shout loudly enough to
+    be heard by every glade whose route to the lodge passes through v. The
+    loudness needed is the greatest number of paths between v and any such
+    glade, and is zero when there are none. Report the loudness for every glade,
+    in order of glade number.
+  constraints: |
+    1 <= n <= 200000
+    the paths are given in arbitrary order and orientation
+    the wood may be a single chain of 200000 glades
+  signals_present:
+    - n glades and n-1 paths with everything reachable
+    - a quantity asked for at every glade over the set of glades beyond it
+    - the quantity is a maximum over that set rather than a total
+    - the warning that the wood may be one long chain
+  decoy_signals:
+    - "\"the greatest number of paths between two glades\" reads like the longest walk in the whole wood, which is a different question"
+    - "\"loudness at every glade\" invites a search from each glade in turn"
+    - the chain warning looks like a note about the answer rather than about the method
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Take a glade with nothing beyond it. What is its loudness? Now take its
+        neighbour towards the lodge — what did you need to know, and how many
+        of its neighbours did you need it from?
+    - text: >-
+        One plus the largest of the far neighbours' loudnesses. Every one of
+        them, but only their loudnesses, and only after each has finished.
+    - text: >-
+        One walk out from the lodge, combining on the way back with a maximum
+        instead of a sum — and consider walking iteratively, since a chain of
+        200000 will not fit on the stack.
+      reveals_pattern: true
+  why: >-
+    Same walk, different combining operator: a maximum where the census used a
+    sum. That is the point of listing it separately — the traversal is never the
+    difficulty, the fold is. The chain warning is the other half: this is the
+    problem where a recursive walk of 2*10^5 frames meets an 8 MB stack and
+    dies with no message at all.
+  classic_ref: CPH 14.1, longest path from a node to a leaf
+
+- id: lantern-cut-of-the-wood
+  pattern: subtree-aggregation
+  title: The Lantern Cut
+  difficulty: medium
+  statement: >-
+    A wood has n glades and n-1 paths, every glade reachable from every other,
+    and n is even. The warden will close exactly one path, which leaves two
+    separate woods. She wants the closure that makes the two resulting woods as
+    close to the same size as possible. Report the smallest possible difference
+    between the two sizes, and also the number of paths whose closure splits the
+    wood into two halves of exactly n/2 glades each.
+  constraints: |
+    2 <= n <= 200000
+    n is even
+    the paths are given as n-1 lines "u v"
+  signals_present:
+    - closing one path leaves exactly two pieces, and their sizes are the answer
+    - n glades and n-1 paths with everything reachable
+    - the question ranges over every path, so all n-1 splits are wanted at once
+    - n reaches 200000, so recomputing a piece size per path is too slow
+  decoy_signals:
+    - "\"as close to the same size as possible\" invites searching over a target size and testing feasibility"
+    - "\"exactly n/2 each\" invites a counting argument on n alone, but the shape decides it"
+    - closing a link reads like an interval or scheduling decision rather than a structural one
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Fix any glade as a start. When you close one path, which of the two
+        pieces is easy to describe in terms of that fixed start?
+    - text: >-
+        The piece that does not contain the start is exactly the set of glades
+        lying beyond the far end of the closed path — and the other piece is
+        everything else, so its size is n minus the first.
+    - text: >-
+        One walk out from the start gives you the size s of the region beyond
+        every glade; then every path contributes the pair (s, n - s), and you
+        scan the n-1 values of |n - 2s|.
+      reveals_pattern: true
+  why: >-
+    Both halves of the question are the same observation: a closed path leaves
+    the region beyond one of its ends, of size s, and everything else, of size
+    n - s. One walk produces every s, and the rest is a scan. The alternative —
+    close a path, then count what is still reachable — is O(n) per path and
+    O(n^2) overall, which is exactly the trap the bound on n is set to catch.
+  classic_ref: the edge split, applied to balance rather than to counting
+
+- id: root-path-wardens
+  pattern: subtree-aggregation
+  title: The Tallest Banner on the Road
+  difficulty: medium
+  statement: >-
+    A wood of n glades and n-1 paths, all reachable from one another, with the
+    lodge in glade 1. Glade i flies a banner of height h[i]. A glade is called
+    PROUD if no glade on the walk from the lodge to it, the lodge and the glade
+    itself included, flies a banner strictly taller than its own. Count the
+    proud glades.
+  constraints: |
+    1 <= n <= 200000
+    1 <= h[i] <= 10^9
+    the paths are given in arbitrary order and orientation
+  signals_present:
+    - n glades and n-1 paths with everything reachable
+    - a running quantity accumulates along the walk from one fixed glade to each other
+    - the test at a glade needs only one number carried down from above
+    - n reaches 200000, so recomputing the walk for each glade is too slow
+  decoy_signals:
+    - "\"the tallest so far along a route\" is exactly the running-maximum idiom from a flat row, which invites treating the input as one"
+    - counting glades that beat everything before them invites a frequency table over heights
+    - "\"strictly taller\" invites sorting the heights, which throws away the structure the question is about"
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        What does a glade actually need to know about the walk above it? Not
+        the walk — one number. Which number?
+    - text: >-
+        The tallest banner seen so far on the way down. Carry it as an argument
+        and each glade's test is a single comparison.
+    - text: >-
+        Walk out from the lodge passing the running maximum downwards, count
+        the glades that meet or beat it, and update the value you pass on.
+      reveals_pattern: true
+  why: >-
+    This is the running maximum of a row, bent into a branching shape: the walk
+    from the lodge to a glade is a prefix, and every glade extends its parent's
+    prefix by one. Carrying the accumulated value DOWN as an argument is the
+    mirror of folding results UP, and a walk can do both at once. Nothing here
+    needs the results of the glades below, which is exactly what makes it a
+    downward pass rather than an upward fold.
+  classic_ref: CPH 18.2, path-from-root queries

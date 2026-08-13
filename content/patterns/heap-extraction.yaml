@@ -1,0 +1,236 @@
+id: heap-extraction
+name: Take the Extreme, Then Let It Change
+world: 6
+order: 0
+tagline: >-
+  A heap is a sorted row you are not allowed to look at — one element visible,
+  and that one element stays correct through every insertion and removal.
+
+prerequisites:
+  - sliding-window
+
+signals:
+  - cue: the smallest or largest is taken repeatedly, and the collection changes between takings
+    strength: 3
+    note: >-
+      This is the whole pattern in one sentence. Sorting answers the question
+      once, for a row that never moves again; a heap answers it now, for a row
+      you are still adding to.
+  - cue: consuming two items produces a new item that must be considered alongside the rest
+    strength: 3
+    note: >-
+      The produced item did not exist when you sorted and its rank is unknown
+      until it is created, so no ordering fixed in advance can contain it.
+  - cue: only the k best are ever wanted, and k is much smaller than n
+    strength: 3
+    note: >-
+      A heap bounded at size k costs O(n log k) time and O(k) memory. That is
+      the difference between holding ten longs and holding two hundred thousand.
+  - cue: items arrive over time and each one is dealt with the moment it becomes the most urgent
+    strength: 2
+    note: >-
+      Event-driven simulation: the queue holds what is pending, and processing
+      one event may schedule others, which is form 2 wearing a different skin.
+  - cue: the middle of a growing collection is asked for after every arrival
+    strength: 2
+    note: >-
+      One heap shows an end. Two heaps back to back show the middle, and
+      keeping their sizes within one of each other is the entire structure.
+  - cue: n up to 1e5 or more with a re-sort implied after every step
+    strength: 1
+    note: >-
+      Weak alone. It says only that repeated sorting is dead, which a heap, an
+      ordered set or a Fenwick tree might each fix.
+
+anti_signals:
+  - cue: the collection is fixed before the first question and never changes again
+    instead: sorting-by-key
+    note: >-
+      Sort once and walk. A heap costs the same log factor with a worse
+      constant and gives nothing back when nothing is inserted mid-flight.
+  - cue: an element that is not the extreme must be removed, or its key changed
+    instead: ordered-set
+    note: >-
+      A heap has no way to reach inside itself. Either use a balanced tree,
+      which can erase any element it can find, or carry a cancellation set and
+      discard stale tops lazily.
+  - cue: the question is how MANY elements lie below a value, not which one
+    instead: fenwick-tree
+    note: >-
+      A heap will not count and neither will a set. Ranks and prefix counts
+      need an index over the values themselves.
+  - cue: the extreme is wanted over a sub-range of fixed positions, not over the live collection
+    instead: segment-tree
+    note: >-
+      "The largest between positions 3 and 9" is a range query. A heap has no
+      positions at all — it forgot where everything came from on insertion.
+  - cue: the window slides forward only, never backward, and only the extreme matters
+    instead: sliding-window
+    note: >-
+      A monotonic deque answers that in O(1) amortised with no log factor. Pay
+      for a heap only when arrivals and departures are not in the same order.
+
+confusable_with:
+  - pattern_id: ordered-set
+    tell: >-
+      Ask whether you ever need to remove something that is NOT currently the
+      extreme. If the only removal is of the top, a heap is smaller, faster and
+      harder to misuse; the moment an arbitrary element must go, you need a
+      structure you can search.
+  - pattern_id: segment-tree
+    tell: >-
+      Ask whether the extreme is wanted over the whole live collection or over
+      a stretch of positions. A heap holds a bag with no addresses; a segment
+      tree holds an array and answers about intervals of it.
+
+invariant: >-
+  The element at the top is the extreme of everything currently held, and it
+  remains so after any push or pop without the rest ever being reordered.
+
+complexity:
+  time: O(n log n)
+  space: O(n)
+  note: >-
+    Each push and pop is O(log n) and there are O(n) of them. Bounded at size
+    k the same sweep is O(n log k) and O(k) space, and building from a vector
+    at once is O(n) via make_heap rather than O(n log n) via n pushes.
+
+data_structures:
+  - std::priority_queue, a binary heap over a vector
+  - a min-heap bounded at size k, holding the k largest seen so far
+  - two heaps facing each other, so the median is at a top
+  - a cancellation multiset or counter, for lazy deletion
+
+cpp_facilities:
+  - "priority_queue<T, vector<T>, greater<T>> for a min-heap"
+  - priority_queue built from an iterator range, which is O(n)
+  - std::make_heap, push_heap and pop_heap over a plain vector
+  - std::nth_element, when the k-th is wanted once rather than maintained
+  - long long accumulators for sums of sums
+
+traps:
+  - description: >-
+      Using a MAX-heap to keep the k largest, so every eviction throws away the
+      best candidate instead of the worst.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      The answer is the sum or count of the k SMALLEST. On the stream
+      5 1 9 3 7 2 with k = 3 it finishes holding {1, 2, 3} where {5, 7, 9} was
+      wanted. Correct whenever k equals n, which is exactly what the first
+      sample usually is.
+  - description: >-
+      Holding a reference from `top()` across the following `pop()`.
+    mistake_code: CPP_ITERATOR_INVALIDATION
+    symptom: >-
+      `const long long& a = pq.top(); pq.pop();` leaves `a` naming a slot the
+      heap has already overwritten, so the value silently becomes some other
+      element. Take a copy — the type is one machine word.
+  - description: >-
+      Calling `top()` or `pop()` without checking the heap is non-empty, or
+      popping two elements after testing `size() >= 1`.
+    mistake_code: BOUNDS_EMPTY_INPUT
+    symptom: >-
+      Undefined behaviour rather than an exception: usually a plausible-looking
+      garbage number, occasionally a crash, and always only on the test where
+      the collection empties early.
+  - description: >-
+      Accumulating a sum of merge costs, or a sum of the k largest, in `int`.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      A negative total on the large tests only. Joining 2*10^5 pieces of 10^9
+      reaches roughly 3*10^15, which is a hundred thousand times past INT_MAX.
+  - description: >-
+      Rebuilding the whole heap, or re-sorting the collection, once per step
+      rather than pushing and popping.
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      Correct output and a time limit exceeded at n = 10^5: an O(n log n) step
+      inside an O(n) loop is O(n^2 log n), which the samples never reach.
+  - description: >-
+      Reaching into a priority_queue for anything but the top — iterating it,
+      searching it, or erasing an interior element.
+    mistake_code: PATTERN_SORT_OVER_HASH
+    symptom: >-
+      It will not compile, and the fix people reach for — copying the heap out,
+      editing, and rebuilding — is O(n) per operation. The structure being
+      asked for is a balanced tree.
+
+recall_rubric:
+  - key: the-shape
+    prompt: State what a heap gives you that a sorted container does not.
+    essential: true
+    accepts:
+      - the extreme of a collection that keeps changing
+      - insert and extract in log time
+      - the top stays correct after every push
+      - one visible element
+  - key: bounded-direction
+    prompt: >-
+      Say which kind of heap keeps the k largest, and why that is the opposite
+      of the obvious choice.
+    essential: true
+    accepts:
+      - a min-heap of size k
+      - the top is the weakest kept
+      - pop the smallest survivor
+      - greater comparator
+  - key: min-heap-syntax
+    prompt: Give the declaration of a min-heap of long long.
+    essential: false
+    accepts:
+      - priority_queue<long long, vector<long long>, greater<long long>>
+      - greater
+      - vector in the middle
+      - three template arguments
+  - key: feeding
+    prompt: >-
+      Describe the loop shape for a problem where consuming two items produces
+      a third.
+    essential: false
+    accepts:
+      - pop two push one
+      - the merged item goes back in
+      - while size > 1
+      - re-rank the new item
+  - key: what-it-cannot-do
+    prompt: Name the operation a heap cannot perform at all.
+    essential: true
+    accepts:
+      - erase an arbitrary element
+      - change a key
+      - search inside it
+      - no rank
+  - key: complexity
+    prompt: >-
+      Give the cost of the bounded form and say how it compares with sorting
+      everything.
+    essential: false
+    accepts:
+      - o(n log k)
+      - o(k) memory
+      - cheaper than n log n
+      - log k instead of log n
+  - key: median-pair
+    prompt: State the invariant that makes two heaps show you the middle.
+    essential: false
+    accepts:
+      - sizes differ by at most one
+      - low.top() <= high.top()
+      - max-heap of the smaller half
+      - min-heap of the larger half
+
+template_file: heap-extraction.cpp
+template_notes: >-
+  Three forms, one question. Form 1 is the bounded heap; read the comment above
+  the loop until the inversion — a MIN-heap for the k LARGEST — stops feeling
+  backwards, because that inversion is the pattern. Form 2 is the queue that
+  feeds itself, and the reason a sort cannot replace it: the merged item did
+  not exist when you sorted. Form 3 is two heaps facing each other, and the
+  rebalance is deliberately left as a hole because both directions matter and
+  most people write only one.
+
+related:
+  - ordered-set
+  - fenwick-tree
+  - sorting-by-key
+  - sliding-window

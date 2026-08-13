@@ -1,0 +1,241 @@
+# Problems that are really Halve the Exponent.
+#
+# The tell is always a bound: an exponent, a count of nights, a number of
+# arrangements — something that cannot be walked. Two of these are inverse
+# problems wearing counting clothes, because "divide, modulo a prime" is where
+# most students first discover that division is not an operation here.
+
+- id: beacon-relay-doubling
+  pattern: fast-exponentiation
+  title: The Beacon Relay
+  difficulty: easy
+  statement: >-
+    A single beacon is lit on the first night. Every night after that, each
+    beacon burning at dusk causes exactly k beacons to be burning at the next
+    dusk, the old one among them. The chronicler records not the count itself,
+    which becomes unmanageable within a month, but what is left of it after
+    dividing by the sacred number p. Given k, the number of nights n, and p,
+    report the chronicler's figure for the n-th night, counting the first night
+    as night 1.
+  constraints: |
+    1 <= k <= 10^9
+    1 <= n <= 10^18
+    p is prime and 2 <= p <= 10^9 + 7
+    a loop that runs once per night will not finish
+  signals_present:
+    - a single value transformed by the same step an enormous number of times
+    - the number of nights reaches 10^18, so no per-night loop can run
+    - the answer is reported only as what remains after dividing by p
+  decoy_signals:
+    - a per-night recurrence invites simulating the nights one at a time
+    - the sacred number being prime invites an inverse that nothing here needs
+    - "\"each beacon causes k beacons\" invites counting beacons rather than recognising a power"
+  expected_complexity: O(log n)
+  hints:
+    - text: >-
+        Write out the count for nights 1, 2, 3 and 4 and read the shape. Then
+        look at the bound on n and ask how many multiplications you are allowed.
+    - text: >-
+        The count on night n is k^(n-1). You have room for about sixty
+        operations, not 10^18, so the exponent must be attacked rather than
+        walked.
+    - text: >-
+        Square the base and consume the exponent one bit at a time: while the
+        exponent is non-zero, fold the base in when the low bit is set, square
+        the base, shift right.
+      reveals_pattern: true
+  why: >-
+    The recurrence collapses to k^(n-1) in one line, and then the only question
+    is the bound on n. 10^18 rules out a loop and admits sixty steps, which is
+    the length of the exponent in binary. Everything else in the statement —
+    the prime, the beacons, the chronicler — is scenery around a single power.
+  classic_ref: CPH 21.2 (modular exponentiation)
+
+- id: guild-share-division
+  pattern: fast-exponentiation
+  title: The Guild's Fair Share
+  difficulty: medium
+  statement: >-
+    A guild's treasury holds a total that is recorded only as T, the remainder
+    of the true amount after dividing by the prime p — the true amount having
+    long since outgrown the ledger. The charter says the treasury is to be
+    split evenly between d members, and that the recorded form of each member's
+    share must be reported the same way: as a remainder after dividing by p. It
+    is guaranteed that the true total is exactly divisible by d and that d is
+    not a multiple of p. Given T, d and p, report the recorded share.
+  constraints: |
+    0 <= T < p
+    1 <= d < p
+    p is prime and 3 <= p <= 10^9 + 7
+    up to 10^5 independent queries share the same p
+  signals_present:
+    - the answer requires dividing a recorded remainder by a given number
+    - the modulus is explicitly stated to be prime
+    - d is guaranteed not to be a multiple of p, which is precisely the condition an inverse needs
+  decoy_signals:
+    - "\"split evenly\" invites the integer division T / d, which is a different number entirely"
+    - the guarantee of exact divisibility invites believing the recorded values divide too
+    - many queries against one prime invites a table when one routine suffices
+  expected_complexity: O(log p) per query
+  hints:
+    - text: >-
+        Take p = 7, a true total of 10 and d = 5. The recorded total is 3 and
+        the true share is 2. Now compute 3 / 5 in integers and compare.
+    - text: >-
+        Integer division on the recorded value gives 0, which is not 2. What
+        you need is the number that multiplies by d to give 1 — for d = 5 and
+        p = 7 that is 3, because 15 leaves 1.
+    - text: >-
+        Since p is prime, Fermat gives d^(p-1) = 1, so d^(p-2) is the value you
+        want. Compute it by halving the exponent and multiply T by it.
+      reveals_pattern: true
+  why: >-
+    "Divide, and report modulo p" is not a division at all. The recorded total
+    is a residue and integer division on residues is meaningless — 3/5 is 0
+    where the answer is 2. What exists is multiplication by the inverse, and
+    the statement hands you both preconditions for the cheap one: p is prime,
+    and d is not a multiple of it. Fermat then makes the inverse d^(p-2), which
+    is the halving loop with a particular exponent.
+  classic_ref: CPH 21.2 (modular inverse; Fermat's theorem)
+
+- id: banner-arrangement-count
+  pattern: fast-exponentiation
+  title: The Banners of the Procession
+  difficulty: medium
+  statement: >-
+    A procession carries n banners in a line. Exactly k of them are to be gold
+    and the rest black, and two processions are considered the same only if the
+    gold banners stand in the same positions. For each of q separate
+    processions, described by its own n and k, report how many distinct
+    arrangements exist, given as the remainder after dividing by the prime p.
+    Some queries ask for k greater than n, which admits no arrangement at all.
+  constraints: |
+    1 <= q <= 200000
+    0 <= k, n <= 200000
+    p = 10^9 + 7
+    every n across all queries is far below p
+  signals_present:
+    - "\"how many ways to choose k of n\" answered as a remainder modulo a prime"
+    - many independent queries against one fixed prime, so preprocessing pays
+    - n reaches 2 * 10^5, so the factorials involved dwarf every integer type
+  decoy_signals:
+    - the row of banners invites a sweep over positions
+    - "\"two processions are the same if the positions match\" invites counting distinct configurations directly"
+    - queries with k > n invite an error path rather than an answer of zero
+  expected_complexity: O(n + q) after preprocessing
+  hints:
+    - text: >-
+        Write the count for one query as a ratio of factorials. Then ask how
+        that ratio can be evaluated when every factorial in it is recorded only
+        as a remainder.
+    - text: >-
+        The numerator and both denominators are residues, and residues cannot
+        be divided. Each denominator must be replaced by the value that
+        multiplies by it to give 1 — and the modulus is prime, so that value is
+        a power.
+    - text: >-
+        Build fact[0..n] forwards, invert fact[n] once, then walk down with
+        invfact[i-1] = invfact[i] * i. Each query is then
+        fact[n] * invfact[k] % p * invfact[n-k] % p.
+      reveals_pattern: true
+  why: >-
+    The count is a ratio of factorials, and under a prime modulus a ratio is a
+    product with two inverses. Doing that per query is a log factor you do not
+    need: invert once at the top of the factorial table and walk back down,
+    since the reciprocal of (i-1)! is i times the reciprocal of i!. The
+    guarantee that every n is below p is not decoration — the moment n reaches
+    p, the factorial is 0 and the whole table is silently useless.
+  classic_ref: CPH 22.1 (binomial coefficients, formula 2)
+
+- id: chest-lock-tumblers
+  pattern: fast-exponentiation
+  title: The Chest of Unlike Tumblers
+  difficulty: medium
+  statement: >-
+    A chest is secured by n tumblers in a row, each of which may be set to any
+    one of k positions. The lock rejects any setting in which two neighbouring
+    tumblers share a position; tumblers that are not neighbours may match
+    freely. Count the settings the lock accepts, and report the count as the
+    remainder after dividing by the prime p. Note that n may be so large that
+    listing the tumblers one at a time is out of the question.
+  constraints: |
+    1 <= n <= 10^18
+    1 <= k <= 10^9
+    p is prime and 2 <= p <= 10^9 + 7
+    when k = 1 and n > 1 no setting is accepted
+  signals_present:
+    - a count of arrangements that grows like a power of the row length
+    - n reaches 10^18, so nothing may be done once per tumbler
+    - the answer is reported as a remainder modulo a stated prime
+  decoy_signals:
+    - "\"no two neighbours the same\" invites a per-position recurrence, which is the right formula and the wrong algorithm"
+    - the row of tumblers invites a linear sweep
+    - the case k = 1 invites a special branch rather than falling out of the formula
+  expected_complexity: O(log n)
+  hints:
+    - text: >-
+        Count the settings for n = 1, then n = 2, then n = 3, in terms of k
+        alone. The pattern appears immediately and it is not a sum.
+    - text: >-
+        The first tumbler has k choices and every later one has k-1, so the
+        count is k * (k-1)^(n-1). The exponent is up to 10^18 minus one, which
+        settles how it must be evaluated.
+    - text: >-
+        Reduce k and k-1 modulo p first, then raise (k-1) to the power n-1 by
+        squaring the base and consuming the exponent bit by bit, and multiply
+        by k at the end.
+      reveals_pattern: true
+  why: >-
+    The neighbour rule gives k choices for the first tumbler and k-1 for each
+    of the rest, so the count is k * (k-1)^(n-1) with no summation anywhere.
+    The bound on n then decides everything: 10^18 admits about sixty
+    multiplications and no per-tumbler work at all. Note that k = 1 needs no
+    special case — (k-1) is 0, and 0 raised to any positive power is 0.
+  classic_ref: CPH 22 (counting arrangements) with CPH 21.2 exponentiation
+
+- id: tower-of-repeated-powers
+  pattern: fast-exponentiation
+  title: The Tower of Repeated Powers
+  difficulty: hard
+  statement: >-
+    An oracle's seal is computed as a raised to the power of b raised to the
+    power of c — the whole tower, evaluated from the top down — and then
+    reduced to what remains after dividing by the prime p. All three of a, b
+    and c may reach 10^9. You are guaranteed that a is not a multiple of p.
+    Report the seal.
+  constraints: |
+    1 <= a, b, c <= 10^9
+    p is prime and 3 <= p <= 10^9 + 7
+    a is guaranteed not to be a multiple of p
+    b^c has up to nine billion digits and must never be formed
+  signals_present:
+    - an exponent that is itself an expression too large to store
+    - the modulus is explicitly prime and the base is guaranteed coprime to it
+    - the answer is reported as a remainder after dividing by p
+  decoy_signals:
+    - "\"reduce everything modulo p\" invites reducing the exponent modulo p, which is the classic wrong move"
+    - three separate values invite three separate reductions
+    - the tower shape invites recursion on the height rather than on the exponent's bits
+  expected_complexity: O(log b + log c)
+  hints:
+    - text: >-
+        You cannot store the exponent b^c. Ask which remainder of it, if any,
+        is enough to decide the answer — and be careful about which modulus
+        that remainder is taken with respect to.
+    - text: >-
+        For a prime p and a base coprime to it, a^(p-1) leaves 1. So the powers
+        of a repeat with period p-1, and the exponent only matters modulo p-1 —
+        NOT modulo p.
+    - text: >-
+        Compute e = b^c reduced modulo p-1 with the halving loop, then compute
+        a^e reduced modulo p with the same loop. Two calls, nothing else.
+      reveals_pattern: true
+  why: >-
+    Two applications of the same routine with two different moduli, and getting
+    the second one right is the whole problem. Fermat says a^(p-1) leaves 1
+    when p is prime and a is coprime to it — which the statement guarantees —
+    so the powers of a cycle with period p-1 and the exponent is only
+    significant modulo p-1. Reducing it modulo p instead is the reflex, and it
+    is correct for small exponents and wrong for every large one, which is the
+    worst kind of bug to have.
+  classic_ref: CPH 21.2 (Fermat's theorem; x^k mod m = x^(k mod (m-1)) mod m)

@@ -208,6 +208,13 @@ class MistakeCode(StrEnum):
     BOUNDS_BINARY_SEARCH_OFF_BY_ONE = "BOUNDS_BINARY_SEARCH_OFF_BY_ONE"
     BOUNDS_BINARY_SEARCH_INFINITE_LOOP = "BOUNDS_BINARY_SEARCH_INFINITE_LOOP"
     BOUNDS_PREFIX_INDEX_SHIFT = "BOUNDS_PREFIX_INDEX_SHIFT"
+    BOUNDS_OFF_BY_ONE = "BOUNDS_OFF_BY_ONE"
+    """A length used as an index or vice versa, a loop bound one out."""
+
+    BOUNDS_MISSED_CASE = "BOUNDS_MISSED_CASE"
+    """One of two symmetric cases handled and the other forgotten — even-length
+    palindromes, the empty subarray, the single-node tree."""
+
     BOUNDS_EMPTY_INPUT = "BOUNDS_EMPTY_INPUT"
     BOUNDS_SINGLE_ELEMENT = "BOUNDS_SINGLE_ELEMENT"
 

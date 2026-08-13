@@ -1,0 +1,268 @@
+id: prefix-function
+name: The Prefix Function
+world: 11
+order: 0
+tagline: >-
+  Compare a string against itself once, remember the longest prefix that is
+  also a suffix, and never re-read a character — search, periods and repetition
+  all fall out of the same array.
+
+prerequisites:
+  - two-pointers
+
+signals:
+  - cue: find every occurrence of one string inside another, overlaps included
+    strength: 3
+    note: >-
+      This is the pattern's founding problem. The answer is exact, the cost is
+      O(n + m), and overlapping matches come out for free because the scan never
+      throws away the partial match it has already earned.
+  - cue: the question is about a string agreeing with ITSELF — a prefix that is also a suffix, a repeated block, a period
+    strength: 3
+    note: >-
+      A border is a prefix that is also a suffix, and the prefix function is a
+      table of the longest one at every position. Any statement phrased in
+      those words is asking for that table directly.
+  - cue: is s built by repeating a shorter block, and what is the shortest such block
+    strength: 3
+    note: >-
+      n minus the last prefix-function value is the smallest period, and the
+      string is that block repeated exactly when the period divides n. One
+      subtraction and one modulo answer the whole question.
+  - cue: how many times does each prefix (or each proper border) occur
+    strength: 3
+    note: >-
+      One backwards sweep down the border chain converts the table into
+      occurrence counts. Nothing else in this world answers a per-prefix
+      question in linear time.
+  - cue: the longest suffix of a that is also a prefix of b
+    strength: 3
+    note: >-
+      Concatenate b, a separator and a, and read the last value. Almost every
+      "how much do these two strings overlap" statement is this in disguise.
+  - cue: n reaches 1e6 and the obvious solution compares the pattern at every position
+    strength: 2
+    note: >-
+      1e6 positions times a pattern of 1e3 is 1e9 comparisons. The bound is
+      telling you the restart is what has to go, not the comparison.
+  - cue: an exact answer is demanded and a small probability of being wrong is not acceptable
+    strength: 1
+    note: >-
+      Weak alone, but it decides between this and hashing when both would fit.
+      This pattern cannot collide; it is not probabilistic in any way.
+
+anti_signals:
+  - cue: many different query words are looked up against one fixed set of words
+    instead: trie
+    note: >-
+      This pattern relates ONE string to ONE other string. The moment there is
+      a dictionary and repeated queries against it, the shared structure is a
+      prefix tree, not a border array.
+  - cue: arbitrary pairs of substrings must be compared for equality, in any order, many times
+    instead: string-hashing
+    note: >-
+      Borders answer questions about prefixes and suffixes. "Is s[3..9] the
+      same as s[40..46]?" is about two interior ranges, and only an O(1)
+      substring fingerprint answers that.
+  - cue: the pieces being counted read the same forwards and backwards
+    instead: palindrome-centres
+    note: >-
+      A palindrome is defined by its centre, not by its border. The prefix
+      function can be bent into palindromic PREFIXES via s + separator +
+      reverse(s), but counting palindromes inside a string is a different scan.
+  - cue: how many times each character or each whole word occurs
+    instead: hashing-frequency
+    note: >-
+      That is a tally over a multiset and has nothing to do with position. If
+      rearranging the string cannot change the answer, this pattern has no
+      grip on the problem at all.
+  - cue: the answer is a contiguous stretch chosen by a numeric condition on its contents
+    instead: sliding-window
+    note: >-
+      Borders know about equality, never about sums or counts inside a range.
+      "Longest stretch with at most k distinct" is a window, whatever the
+      elements happen to be.
+
+confusable_with:
+  - pattern_id: string-hashing
+    tell: >-
+      Ask what is being compared. A prefix against a suffix, or one pattern
+      against one text, is this — exact and linear. Arbitrary substrings
+      against each other, in any order, is hashing, and you accept a collision
+      probability in exchange.
+  - pattern_id: trie
+    tell: >-
+      Ask how many strings there are. Two strings compared with each other is
+      this pattern; a set of strings sharing their beginnings, queried again
+      and again, is a prefix tree.
+  - pattern_id: palindrome-centres
+    tell: >-
+      Ask whether the thing you are looking for reads the same backwards. A
+      border is a prefix equal to a suffix of the SAME orientation; a
+      palindrome equals its own reverse, and grows from a centre rather than
+      from an end.
+
+invariant: >-
+  When position i has been processed, pi[i] is the length of the longest proper
+  border of s[0..i], and the running candidate length k has only ever risen by
+  one per position, so the total of all its falls is bounded by the total of
+  its rises.
+
+complexity:
+  time: O(n + m)
+  space: O(n + m)
+  note: >-
+    The inner while loop looks quadratic and is not: k grows by at most one per
+    step, so it can fall at most n times across the whole scan. The extra space
+    is the table itself plus the concatenated pattern + separator + text, which
+    is why a 1e6-character text costs about 8 MB and not more.
+
+data_structures:
+  - the prefix-function table, one int per character
+  - the border chain, walked by pi[k - 1] until it reaches zero
+  - the concatenation pattern + separator + text
+  - the Z-array, the same information measured forwards
+
+cpp_facilities:
+  - std::vector<int> sized once, never grown
+  - std::string concatenation with a non-printable separator such as '\1'
+  - string::compare for the verification step when a match is claimed
+  - reading a whole line with std::getline when the text may contain spaces
+
+traps:
+  - description: >-
+      Concatenating pattern and text with no separator, so a border may run
+      across the join.
+    mistake_code: BOUNDS_PREFIX_INDEX_SHIFT
+    symptom: >-
+      The match count is too low on repetitive input and correct everywhere
+      else: searching "aab" inside "aabaabaab" reports 1 occurrence instead of
+      3, and "aa" inside "aaa" reports 1 instead of 2. Every test with distinct
+      characters passes.
+  - description: >-
+      Choosing a separator that can actually occur in the input, typically '#'
+      or '$' on a problem whose alphabet is not stated.
+    mistake_code: BOUNDS_PREFIX_INDEX_SHIFT
+    symptom: >-
+      Correct on every sample and wrong on one large test, because a single
+      occurrence of the separator inside the text lets a false border form. Use
+      a byte outside the input alphabet, and if the input can be arbitrary
+      bytes, do not concatenate at all.
+  - description: >-
+      Rolling the occurrence counts down the border chain with
+      cnt[pi[i] - 1] and no check that pi[i] is greater than zero.
+    mistake_code: CPP_OUT_OF_BOUNDS
+    symptom: >-
+      Index -1 is written. Nothing crashes; the count for the FULL string comes
+      back inflated (4 instead of 1 on "abacaba") and every other entry is
+      right, which sends you looking at the wrong line for an hour.
+  - description: >-
+      Reporting the string as a repetition of its smallest period without
+      checking that the period divides the length.
+    mistake_code: BOUNDS_PREFIX_INDEX_SHIFT
+    symptom: >-
+      "abcabca" is declared to be "abc" repeated, which it is not — 3 is
+      genuinely its smallest period, but 7 % 3 is 1 so the last block is
+      partial. Fails exactly the tests where the repetition is incomplete.
+  - description: >-
+      Restarting the comparison from the beginning of the pattern after a
+      mismatch, which is the naive matcher wearing the pattern's clothes.
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      Accepted on every small test and TLE on one large one. A text of 1e6
+      characters and a pattern of 1e3, both all 'a', costs about 1e9 character
+      comparisons; on random text the same code is fast, which is why the bug
+      survives local testing.
+  - description: >-
+      Failing to handle an empty pattern, or a pattern longer than the text,
+      before doing arithmetic on their lengths.
+    mistake_code: BOUNDS_EMPTY_INPUT
+    symptom: >-
+      A crash or a nonsensical count on the one test with a degenerate input.
+      The subtraction i - 2 * m goes negative and the vector index that follows
+      is undefined behaviour.
+
+recall_rubric:
+  - key: definition
+    prompt: >-
+      State exactly what pi[i] is, including the word "proper".
+    essential: true
+    accepts:
+      - longest proper prefix that is also a suffix
+      - longest border
+      - prefix equal to suffix
+      - not the whole string
+  - key: fallback
+    prompt: >-
+      Say what happens on a mismatch — that the next candidate is the border of
+      the current border, pi[k - 1], and never zero.
+    essential: true
+    accepts:
+      - pi[k-1]
+      - border of the border
+      - fall back
+      - never restart
+  - key: amortised-cost
+    prompt: >-
+      Explain why the inner while loop does not make this quadratic.
+    essential: true
+    accepts:
+      - k rises by at most one
+      - total falls bounded by total rises
+      - amortised
+      - o(n)
+  - key: search
+    prompt: >-
+      Give the search recipe, including why the separator must not occur in
+      either string.
+    essential: false
+    accepts:
+      - pattern + separator + text
+      - pi equals m
+      - border across the join
+      - separator not in the alphabet
+  - key: period
+    prompt: >-
+      Give the formula for the smallest period and the condition for the string
+      being an exact repetition.
+    essential: false
+    accepts:
+      - n - pi[n-1]
+      - n % p == 0
+      - divides
+      - smallest period
+  - key: z-array
+    prompt: >-
+      Say what z[i] measures and how it differs from pi[i].
+    essential: false
+    accepts:
+      - longest common prefix with the suffix at i
+      - matches forwards from i
+      - prefix of s starting at i
+      - measured forwards
+  - key: complexity
+    prompt: Give time and space for building the table and for searching.
+    essential: false
+    accepts:
+      - o(n + m)
+      - linear
+      - o(n) space
+      - one int per character
+
+template_file: prefix-function.cpp
+template_notes: >-
+  Six forms, in the order they become reflexes: the table itself, the full
+  border chain, KMP search with the separator spelled out, the period in one
+  subtraction, the occurrence rollup with its load-bearing guard, and the
+  Z-array. Read the comment above the fallback loop until the amortised
+  argument is automatic — every student can write the loop and most cannot say
+  why it is linear, and the second half is what a master's trial asks for.
+  Note that z[0] is set to n here; several textbooks leave it undefined, so a
+  solution copied from one and used with the other silently reports a match at
+  position 0.
+
+related:
+  - string-hashing
+  - trie
+  - palindrome-centres
+  - two-pointers

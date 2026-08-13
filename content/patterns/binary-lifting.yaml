@@ -109,7 +109,7 @@ data_structures:
 cpp_facilities:
   - std::vector<std::array<int, LOG>> or a flat vector indexed by hand
   - std::__lg, or 32 - __builtin_clz(n), to size the table exactly
-  - bit tests on the difference in depth: `if (diff >> b & 1)`
+  - "bit tests on the difference in depth: `if (diff >> b & 1)`"
   - std::queue for the breadth-first build, so a chain of 2e5 cannot overflow the stack
 
 traps:
@@ -222,7 +222,7 @@ recall_rubric:
       Say how many levels are needed at n = 2e5 and roughly what that costs.
     essential: false
     accepts:
-      - 18
+      - "18"
       - about 14 mb
       - log2 of n rounded up
       - 2^18 = 262144

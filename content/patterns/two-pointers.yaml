@@ -82,6 +82,12 @@ confusable_with:
       a[mid] against a fixed predicate? Comparing the ends is two pointers and
       each index moves at most n times; testing a midpoint halves the space and
       is binary search.
+  - pattern_id: palindrome-centres
+    tell: >-
+      Which way do the two indices travel? Two pointers start at the ends of a
+      range and converge on each other; a palindrome scan starts at one middle
+      and pushes both ends apart. Converging is this pattern, diverging is a
+      centre.
 
 invariant: >-
   Every pair that could still beat the current answer lies inside [l, r] - each

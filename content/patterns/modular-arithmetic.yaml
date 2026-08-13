@@ -1,0 +1,235 @@
+id: modular-arithmetic
+name: Reduce As You Go
+world: 10
+order: 0
+tagline: >-
+  Addition, subtraction and multiplication all survive the remainder, so take
+  the remainder at every step — and watch the product that is formed before it.
+
+prerequisites:
+  - prefix-sum
+
+signals:
+  - cue: the statement says "report the answer modulo 1000000007" (or 998244353)
+    strength: 3
+    note: >-
+      A modulus in the output line is never decoration. It says the true answer
+      is astronomically large, that no integer type holds it, and that every
+      intermediate value must be reduced rather than merely the last one.
+  - cue: the count being asked for grows multiplicatively — 2^n, n!, k^(n-1) arrangements
+    strength: 3
+    note: >-
+      Anything that multiplies once per element passes 10^18 within sixty
+      elements. The modulus is what makes the question answerable at all, which
+      is why the setter put it there.
+  - cue: a number arrives as a decimal STRING of up to 10^5 or 10^6 digits
+    strength: 3
+    note: >-
+      It has no numeric type. Its residue does: build it one digit at a time
+      with r = (r * 10 + d) % m, because both operations survive the modulus.
+  - cue: values are subtracted from each other and the answer must be reported in [0, m)
+    strength: 2
+    note: >-
+      C++ keeps the sign of the dividend, so any subtraction can hand you a
+      negative residue. The statement rarely warns you; the judge does.
+  - cue: bounds where a single product a * b reaches 10^18 or beyond
+    strength: 2
+    note: >-
+      This is the arithmetic hazard, and it is independent of the algorithm. If
+      m can reach 10^9 then a * b reaches 10^18 and needs a long long; if m can
+      reach 10^18 then even a long long is not enough.
+  - cue: "the phrase \"the answer may be very large\""
+    strength: 1
+    note: >-
+      Weak on its own. It might mean a modulus, or it might mean the answer is
+      a plain long long and the setter is being kind about it. Read the output
+      line, not the prose.
+
+anti_signals:
+  - cue: the modulus appears only as a periodic wrap on positions or times, with no arithmetic on the residues
+    instead: prefix-sum
+    note: >-
+      "Every k-th day" is indexing, not modular arithmetic. Nothing is being
+      reduced to keep it small; a residue is being used as a bucket, which is a
+      table lookup or a running total.
+  - cue: the answer is a specific element or index in the input, not a count
+    instead: hashing-frequency
+    note: >-
+      Residues are answers to "how many" and "what value modulo m". If the
+      output is one of the given items, nothing needed reducing.
+  - cue: parity, masks, or "which subset" — the arithmetic is base two, not base m
+    instead: bit-manipulation
+    note: >-
+      n % 2 is a bit, not a modulus, and 1 << k is a mask rather than a power.
+      When m is 2 the whole apparatus collapses into a single & operation.
+  - cue: the quantity to decide is a threshold and feasibility is monotone in it
+    instead: binary-search-answer
+    note: >-
+      Nothing is being reduced; a number is being guessed and checked. A
+      modulus and a search on the answer almost never appear in one problem.
+
+confusable_with:
+  - pattern_id: fast-exponentiation
+    tell: >-
+      Ask how many multiplications the true answer needs. A product over the n
+      given values is one pass and this pattern; a single base raised to an
+      exponent that is itself up to 10^18 cannot be a pass at all and must be
+      halved.
+  - pattern_id: euclidean-gcd
+    tell: >-
+      Ask whether the modulus is GIVEN or SOUGHT. A statement that hands you m
+      and asks for a residue is this; a statement that asks which m, or which
+      step size, or when two cycles coincide is asking you to compute a divisor.
+  - pattern_id: sieve-factorisation
+    tell: >-
+      Ask whether you need the FACTORS of anything. Reducing modulo m never
+      opens the numbers up; the moment the answer depends on which primes
+      divide a value, or on how many divisors it has, you need the sieve.
+
+invariant: >-
+  Every stored value is the true mathematical value reduced modulo m and lies
+  in [0, m); the only expression that ever exceeds m is a single product of two
+  such values, and its type is wide enough to hold it.
+
+complexity:
+  time: O(n)
+  space: O(1)
+  note: >-
+    One pass with a constant number of reductions per element. The `%` operator
+    is a hardware division and costs 20-40 cycles, so an inner loop that
+    reduces three times where once would do is measurably slower — subtract
+    instead of reducing when you know the value is below 2m.
+
+data_structures:
+  - a single long long accumulator held below m at all times
+  - __int128 as a scratch type for one multiplication when m exceeds 3 * 10^9
+  - a precomputed table of powers or factorials, each entry already reduced
+
+cpp_facilities:
+  - long long, and the knowledge that INT_MAX is 2147483647
+  - __int128, non-standard but present in every judge's g++ and clang++
+  - the fact that C++ integer division truncates towards zero
+  - std::numeric_limits<long long>::max(), which is about 9.2 * 10^18
+
+traps:
+  - description: >-
+      Writing `a * b % m` where a and b are `int`. The product is formed at int
+      width and only then reduced.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Correct on every small test and wrong on the large ones. With a and b
+      near 10^9 the true product is 10^18 and an int holds 2147483647, so the
+      value that reaches `%` is whatever the wrap produced — and signed
+      overflow is undefined behaviour, so at -O2 it need not even be the wrap.
+  - description: >-
+      Using a long long when the MODULUS itself can reach 10^18, so a * b needs
+      126 bits.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Identical code to the accepted solution, wrong answer on every test where
+      the modulus is large. The boundary is m = 3037000499, the square root of
+      LLONG_MAX; above it the product must be done in __int128.
+  - description: >-
+      Reporting `(a - b) % m` directly when b may exceed a.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      A negative number in the output where a residue was required, or, if the
+      value is used as an index, a read before the start of the array. -3 % 7
+      is -3 in C++ and 4 in Python, which is why code translated from an
+      editorial fails silently.
+  - description: >-
+      Writing `(x % m + m)` and stopping, without the second reduction.
+    mistake_code: BOUNDS_SINGLE_ELEMENT
+    symptom: >-
+      Exactly one wrong value: when x is already a multiple of m the answer
+      comes back as m rather than 0. It survives every random test and fails
+      the one built from a multiple.
+  - description: >-
+      Computing the whole product or factorial first and reducing at the end.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Overflow long before the end of the loop, so the final `% m` reduces a
+      number that stopped being the answer at the twentieth element. 21!
+      already exceeds LLONG_MAX.
+  - description: >-
+      Reducing modulo a value the statement never called prime, then dividing
+      by an inverse.
+    mistake_code: PATTERN_UNRECOGNISED
+    symptom: >-
+      Plausible answers that are wrong on about half the tests. Inverses exist
+      only when the value and the modulus are coprime; nothing in the arithmetic
+      complains when they are not.
+
+recall_rubric:
+  - key: the-three-rules
+    prompt: >-
+      State which arithmetic operations survive the modulus, and name the one
+      that does not.
+    essential: true
+    accepts:
+      - addition subtraction multiplication
+      - division does not
+      - plus minus times
+      - not division
+  - key: reduce-early
+    prompt: Say when the remainder should be taken and why not at the end.
+    essential: true
+    accepts:
+      - at every step
+      - after every operation
+      - the true value never fits
+      - keep the accumulator below m
+  - key: the-product
+    prompt: >-
+      Explain why `a * b % m` can be wrong even when a, b and m are all inside
+      the type, and give the rule for choosing the type.
+    essential: true
+    accepts:
+      - the product is formed first
+      - a*b before the mod
+      - long long when m is 1e9
+      - __int128 when m is 1e18
+  - key: the-sign
+    prompt: >-
+      Say what C++ returns for -3 % 7 and write the expression that repairs it.
+    essential: true
+    accepts:
+      - "-3"
+      - truncates towards zero
+      - (x % m + m) % m
+      - add m and reduce again
+  - key: long-numbers
+    prompt: >-
+      Give the recurrence that reduces a decimal string too long for any
+      integer type.
+    essential: false
+    accepts:
+      - r = (r * 10 + d) % m
+      - horner
+      - digit at a time
+      - build the residue from the prefix
+  - key: complexity
+    prompt: Give the time and space cost of a single reduced pass.
+    essential: false
+    accepts:
+      - o(n)
+      - o(1) space
+      - one pass
+      - constant work per element
+
+template_file: modular-arithmetic.cpp
+template_notes: >-
+  Three forms, one discipline. Form 1 is the reduced product, and the thing to
+  read is not the loop but the comment above it: both factors are already below
+  m, which is the only reason the multiplication is safe. Form 2 is the sign
+  repair, and both of its reductions are load-bearing — delete the second and
+  a multiple of m comes back as m. Form 3 is Horner over a string that has no
+  numeric type at all, which is the clearest demonstration that a residue can
+  be built without ever holding the number. `mulmod` at the bottom has no hole
+  because it needs no thought: if m can exceed 3 * 10^9, you use it.
+
+related:
+  - fast-exponentiation
+  - euclidean-gcd
+  - sieve-factorisation
+  - prefix-sum

@@ -1,0 +1,249 @@
+id: ordered-set
+name: The Row That Keeps Moving
+world: 6
+order: 1
+tagline: >-
+  A sorted row you may edit: insert, erase and ask what lies either side of a
+  value, all in a log factor, all interleaved in the same loop.
+
+prerequisites:
+  - heap-extraction
+
+signals:
+  - cue: values are inserted and removed while questions about the order are still being asked
+    strength: 3
+    note: >-
+      A sorted vector answers in O(log n) and edits in O(n). Once the edits and
+      the queries alternate, the vector's shuffle is the whole cost and a
+      balanced tree is what removes it.
+  - cue: for each arrival, find the value already present that is nearest to it
+    strength: 3
+    note: >-
+      lower_bound gives the first element at least x, and the nearest is one of
+      exactly two candidates — that one and the one before it.
+  - cue: a window over the data must report its extreme while elements leave in an order not matching their arrival
+    strength: 2
+    note: >-
+      A monotonic deque handles a window that only slides. Arbitrary removal is
+      what forces a structure you can search, and it costs a log factor.
+  - cue: the same value may appear several times and the count of copies matters
+    strength: 2
+    note: >-
+      That is a multiset, or a map from value to count. A plain set silently
+      discards the repeat, which no sample with distinct values will reveal.
+  - cue: a set of disjoint intervals is merged, split or probed as new intervals arrive
+    strength: 2
+    note: >-
+      Keyed by left endpoint, the neighbours of a new interval are exactly its
+      lower_bound and the element before it — the same two candidates again.
+  - cue: everything asked for is the current smallest or largest, and nothing else
+    strength: 1
+    note: >-
+      Weak, and often a warning: if no interior element is ever touched, a heap
+      does the same work with a smaller constant.
+
+anti_signals:
+  - cue: the collection is complete before the first query and never changes
+    instead: sorting-by-key
+    note: >-
+      Sort once and binary search. On the same task at n = 10^6 a set takes
+      about 1.5 seconds where sorting takes about 0.2 — identical asymptotics,
+      seven times the wall clock, because a tree is chased pointer by pointer.
+  - cue: only the extreme is ever removed
+    instead: heap-extraction
+    note: >-
+      A heap is smaller, faster and has fewer ways to go wrong. Pay for a tree
+      only when an interior element must be erased or found.
+  - cue: how many values lie below x, or which value has rank k
+    instead: fenwick-tree
+    note: >-
+      A set will hand you the element and refuse to count. Rank needs an index
+      over the values, which is a Fenwick tree — or g++'s policy-based
+      indexed_set, which is a tree that was taught to count.
+  - cue: the extreme over a range of POSITIONS, with the values updated in place
+    instead: segment-tree
+    note: >-
+      A set has no positions. "The smallest between index 3 and index 9" is a
+      range query over an array and needs a structure built on the array.
+  - cue: order never matters — only whether a value has been seen
+    instead: hashing-frequency
+    note: >-
+      If you never call lower_bound, begin or rbegin, you are paying for an
+      ordering nobody asked for. On a judge with adversarial tests, keep the
+      ordered container anyway: the built-in hash is attackable.
+
+confusable_with:
+  - pattern_id: heap-extraction
+    tell: >-
+      Ask what gets removed. Only ever the current extreme, and a heap is the
+      right size of tool; anything else — a specific value, an expiring
+      element, the one that just left the window — and you need a tree.
+  - pattern_id: fenwick-tree
+    tell: >-
+      Ask whether the answer is an ELEMENT or a COUNT. "Which value is nearest
+      to x" is a tree walking to a neighbour; "how many values are below x" is
+      a prefix total over the value axis, and no balanced set will give it to
+      you in logarithmic time.
+
+invariant: >-
+  Every element inserted so far is present exactly once per copy and in sorted
+  order, so lower_bound and its predecessor bracket any query value.
+
+complexity:
+  time: O(n log n)
+  space: O(n)
+  note: >-
+    Each insert, erase, find, lower_bound and upper_bound is O(log n).
+    multiset::count is O(log n + f), linear in the number of copies, so it is
+    not one of them. distance() between two set iterators is O(n), because a
+    tree's iterators are bidirectional and not random access.
+
+data_structures:
+  - std::set for distinct keys, std::multiset when copies must be kept
+  - std::map from value to count, as an explicit multiset
+  - a multiset maintained over a sliding or shrinking window
+  - a set of disjoint intervals keyed by left endpoint
+
+cpp_facilities:
+  - the MEMBER lower_bound and upper_bound, which descend the tree
+  - erase(iterator) versus erase(key), which are different operations
+  - "*s.begin() and *s.rbegin(), and prev(s.end())"
+  - "it = s.erase(it), to keep iterating past a removal"
+  - "__gnu_pbds indexed_set, for find_by_order and order_of_key"
+
+traps:
+  - description: >-
+      Calling multiset::erase(value) when exactly one copy should go.
+    mistake_code: INVARIANT_COUNTER_NOT_DECREMENTED
+    symptom: >-
+      Every copy vanishes at once. On {2, 5, 5, 5, 9} the container drops to
+      {2, 9} instead of {2, 5, 5, 9}, so a window that should hold three
+      elements holds one — and only on inputs containing duplicates, which the
+      sample almost never does.
+  - description: >-
+      Dereferencing lower_bound's result without checking it against end(), or
+      stepping back from it without checking begin().
+    mistake_code: CPP_OUT_OF_BOUNDS
+    symptom: >-
+      Undefined behaviour on exactly the two edge queries — a value larger than
+      everything present, or smaller. Typically a nonsense answer rather than a
+      crash, so the verdict is wrong answer with no line number.
+  - description: >-
+      Erasing inside a loop and then incrementing the erased iterator.
+    mistake_code: CPP_ITERATOR_INVALIDATION
+    symptom: >-
+      A crash or an endless loop as soon as two elements in a row qualify for
+      removal. `it = s.erase(it)` returns the next valid position; `++it` after
+      an erase advances a corpse.
+  - description: >-
+      Using std::lower_bound on set iterators instead of the member function.
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      Compiles, returns the right element, and runs in O(n) per query because
+      the iterators are not random access. Perfect on the samples, time limit
+      exceeded at 10^5 queries.
+  - description: >-
+      Calling ms.count(x) once per step on data with many equal values.
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      O(log n + f) per call, where f is the number of copies. An input of a
+      million equal values makes a single count cost a million steps and the
+      loop quadratic, with no visible sign in the code that it happened.
+  - description: >-
+      Using a plain std::set where duplicates are meaningful.
+    mistake_code: INVARIANT_COUNTER_NOT_DECREMENTED
+    symptom: >-
+      insert() of a value already present does nothing and reports it did
+      nothing, so size() undercounts and every total derived from it is short.
+      Silent, and invisible until the data repeats.
+  - description: >-
+      Reaching for an unordered_set on a judge whose tests are adversarial.
+    mistake_code: CPP_UNORDERED_MAP_WORST_CASE
+    symptom: >-
+      Accepted everywhere except the one test built to collide, where the
+      average O(1) becomes O(n) and the run times out. The ordered container is
+      slower on average and cannot be attacked this way.
+
+recall_rubric:
+  - key: the-shape
+    prompt: State what this structure buys over a sorted vector.
+    essential: true
+    accepts:
+      - insert and erase in log time
+      - the row can be edited between queries
+      - no shuffling
+      - balanced binary search tree
+  - key: erase-one
+    prompt: >-
+      Say how one copy is removed from a multiset, and what the other form
+      does instead.
+    essential: true
+    accepts:
+      - erase(find(x))
+      - erase the iterator
+      - erase(x) removes every copy
+      - erase by value takes all of them
+  - key: bracket
+    prompt: >-
+      Name the two candidates for the element nearest to x, and the two guards
+      that must be checked.
+    essential: true
+    accepts:
+      - lower_bound and the element before it
+      - check end and begin
+      - the one at least x and the one below
+      - prev(it)
+  - key: largest-at-most
+    prompt: >-
+      Give the idiom for the largest element that is at most x, and say why
+      lower_bound is the wrong starting point.
+    essential: false
+    accepts:
+      - upper_bound then step back
+      - lower_bound misses an exact match
+      - upper_bound(x) then --it
+      - it != begin
+  - key: what-it-cannot-do
+    prompt: Name what a balanced set will not tell you.
+    essential: false
+    accepts:
+      - how many are below x
+      - rank
+      - the k-th element
+      - no random access
+  - key: cost
+    prompt: >-
+      State the per-operation cost, and name the one member function that is
+      not logarithmic.
+    essential: false
+    accepts:
+      - o(log n)
+      - count is o(log n + f)
+      - count is linear in the copies
+      - distance is o(n)
+  - key: when-not-to
+    prompt: >-
+      Say when a sorted vector or a heap is the better answer, and why the
+      constant factor matters.
+    essential: false
+    accepts:
+      - the collection never changes
+      - only the extreme is removed
+      - sorting is several times faster
+      - pointer chasing
+
+template_file: ordered-set.cpp
+template_notes: >-
+  Three forms and one price list. Form 1 is erase-one-copy, which is the single
+  most common silent wrong answer in this whole region — read the two lines in
+  the comment until they are automatic. Form 2 is the bracket around a query,
+  with both guards left in the hole because a solution that only looks forward
+  passes every sample. Form 3 is the window a deque cannot handle. The header
+  is worth reading twice: it lists what this structure refuses to do, and what
+  it costs when you use it anyway.
+
+related:
+  - heap-extraction
+  - fenwick-tree
+  - binary-search
+  - hashing-frequency

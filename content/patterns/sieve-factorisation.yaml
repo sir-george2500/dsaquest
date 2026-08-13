@@ -1,0 +1,228 @@
+id: sieve-factorisation
+name: Cross Out Each Multiple Once
+world: 10
+order: 3
+tagline: >-
+  Stop asking each number who divides it. Walk each prime and strike out its
+  multiples — and to open one large number, stop at its square root.
+
+prerequisites:
+  - euclidean-gcd
+
+signals:
+  - cue: something must be decided for EVERY number up to 10^6 or 10^7
+    strength: 3
+    note: >-
+      Testing each one in O(sqrt(n)) is n*sqrt(n) and does not finish. The
+      sieve is n log log n for the whole range, which is very nearly linear.
+  - cue: the answer depends on how many divisors a number has, or on their sum
+    strength: 3
+    note: >-
+      Both follow from the exponents in the factorisation alone: the count is
+      the product of (exponent + 1), which for 84 = 2^2 * 3 * 7 gives
+      3 * 2 * 2 = 12.
+  - cue: one number up to 10^12 or 10^18 must be broken into its prime factors
+    strength: 3
+    note: >-
+      No sieve of that size exists, and none is needed: trial division to the
+      square root is 10^6 steps, and whatever survives the loop is itself prime.
+  - cue: values must be classified as prime or composite, in quantity
+    strength: 2
+    note: >-
+      One primality test is O(sqrt(n)) and fine. A million of them are not, and
+      the sieve answers all of them in one preprocessing pass.
+  - cue: coprimality, Euler's totient, or counting values sharing no factor with n
+    strength: 2
+    note: >-
+      Totient is a product over the DISTINCT primes dividing n, so it cannot be
+      computed without opening the number up.
+  - cue: n is at most 10^6 and the statement mentions multiples or divisors at all
+    strength: 1
+    note: >-
+      Weak alone. The bound merely says a sieve would fit; the statement may
+      still want a gcd, which needs no primes at all.
+
+anti_signals:
+  - cue: only the greatest common divisor or the lowest common multiple is wanted
+    instead: euclidean-gcd
+    note: >-
+      Euclid answers both in O(log n) and never learns a prime. Factorising to
+      get a gcd is slower by orders of magnitude and harder to get right.
+  - cue: the numbers are used only to be reduced modulo something
+    instead: modular-arithmetic
+    note: >-
+      Reducing never opens a number up. If no divisor of any input is ever
+      asked about, no factorisation is needed.
+  - cue: the answer is a count of pairs or values matching exactly, with no arithmetic structure
+    instead: hashing-frequency
+    note: >-
+      Counting equal things is a map. Primes only enter when the answer depends
+      on what divides what.
+  - cue: multiples are being SUMMED over a range rather than marked
+    instead: prefix-sum
+    note: >-
+      "The total over every multiple of k" is arithmetic on a table. The sieve
+      marks; it does not accumulate, unless you deliberately turn it into a
+      divisor-sum sieve, which is a different loop.
+
+confusable_with:
+  - pattern_id: euclidean-gcd
+    tell: >-
+      Ask whether you need to know WHICH primes are involved. A common divisor,
+      a common multiple, a common step — Euclid, and no factorisation at all.
+      Divisor counts, totients, distinct prime factors — the sieve.
+  - pattern_id: modular-arithmetic
+    tell: >-
+      Ask whether the modulus is given or the divisors are sought. A stated m
+      that everything is reduced by is arithmetic; an unknown set of divisors
+      to be discovered is this.
+  - pattern_id: fast-exponentiation
+    tell: >-
+      Ask where the exponents come from. Given in the statement and applied to
+      a base — halve them. Discovered by peeling primes off a number and then
+      used to count divisors — factorisation.
+
+invariant: >-
+  When the outer loop reaches i, every composite below i has already been
+  struck by a prime smaller than itself, so an unmarked i is prime; and inside
+  the inner loop every multiple of i below i*i already carries a smaller factor.
+
+complexity:
+  time: O(n log log n)
+  space: O(n)
+  note: >-
+    The naive bound is the harmonic sum n/2 + n/3 + ... = O(n log n), but the
+    inner loop only runs for primes, and the sum of reciprocals of primes below
+    n is log log n. Factorising one value up to N by trial division is
+    O(sqrt(N)); with a smallest-prime-factor table it is O(log x) per value.
+    There are 78498 primes below 10^6 and 664579 below 10^7.
+
+data_structures:
+  - a vector<int> of smallest prime factors, which is a sieve and a factoriser at once
+  - vector<bool> when only primality is needed and memory is tight — one bit per number
+  - a vector of (prime, exponent) pairs, which is what every divisor formula consumes
+
+cpp_facilities:
+  - std::vector<int> sized n + 1, indexed by the number itself
+  - std::vector<bool>, bit-packed, so 10^8 flags cost 12.5 MB rather than 100 MB
+  - long long for the inner loop's starting index, i*i
+  - structured bindings over the (prime, exponent) pairs
+
+traps:
+  - description: >-
+      Writing the inner loop's start as `i * i` with `int i`.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Undefined behaviour once i passes 46340, where i*i exceeds INT_MAX. The
+      same code is correct for n up to 10^9 and silently wrong the moment it is
+      reused with a larger bound. Cast one operand to long long.
+  - description: >-
+      Trial-dividing one large n with `int d` in the condition `d * d <= n`.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      For n near 10^12 the divisor reaches 10^6 and d*d reaches 10^12, which an
+      int cannot hold. The loop then exits early or never, and the factorisation
+      comes back missing its largest factor.
+  - description: >-
+      Forgetting the final `if (n > 1)` after trial division to the square root.
+    mistake_code: BOUNDS_SINGLE_ELEMENT
+    symptom: >-
+      Every prime factor above sqrt(n) is dropped, so 1999999874 = 2 * 999999937
+      is reported as just 2. It is right on every composite whose factors are
+      all small, which is most random tests.
+  - description: >-
+      Using `d <= sqrt(n)` in the trial-division loop.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      A double has 53 bits of mantissa and n has up to 63, so the comparison is
+      a coin flip exactly on the boundary — the case where n is a perfect
+      square of a prime. Write `d * d <= n`.
+  - description: >-
+      Allocating a bool array for 10^8 and running out of memory.
+    mistake_code: COMPLEX_TOO_MUCH_MEMORY
+    symptom: >-
+      Memory Limit Exceeded before the first line of output. `bool` is a byte,
+      so 10^8 is 100 MB; vector<bool> packs to bits and costs 12.5 MB.
+  - description: >-
+      Sieving inside a per-query loop instead of once before answering anything.
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      Time Limit Exceeded with entirely correct answers. The sieve is a
+      preprocessing step; its whole purpose is that it is paid for once and
+      amortised over every query.
+
+recall_rubric:
+  - key: the-inversion
+    prompt: >-
+      State what the sieve does differently from testing each number
+      separately.
+    essential: true
+    accepts:
+      - walk each prime and mark its multiples
+      - strike out multiples
+      - each composite is struck by its own factors
+      - cross out rather than test
+  - key: the-start
+    prompt: >-
+      Say where the inner loop begins and why it may skip everything before
+      that.
+    essential: true
+    accepts:
+      - i squared
+      - i*i
+      - smaller multiples already have a smaller factor
+      - already struck
+  - key: the-root
+    prompt: >-
+      Give the bound for trial-dividing one number, and say what is true of
+      whatever remains after the loop.
+    essential: true
+    accepts:
+      - up to the square root
+      - d*d <= n
+      - what remains is 1 or a prime
+      - at most one factor above the root
+  - key: divisor-count
+    prompt: >-
+      State the number of divisors in terms of the prime factorisation, with an
+      example.
+    essential: true
+    accepts:
+      - product of exponent plus one
+      - (a1+1)(a2+1)...
+      - 84 has 12 divisors
+      - 720 has 30
+  - key: smallest-prime-factor
+    prompt: >-
+      Say what storing the smallest prime factor buys over storing a boolean.
+    essential: false
+    accepts:
+      - factorise any number in the range in log time
+      - no division search
+      - the sieve becomes a factoriser
+      - peel the smallest factor repeatedly
+  - key: complexity
+    prompt: Give the sieve's running time and say why it beats the harmonic sum.
+    essential: false
+    accepts:
+      - o(n log log n)
+      - the inner loop only runs for primes
+      - sum of reciprocals of primes
+      - nearly linear
+
+template_file: sieve-factorisation.cpp
+template_notes: >-
+  Form 1 stores the smallest prime factor rather than a flag, which costs the
+  same sieve and turns it into a factoriser — read why spf[i] == 0 already
+  means "prime" and no primality test is needed anywhere. Form 2 is the payoff:
+  peel the smallest factor, repeat, at most log2(x) times with no division
+  search at all. Form 3 is the other half of the region, where no sieve fits
+  and one number must be opened alone; the last line, `if (n > 1)`, is where
+  the largest prime factor comes from and is the single most common omission
+  in this whole pattern.
+
+related:
+  - euclidean-gcd
+  - modular-arithmetic
+  - fast-exponentiation
+  - prefix-sum

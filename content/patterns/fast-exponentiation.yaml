@@ -1,0 +1,234 @@
+id: fast-exponentiation
+name: Halve the Exponent
+world: 10
+order: 1
+tagline: >-
+  Square the base and consume the exponent one bit at a time — and the same
+  loop, given the exponent m-2, is the only division a prime modulus allows.
+
+prerequisites:
+  - modular-arithmetic
+  - bit-manipulation
+
+signals:
+  - cue: an exponent up to 10^9 or 10^18, with the result wanted modulo something
+    strength: 3
+    note: >-
+      A loop of 10^18 multiplications does not finish. Sixty do. The size of
+      the exponent, not the size of the base, is what forces this.
+  - cue: the answer requires DIVIDING modulo a prime — a probability, an average, a binomial
+    strength: 3
+    note: >-
+      There is no modular division. There is multiplication by an inverse, and
+      for a prime modulus the inverse is a^(m-2), which is this loop with a
+      particular exponent.
+  - cue: "\"how many ways\" with n up to 10^5 or more and the answer modulo a prime"
+    strength: 3
+    note: >-
+      Counting arrangements needs binomial coefficients, binomials need
+      factorials divided by factorials, and dividing needs inverses. Build the
+      factorial table once and every coefficient is O(1).
+  - cue: a state that is advanced by the SAME transformation n times
+    strength: 2
+    note: >-
+      Repeated application of one fixed step is exponentiation whatever the
+      objects are. When the step is a linear recurrence the object is a matrix
+      and the same halving applies unchanged.
+  - cue: an exponent that is itself an expression like b^c, or a tower
+    strength: 2
+    note: >-
+      Fermat gives x^k mod m = x^(k mod (m-1)) mod m for prime m and x coprime
+      to it, so the exponent is reduced modulo m-1 — never modulo m, which is
+      the classic wrong reflex.
+  - cue: n up to 10^18 and an answer that is clearly a closed form
+    strength: 1
+    note: >-
+      Weak alone. It says only that no per-element loop can run, which halving,
+      a formula, or matrix work might each answer.
+
+anti_signals:
+  - cue: the exponent is small and fixed — squares, cubes, at most a dozen
+    instead: modular-arithmetic
+    note: >-
+      Halving saves nothing below about eight multiplications and costs a
+      routine you can get wrong. Multiply and reduce.
+  - cue: the modulus is composite, or is not stated to be prime, and you need an inverse
+    instead: euclidean-gcd
+    note: >-
+      Fermat requires a prime modulus and says nothing otherwise. Extended
+      Euclid produces the inverse whenever one exists and tells you when none
+      does, which Fermat never will.
+  - cue: the exponent is a count of set bits or a subset index rather than a power
+    instead: bit-manipulation
+    note: >-
+      Reading the exponent's bits is a step INSIDE this pattern. When the bits
+      themselves are the subject, the powers are incidental.
+  - cue: the answer is a product over the given values, each used once
+    instead: modular-arithmetic
+    note: >-
+      One pass, n multiplications, nothing to halve. Fast exponentiation
+      applies to one base and a large exponent, not to many bases.
+
+confusable_with:
+  - pattern_id: modular-arithmetic
+    tell: >-
+      Ask what is large. If the DATA is large and the arithmetic is one pass
+      over it, reduce as you go. If a single EXPONENT is large, the pass does
+      not exist and must be replaced by halving.
+  - pattern_id: euclidean-gcd
+    tell: >-
+      Ask whether the modulus was called prime. Both patterns can produce a
+      modular inverse; only extended Euclid works when the modulus is composite,
+      and only it reports that no inverse exists.
+  - pattern_id: sieve-factorisation
+    tell: >-
+      Ask whether the exponents are GIVEN or DISCOVERED. Raising a base to a
+      stated power is this; discovering that a number is p^a * q^b, and using
+      those exponents, is factorisation.
+
+invariant: >-
+  At the start of each iteration `r * b^e` equals the original a^e modulo m,
+  with b holding a raised to the next unconsumed power of two and every stored
+  value already below m.
+
+complexity:
+  time: O(log e)
+  space: O(1)
+  note: >-
+    About 2*log2(e) modular multiplications: one squaring per bit and one extra
+    for each set bit. e = 10^18 is 60 bits, so at most 120 multiplications. A
+    factorial table costs O(n) to build and then answers each binomial in O(1),
+    which is why you build it once rather than inverting per query.
+
+data_structures:
+  - three long longs — base, exponent, accumulator — and nothing else
+  - a factorial table and an inverse-factorial table, both precomputed to n
+  - a small matrix, when the repeated step is a linear recurrence
+
+cpp_facilities:
+  - the right shift and bitwise and, to consume the exponent
+  - long long throughout, because r * b is a full product of two residues
+  - __int128 when the modulus exceeds 3 * 10^9
+  - std::vector for the factorial tables, sized once at the top of main
+
+traps:
+  - description: >-
+      Using Fermat's a^(m-2) when the modulus is composite, or when a shares a
+      factor with it.
+    mistake_code: PATTERN_UNRECOGNISED
+    symptom: >-
+      A confident wrong number. Fermat's theorem simply does not apply, and
+      nothing in the computation objects — a^(m-2) is a perfectly good residue
+      that happens not to be an inverse. 2 has no inverse modulo 4 at all.
+  - description: >-
+      Reducing a tower's exponent modulo m instead of modulo m-1.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      Right for the exponents smaller than the modulus and wrong for every
+      larger one. The exponent lives in the multiplicative group of order m-1;
+      reducing it modulo m is an operation with no theorem behind it.
+  - description: >-
+      Building the factorial table only to n when the statement's n can reach
+      the modulus itself.
+    mistake_code: BOUNDS_EMPTY_INPUT
+    symptom: >-
+      fact[n] becomes 0 the moment n reaches p, and its "inverse" 0^(p-2) is
+      also 0, so every coefficient comes back 0. C(10, 3) is 120, which is 1
+      modulo 7, and the table cannot produce it. That case is Lucas's theorem.
+  - description: >-
+      Letting the exponent be negative, or looping `while (e)` on a signed
+      exponent that started below zero.
+    mistake_code: BOUNDS_SINGLE_ELEMENT
+    symptom: >-
+      An infinite loop or an immediate 1, depending on whether the test is
+      `e > 0` or `e != 0`. Negative exponents are inverses and must be routed
+      through the m-2 form deliberately.
+  - description: >-
+      Squaring without reducing — `b = b * b` and only then `% m` at the end of
+      the loop body's next statement.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Silent overflow within four iterations. Both `r * b` and `b * b` are full
+      products of two values below m and each must be reduced immediately.
+  - description: >-
+      Recomputing an inverse inside a query loop instead of building the
+      inverse-factorial table backwards.
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      Time Limit Exceeded with entirely correct output. 10^5 queries times 30
+      multiplications each is a log factor that a single backward pass —
+      invfact[i-1] = invfact[i] * i — removes completely.
+
+recall_rubric:
+  - key: the-identity
+    prompt: State the identity that lets the exponent be halved.
+    essential: true
+    accepts:
+      - a^e = (a^(e/2))^2 for even e
+      - square the half power
+      - a^e = a * a^(e-1) for odd e
+      - binary expansion of the exponent
+  - key: the-loop
+    prompt: >-
+      Describe what happens to the base and to the accumulator on each
+      iteration, and what decides whether the accumulator changes.
+    essential: true
+    accepts:
+      - square the base every step
+      - multiply in when the bit is set
+      - shift the exponent right
+      - e & 1
+  - key: the-inverse
+    prompt: >-
+      Give the exponent that turns this routine into a modular inverse, and
+      state the condition on the modulus.
+    essential: true
+    accepts:
+      - m - 2
+      - a^(m-2)
+      - the modulus must be prime
+      - fermat
+  - key: why-not-divide
+    prompt: >-
+      Say why (a / b) % m cannot be computed directly and what replaces it.
+    essential: true
+    accepts:
+      - division does not survive the modulus
+      - multiply by the inverse
+      - there is no modular division
+      - a * inv(b) % m
+  - key: binomials
+    prompt: >-
+      Describe how a factorial table and one inverse give every binomial
+      coefficient in O(1).
+    essential: false
+    accepts:
+      - fact times invfact times invfact
+      - invert the top factorial once
+      - invfact[i-1] = invfact[i] * i
+      - build backwards
+  - key: complexity
+    prompt: Give the number of multiplications as a function of the exponent.
+    essential: false
+    accepts:
+      - o(log e)
+      - about 2 log2 e
+      - 60 iterations for 1e18
+      - one squaring per bit
+
+template_file: fast-exponentiation.cpp
+template_notes: >-
+  Read the trace of 3^13 in the comment before you read the loop; the loop is
+  four lines and the trace is where the understanding is. Form 2 is one line
+  and two preconditions, and the preconditions are the content — a composite
+  modulus turns it into a plausible wrong answer with no symptom. Form 3 is
+  where most contest counting actually lives: build the factorials forwards,
+  invert once at the top, and walk back down, because invfact[i-1] is
+  invfact[i] * i. Note what the comment says about n reaching p; the table is
+  silently wrong there rather than absent.
+
+related:
+  - modular-arithmetic
+  - euclidean-gcd
+  - sieve-factorisation
+  - bit-manipulation

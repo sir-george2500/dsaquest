@@ -16,10 +16,21 @@
 //
 // What they do NOT give you, however much you want it:
 //
-//     "how many elements are below x"     — no rank. That is a Fenwick tree.
+//     "how many elements are below x"     — no rank. That is a Fenwick tree,
+//                                           or g++'s policy-based indexed_set.
 //     s.begin() + k                       — no random access. distance() is O(n).
 //     duplicates, in a plain `set`        — insert of a value already present
 //                                           does nothing at all, silently.
+//     ms.count(x) cheaply                 — it is O(log n + f), linear in the
+//                                           number of copies. A million equal
+//                                           values makes one call cost a
+//                                           million steps.
+//
+// And the price. A balanced tree is not free and its log is not the whole
+// story: on the same "how many values appear in both lists" task at n = 10^6,
+// a `set` takes about 1.5s, an `unordered_set` about 0.3s, and simply sorting
+// both lists about 0.2s. Same asymptotics for the first and the third. Reach
+// for this structure because the row MOVES, never because it is tidy.
 //
 // Two rules that outlive every problem:
 //   * on a multiset, erase(value) removes EVERY copy and erase(iterator)

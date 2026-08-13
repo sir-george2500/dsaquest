@@ -1,0 +1,306 @@
+# Problems that are really Say What dp[i] Means.
+#
+# None may name the pattern and none may use the words "state", "transition" or
+# "recurrence" — those are the master's vocabulary, and handing them over in the
+# statement is handing over the answer. What is being recognised here is that
+# the row may NOT be reordered, that a choice is made at every position, and
+# that the choice changes what is legal afterwards. `decoy_signals` records what
+# makes each one hard, which is what the post-answer feedback quotes back.
+
+- id: stone-ford-crossing
+  pattern: linear-dp
+  title: The Stone Ford
+  difficulty: easy
+  statement: >-
+    A ford across the river is a line of n stones, numbered 1 to n, with the
+    near bank counting as stone 0. A courier standing on any stone may step
+    forward onto the next stone, or leap over one stone onto the one after it.
+    She may never move backwards and never skip two stones at once. Two
+    crossings are considered different if at any point she is standing on a
+    stone in one crossing that she never stands on in the other. Report how
+    many distinct crossings reach stone n, given modulo 1000000007 because the
+    true count is enormous.
+  constraints: |
+    1 <= n <= 1000000
+    the answer is to be given modulo 1000000007
+    the stones are fixed in the river and cannot be rearranged
+  signals_present:
+    - the objective counts distinct routes rather than optimising anything
+    - a modulus is supplied, which is the setter conceding the count grows past any machine integer
+    - only two moves are legal from each position, and both go forward
+    - n reaches 10^6, so enumerating the crossings is hopeless
+  decoy_signals:
+    - "\"how many ways\" with only two moves invites a closed-form guess and a fight with a formula"
+    - the stones being a fixed line reads like a stretch to be scanned with two indices
+    - the modulus suggests number theory rather than an accumulation
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Fix a single stone k and ask a narrower question: how many crossings
+        end their journey standing on exactly that stone? Answer that for every
+        k and the last one is the answer to the problem.
+    - text: >-
+        A crossing that stands on stone k arrived there by its final move, and
+        there are only two moves. Where was she immediately before? Those two
+        groups of crossings share nothing, so their counts add.
+    - text: >-
+        Let f[k] be the number of crossings ending on stone k. Then
+        f[k] = f[k-1] + f[k-2], with f[0] = 1 because there is exactly one way
+        to have done nothing at all. Fill the array upwards, reducing modulo
+        1000000007 at every step.
+      reveals_pattern: true
+  why: >-
+    A count of routes cannot be produced by any ordering of anything, because
+    nothing is being selected — every crossing is legal and they are being
+    tallied. The tally is built by asking what the LAST move was, which splits
+    the crossings into two groups that cannot overlap, so their counts add. The
+    modulus is the giveaway that this is an accumulation and not a formula.
+  classic_ref: CPH 7, the counting half of dynamic programming; the Fibonacci recurrence in disguise
+
+- id: granary-tithe-run
+  pattern: linear-dp
+  title: The Tithe Run
+  difficulty: easy
+  statement: >-
+    A tax collector walks a road lined with n granaries in a fixed order, the
+    i-th holding a[i] measures of grain. He may empty any granary he chooses,
+    but the keepers gossip: if he empties one granary, the two immediately
+    beside it on the road are warned in time and he gets nothing from them. He
+    may also decline a granary and take nothing at all from it. Report the
+    largest total number of measures he can collect. He walks the road once, in
+    the order given, and cannot revisit.
+  constraints: |
+    1 <= n <= 200000
+    0 <= a[i] <= 10^9
+    the granaries are in a fixed order along the road and may not be reordered
+  signals_present:
+    - a decision at each position that forbids a decision at the neighbouring position
+    - the order along the road is fixed and stated to be so
+    - the totals reach 2 * 10^14, which is past a 32-bit accumulator
+    - a plausible greedy exists — take the largest remaining granary — and it is easy to write
+  decoy_signals:
+    - "\"largest total\" with items to choose from reads like a ranking problem"
+    - taking the biggest granary first is a rule that survives every small example a reader invents
+    - "\"no two adjacent\" sounds like a constraint a window could maintain"
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Try the obvious rule on the road 4, 5, 4. Take the largest granary
+        first: it yields 5 and silences both of its neighbours, so 5 is the
+        whole haul. Now take the two fours instead. Three granaries are enough
+        to break the rule.
+    - text: >-
+        Walk the road left to right and ask, at each granary, what the best
+        possible total over everything BEHIND you is. There are exactly two
+        cases at granary i: you emptied it, or you did not.
+    - text: >-
+        Let dp[i] be the best total from the first i granaries. If granary i is
+        left alone, that is dp[i-1]; if it is emptied, granary i-1 was not, so
+        it is dp[i-2] + a[i-1]. Take the larger.
+      reveals_pattern: true
+  why: >-
+    Emptying a granary changes which OTHER granaries are still available, and
+    no ranking of granaries can express that — the largest one may be flanked by
+    two that together beat it. That interaction between a local choice and what
+    remains reachable is exactly the boundary where a sort and a sweep stop
+    working. The fixed order is what makes the position meaningful.
+  classic_ref: CPH 7 family; the standard "no two adjacent" maximisation
+
+- id: mint-strike-count
+  pattern: linear-dp
+  title: The Mint's Strike
+  difficulty: medium
+  statement: >-
+    A provincial mint strikes coins in k denominations of its own choosing —
+    the values were set centuries ago by a committee and follow no pattern at
+    all. A merchant must pay a debt of exactly A coppers and may use any number
+    of coins of any denomination, drawing from an unlimited supply. Coins are
+    heavy, so he wants to hand over as few as possible. Report the smallest
+    number of coins that pays the debt exactly, or -1 if this mint's
+    denominations cannot make the sum at all.
+  constraints: |
+    1 <= k <= 100
+    1 <= denomination value <= 10^6
+    1 <= A <= 10^6
+    the denominations are arbitrary and are given in no particular order
+  signals_present:
+    - the denominations are explicitly stated to be arbitrary rather than a friendly system
+    - an exact total must be assembled from repeatable pieces
+    - "-1 is a legal answer, so the method must be able to report impossibility"
+    - A is bounded at 10^6, which is small enough to be an array index
+  decoy_signals:
+    - "\"fewest pieces summing to exactly A\" is the exact vocabulary of the toll-gate problem, which is answered largest-first"
+    - an unlimited supply of each coin reads like a ranking over the denominations
+    - k is only 100, which invites trying every combination of counts
+  expected_complexity: O(A * k)
+  hints:
+    - text: >-
+        Take the largest coin that fits, repeatedly, on the denominations 1, 3
+        and 4 with a debt of 6. Then find the answer by hand. The two do not
+        agree, and the gap is one coin at the smallest interesting amount.
+    - text: >-
+        Ask a smaller question for every amount from 0 to A: what is the fewest
+        coins that pays exactly that amount? The answer for 0 is forced — it
+        costs nothing to pay nothing.
+    - text: >-
+        Whatever coin is handed over LAST, everything before it paid exactly
+        A minus that coin. So the answer for A is one plus the cheapest answer
+        among A - c over every denomination c. Fill the array upwards from 0
+        and keep a sentinel meaning "cannot be paid".
+      reveals_pattern: true
+  why: >-
+    The word "arbitrary" is doing all the work. On a canonical system the
+    largest-that-fits rule is provably optimal and the amount is usually far too
+    large to index; on an arbitrary system that rule is false at the smallest
+    interesting amount — 1, 3, 4 and the debt 6 — and the bound of 10^6 on A is
+    the setter sizing an array for you. Impossibility being a legal answer is
+    the second tell: a sweep has nowhere to record it.
+  classic_ref: CPH 6 and 7, the coin problem; the exact hinge between the two chapters
+
+- id: runic-tablet-decoding
+  pattern: linear-dp
+  title: The Runic Tablet
+  difficulty: medium
+  statement: >-
+    An archive holds a tablet inscribed with a single row of n digits. The
+    ancient scribes wrote each rune as a number from 1 to 26 and then ran the
+    numbers together with no separators, so 1 through 9 occupy one digit and 10
+    through 26 occupy two. A leading zero was never written, which means no rune
+    may be read from a two-digit group beginning with 0, and a lone 0 cannot be
+    a rune at all. Report the number of distinct readings of the row, modulo
+    1000000007. Some rows have no valid reading; report 0 for those.
+  constraints: |
+    1 <= n <= 100000
+    every character is a digit from 0 to 9
+    the answer is to be given modulo 1000000007
+  signals_present:
+    - the objective counts readings rather than optimising anything
+    - the row is a fixed sequence that cannot be rearranged
+    - each position offers at most two choices, and one of them may be illegal
+    - zero is a legal answer, so the method must be able to propagate impossibility
+  decoy_signals:
+    - "\"count the ways to split a string\" invites a recursive enumeration that is exponential"
+    - the two-digit groups look like a window of width two sliding along the row
+    - the alphabet of 26 runes suggests counting frequencies
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Read the row 226 by hand and list every reading. Now read 06 and list
+        them. The second has none, and the reason it has none must survive
+        whatever method you use.
+    - text: >-
+        Ask how many readings cover exactly the first i digits. The last rune in
+        such a reading took either one digit or two, and those two groups of
+        readings are disjoint, so the counts add — when the group is legal.
+    - text: >-
+        dp[i] = dp[i-1] if digit i is not '0', plus dp[i-2] if digits i-1 and i
+        form a number between 10 and 26. dp[0] = 1, because there is exactly one
+        way to read nothing.
+      reveals_pattern: true
+  why: >-
+    Every reading ends with a final rune, and that rune consumed one digit or
+    two — a case split that partitions the readings without overlap, which is
+    what makes the counts add. The zero rules are what stop this being a pure
+    Fibonacci count: they make some transitions illegal, and a method that
+    cannot express "this step is not allowed" cannot answer the question.
+  classic_ref: CPH 7 counting family; the standard digit-decoding count
+
+- id: ledger-line-breaks
+  pattern: linear-dp
+  title: The Ledger's Margin
+  difficulty: medium
+  statement: >-
+    A copyist must transcribe n words, in the order given, onto a ledger page
+    whose lines hold W characters. Words go onto lines in order and are never
+    reordered or split; consecutive words on the same line are separated by
+    exactly one space. A line holding words that occupy L characters in total
+    costs (W - L) squared in wasted vellum, except the final line of the page,
+    which costs nothing however short it is. A line may never exceed W
+    characters. Report the smallest possible total cost.
+  constraints: |
+    1 <= n <= 5000
+    1 <= W <= 10000
+    1 <= length of each word <= W
+    the words must appear in the order given
+  signals_present:
+    - the order of the words is fixed and explicitly may not be changed
+    - the cost of a line depends on which words were grouped, not on any one word
+    - the squared cost makes a locally tight line able to force a very loose one later
+    - the last line being free is a rule no local decision can see coming
+  decoy_signals:
+    - "\"fill each line as full as it will go\" is the obvious rule and it is wrong"
+    - the fixed order and the running length look like a window growing and shrinking
+    - the squared cost invites minimising a sum of squares against an average
+  expected_complexity: O(n^2)
+  hints:
+    - text: >-
+        Take words of lengths 6, 3, 2, 10 on a page of width 10. Filling each
+        line as full as it goes gives lines of 6+3, then 2, then 10 — a wasted
+        eight squared, so 64. Now break after the 6 instead: lines of 6, then
+        3+2, then 10, which is 16 and 16, so 32. The rule is not imperfect;
+        it is wrong.
+    - text: >-
+        Ask, for each word index i, what the smallest total cost of laying out
+        the first i words is, assuming word i ends a line. Every layout of the
+        first i words is described by where its LAST line began.
+    - text: >-
+        dp[i] = min over j of dp[j] + cost(j+1 .. i), where j runs back only as
+        far as the words still fit on one line. Build the running length as j
+        descends so the inner loop stays constant work per step.
+      reveals_pattern: true
+  why: >-
+    Packing each line as full as it goes is a local choice, and here it changes
+    what is available afterwards: a tightly packed early line can force a
+    ruinously empty later one, and the squared cost is chosen precisely to make
+    that happen. No ordering of the words is even permitted, so no ranking key
+    can exist. The answer is assembled by asking where the last line began.
+  classic_ref: CPH 7 family; the word-wrap or line-breaking cost minimisation
+
+- id: signal-fire-relay
+  pattern: linear-dp
+  title: The Relay of Fires
+  difficulty: hard
+  statement: >-
+    A chain of n watchtowers stands along the frontier in a fixed order, the
+    i-th at height h[i]. A signal starts at tower 1 and must reach tower n. From
+    tower i the fire can be seen at any of the next k towers, i+1 through i+k,
+    provided that tower exists. Relighting the signal at tower j from tower i
+    costs the absolute difference of their heights in oil. Report the least oil
+    needed to carry the signal from the first tower to the last.
+  constraints: |
+    2 <= n <= 200000
+    1 <= k <= 100
+    1 <= h[i] <= 10^9
+    the towers stand in a fixed order and cannot be rearranged
+  signals_present:
+    - the order of the towers is fixed by geography and cannot be changed
+    - the cost of a hop depends on the pair, so a locally cheap hop can strand the signal expensively
+    - each position has exactly k legal predecessors, which bounds the work per position
+    - n times k is 2 * 10^7, which the constraints have clearly been sized for
+  decoy_signals:
+    - "\"always hop to the nearest tower in height\" is a rule that passes most small cases"
+    - "\"least total cost from the first to the last\" is the vocabulary of a shortest path, which would be a heavier tool than needed"
+    - the absolute differences invite sorting the towers by height
+  expected_complexity: O(n * k)
+  hints:
+    - text: >-
+        Take the heights 10, 0, 30 with k = 2 and hop to whichever tower is
+        closest in height. That is the middle tower, for 10, and then 30 more
+        to finish: 40 in all. Jumping straight to the last tower costs 20.
+        Three towers are enough to break the rule.
+    - text: >-
+        The towers can only be reached in increasing order, so by the time you
+        are asking about tower j, every tower that could have lit it has already
+        been settled. What is worth storing about each tower?
+    - text: >-
+        dp[j] = min over i in [j-k, j-1] of dp[i] + |h[j] - h[i]|, with
+        dp[1] = 0. Fill j upwards; each cell costs at most k comparisons and
+        every cell it reads is already final.
+      reveals_pattern: true
+  why: >-
+    Choosing the cheapest next hop is a local decision that changes what the
+    rest of the chain costs, which is the standard shape of a failed greedy. The
+    order is fixed by geography so nothing may be sorted, and the towers can
+    only ever be reached forwards, which is what guarantees that every cell the
+    recurrence reads has already been settled when it is read.
+  classic_ref: CPH 7 and 16.2; a shortest path on a directed acyclic line, solved as a recurrence

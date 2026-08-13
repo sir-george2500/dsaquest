@@ -1,0 +1,199 @@
+# Problems that are really Reduce As You Go.
+#
+# None of these may hint at a technique. What they must contain is the reason
+# the arithmetic cannot be done directly: a result that outgrows every integer
+# type, a value that arrives with no numeric type at all, or a subtraction that
+# can go below zero. The overflow is never mentioned. It is in the constraints.
+
+- id: mint-stamp-product
+  pattern: modular-arithmetic
+  title: The Mint's Running Stamp
+  difficulty: easy
+  statement: >-
+    The royal mint owns n dies, used in the order they are listed. The first
+    die is pressed into a blank bearing the value 1, and each die multiplies
+    whatever value the blank currently bears by its own factor f[i]. The
+    finished coin is stamped not with the value itself but with what is left of
+    it after dividing by the mint's seal number m. Given the dies in order and
+    the seal number, report the number that ends up on the coin.
+  constraints: |
+    1 <= n <= 200000
+    1 <= f[i] <= 10^9
+    1 <= m <= 10^9
+    the true value after all n dies is astronomically large and is never asked for
+  signals_present:
+    - the result is reported only as what is left after dividing by a given number
+    - the quantity grows multiplicatively, once per element
+    - n and the factors together put the true value far beyond any integer type
+  decoy_signals:
+    - a single starting value repeatedly transformed invites treating it as one base raised to a power
+    - "\"what is left after dividing\" invites reaching for divisors of m"
+    - the seal number m is not stated to be prime, which tempts an inverse that is not needed
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        You cannot hold the finished value. Ask instead whether you need to:
+        does the remainder after dividing by m depend on anything more than the
+        remainders you have already seen?
+    - text: >-
+        It does not. A product's remainder is decided by the factors'
+        remainders, so the blank never has to carry more than m-1. Keep it
+        small at every press rather than at the last one.
+    - text: >-
+        Two values below 10^9 multiply to 10^18, which an int cannot hold and a
+        long long can. Accumulate with `acc = acc * (f % m) % m` in a long long
+        for every die.
+      reveals_pattern: true
+  why: >-
+    The output line is the whole cue: the answer is "what is left after
+    dividing by m", which is the setter telling you the true value has no
+    representable form. Multiplication commutes with taking that remainder, so
+    the accumulator can be kept below m at every step. The trap is silent — the
+    product of two residues near 10^9 is 10^18, fine in a long long and
+    undefined behaviour in an int.
+  classic_ref: CPH 21.2 (modular arithmetic, the product rule)
+
+- id: ledger-of-arrears
+  pattern: modular-arithmetic
+  title: The Ledger of Arrears
+  difficulty: easy
+  statement: >-
+    A guild keeps its accounts on a wheel of m notches. The wheel starts at
+    notch 0. Each of n entries either credits the guild c[i] notches, turning
+    the wheel forwards, or debits it, turning the wheel backwards by the same
+    amount. The wheel wraps in both directions, so turning back past 0 lands
+    near m-1. After every entry has been applied, report which notch the wheel
+    rests on, as a number from 0 to m-1.
+  constraints: |
+    1 <= n <= 200000
+    1 <= m <= 10^9
+    1 <= c[i] <= 10^9
+    each entry is marked '+' or '-'
+    debits may exceed all credits seen so far, many times over
+  signals_present:
+    - values are added and subtracted and the answer must be reported in a fixed range
+    - the wheel wraps in both directions, so a running position can pass below zero
+    - the running total over n entries outgrows a 32-bit type on its own
+  decoy_signals:
+    - a wheel of notches invites treating the position as an index into a table
+    - "\"credits and debits over a row\" invites a prefix-sum table nobody asked for"
+    - the wrap-around suggests a cycle length to be discovered rather than one that was given
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Apply one debit larger than everything credited so far and write down
+        what your language returns. Then check whether that is a notch on the
+        wheel.
+    - text: >-
+        C++ keeps the sign of the dividend, so a backwards turn past 0 gives a
+        negative number rather than a notch near m-1. Python would have given
+        you the notch, which is why translated code fails here.
+    - text: >-
+        Keep the position reduced after every entry, and finish each step with
+        `pos = (pos % m + m) % m` — both reductions matter, or a whole turn
+        comes back as m instead of 0.
+      reveals_pattern: true
+  why: >-
+    Two cues, and the second is the one people miss. The answer is demanded in
+    [0, m), and the wheel is explicitly allowed to turn backwards past zero —
+    which means at least one intermediate value is negative, and C++ truncates
+    towards zero rather than downwards. -3 divided by 7 leaves -3, not 4. The
+    repair is to add m and reduce again, and the second reduction exists for
+    the exact multiples.
+  classic_ref: CPH 21.2 (modular arithmetic; sign of the remainder in C++)
+
+- id: chronicle-digit-remainder
+  pattern: modular-arithmetic
+  title: The Chronicle's Last Line
+  difficulty: medium
+  statement: >-
+    A chronicle records one enormous number, written out in full as a line of
+    up to a million decimal digits with no separators and no leading zero. The
+    archivist must file it in one of m shelves, numbered 0 to m-1, and the
+    shelf is decided by what is left of the number after dividing it by m.
+    Given the line of digits and the shelf count, report the shelf. The number
+    is far too long to be read into any numeric type your language offers.
+  constraints: |
+    1 <= length of the line <= 10^6
+    1 <= m <= 10^9
+    the digits are given as characters, most significant first
+    the value has up to a million digits; the largest integer type holds nineteen
+  signals_present:
+    - a number arrives as a decimal string far longer than any integer type
+    - the answer is what remains after dividing by a given m
+    - the digits are given most significant first, in the order the value is built
+  decoy_signals:
+    - a string of a million characters invites a scan for something inside it
+    - the length bound alone invites a linear sweep with a window
+    - "\"divide by m\" invites long division written out by hand, which is what the digits look like"
+  expected_complexity: O(L)
+  hints:
+    - text: >-
+        You are told the number cannot be stored. You are not told the ANSWER
+        cannot be stored — it is below m. Ask what you can carry from left to
+        right instead of the number itself.
+    - text: >-
+        Reading one more digit turns the value v into v * 10 + d. Both of those
+        operations survive the division by m, so carry the remainder of the
+        prefix you have read so far and never the prefix itself.
+    - text: >-
+        Start at 0 and fold with `r = (r * 10 + (c - '0')) % m` over the
+        characters. r never exceeds 10*m + 9, so a long long is enough for any
+        m up to 10^9.
+      reveals_pattern: true
+  why: >-
+    The statement says outright that the value has no type, and that is the
+    cue rather than an apology. What has a type is its remainder, which is
+    below m, and a decimal number is built by a recurrence — multiply by ten,
+    add a digit — whose every operation commutes with taking that remainder. A
+    million digits then cost a million multiplications and nothing else.
+  classic_ref: CPH 21.2 (taking remainders before doing calculations)
+
+- id: sky-lantern-cipher
+  pattern: modular-arithmetic
+  title: The Sky-Lantern Cipher
+  difficulty: hard
+  statement: >-
+    A signal tower encodes a message by carrying a single value v through n
+    stages. The value starts at v0. Stage i replaces v by a[i] * v + b[i], and
+    then keeps only what is left of that after dividing by the tower's key m.
+    Given v0, the key and the n stages in order, report the value that leaves
+    the last stage. The key is enormous — larger than the square of anything a
+    32-bit register holds — and the tower's engineers insist that every
+    intermediate value is reduced before the next stage begins.
+  constraints: |
+    1 <= n <= 200000
+    2 <= m <= 10^18
+    0 <= v0, a[i], b[i] < m
+    a long long holds values up to about 9.2 * 10^18
+  signals_present:
+    - each stage multiplies and adds, and the result is reduced before the next
+    - the modulus itself reaches 10^18, so a single product of two residues does not fit a 64-bit type
+    - one pass over n stages, each using one given value once
+  decoy_signals:
+    - "\"the same transformation applied n times\" invites halving the count of stages"
+    - the affine shape a*v + b invites composing the stages into one pair rather than walking them
+    - a key described as enormous invites hunting for its factors
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Write down the largest value `a[i] * v` can take, given the bounds on
+        both, and compare it with the largest value a signed 64-bit integer
+        holds. Do this before you write any code.
+    - text: >-
+        With m near 10^18 the product reaches 10^36 while a long long stops at
+        about 9.2 * 10^18. Reducing after the multiplication is too late; the
+        multiplication itself has to happen somewhere wider.
+    - text: >-
+        Do the one multiplication in `__int128` and cast back:
+        `v = (long long)((__int128)a * v % m);` then add b and reduce. The
+        addition is safe in 64 bits because both operands are below m.
+      reveals_pattern: true
+  why: >-
+    The bound on m is the entire problem. Every stage is one multiplication and
+    one addition with a reduction after each, which is the ordinary discipline
+    — but the boundary at which a long long stops being wide enough for a
+    single product is m = 3037000499, and this key is nine orders of magnitude
+    past it. The addition still fits, because two residues sum to under 2m; the
+    product does not, and needs 128 bits for exactly one operation.
+  classic_ref: CPH 21.2 (computer arithmetic; wrap-around on overflow)

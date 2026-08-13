@@ -126,9 +126,10 @@ traps:
       Printing the tails array as the answering subsequence.
     mistake_code: PATTERN_UNRECOGNISED
     symptom: >-
-      The right LENGTH with a wrong sequence. On [3,1,4,1,5,9,2,6] tails ends as
-      [1,2,5,6], which is not a subsequence of the input at all — the 5 appears
-      before the 2. Only the size of the array is meaningful.
+      The right LENGTH with a wrong sequence. On [6,2,5,1,7,4,8,3] tails ends as
+      [1,3,7,8], which is not a subsequence of the input at all — the 3 is the
+      final element, so nothing can follow it. The true answer is 2,5,7,8. Only
+      the SIZE of the array is meaningful.
   - description: >-
       Sorting a two-dimensional chain problem without deciding what happens to
       ties on the first coordinate.

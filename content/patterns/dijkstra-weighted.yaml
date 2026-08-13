@@ -1,0 +1,248 @@
+id: dijkstra-weighted
+name: The Cheapest Frontier First
+world: 8
+order: 2
+tagline: >-
+  Always settle the unfinished vertex with the smallest tentative distance and
+  that distance is already final — a claim that holds only while every edge
+  weight is non-negative.
+
+prerequisites:
+  - bfs-shortest-path
+
+signals:
+  - cue: the edges carry a length, cost, time, toll, fuel or fare, and the answer is a total
+    strength: 3
+    note: >-
+      A number written on the edge is the whole signal. A path's length is now
+      the sum of its weights instead of the count of its edges, and counting
+      edges answers a different question.
+  - cue: the weights differ from one another, even if only two of them do
+    strength: 3
+    note: >-
+      One unequal edge is enough. The queue is no longer in distance order, so
+      the first arrival at a vertex is no longer the cheapest arrival.
+  - cue: minimum total cost from one source to every destination
+    strength: 3
+    note: >-
+      Single-source, all-targets. That is exactly what this produces, and
+      producing it for one target costs the same as producing it for all.
+  - cue: costs are non-negative — prices, distances, durations, capacities
+    strength: 2
+    note: >-
+      Usually implied rather than stated. Non-negativity is the hypothesis the
+      whole method rests on, so find the sentence that guarantees it before you
+      write a line.
+  - cue: n up to 1e5 with m up to 2e5, and a weighted route to minimise
+    strength: 2
+    note: >-
+      These bounds rule out an O(n^2) matrix method and O(n^3) all-pairs, and
+      they are the bounds a heap-based sweep was designed for.
+  - cue: the state carries something extra — fuel left, tickets used, parity of steps
+    strength: 1
+    note: >-
+      A layered graph. The vertex becomes (place, extra) and the same sweep runs
+      over the product, which is why the pattern survives constraints that look
+      like they should break it.
+
+anti_signals:
+  - cue: every edge costs exactly the same
+    instead: bfs-shortest-path
+    note: >-
+      With uniform weights a queue already delivers vertices in distance order,
+      so the heap buys nothing and costs a log factor.
+  - cue: some weight is negative
+    instead: topological-order
+    note: >-
+      The finality claim fails outright. On a DAG, relaxing edges in topological
+      order handles any weights at all in O(n + m); on a general graph you need
+      Bellman-Ford, n - 1 rounds over every edge, which also detects a negative
+      cycle.
+  - cue: no cost at all — only whether a route exists, or how many groups there are
+    instead: graph-traversal
+    note: >-
+      A heap over an unweighted question is machinery with nothing to order.
+  - cue: the answer is the smallest capacity, width or speed that makes a route possible
+    instead: binary-search-answer
+    note: >-
+      A bottleneck is not a sum. Guess the threshold, delete the edges below it
+      and ask whether the target is still reachable — the inner test is a plain
+      traversal.
+  - cue: you must KEEP a set of edges so everything stays connected as cheaply as possible
+    instead: sorting-by-key
+    note: >-
+      That is a spanning tree, not a route. Kruskal is this region's other
+      algorithm: order the edges by weight and take each one whose endpoints are
+      not already joined. A minimum spanning tree contains no promise at all
+      about the distance between two particular vertices.
+
+confusable_with:
+  - pattern_id: bfs-shortest-path
+    tell: >-
+      Ask whether every edge costs the same. If they do, use the queue: it is
+      correct and has no log factor. If even one edge differs, the queue returns
+      a genuine path that is not the cheapest, and it will not tell you so.
+  - pattern_id: topological-order
+    tell: >-
+      Ask whether the graph has a cycle. On a DAG you can relax edges once each
+      in topological order, which is linear and tolerates negative weights; on a
+      general graph you need the heap, and the heap needs weights to be
+      non-negative.
+
+invariant: >-
+  Every vertex removed from the heap for the first time has its final shortest
+  distance, because any other route to it must leave the settled set through a
+  frontier vertex whose tentative distance is already at least as large.
+
+complexity:
+  time: O(n + m log m)
+  space: O(n + m)
+  note: >-
+    With a binary heap and lazy deletion at most one entry is pushed per edge,
+    so the heap holds O(m) items and each costs a logarithm. Bellman-Ford, the
+    fallback when weights may be negative, is O(nm) — n - 1 rounds over every
+    edge. Floyd-Warshall answers all pairs in O(n^3) and is only usable while n
+    is in the hundreds.
+
+data_structures:
+  - an adjacency list of (neighbour, weight) pairs
+  - std::priority_queue as a min-heap over (distance, vertex)
+  - a dist array of long long, initialised to a sentinel that cannot overflow
+  - an optional processed array, or the lazy `if (d > dist[u]) continue;` test
+  - an edge list, for the Bellman-Ford fallback
+
+cpp_facilities:
+  - std::priority_queue<std::pair<long long,int>, std::vector<...>, std::greater<>>
+  - std::vector<std::vector<std::pair<int,long long>>> for weighted adjacency
+  - long long distances, and a sentinel well below LLONG_MAX
+  - structured bindings to unpack the heap entry
+  - std::tie or a struct when the state is more than a vertex
+
+traps:
+  - description: >-
+      Initialising distances to LLONG_MAX and then evaluating dist[u] + w.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      Signed overflow makes the sum negative, so an unreachable vertex looks
+      cheaper than every real route and the answer collapses to nonsense on the
+      disconnected tests only. Use a sentinel such as 4e18, or skip any u whose
+      distance is still the sentinel.
+  - description: >-
+      Keeping distances in int when m is 2*10^5 and each weight reaches 10^9.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      A path can total 2*10^14, which is 10^5 times past INT_MAX. The answer is
+      correct on every small test and negative on the large ones.
+  - description: >-
+      Omitting the stale-entry test, so a vertex is expanded once for every time
+      it was ever improved.
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      Correct output and a timeout on dense graphs: the heap holds up to m
+      entries and each is expanded in full. One line — `if (d > dist[u])
+      continue;` — restores the bound.
+  - description: >-
+      Building a max-heap by accident, because std::priority_queue is a max-heap
+      by default.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      The farthest frontier vertex is settled first, so distances are finalised
+      in the wrong order and come out too large. Pass std::greater<> as the
+      comparator, or push negated distances as the handbook does.
+  - description: >-
+      Running the heap sweep on a graph that contains a negative edge.
+    mistake_code: PATTERN_GREEDY_OVER_DP
+    symptom: >-
+      A wrong answer with no crash. On the handbook's four-vertex example — 1-2
+      of weight 2, 2-4 of weight 3, 1-3 of weight 6, 3-4 of weight -5 — the
+      sweep settles vertex 2 first and reports 5 for vertex 4, while 1-3-4 costs
+      1. The settled vertex is never revisited, so the -5 never gets to
+      compensate the 6.
+  - description: >-
+      Reading the weights as an unweighted graph because the statement buried
+      the cost in one clause.
+    mistake_code: PATTERN_LINEAR_OVER_BINARY_SEARCH
+    symptom: >-
+      A plausible path with the wrong total. Reread the statement for any number
+      attached to a move before choosing the container: that number is the
+      difference between a queue and a heap.
+
+recall_rubric:
+  - key: the-claim
+    prompt: >-
+      State what is true of the vertex removed from the heap, and why that makes
+      the sweep correct.
+    essential: true
+    accepts:
+      - its distance is final
+      - the smallest tentative distance cannot be improved
+      - settled once and never revisited
+      - any other route leaves through a frontier that already costs more
+  - key: the-hypothesis
+    prompt: State the condition on the weights that the finality claim requires.
+    essential: true
+    accepts:
+      - no negative edges
+      - weights are non-negative
+      - every weight at least zero
+      - non-negative
+  - key: the-relaxation
+    prompt: Write the test that decides whether an edge improves a distance.
+    essential: true
+    accepts:
+      - dist[u] + w < dist[v]
+      - d + w < dist[v]
+      - if the new total beats the stored one
+      - relax
+  - key: stale-entries
+    prompt: >-
+      Say why the heap may hold several entries for one vertex, and the one line
+      that deals with it.
+    essential: false
+    accepts:
+      - a vertex is pushed again each time it improves
+      - if (d > dist[u]) continue
+      - lazy deletion
+      - skip the stale copy
+  - key: complexity
+    prompt: Give the complexity and say what the log factor is paid for.
+    essential: false
+    accepts:
+      - o(m log n)
+      - o(n + m log m)
+      - the heap
+      - one push per edge
+  - key: negative-fallback
+    prompt: >-
+      Name the algorithm for negative weights, its round count and its cost.
+    essential: false
+    accepts:
+      - bellman-ford
+      - n - 1 rounds over every edge
+      - o(nm)
+      - relax all edges repeatedly
+  - key: negative-cycle
+    prompt: Say how a negative cycle is detected.
+    essential: false
+    accepts:
+      - a relaxation in the nth round
+      - one more round still reduces a distance
+      - run n rounds instead of n-1
+      - still improving after n-1 rounds
+
+template_file: dijkstra-weighted.cpp
+template_notes: >-
+  Form 1 is the lazy heap sweep and is the one to memorise: note that the only
+  guard against re-expansion is the single `if (d > dist[u]) continue;` line,
+  and that dist is long long with a sentinel far below LLONG_MAX so the
+  relaxation cannot overflow. Form 2 is Bellman-Ford, written as n - 1 rounds
+  over an edge list with an early exit, plus the extra round that proves a
+  negative cycle — read it beside form 1 and notice it needs no order at all,
+  which is precisely why it survives negative weights. Form 3 is Floyd-Warshall
+  for the all-pairs case; the loop order k, i, j is not a style choice and
+  swapping it silently produces wrong answers.
+
+related:
+  - bfs-shortest-path
+  - topological-order
+  - graph-traversal

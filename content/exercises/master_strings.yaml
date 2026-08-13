@@ -1,0 +1,46 @@
+# Sample inputs for the Library of Strings — Scribe Halvern Ash's four templates.
+#
+# No expected outputs, by design: the intact template is the oracle. What these
+# inputs must be is *discriminating*, and in this region that means one thing
+# above all — the degenerate cases are where every wrong implementation of a
+# string algorithm still agrees with the right one.
+#
+# So each set below deliberately contains:
+#   * an overlapping match, because a search that restarts after a hit gets
+#     every non-overlapping test right;
+#   * an all-equal string, because that is where a fallback chain, a mirror
+#     clamp and a quadratic expansion all part company;
+#   * a single character, because every radius, border and window degenerates
+#     there and half of them degenerate wrongly.
+
+prefix-function.cpp:
+  # pattern  text  s     (pi of pattern; occurrences in text; period/z/counts of s)
+  - "aab aabaabaab abacaba\n"      # 3 OVERLAPPING occurrences; a search that
+                                   # forgets the separator reports 1
+  - "aa aaa aabaab\n"              # overlapping again, and s is an exact repetition
+  - "abab abababab abcabca\n"      # period 3 that does NOT divide the length
+  - "z abc a\n"                    # no occurrence at all; s is one character
+
+string-hashing.cpp:
+  # s  k  pattern  l1 l2   (whole hash; distinct windows of length k; search; lcp)
+  - "abcabd 2 ab 0 3\n"            # two occurrences and a shared prefix of exactly 2
+  - "aaaa 2 aa 0 1\n"              # every window identical: distinct count is 1
+  - "abc 3 abc 0 0\n"              # k equals the whole string; lcp with itself
+  - "a 1 b 0 0\n"                  # single character, pattern absent
+
+trie.cpp:
+  # n words / q queries / m integers / x
+  - "4\ncat car card dog\n3\ncar ca cardigan\n3\n1 5 9\n6\n"   # a word inside a word
+  - "3\nab ab abc\n2\nab abc\n2\n7 8\n15\n"                    # duplicate inserts
+  - "1\na\n2\na b\n1\n0\n0\n"                                  # one word, absent query
+  - "2\naaaa aaab\n2\naaa aaab\n2\n1073741823 0\n0\n"          # long shared chain,
+                                                               # and the top bit of the
+                                                               # 30-bit XOR trie
+
+palindrome-centres.cpp:
+  # s  l  r
+  - "abacaba 0 6\n"                # odd centres only
+  - "aaaa 1 2\n"                   # both parities, every centre maximal
+  - "abba 0 3\n"                   # the answer exists ONLY at an even centre
+  - "abc 1 2\n"                    # nothing longer than one character; query is false
+  - "a 0 0\n"                      # single character

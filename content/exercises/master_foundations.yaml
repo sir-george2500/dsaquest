@@ -1,0 +1,42 @@
+# Sample inputs for Elder Vhast's templates — Mode C differential judging.
+#
+# No expected outputs: the intact template is the oracle, so the answer key is
+# derived from the code it is checking and cannot drift away from it.
+#
+# What these have to be is DISCRIMINATING. Every set below deliberately carries
+# the case the corresponding hole gets wrong when it is written carelessly:
+#   * a saturating estimate, so a hole that multiplies naively is caught;
+#   * an all-negative row, so a maximum initialised to 0 is caught;
+#   * an interval of a single point, and one crossing zero, so both the missing
+#     +1 and the truncating division are caught;
+#   * a total that leaves the 32-bit range, so a narrow accumulator is caught.
+# An input set that never reaches those cases cannot tell a correct answer from
+# a plausible one, which would mean marking a wrong hole Accepted.
+
+constraint-budget.cpp:
+  # q, then q lines "n code" / m, then m values of n / k target, then k weights
+  - "6\n100000 3\n100000 2\n20 5\n10 6\n1000000 1\n200 4\n7\n5\n10\n20\n500\n5000\n1000000\n2000000\n6 9\n9 4 3 2 1 1\n"
+  - "3\n200 5\n25 6\n0 1\n2\n1\n1000000000000000000\n1 0\n5\n"          # saturation, and the two ends of the ladder
+  - "1\n1 2\n1\n11\n1 7\n7\n"                                            # n = 1 (log of one is zero), a single weight that fits exactly
+  - "4\n64 5\n7 6\n5000 3\n500 4\n4\n21\n401\n5001\n1000001\n3 0\n1 2 3\n"   # one past each rung of the ladder, and a target of 0
+
+linear-scan.cpp:
+  # n, then n values
+  - "8\n-1 2 4 -3 5 2 -5 2\n"          # the largest stretch is 2 4 -3 5 2, and it does not reach the end
+  - "3\n-5 -2 -9\n"                    # all negative: a maximum starting at 0 answers 0 here
+  - "1\n42\n"                          # single element, every run length is 1
+  - "6\n1 1 2 2 0 5\n"                 # the longest non-decreasing run ends before the row does
+  - "5\n1000000000 1000000000 1000000000 1000000000 1000000000\n"   # the total leaves the 32-bit range
+
+integer-safety.cpp:
+  # n, then n values / two ints to multiply / x y limit for the guard
+  - "5\n1000000000 1000000000 1000000000 1000000000 1000000000\n123456789 123456789\n1000000 1000000 1000000000\n"
+  - "3\n1 2 3\n2 3\n0 5 10\n"                                        # nothing overflows; a zero operand in the guard
+  - "4\n-2000000000 -2000000000 -2000000000 -2000000000\n-50000 50000\n1000000000 1000000000 999999999999999999\n"
+  - "1\n2147483647\n46341 46341\n46341 46341 2147483647\n"           # exactly at INT_MAX, and the smallest square past it
+
+range-counting.cpp:
+  # q, then q lines "l r k" / m, then m lines "l r a b"
+  - "5\n1 100 3\n5 5 5\n5 5 4\n-10 10 3\n-7 -1 2\n3\n1 100 2 3\n1 10 2 2\n-10 10 3 5\n"
+  - "4\n1 1 1\n0 0 7\n-1 -1 1\n1000000000000000000 1000000000000000000 2\n1\n1 1000000000000000000 999999999999999989 999999999999999999\n"
+  - "3\n-1000000000000000000 1000000000000000000 1\n10 5 3\n2 8 3\n2\n1 30 5 6\n-30 -1 4 6\n"

@@ -1,0 +1,76 @@
+# Sample inputs for Archivist Nym Solvane's four templates.
+#
+# Inputs only. The intact template is the oracle — it is compiled and run on
+# these, and its output becomes the expected output for the learner's version.
+#
+# What makes a sample set here discriminating is different from every earlier
+# region. A dynamic program with a wrong loop DIRECTION, a missing border or a
+# lower_bound where upper_bound belonged is still a dynamic program: it runs,
+# it terminates, and it agrees with any input that happens not to exercise the
+# difference. So each set below contains, deliberately:
+#
+#   * a case where the two loop directions disagree (one item, small capacity);
+#   * a case where equal values decide the answer (2 2 2);
+#   * a case that is genuinely impossible, so the sentinel must survive;
+#   * an empty or single-element case, where the border IS the answer.
+#
+# Several of the ordinary cases are the Competitive Programmer's Handbook's own
+# worked examples, so a learner who has read chapter 7 can check the oracle
+# against the book.
+
+linear-dp.cpp:
+  # n mod / m amount then m coins / k then k store values
+  - "10 1000000007\n3 6\n1 3 4\n4\n5 1 1 5\n"
+  # CPH ch.7: {1,3,4} and the amount 6 needs two coins where largest-first
+  # insists on three. The Ridge of Greed's counterexample, answered.
+  - "0 1000000007\n1 3\n2\n1\n7\n"
+  # Every base case at once: zero stones, an amount no coin can reach (so the
+  # INF sentinel must survive the transition and come back as -1), one store.
+  - "1 7\n2 0\n5 9\n2\n-4 -3\n"
+  # Amount 0 must cost 0 coins, not INF. Negative stores must not be forced
+  # into the haul. A tiny modulus that bites immediately.
+  - "90 1000000007\n1 100\n7\n3\n0 0 0\n"
+  # 90 stones: the true count is a Fibonacci number far past 2^63, so a
+  # solution that reduces only at the end is wrong here and nowhere else.
+
+knapsack-dp.cpp:
+  # n C then n pairs "value weight" / m T then m item sizes
+  - "3 50\n60 10\n100 20\n120 30\n4 11\n1 3 3 5\n"
+  # The 0/1 answer is 220; value-per-weight sorting says 160. CPH ch.7's own
+  # weight list [1,3,3,5], whose reachable totals skip exactly 2 and 10.
+  - "1 3\n1 1\n2 5\n2 2\n"
+  # One item of weight 1 and value 1 in a capacity of 3. This single case
+  # separates the descending loop from the ascending one: 1 against 3.
+  - "2 0\n5 1\n7 2\n1 0\n3\n"
+  # Capacity zero and target zero: the border alone, and nothing may be taken.
+  - "2 5\n4 2\n5 3\n3 7\n2 3 4\n"
+  # 0/1 gives 9 and unbounded gives 9 by different routes; the subset target 7
+  # is reachable only as 3 + 4, so a row cleared between items loses it.
+
+two-sequence-dp.cpp:
+  # a b (edit distance) / c d (longest common subsequence)
+  - "LOVE MOVIE\nAGGTAB GXTXAYB\n"
+  # CPH ch.7's edit-distance example, which is 2, and the classic LCS pair,
+  # which is 4 — GTAB.
+  - "kitten sitting\nsea eat\n"
+  # Different lengths in both directions, so a missing border shows up at once.
+  - "abc abc\nabc xyz\n"
+  # Identical and wholly disjoint: distance 0 and a common subsequence of 0.
+  - "a ba\nz z\n"
+  # Single characters, where the answer is entirely decided by the border.
+
+lis-tails.cpp:
+  # n then n values
+  - "8\n6 2 5 1 7 4 8 3\n"
+  # CPH ch.7's array. The lengths ending at each position are 1 1 2 1 3 2 4 2
+  # and the answer is 4, by 2, 5, 7, 8.
+  - "3\n2 2 2\n"
+  # The case that separates lower_bound from upper_bound: 1 against 3. No
+  # input with distinct values can tell the two apart.
+  - "6\n5 4 3 2 1 0\n"
+  # Strictly decreasing, so the tails array never grows past one entry.
+  - "1\n5\n"
+  # A single element, where the answer is the initial state.
+  - "8\n3 1 4 1 5 9 2 6\n"
+  # An ordinary mixed case, with repeats, where the tails array ends holding
+  # values that never occur in that order in the input.

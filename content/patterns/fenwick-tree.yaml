@@ -1,0 +1,240 @@
+id: fenwick-tree
+name: Prefix Sums That Survive Updates
+world: 6
+order: 2
+tagline: >-
+  A prefix-sum table you may write to: every position sits in log n blocks and
+  every prefix is a sum of log n blocks, so both walks are one line each.
+
+prerequisites:
+  - prefix-sum
+
+signals:
+  - cue: values are updated and range totals are asked for, interleaved, both many times
+    strength: 3
+    note: >-
+      The exact case a static prefix table cannot serve. Rebuilding it after
+      each write is O(n), so 10^5 of each is 10^10 operations.
+  - cue: how many of the elements seen so far are smaller than this one
+    strength: 3
+    note: >-
+      Put the VALUES on the axis instead of the positions. Cell v counts the
+      values equal to v, and a prefix answers "how many below" in O(log n).
+  - cue: count the pairs that are out of order, or the pairs where one dominates the other
+    strength: 3
+    note: >-
+      Inversions. Sweep once, and for each element ask the structure how many
+      already-recorded values are smaller — every such pair is counted exactly
+      once, by its own head.
+  - cue: the values reach 1e9 but there are only 2e5 of them
+    strength: 2
+    note: >-
+      That mismatch is an instruction to compress: sort, unique, erase, and
+      replace each value by its 1-based rank. The order is preserved, so every
+      comparison still means what it meant.
+  - cue: add a constant to a whole range, then read single positions
+    strength: 2
+    note: >-
+      The difference-array trick. One tree over the differences turns a range
+      update into two point updates and a point read into a prefix sum.
+  - cue: q and n both up to 2e5, with the answer a running total
+    strength: 1
+    note: >-
+      Weak alone. It rules out the quadratic sweep and says nothing about which
+      logarithmic structure is meant.
+
+anti_signals:
+  - cue: the array never changes between queries
+    instead: prefix-sum
+    note: >-
+      A plain prefix table answers in O(1) with no tree at all. The Fenwick's
+      whole reason to exist is the update, and paying its log factor for a
+      static array is buying a lock for a door that never closes.
+  - cue: the quantity asked for has no inverse — minimum, maximum, "the best subarray"
+    instead: segment-tree
+    note: >-
+      Range answers here are prefix(r) - prefix(l-1), and that subtraction is
+      the method. There is no operation that removes a[1..l-1] from a minimum.
+  - cue: the answer is which value is nearest to x, not how many lie below it
+    instead: ordered-set
+    note: >-
+      A count is not an element. Walking to a neighbour is a balanced tree's
+      job and it will not count; totalling a prefix is this one's job and it
+      will not point at anything.
+  - cue: only the current extreme of a changing collection is ever wanted
+    instead: heap-extraction
+    note: >-
+      No positions, no ranges, no counting — just the top. A heap is four
+      lines and a smaller constant.
+
+confusable_with:
+  - pattern_id: segment-tree
+    tell: >-
+      Ask whether the operation can be undone. Sums, counts and xors have
+      inverses, so two prefixes subtract and a Fenwick is enough; minimum,
+      maximum and gcd have none, so only a structure that stores every node's
+      own answer can combine partial ranges.
+  - pattern_id: ordered-set
+    tell: >-
+      Ask whether the answer is a NUMBER OF THINGS or a THING. Counting how
+      many values fall below x is a prefix over the value axis; naming the
+      value just below x is a walk in a balanced tree.
+
+invariant: >-
+  Cell i holds the total of positions i - lowbit(i) + 1 through i, so the cells
+  visited by either walk tile exactly the prefix being read or repaired.
+
+complexity:
+  time: O((n + q) log n)
+  space: O(n)
+  note: >-
+    Both walks touch at most one cell per set or unset bit of the index, hence
+    log n. Construction is O(n log n) by repeated add, or O(n) by the direct
+    build that pushes each cell into its parent once.
+
+data_structures:
+  - a single array of n + 1 long longs, one-indexed
+  - a coordinate-compressed value axis, from sort plus unique plus erase
+  - two trees, when both range updates and range sums are needed
+  - a tree over differences, for range update with point query
+
+cpp_facilities:
+  - "i & -i, the lowest set bit"
+  - "sort, std::unique and erase, for coordinate compression"
+  - std::lower_bound over the compressed values, to find a rank
+  - long long accumulators, since totals and counts both overflow int
+
+traps:
+  - description: >-
+      Indexing the tree from 0, so a position of 0 enters the add loop.
+    mistake_code: BOUNDS_PREFIX_INDEX_SHIFT
+    symptom: >-
+      lowbit(0) is 0, so `i += i & -i` never advances and the program hangs on
+      the first update at position 0. A Fenwick is one-indexed; the rank
+      conversion needs its +1 for this reason and no other.
+  - description: >-
+      Treating add(i, v) as "set position i to v" instead of "add v to it".
+    mistake_code: INVARIANT_COUNTER_NOT_DECREMENTED
+    symptom: >-
+      Every total is too large by the sum of the old values at every position
+      written twice. Correct on any test where each position is written once,
+      which is most first samples.
+  - description: >-
+      Counting with prefix(rank) when strictly-smaller was meant.
+    mistake_code: BOUNDS_PREFIX_INDEX_SHIFT
+    symptom: >-
+      Equal values are counted as inversions. Exactly right on inputs with
+      distinct values and exactly wrong the moment one value repeats — off by
+      the number of equal pairs, which looks like a small unexplained excess.
+  - description: >-
+      Calling std::unique without erasing the tail it leaves behind.
+    mistake_code: CPP_OUT_OF_BOUNDS
+    symptom: >-
+      unique only moves the survivors to the front; the vector keeps its old
+      size with stale values after them. lower_bound then searches a
+      non-decreasing prefix followed by garbage and returns nonsense ranks.
+  - description: >-
+      Storing the count of inversions, or a total of large values, in `int`.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      n(n-1)/2 reaches about 2*10^10 at n = 2*10^5, so the count wraps
+      negative on the largest test and only that test.
+  - description: >-
+      Clearing and rebuilding the tree inside the query loop.
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      An O(n) reset inside an O(q) loop is O(nq), so the log factor you paid
+      for buys nothing. Reset only the cells actually touched, or use a
+      timestamp array.
+
+recall_rubric:
+  - key: the-shape
+    prompt: State what this structure does that a prefix-sum array cannot.
+    essential: true
+    accepts:
+      - update a value in log time
+      - prefix sums that survive writes
+      - both operations logarithmic
+      - dynamic prefix sums
+  - key: lowbit
+    prompt: >-
+      Give the expression for the lowest set bit and say what it means for a
+      cell.
+    essential: true
+    accepts:
+      - i & -i
+      - the length of the block that cell covers
+      - covers i - lowbit(i) + 1 to i
+      - p(k) = k & -k
+  - key: the-two-walks
+    prompt: >-
+      State which direction the add loop moves and which direction the prefix
+      loop moves.
+    essential: true
+    accepts:
+      - add adds the lowbit
+      - prefix strips the lowbit
+      - i += i & -i upwards
+      - i -= i & -i downwards
+  - key: one-indexed
+    prompt: Say why the array must be one-indexed.
+    essential: false
+    accepts:
+      - lowbit(0) is 0
+      - position 0 loops forever
+      - the add loop never advances
+      - index 0 is a trap
+  - key: range-from-prefix
+    prompt: >-
+      Give the formula for an arbitrary range and name the property it
+      requires.
+    essential: false
+    accepts:
+      - prefix(r) - prefix(l-1)
+      - the operation must be invertible
+      - subtraction of two prefixes
+      - no inverse means no fenwick
+  - key: value-axis
+    prompt: >-
+      Say what changes when the index is a value rather than a position, and
+      what that lets you ask.
+    essential: false
+    accepts:
+      - how many are smaller
+      - counting inversions
+      - rank queries
+      - index by value
+  - key: compression
+    prompt: >-
+      Describe how values up to 1e9 are made into indices, and what must be
+      true of the mapping.
+    essential: false
+    accepts:
+      - sort unique erase
+      - lower_bound gives the rank
+      - it must preserve order
+      - 1-based rank
+  - key: complexity
+    prompt: Give the cost per operation and the cost of building the tree.
+    essential: false
+    accepts:
+      - o(log n) per operation
+      - o(n) build
+      - o(n log n) by repeated add
+      - o(n) memory
+
+template_file: fenwick-tree.cpp
+template_notes: >-
+  Four lines of structure and two applications of it. The two holes in form 1
+  are deliberately the entire data structure: if you cannot write those loops
+  from memory you do not have this pattern, whatever else you can explain about
+  it. Form 2 is compression, and the +1 on the rank is commented because it is
+  the difference between working code and a hang. Form 3 is inversions, where
+  the `- 1` inside prefix(rank - 1) is the whole distinction between strictly
+  smaller and smaller-or-equal.
+
+related:
+  - segment-tree
+  - ordered-set
+  - prefix-sum
+  - bit-manipulation

@@ -1,0 +1,239 @@
+id: topological-order
+name: Nothing Before What It Needs
+world: 8
+order: 3
+tagline: >-
+  Repeatedly take a vertex nothing points at. If you run out before you have
+  taken them all, what is left is a cycle — and the same order turns a DAG into
+  a dynamic program.
+
+prerequisites:
+  - graph-traversal
+
+signals:
+  - cue: "\"a must come before b\", a depends on b, a requires b, a unlocks b"
+    strength: 3
+    note: >-
+      A precedence constraint is a directed edge, and an ordering that respects
+      every one of them is exactly a topological order.
+  - cue: find any valid order of tasks, courses, builds, recipes or installations
+    strength: 3
+    note: >-
+      The word "any" is the signal that the answer is not unique and that no
+      optimisation is being asked for — you only have to produce one consistent
+      sequence.
+  - cue: decide whether the requirements can be satisfied at all, or whether they are circular
+    strength: 3
+    note: >-
+      Cycle detection in a directed graph. The algorithm produces the order and
+      the impossibility proof at the same time: if fewer than n vertices come
+      out, the rest form a cycle.
+  - cue: longest path, path count, or a reachability count on a graph with no cycles
+    strength: 3
+    note: >-
+      On a DAG every such question is a dynamic program, and the topological
+      order is the order that makes each state depend only on states already
+      computed.
+  - cue: the edges are explicitly one-way
+    strength: 2
+    note: >-
+      Direction is necessary but not sufficient — a directed graph can still be
+      asking for reachability or a shortest path. Read what the answer IS.
+  - cue: the input is n items and m lines of the form "x y"
+    strength: 1
+    note: >-
+      Weak alone: the universal graph input. The sentence explaining what the
+      pair MEANS is where the pattern lives.
+
+anti_signals:
+  - cue: the edges have no direction
+    instead: graph-traversal
+    note: >-
+      An order that respects an undirected edge is a contradiction — the edge
+      would demand both a before b and b before a. Undirected input means
+      components, colouring or distance, never ordering.
+  - cue: the answer is a distance or a cost, and the graph may contain a cycle
+    instead: dijkstra-weighted
+    note: >-
+      Relaxing in topological order only works when an order exists. A cycle
+      makes the DP undefined and forces a heap or Bellman-Ford instead.
+  - cue: the answer is the fewest steps and the graph is unweighted
+    instead: bfs-shortest-path
+    note: >-
+      A queue also produces vertices in an order, but the order is by distance
+      from a source and it says nothing about precedence.
+  - cue: the constraints are pairwise conflicts between overlapping ranges
+    instead: interval-scheduling
+    note: >-
+      "These two cannot both happen" is not "this one must come first". A
+      conflict is symmetric; a precedence is not.
+  - cue: the order is the answer, and you must pick the BEST one against a cost
+    instead: exchange-argument
+    note: >-
+      Where any valid order will do, count in-degrees. Where the order must be
+      the cheapest of all valid ones, the key comes from swapping two adjacent
+      items and no in-degree count will supply it.
+
+confusable_with:
+  - pattern_id: graph-traversal
+    tell: >-
+      Ask whether the edges have a direction and whether the answer is a
+      SEQUENCE. Components and reachability ignore direction and hand back a
+      set; a precedence order is directed and hands back a list whose positions
+      matter.
+  - pattern_id: dijkstra-weighted
+    tell: >-
+      Ask whether the graph can contain a cycle. If it cannot, one pass in
+      topological order relaxes every edge once, is linear, and works with
+      negative weights; the moment a cycle is possible you need the heap, and
+      the heap forbids negative weights.
+
+invariant: >-
+  A vertex is emitted only once every vertex with an edge into it has already
+  been emitted, which is maintained by emitting exactly those vertices whose
+  remaining in-degree has fallen to zero.
+
+complexity:
+  time: O(n + m)
+  space: O(n + m)
+  note: >-
+    Every vertex is emitted once and every edge decrements one in-degree once.
+    A dynamic program laid over the order adds only the work of the transition,
+    so counting paths or finding a longest path on a DAG is also O(n + m) — the
+    reason to spot a DAG at all.
+
+data_structures:
+  - an adjacency list of outgoing edges
+  - an in-degree array, built by one pass over the edges
+  - a queue or stack of vertices whose in-degree has reached zero
+  - a dp array filled in the emitted order
+  - a three-state colour array, for the recursive variant
+
+cpp_facilities:
+  - std::vector<int> indeg(n + 1)
+  - std::queue<int> for Kahn's algorithm
+  - std::reverse over a post-order list, for the DFS variant
+  - std::vector<long long> for path counts, which overflow int quickly
+  - std::ranges::reverse as the modern spelling
+
+traps:
+  - description: >-
+      Assuming the input is acyclic and never checking how many vertices were
+      emitted.
+    mistake_code: INVARIANT_MISSING_VISITED_SET
+    symptom: >-
+      A short, plausible order is printed and the judge rejects it, because the
+      correct answer was "impossible". The check is one comparison: if the
+      emitted list is shorter than n, the remaining vertices contain a cycle.
+  - description: >-
+      Counting out-degrees instead of in-degrees, or starting from vertices with
+      no outgoing edges without reversing the result.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      The order comes out exactly reversed, so it passes any test that happens
+      to be symmetric and fails the rest. If you take sinks first you must
+      reverse the list before printing it.
+  - description: >-
+      Adding both directions of a precedence edge to the adjacency list, out of
+      habit from undirected problems.
+    mistake_code: INVARIANT_MISSING_VISITED_SET
+    symptom: >-
+      Every non-trivial input reports a cycle, because a and b now each require
+      the other. The tell is that even the sample says "impossible".
+  - description: >-
+      Counting paths on a DAG in int.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      The count doubles at every branch, so 40 layers is already past INT_MAX
+      and the answer comes back negative. Use long long, or take the modulus the
+      statement asked for and stop worrying.
+  - description: >-
+      Running the DP in input order rather than in topological order.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      Values read before they are written, so results are too small and change
+      when the edges are shuffled. The whole reason to compute the order is that
+      it makes every dependency already final.
+  - description: >-
+      Using recursive depth-first search on a chain of 10^5 dependencies.
+    mistake_code: COMPLEX_RECURSION_DEPTH
+    symptom: >-
+      Segmentation fault on the largest test only. Kahn's in-degree loop uses a
+      queue and never recurses, which is the simplest reason to prefer it.
+
+recall_rubric:
+  - key: the-rule
+    prompt: State which vertex may be emitted next, in one sentence.
+    essential: true
+    accepts:
+      - one with in-degree zero
+      - a vertex nothing points at
+      - no remaining incoming edges
+      - nothing depends on it yet
+  - key: the-update
+    prompt: >-
+      Say what happens to the rest of the graph when a vertex is emitted.
+    essential: true
+    accepts:
+      - decrement the in-degree of each neighbour
+      - push any that reach zero
+      - remove its outgoing edges
+      - indeg[v]--
+  - key: cycle-detection
+    prompt: State the check that proves the graph has a cycle.
+    essential: true
+    accepts:
+      - fewer than n vertices came out
+      - the queue empties early
+      - the output is shorter than n
+      - a grey vertex is reached again
+  - key: dag-dp
+    prompt: >-
+      Say what the order buys you beyond the order itself.
+    essential: false
+    accepts:
+      - every dependency is already computed
+      - dp over the dag
+      - longest path or path count in one pass
+      - process states in that order
+  - key: direction
+    prompt: >-
+      Say what must be true of the edges for this pattern to apply at all.
+    essential: false
+    accepts:
+      - they are directed
+      - one-way
+      - a depends on b is not symmetric
+      - add only one direction
+  - key: complexity
+    prompt: Give the complexity and say what is done once per edge.
+    essential: false
+    accepts:
+      - o(n + m)
+      - one in-degree decrement per edge
+      - linear
+      - each edge is relaxed once
+  - key: uniqueness
+    prompt: Say whether the answer is unique and what that means for the judge.
+    essential: false
+    accepts:
+      - not unique
+      - several valid orders
+      - any valid order is accepted
+      - a special checker
+
+template_file: topological-order.cpp
+template_notes: >-
+  Form 1 is Kahn's in-degree sweep and is the one to memorise, because it makes
+  the cycle test free: compare the length of the output with n and you are done.
+  Form 2 is the recursive three-state variant the handbook uses — white,
+  grey, black — and it is here so you recognise the "reached a grey vertex"
+  cycle proof when you meet it in someone else's code; it recurses, so it is the
+  wrong choice at 10^5 vertices. Form 3 is the payoff: counting paths through a
+  DAG by relaxing in the order form 1 produced, in long long because the count
+  doubles at every branch.
+
+related:
+  - graph-traversal
+  - dijkstra-weighted
+  - bfs-shortest-path
