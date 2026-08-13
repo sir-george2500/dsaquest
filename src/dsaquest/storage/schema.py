@@ -184,6 +184,77 @@ CREATE TABLE achievement (
 """
 
 
-MIGRATIONS: tuple[Migration, ...] = (Migration(1, "initial schema", _V1),)
+_V2 = """
+-- What the student has been taught, and how fluent they are with it.
+--
+-- One row per (master, secret). The state machine is the teaching loop itself:
+--
+--   untaught -> taught -> drilling -> fluent -> tested
+--
+-- `fluent` is reached on evidence, not on a quota: consecutive correct drills
+-- across enough distinct drill kinds. That is what lets the master shorten the
+-- drilling for a student who clearly has it, and lengthen it for one who does
+-- not, rather than dealing everyone the same ten questions.
+CREATE TABLE lesson_progress (
+    id                  INTEGER PRIMARY KEY,
+    master_id           TEXT    NOT NULL,
+    secret_id           TEXT    NOT NULL,
+    state               TEXT    NOT NULL DEFAULT 'untaught'
+                                CHECK (state IN ('untaught','taught','drilling','fluent','tested')),
+    drills_seen         INTEGER NOT NULL DEFAULT 0 CHECK (drills_seen >= 0),
+    drills_correct      INTEGER NOT NULL DEFAULT 0 CHECK (drills_correct >= 0),
+    consecutive_correct INTEGER NOT NULL DEFAULT 0 CHECK (consecutive_correct >= 0),
+    taught_at           TEXT,
+    fluent_at           TEXT,
+    tested_at           TEXT,
+    UNIQUE (master_id, secret_id)
+);
+
+CREATE INDEX idx_lesson_master ON lesson_progress (master_id);
+
+-- Append-only log of every drill answered. Drives the adaptive drill count and
+-- the master's memory of what you keep getting wrong.
+CREATE TABLE drill_attempt (
+    id           INTEGER PRIMARY KEY,
+    master_id    TEXT    NOT NULL,
+    secret_id    TEXT    NOT NULL,
+    drill_id     TEXT    NOT NULL,
+    kind         TEXT    NOT NULL,
+    correct      INTEGER NOT NULL CHECK (correct IN (0, 1)),
+    given        TEXT    NOT NULL DEFAULT '',
+    duration_ms  INTEGER,
+    attempted_at TEXT    NOT NULL
+);
+
+CREATE INDEX idx_drill_secret ON drill_attempt (master_id, secret_id, attempted_at);
+CREATE INDEX idx_drill_id ON drill_attempt (drill_id);
+
+-- Respect is per-master and never decays. See docs/game-design.md section 15:
+-- a master forgetting your victories is not strict, it is broken.
+CREATE TABLE respect (
+    master_id  TEXT    PRIMARY KEY,
+    points     INTEGER NOT NULL DEFAULT 0 CHECK (points >= 0),
+    met_at     TEXT    NOT NULL,
+    last_seen  TEXT    NOT NULL
+);
+
+-- Which dialogue lines a master has already spoken, so he does not repeat
+-- himself. Not the master's memory of the student -- that is derived from the
+-- event log -- only what has been said aloud.
+CREATE TABLE character_memory (
+    id         INTEGER PRIMARY KEY,
+    master_id  TEXT NOT NULL,
+    pool       TEXT NOT NULL,
+    line_index INTEGER NOT NULL,
+    spoken_at  TEXT NOT NULL,
+    UNIQUE (master_id, pool, line_index)
+);
+"""
+
+
+MIGRATIONS: tuple[Migration, ...] = (
+    Migration(1, "initial schema", _V1),
+    Migration(2, "lessons, drills, respect, character memory", _V2),
+)
 
 LATEST_VERSION = max(m.version for m in MIGRATIONS)

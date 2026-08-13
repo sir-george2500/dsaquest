@@ -1,0 +1,166 @@
+{
+  "id": "master_bits",
+  "name": "MASTER OF BIT MANIPULATION",
+  "title": "Sevrin Kol, Keeper of the Thirty-Two",
+  "region": "vault-of-structures",
+  "pattern": "bit-manipulation",
+  "personality": {
+    "warmth": 0.1,
+    "verbosity": 0.25,
+    "praise_threshold": 0.85
+  },
+  "gate": {
+    "recognition": 0.80,
+    "understanding": 0.75,
+    "implementation": 0.80,
+    "retention": 0.75
+  },
+  "placeholders": {
+    "days": "whole days since the relevant event — the student's last visit, a past failure, or the length of the current practice streak",
+    "streak": "number of consecutive correct drills in the current run",
+    "attempts": "how many attempts the student previously needed on this problem",
+    "requirement": "name of the gate dimension that is short: recognition, understanding, implementation, or retention",
+    "shortfall": "how far the short gate dimension sits below its threshold, as a percentage"
+  },
+  "dialogue": {
+    "greeting_first": [
+      "You are here for the bits. Sit.",
+      "Decimal is a courtesy the machine extends to you. Here we return it.",
+      "Everything you have written until now, something translated for you. I teach you to stop needing a translator.",
+      "You count in tens because you have ten fingers. The machine has two states. We will speak to it in its own language."
+    ],
+    "greeting_returning": [
+      "Again.",
+      "You returned. Begin.",
+      "Sit. We continue where we stopped.",
+      "Hands ready."
+    ],
+    "greeting_after_gap": [
+      "{days} days. The bits did not move. You did.",
+      "You were away {days} days. Nothing here changed. We start one step back.",
+      "Gone {days} days. Recall decays faster than skill. Today I test both.",
+      "{days} days is long enough to forget. Not long enough to be sorry for. Begin."
+    ],
+    "lesson_intro": [
+      "Before you fight, understand your weapon.",
+      "One observation. It will collapse a class of problems.",
+      "Watch. Then do it without me.",
+      "This is a small thing. Small things carry the weight here."
+    ],
+    "lesson_memorise": [
+      "Memorise it. You will use it often.",
+      "This one you keep. Not in notes — in the hand.",
+      "Learn it until you no longer read it.",
+      "You will not have time to derive this later. Take it now."
+    ],
+    "drill_correct": [
+      "Correct.",
+      "Continue.",
+      "Yes.",
+      "Next."
+    ],
+    "drill_wrong": [
+      "That is not the answer. Read the mask again.",
+      "No. You shifted before you masked. The order matters.",
+      "Wrong. The bit you cleared was not the lowest set bit.",
+      "That holds for positive n only. Try it again with n negative.",
+      "Not that. Write the number in binary first, then answer."
+    ],
+    "drill_streak": [
+      "{streak} in a row. The hand is beginning to move without you. Continue.",
+      "Steady. Hold that pace.",
+      "That is fluency starting. Do not slow down now.",
+      "Good rhythm. Keep it."
+    ],
+    "trial_intro": [
+      "I name nothing now. Read it and decide.",
+      "No label. Find the technique yourself.",
+      "From here you are alone with the problem. Begin.",
+      "The signals are in the constraints. They always were."
+    ],
+    "fail_wrong_pattern": [
+      "Wrong technique. Reread the constraints — they named the right one.",
+      "You reached for the wrong weapon. The size of the state space told you what to use. Look again.",
+      "Not that one. Ask first what the input is small enough to allow, then choose.",
+      "The approach cannot work here at any speed. Back to the signals. We read them together."
+    ],
+    "fail_timeout": [
+      "Time. You had it and could not reach it.",
+      "Time. You knew the technique. You were slow to trust it.",
+      "Time ran out. That is a fluency problem, not a knowledge problem. We drill it away.",
+      "Time. Nothing you did was wrong. It was only late. Again."
+    ],
+    "fail_wrong_answer": [
+      "Right technique. Wrong implementation. Check the shift width.",
+      "The approach held. The code did not. Test it at n = 0.",
+      "You chose correctly and executed badly. That is the easier failure to repair. Again.",
+      "Correct idea, broken edge. The highest bit betrayed you.",
+      "Off by one bit is still off. Trace it by hand, then resubmit."
+    ],
+    "success": [
+      "That is correct. Continue.",
+      "It holds. Next.",
+      "Accepted. Move on.",
+      "Done. The next one is harder."
+    ],
+    "success_fast": [
+      "Quick and clean. Good.",
+      "Fast, and nothing wasted. Continue.",
+      "You saw it immediately. Good.",
+      "No hesitation. That is what the drills were for."
+    ],
+    "praise_exceptional": [
+      "That was well done. You saw the trap before it appeared.",
+      "Clean, fast, and correct at the edges. Few reach that on this pattern.",
+      "That is the best you have done here. You did not guess — you knew.",
+      "You solved the problem the machine was actually asking. That is rarer than speed."
+    ],
+    "praise_major": [
+      "I have trained many students. Few remain when the problems become difficult. You did. You have earned my respect.",
+      "You arrived thinking in tens. You think in twos now, and you did not stop when it stopped being new. I have little to give. Take this: you have earned my respect.",
+      "Talent arrives loudly and leaves quietly. You did neither. You returned, you worked, and the machine's own language answers to you now. You have earned my respect."
+    ],
+    "memorisation_detected": [
+      "You remember the solution. You do not understand the technique. That is not mastery. I will give you a different problem.",
+      "You recall the shape of an answer you have seen. Change the skin and you are lost. We go back one step.",
+      "The problems you have met, you pass. The fresh ones, you fail. That gap is memory, not skill. Another problem."
+    ],
+    "improvement_noticed": [
+      "You failed this {days} days ago. Today you solved it. That is improvement. Continue.",
+      "This was your weakness. It is not any more. I noticed.",
+      "You needed {attempts} attempts once. Today, one. Good.",
+      "The thing that stopped you does not stop you now. Remember that the next time something does."
+    ],
+    "commitment_noticed": [
+      "{days} days in a row. Most stop before now. You did not.",
+      "You keep returning. That is the one thing I cannot teach.",
+      "Talent is common. Attendance is not. Continue.",
+      "You have come back after every failure so far. I am counting."
+    ],
+    "gate_locked": [
+      "Not yet. {requirement} is short by {shortfall} percent. Return when it is not.",
+      "The gate holds. Your recognition is short — you know the tricks, you do not yet see when to use them.",
+      "No. Understanding is short. You can write it. You cannot explain it. Those are different.",
+      "Implementation is short. The idea is sound and the code is not. Drill, then come back.",
+      "Retention is short. What you learned last week you have already dropped. Review first."
+    ],
+    "gate_open": [
+      "The gate is open. Come when you are ready.",
+      "You meet the requirements. The final test waits.",
+      "Enough. You may attempt it now.",
+      "Nothing is short any more. The rest is yours to decide."
+    ],
+    "final_test_intro": [
+      "I will not tell you what technique to use.",
+      "I will not tell you what technique to use. That was the point of every drill before this.",
+      "Three problems. Nothing named. Decide for yourself.",
+      "No help from me now. Only what you carry."
+    ],
+    "victory": [
+      "It is done. You read the machine's own language now.",
+      "You passed. The bits hold nothing further that I can teach you.",
+      "Finished. Carry it out with you — the next master will assume you have it.",
+      "That is mastery. Not speed, not memory. Mastery. Go."
+    ]
+  }
+}

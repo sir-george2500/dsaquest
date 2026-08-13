@@ -10,7 +10,7 @@ from __future__ import annotations
 import sqlite3
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from ..domain.enums import Dimension, GameMode, MistakeCode, Rating, Verdict
 from .db import transaction, utcnow
@@ -588,3 +588,196 @@ def implementations_passed(conn: sqlite3.Connection) -> int:
         """
     ).fetchone()
     return int(row[0])
+
+
+# --------------------------------------------------------------------------
+# Lessons and drills
+# --------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class SecretProgress:
+    master_id: str
+    secret_id: str
+    state: str
+    drills_seen: int
+    drills_correct: int
+    consecutive_correct: int
+    taught_at: str | None
+    fluent_at: str | None
+    tested_at: str | None
+
+    @property
+    def is_taught(self) -> bool:
+        return self.state != "untaught"
+
+    @property
+    def is_fluent(self) -> bool:
+        return self.state in ("fluent", "tested")
+
+    @property
+    def accuracy(self) -> float | None:
+        """None when untried — different from 0.0 and must stay distinguishable."""
+        if not self.drills_seen:
+            return None
+        return self.drills_correct / self.drills_seen
+
+
+def _secret_progress(row: sqlite3.Row) -> SecretProgress:
+    return SecretProgress(
+        master_id=row["master_id"],
+        secret_id=row["secret_id"],
+        state=row["state"],
+        drills_seen=row["drills_seen"],
+        drills_correct=row["drills_correct"],
+        consecutive_correct=row["consecutive_correct"],
+        taught_at=row["taught_at"],
+        fluent_at=row["fluent_at"],
+        tested_at=row["tested_at"],
+    )
+
+
+def ensure_secret(conn: sqlite3.Connection, master_id: str, secret_id: str) -> SecretProgress:
+    conn.execute(
+        "INSERT OR IGNORE INTO lesson_progress (master_id, secret_id) VALUES (?, ?)",
+        (master_id, secret_id),
+    )
+    return get_secret_progress(conn, master_id, secret_id)
+
+
+def get_secret_progress(conn: sqlite3.Connection, master_id: str, secret_id: str) -> SecretProgress:
+    row = conn.execute(
+        "SELECT * FROM lesson_progress WHERE master_id = ? AND secret_id = ?",
+        (master_id, secret_id),
+    ).fetchone()
+    if row is None:
+        raise LookupError(f"no progress for {master_id}/{secret_id}; call ensure_secret")
+    return _secret_progress(row)
+
+
+def all_secret_progress(conn: sqlite3.Connection, master_id: str) -> tuple[SecretProgress, ...]:
+    rows = conn.execute(
+        "SELECT * FROM lesson_progress WHERE master_id = ? ORDER BY secret_id", (master_id,)
+    ).fetchall()
+    return tuple(_secret_progress(r) for r in rows)
+
+
+def mark_taught(conn: sqlite3.Connection, master_id: str, secret_id: str) -> None:
+    """Record that the master has delivered the lesson. Idempotent."""
+    ensure_secret(conn, master_id, secret_id)
+    conn.execute(
+        """
+        UPDATE lesson_progress
+           SET state = CASE WHEN state = 'untaught' THEN 'taught' ELSE state END,
+               taught_at = COALESCE(taught_at, ?)
+         WHERE master_id = ? AND secret_id = ?
+        """,
+        (utcnow(), master_id, secret_id),
+    )
+
+
+def set_secret_state(conn: sqlite3.Connection, master_id: str, secret_id: str, state: str) -> None:
+    column = {"fluent": "fluent_at", "tested": "tested_at"}.get(state)
+    if column:
+        conn.execute(
+            f"UPDATE lesson_progress SET state = ?, {column} = COALESCE({column}, ?) "
+            f"WHERE master_id = ? AND secret_id = ?",
+            (state, utcnow(), master_id, secret_id),
+        )
+    else:
+        conn.execute(
+            "UPDATE lesson_progress SET state = ? WHERE master_id = ? AND secret_id = ?",
+            (state, master_id, secret_id),
+        )
+
+
+def record_drill(
+    conn: sqlite3.Connection,
+    *,
+    master_id: str,
+    secret_id: str,
+    drill_id: str,
+    kind: str,
+    correct: bool,
+    given: str = "",
+    duration_ms: int | None = None,
+) -> SecretProgress:
+    """Log one drill and roll the secret's counters forward in one transaction."""
+    with transaction(conn):
+        conn.execute(
+            """
+            INSERT INTO drill_attempt
+                (master_id, secret_id, drill_id, kind, correct, given, duration_ms, attempted_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (master_id, secret_id, drill_id, kind, int(correct), given, duration_ms, utcnow()),
+        )
+        conn.execute(
+            """
+            UPDATE lesson_progress
+               SET drills_seen = drills_seen + 1,
+                   drills_correct = drills_correct + ?,
+                   consecutive_correct = CASE WHEN ? THEN consecutive_correct + 1 ELSE 0 END,
+                   state = CASE WHEN state IN ('untaught', 'taught') THEN 'drilling' ELSE state END
+             WHERE master_id = ? AND secret_id = ?
+            """,
+            (int(correct), int(correct), master_id, secret_id),
+        )
+    return get_secret_progress(conn, master_id, secret_id)
+
+
+def drill_kinds_passed(conn: sqlite3.Connection, master_id: str, secret_id: str) -> frozenset[str]:
+    """Distinct drill kinds this secret has been answered correctly on.
+
+    Fluency requires breadth, not just a streak: five correct EVALUATE drills
+    prove a reflex, not understanding.
+    """
+    rows = conn.execute(
+        """
+        SELECT DISTINCT kind FROM drill_attempt
+         WHERE master_id = ? AND secret_id = ? AND correct = 1
+        """,
+        (master_id, secret_id),
+    ).fetchall()
+    return frozenset(r["kind"] for r in rows)
+
+
+def drills_answered(conn: sqlite3.Connection, master_id: str, secret_id: str) -> frozenset[str]:
+    rows = conn.execute(
+        "SELECT DISTINCT drill_id FROM drill_attempt WHERE master_id = ? AND secret_id = ?",
+        (master_id, secret_id),
+    ).fetchall()
+    return frozenset(r["drill_id"] for r in rows)
+
+
+# --------------------------------------------------------------------------
+# Respect
+# --------------------------------------------------------------------------
+
+
+def add_respect(conn: sqlite3.Connection, master_id: str, points: int) -> int:
+    """Add respect and return the new total. Never falls below zero."""
+    now = utcnow()
+    conn.execute(
+        "INSERT OR IGNORE INTO respect (master_id, points, met_at, last_seen) VALUES (?,0,?,?)",
+        (master_id, now, now),
+    )
+    conn.execute(
+        "UPDATE respect SET points = MAX(0, points + ?), last_seen = ? WHERE master_id = ?",
+        (points, now, master_id),
+    )
+    row = conn.execute("SELECT points FROM respect WHERE master_id = ?", (master_id,)).fetchone()
+    return int(row[0])
+
+
+def get_respect(conn: sqlite3.Connection, master_id: str) -> int:
+    row = conn.execute("SELECT points FROM respect WHERE master_id = ?", (master_id,)).fetchone()
+    return int(row[0]) if row else 0
+
+
+def days_since_seen(conn: sqlite3.Connection, master_id: str) -> int | None:
+    """Whole days since this master last saw the student. None if never met."""
+    row = conn.execute("SELECT last_seen FROM respect WHERE master_id = ?", (master_id,)).fetchone()
+    if row is None:
+        return None
+    return (datetime.now(UTC) - datetime.fromisoformat(row[0])).days

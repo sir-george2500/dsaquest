@@ -80,9 +80,7 @@ class Drill(_Frozen):
         default=(),
         description="Additional accepted forms for RECALL, lowercased and space-stripped",
     )
-    explanation: str = Field(
-        min_length=10, description="Shown after answering, right or wrong"
-    )
+    explanation: str = Field(min_length=10, description="Shown after answering, right or wrong")
 
     @property
     def correct_index(self) -> int | None:
@@ -137,9 +135,7 @@ class Curriculum(_Frozen):
     master_id: str = Field(pattern=r"^[a-z0-9]+(_[a-z0-9]+)*$")
     pattern: str = Field(description="Pattern id this curriculum teaches")
     title: str
-    opening: str = Field(
-        min_length=20, description="What the master says when training begins"
-    )
+    opening: str = Field(min_length=20, description="What the master says when training begins")
     stages: tuple[Stage, ...] = Field(min_length=1)
     final_test_problem_ids: tuple[str, ...] = Field(
         default=(),
