@@ -81,6 +81,7 @@ class MasterScreen(Screen):
         Binding("2", "pick(1)", "B", show=False),
         Binding("3", "pick(2)", "C", show=False),
         Binding("4", "pick(3)", "D", show=False),
+        Binding("w", "watch", "Watch it", show=False),
         Binding("space", "advance", "Continue", show=False),
         Binding("enter", "advance", "Continue", show=False),
     ]
@@ -191,11 +192,40 @@ class MasterScreen(Screen):
                     body.append(f"      [dim]{safe(item.why)}[/]")
         if teaching.memorise_line:
             body.append(f'\n[b]"{safe(teaching.memorise_line)}"[/]')
+        # Teach before you test: if the secret has an animation, the student is
+        # told so here, while the concept is being explained and before a single
+        # drill has judged them.
+        if self.animation() is not None:
+            body.append("\n[b #d9a441]w — watch it happen, step by step[/]")
         body.append("\n[dim]space — begin the drills[/]")
 
         self.query_one("#lesson", Static).update("\n".join(body))
         self.query_one("#drill", Static).display = False
         self.phase = "teach"
+
+    def animation(self):
+        """The animation for the secret being taught, if one was authored."""
+        if self.stage is None:
+            return None
+        from ..content.animations import animation_for
+
+        wanted = self.stage.secret.animation or self.stage.secret.id
+        return animation_for(wanted)
+
+    def action_watch(self) -> None:
+        """Open the theatre. Available while teaching, and again during drills.
+
+        A student who has just got a drill wrong is exactly who needs the
+        picture, so this is not restricted to the teaching phase.
+        """
+        if self.phase not in ("teach", "drill"):
+            return
+        animation = self.animation()
+        if animation is None:
+            return
+        from .theatre import TheatreScreen
+
+        self.app.push_screen(TheatreScreen(animation))
 
     def show_drill(self) -> None:
         assert self.stage is not None

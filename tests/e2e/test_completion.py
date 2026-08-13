@@ -453,7 +453,12 @@ def test_every_shipped_template_opens_with_its_hole_hidden(context, pattern_id):
             # program with a TODO in it, and never the machinery.
             for panel_id, text in _everything_rendered(screen):
                 assert "HOLE" not in text, f"{panel_id} leaked the marker syntax: {text[:200]!r}"
-                assert ">>>" not in text and "<<<" not in text, f"{panel_id} leaked a marker"
+                # The marker is `>>> HOLE` / `<<< HOLE`, not a bare arrow run.
+                # C++ produces `>>>` all by itself the moment templates nest:
+                # `priority_queue<..., greater<pair<long long, int>>>` ends in
+                # three of them, and so would every `vector<vector<int>>`.
+                assert ">>> HOLE" not in text, f"{panel_id} leaked an opening marker"
+                assert "<<< HOLE" not in text, f"{panel_id} leaked a closing marker"
 
             assert TODO_MARKER in statement, "the hole is not marked in the program shown"
             assert hole.prompt in statement, "the player is not told what to write"

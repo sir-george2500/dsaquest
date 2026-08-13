@@ -150,14 +150,25 @@ traps:
       in the wrong order and come out too large. Pass std::greater<> as the
       comparator, or push negated distances as the handbook does.
   - description: >-
-      Running the heap sweep on a graph that contains a negative edge.
+      Running the heap sweep on a graph that contains a negative edge, and
+      believing the distance a vertex carries when it is settled.
     mistake_code: PATTERN_GREEDY_OVER_DP
     symptom: >-
-      A wrong answer with no crash. On the handbook's four-vertex example — 1-2
-      of weight 2, 2-4 of weight 3, 1-3 of weight 6, 3-4 of weight -5 — the
-      sweep settles vertex 2 first and reports 5 for vertex 4, while 1-3-4 costs
-      1. The settled vertex is never revisited, so the -5 never gets to
-      compensate the 6.
+      A wrong answer with no crash. On the handbook's four-vertex example —
+      1->2 of weight 2, 2->4 of weight 3, 1->3 of weight 6, 3->4 of weight -5 —
+      vertex 4 comes off the heap holding 5, while the route through vertex 3
+      costs 1. Breaking out of the loop when the target is popped, or reading an
+      answer off a vertex as it settles, is what makes this visible; an
+      implementation that keeps relaxing into settled vertices may store the
+      right number anyway and merely lose its complexity bound instead, which is
+      worse, because it hides the fault until a negative CYCLE makes it hang.
+  - description: >-
+      Leaving the sweep to run on a graph with a negative cycle.
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      No output at all. A lazily-deleted heap re-expands a vertex every time its
+      distance falls, and around a negative cycle the distance falls forever, so
+      the verdict is a time limit on a program that never had a loop bug.
   - description: >-
       Reading the weights as an unweighted graph because the statement buried
       the cost in one clause.

@@ -1,0 +1,190 @@
+# Problems that are really Nothing Before What It Needs.
+#
+# The word "topological" appears nowhere. The recognition being trained is that
+# a one-way pair means "this before that" rather than "you can go from here to
+# there" — and that the impossible case is a circular requirement, not an
+# unreachable one.
+
+- id: forge-order-of-works
+  pattern: topological-order
+  title: The Order of Works
+  difficulty: easy
+  statement: >-
+    A shipyard has n pieces of work to complete and m recorded requirements. A
+    requirement "a b" means piece a must be finished before piece b is begun.
+    Only one piece can be worked on at a time and every piece takes the same
+    unknown time, so the yard master only needs a sequence in which the pieces
+    may be done. Print any sequence of all n pieces that breaks no requirement,
+    or IMPOSSIBLE if no such sequence exists.
+  constraints: |
+    1 <= n <= 200000
+    0 <= m <= 200000
+    a requirement may be listed more than once
+    a piece with no requirements at all may be done at any time
+  signals_present:
+    - "\"a must be finished before b is begun\" is a one-way constraint between two items"
+    - the answer is a sequence covering every item
+    - any valid answer is accepted, so nothing is being optimised
+    - IMPOSSIBLE is a defined output, which only a circular requirement can produce
+  decoy_signals:
+    - "\"only one piece at a time\" and \"the same unknown time\" invite scheduling by duration, and no duration is given"
+    - "\"any sequence\" invites sorting by some key, and no key exists in the input"
+    - the pairs look like edges of a network to be walked, and walking answers a different question
+  expected_complexity: O(n + m)
+  hints:
+    - text: >-
+        Which piece could you safely do first? Say the property out loud rather
+        than pointing at one.
+    - text: >-
+        Any piece with nothing required before it. Do it, and now some other
+        pieces may have had their last requirement satisfied.
+    - text: >-
+        Count how many requirements point at each piece, take the pieces whose
+        count is zero, and after emitting one, decrement the count of everything
+        it points at.
+      reveals_pattern: true
+  why: >-
+    A one-way "before" constraint is a directed edge and a sequence obeying all
+    of them is what the pieces must be arranged into. The tell that this is not
+    a routing question is that the answer covers every item and that any valid
+    answer is accepted — nothing is being measured, only ordered.
+  classic_ref: CPH 16 (topological sorting); CSES Course Schedule
+
+- id: apprentice-curriculum-loop
+  pattern: topological-order
+  title: The Circular Curriculum
+  difficulty: medium
+  statement: >-
+    A guild lists n lessons and m prerequisite lines. A line "a b" means lesson
+    a must be attended before lesson b. An apprentice complains that the list
+    cannot be satisfied. The guild master wants proof: report the number of
+    lessons that can never be attended at all, because attending each of them
+    would require attending itself first, directly or through a chain of other
+    lessons. Report 0 when the list is satisfiable.
+  constraints: |
+    1 <= n <= 200000
+    0 <= m <= 200000
+    a lesson may be listed as its own prerequisite
+    lessons that merely depend on a blocked lesson are also blocked
+  signals_present:
+    - the constraints are one-way "before" requirements
+    - the question is whether the requirements are circular
+    - the count wanted is of items caught in or behind a circular requirement
+    - a self-requirement is called out explicitly, which is the smallest circle
+  decoy_signals:
+    - "\"can never be attended\" reads like an unreachability question, which would ignore direction of dependence"
+    - the prerequisite lines look like a network whose components could be counted
+    - counting the blocked lessons invites finding each circle explicitly, which is far more work than needed
+  expected_complexity: O(n + m)
+  hints:
+    - text: >-
+        Start by attending everything you can. Which lessons can you attend
+        first, and what does attending them free up?
+    - text: >-
+        Keep going until nothing new becomes attendable. Whatever is left over
+        is exactly what cannot be attended — you never have to identify a
+        circle to count what is stuck behind one.
+    - text: >-
+        Count the prerequisites pointing at each lesson, emit any whose count
+        reaches zero, decrement as you emit, and the answer is n minus how many
+        you emitted.
+      reveals_pattern: true
+  why: >-
+    The impossibility and the ordering are the same computation. Emitting
+    lessons whose remaining prerequisite count has fallen to zero stops exactly
+    when what remains contains a circle, so the number left unemitted is the
+    answer with no cycle-finding required. Reading the lines as undirected links
+    would count the wrong thing entirely.
+  classic_ref: CPH 16 (a graph with a cycle has no topological sort)
+
+- id: assembly-longest-chain
+  pattern: topological-order
+  title: The Longest Assembly
+  difficulty: medium
+  statement: >-
+    A workshop has n stages and m one-way handoffs; a handoff "a b" means the
+    output of stage a is fed into stage b. Stage a takes t[a] hours. Any number
+    of stages may run at once provided everything feeding them has finished.
+    The workshop is guaranteed never to feed a stage back into itself, directly
+    or through a chain. Report the fewest hours in which all n stages can be
+    completed.
+  constraints: |
+    1 <= n <= 200000
+    0 <= m <= 400000
+    1 <= t[a] <= 10^9
+    the total may exceed 2*10^9, and the handoffs never form a circle
+  signals_present:
+    - the handoffs are one-way and the input is guaranteed to contain no circle
+    - unlimited parallelism, so the answer is the heaviest chain of dependencies
+    - each item carries a weight to be accumulated along chains
+    - the answer can exceed 2*10^9, so a 64-bit accumulator is needed
+  decoy_signals:
+    - "\"fewest hours\" with weights on the items reads like a shortest-path question over a weighted network"
+    - unlimited parallelism invites a greedy schedule by duration, which no exchange argument supports
+    - the guarantee of no circle is one clause and is the most load-bearing sentence in the statement
+  expected_complexity: O(n + m)
+  hints:
+    - text: >-
+        With unlimited workers, what actually decides the finishing time? Follow
+        one chain of handoffs from a stage with no inputs to a stage with no
+        outputs.
+    - text: >-
+        The finish time of a stage is its own duration plus the largest finish
+        time among the stages feeding it. Every value it needs is a value
+        computed for a stage strictly earlier in the dependency structure.
+    - text: >-
+        Emit the stages in an order where nothing appears before its inputs,
+        then relax the finish times once along each handoff in that order.
+      reveals_pattern: true
+  why: >-
+    The guarantee of no circle is what makes each stage's answer depend only on
+    stages already computed, which turns the whole question into one pass. That
+    is the payoff of the ordering rather than the ordering itself: no heap, no
+    rounds, no revisiting — every handoff is relaxed exactly once.
+  classic_ref: CPH 16 (dynamic programming on a DAG); CSES Longest Flight Route
+
+- id: ritual-path-count
+  pattern: topological-order
+  title: Counting the Rites
+  difficulty: hard
+  statement: >-
+    A temple has n chambers joined by m one-way passages, arranged so that no
+    sequence of passages ever returns to a chamber it has already left. A rite
+    begins in chamber 1 and ends in chamber n, and any sequence of passages
+    joining them counts as a distinct rite. Report how many distinct rites
+    exist, taken modulo 1000000007.
+  constraints: |
+    1 <= n <= 100000
+    0 <= m <= 200000
+    the passages never form a circuit
+    the count before the modulus may be astronomically large
+  signals_present:
+    - the passages are one-way and no circuit exists, said explicitly
+    - the question aggregates over all routes rather than optimising one
+    - each chamber's total is the sum of the totals of the chambers feeding it
+    - a modulus is imposed, which says the true count grows past any fixed type
+  decoy_signals:
+    - counting routes invites enumerating them, and the modulus is there because there are far too many
+    - a source, a target and a network read like a shortest-path or reachability question
+    - "\"no sequence returns to a chamber it has left\" is one clause and is the entire licence for the method"
+  expected_complexity: O(n + m)
+  hints:
+    - text: >-
+        How many rites reach a given chamber? Write it in terms of the chambers
+        that have a passage into it.
+    - text: >-
+        It is the sum of their counts. That recursion is only usable if every
+        chamber it refers to has already been settled — which is precisely what
+        the no-circuit guarantee buys you.
+    - text: >-
+        Produce an order in which no chamber appears before anything with a
+        passage into it, then push each chamber's count forward along its
+        outgoing passages, taking the modulus as you go.
+      reveals_pattern: true
+  why: >-
+    Counting is a dynamic program whose transitions run along the passages, and
+    the only difficulty is knowing when a chamber's count is final. The
+    no-circuit clause supplies exactly that: process the chambers in an order
+    respecting the passages and every count is complete before it is read. The
+    modulus is the setter admitting the count doubles at every branch.
+  classic_ref: CPH 16 (counting the number of paths); CSES Game Routes

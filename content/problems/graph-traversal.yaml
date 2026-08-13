@@ -1,0 +1,235 @@
+# Problems that are really Visit Every Vertex Once.
+#
+# None may name the pattern and none may say "breadth-first", "depth-first" or
+# "flood fill" — the recognition being trained is that the question is about
+# reachability or grouping, and that no cost is being measured at all. The
+# decoys are mostly distances: a statement that mentions routes but never
+# measures one is the case people over-solve.
+
+- id: harbour-chain-count
+  pattern: graph-traversal
+  title: Harbour Chains
+  difficulty: easy
+  statement: >-
+    The admiralty keeps a register of n harbours and m ferry lines. Each line
+    runs between two harbours and can be taken in either direction. Two
+    harbours belong to the same trading chain if a merchant can get from one to
+    the other using ferry lines only, however many she takes and in whatever
+    order. The admiralty wants to know how many separate chains its register
+    describes, so it can decide where a new line would do the most good. Report
+    that number.
+  constraints: |
+    1 <= n <= 200000
+    0 <= m <= 200000
+    the lines are listed in no particular order and may repeat
+    a harbour with no lines at all is a chain of its own
+  signals_present:
+    - the question counts groups that have no link between them
+    - the links are two-way and carry no length, price or duration
+    - nothing is being minimised, only classified
+    - an isolated item is explicitly still a group
+  decoy_signals:
+    - "\"a merchant can get from one to the other\" reads like a routing question, and no route is ever asked for"
+    - the mention of where a new line would help invites a spanning-tree or shortest-path reading
+    - n and m at 2*10^5 fits every algorithm in this region, so the bounds decide nothing
+  expected_complexity: O(n + m)
+  hints:
+    - text: >-
+        Nothing in the question asks how far, how cheap or how quickly. Strip
+        the distances out of your reading and ask what is left.
+    - text: >-
+        Pick any harbour nobody has claimed yet and claim everything you can
+        reach from it. Now do it again with whatever is still unclaimed.
+    - text: >-
+        The answer is the number of times you had to start over — one sweep per
+        group, each vertex claimed at the moment it enters the frontier.
+      reveals_pattern: true
+  why: >-
+    The statement measures nothing. It defines an equivalence — reachable from
+    — and asks how many classes it has, which is the definition of a connected
+    component. The giveaway that no distance is wanted is that the number of
+    ferry lines taken is explicitly declared irrelevant.
+  classic_ref: CPH 12 (connectivity check); USACO Silver floodfill family
+
+- id: flooded-cellars
+  pattern: graph-traversal
+  title: Flooded Cellars
+  difficulty: easy
+  statement: >-
+    A rain map of the undercity is drawn as a grid of r rows and c columns.
+    Each cell is either stone or water. Two water cells belong to the same
+    flooded cellar when they share an edge — sharing only a corner is not
+    enough. Surveyors need the number of distinct flooded cellars on the map,
+    and the size in cells of the largest of them. Report both, the count first.
+  constraints: |
+    1 <= r, c <= 1000
+    the map contains at most 10^6 cells in total
+    a cell is '.' for stone or '#' for water
+    the map may be entirely stone
+  signals_present:
+    - a grid where neighbouring cells of the same kind belong together
+    - adjacency is defined explicitly, and corners are ruled out
+    - the answer is a count of regions plus the size of one, with no route involved
+    - r*c up to 10^6, so each cell may be touched a constant number of times
+  decoy_signals:
+    - a grid with r and c up to 1000 is the standard shape of a shortest-path maze
+    - "\"the largest of them\" reads like an optimisation over subsets"
+    - the stone/water split invites treating it as a two-dimensional prefix-sum counting question
+  hints:
+    - text: >-
+        A grid is a set of things joined to their neighbours. The word "grid"
+        changes how you enumerate neighbours and changes nothing else.
+    - text: >-
+        Sweep the cells in any order. When you meet a water cell nobody has
+        claimed, claim it and everything joined to it, counting as you go.
+    - text: >-
+        Four offsets, a claimed array the same shape as the map, and one sweep
+        per unclaimed water cell — the number of sweeps is the count and the
+        largest sweep is the size.
+      reveals_pattern: true
+  expected_complexity: O(r*c)
+  why: >-
+    The cells are vertices and the four shared edges are the edges, so the map
+    is a graph written as arithmetic instead of as a list. Nothing measures a
+    distance: the answer is how the water divides into groups, which is a
+    component count with the group size recorded on the way past.
+  classic_ref: USACO Silver floodfill; LeetCode 200 / 695 family
+
+- id: two-watch-rotas
+  pattern: graph-traversal
+  title: The Two Watches
+  difficulty: medium
+  statement: >-
+    A garrison of n soldiers must be split into a day watch and a night watch.
+    The quartermaster has recorded m pairs of soldiers who quarrel; two who
+    quarrel must never be placed on the same watch. Every soldier is assigned to
+    exactly one of the two watches, and the watches may end up any sizes at all,
+    including empty. Report whether such a split exists, and if it does, print
+    for each soldier which watch they take.
+  constraints: |
+    1 <= n <= 200000
+    0 <= m <= 200000
+    a pair may be listed more than once, and never lists a soldier with himself
+    the quarrels do not have to connect every soldier to every other
+  signals_present:
+    - split the items into two sides so that no recorded pair sits on one side
+    - the constraint is symmetric between the two soldiers in a pair
+    - the sizes of the two sides are explicitly unconstrained
+    - a witness must be printed, not only a yes or no
+  decoy_signals:
+    - "\"split into two groups\" with a constraint per pair reads like a decision that needs searching over assignments"
+    - "\"never on the same watch\" sounds like a conflict between overlapping shifts"
+    - the pairs of soldiers invite a matching or pairing algorithm
+  expected_complexity: O(n + m)
+  hints:
+    - text: >-
+        Once you choose a watch for one soldier, every soldier who quarrels with
+        him is forced, and every soldier who quarrels with THEM is forced again.
+        How far does that forcing reach?
+    - text: >-
+        It reaches exactly as far as the quarrels connect. So each group of
+        connected soldiers has only two possible assignments, and picking either
+        one determines the rest.
+    - text: >-
+        Claim an unassigned soldier, give him the day watch, and give everyone
+        you reach the opposite of whoever reached them. If you ever reach
+        someone who already holds the same watch as the soldier you came from,
+        no split exists.
+      reveals_pattern: true
+  why: >-
+    Two labels, and a pairwise rule saying joined items must differ, is a
+    two-colouring. The walk that assigns the colours is the same walk that
+    proves impossibility: an edge between two vertices of the same colour is an
+    odd cycle, and an odd cycle cannot be two-coloured however you start.
+  classic_ref: CPH 12 (bipartiteness check); CSES Building Teams
+
+- id: signal-relay-reach
+  pattern: graph-traversal
+  title: The Relay Chain
+  difficulty: medium
+  statement: >-
+    A network of n signal towers is joined by m one-way relay links; a link from
+    tower a to tower b means a message left at a will be carried onward to b,
+    but not the reverse. A message is deposited at tower s. Report how many
+    towers can eventually hold that message, counting s itself, and then report
+    the same number again for the network with every link turned round.
+  constraints: |
+    1 <= n <= 200000
+    0 <= m <= 400000
+    the links are one-way, and both directions may be listed separately
+    1 <= s <= n
+  signals_present:
+    - the question is which items can eventually be reached, with nothing measured
+    - the links are one-way and the reversed network is asked about separately
+    - no length, delay or cost appears anywhere in the statement
+    - the answer is a count of reached items, not a route
+  decoy_signals:
+    - one-way links and a second pass over the reversed network is the standard set-up for a precedence question
+    - "\"eventually\" invites reasoning about repetition or cycles that never has to happen"
+    - m at 4*10^5 with a single source looks like a distance sweep, and no distance is wanted
+  expected_complexity: O(n + m)
+  hints:
+    - text: >-
+        Read the question again and note what it does not contain. There is no
+        number attached to a link and no notion of a message arriving sooner.
+    - text: >-
+        You need everything that can be reached from s. Claiming a tower the
+        first time you meet it and never claiming it twice is the whole
+        algorithm; the container you keep the frontier in makes no difference to
+        the answer.
+    - text: >-
+        One sweep from s over the links as given, and one sweep from s over a
+        second adjacency list built with every pair swapped.
+      reveals_pattern: true
+  why: >-
+    Reachability with no cost attached is the one question a plain sweep answers
+    exactly. The reversed pass is the same sweep on a second adjacency list, and
+    the fact that the two answers differ is what tells you the links were
+    genuinely one-way — it is not a hint towards ordering, because nothing is
+    being ordered.
+  classic_ref: CPH 12 (connectivity check on a directed graph)
+
+- id: cable-loop-audit
+  pattern: graph-traversal
+  title: The Cable Audit
+  difficulty: hard
+  statement: >-
+    An engineer inherits n junction boxes joined by m two-way cables. She is
+    told the wiring should be a forest: no run of cables should ever return to a
+    box it has already passed through, except by walking straight back along the
+    cable it just used. She wants to know how many of the separate wiring groups
+    violate that rule, so she can send a crew to each. Report the number of
+    groups that contain a closed run.
+  constraints: |
+    1 <= n <= 200000
+    0 <= m <= 200000
+    the same pair of boxes may be joined by more than one cable
+    a box may be joined to itself by a cable
+  signals_present:
+    - the items divide into groups and each group is examined separately
+    - the property asked about is structural, with no distance or cost anywhere
+    - the links are two-way, so the rule is symmetric
+    - duplicate and self links are called out, which changes the counting and nothing else
+  decoy_signals:
+    - "\"no run should return to a box it has passed through\" reads like a search over walks"
+    - the forest wording invites building a spanning structure and comparing weights
+    - counting violations invites a per-cable check rather than a per-group one
+  expected_complexity: O(n + m)
+  hints:
+    - text: >-
+        Handle the groups one at a time. Within one group, what is the smallest
+        number of cables that could join all its boxes without any closed run?
+    - text: >-
+        A group of c boxes with no closed run is a tree and has exactly c - 1
+        cables. Anything more and it certainly contains one.
+    - text: >-
+        Claim each group with one sweep, counting its boxes and the endpoints it
+        saw; a group with c boxes and c or more cables has a closed run. A
+        cable joining a box to itself is one such cable on its own.
+  why: >-
+    Nothing is measured, and the property being tested is about the shape of
+    each group rather than about any route through it. Once each group is
+    isolated by a sweep, the handbook's counting rule finishes it: c vertices
+    and no cycle means exactly c - 1 edges, so c or more edges proves a cycle
+    without ever finding one.
+  classic_ref: CPH 12 (finding cycles by counting nodes and edges in a component)

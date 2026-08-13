@@ -1,0 +1,194 @@
+# Problems that are really A State for Every Vertex.
+#
+# The cue is never the word "choose" on its own — a greedy chooses too. It is
+# that the choice at one place CONSTRAINS its neighbours, so the answer sent
+# upwards has to be one number per decision instead of one number in total.
+# Each statement below therefore puts its rule on an edge or between
+# neighbours, never on a place in isolation.
+
+- id: glade-watchposts
+  pattern: tree-dp
+  title: The Watchposts
+  difficulty: medium
+  statement: >-
+    A wood has n glades joined by n-1 walking paths, every glade reachable from
+    every other. Glade i can hold a watchpost worth v[i] crowns of protection.
+    Two watchposts may not stand in glades joined directly by a path — their
+    lanterns would blind one another. Choose the set of glades to fortify so
+    that the total protection is as large as possible, and report that total. A
+    glade may of course be left empty.
+  constraints: |
+    1 <= n <= 200000
+    1 <= v[i] <= 10^9
+    the answer may exceed 2^31
+    the paths are given as n-1 lines "u v", in arbitrary order
+  signals_present:
+    - two chosen glades may not be joined by a path, so the choice at a glade constrains its neighbours
+    - n glades and n-1 paths with everything reachable
+    - a total is being maximised over the choices, not counted
+    - the values are large enough that the total needs 64 bits
+  decoy_signals:
+    - "\"take the most valuable ones that still fit\" invites ranking the glades by value and sweeping, which is a safe local choice on some shapes and not on others"
+    - "\"no two adjacent\" over a row is a one-dimensional recurrence, which invites flattening the wood into a line"
+    - the large values invite believing the difficulty is arithmetic rather than structural
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Try a glade of value 3 with three neighbours of value 2 each. What does
+        "take the most valuable first" score, and what is actually available?
+    - text: >-
+        3 against 6 — so no ranking of the glades can be right. Fix a glade as
+        the top of the wood. What must a glade tell the glade above it, and is
+        one number enough?
+    - text: >-
+        Two numbers: the best total below it if it is fortified, and the best
+        if it is not. Fortifying it forces every neighbour below to be empty;
+        leaving it empty leaves each of them free to do whatever is best.
+      reveals_pattern: true
+  why: >-
+    The constraint sits between neighbours, so the glade above cannot use a
+    child's answer without knowing which way that child went — and that is
+    exactly what forces two numbers per glade instead of one. The star with a
+    centre worth 3 and three leaves worth 2 is the smallest case that kills
+    every ranking-based attempt: 3 against 6, with no tie-break able to repair
+    it. Note the asymmetry in the two transitions; it is where this is usually
+    got wrong.
+  classic_ref: maximum weight independent set on a tree
+
+- id: bridge-toll-guards
+  pattern: tree-dp
+  title: The Toll Guards
+  difficulty: medium
+  statement: >-
+    A wood of n glades and n-1 walking paths, all reachable from one another.
+    Every path must be watched, and a path counts as watched if a guard stands
+    in at least one of the two glades it joins. Guards are expensive and
+    identical. Report the smallest number of guards that watches every path.
+  constraints: |
+    1 <= n <= 200000
+    the paths are given as n-1 lines "u v"
+    the wood may be a chain, a star, or anything between
+  signals_present:
+    - the rule is stated on a path, so each path forces a decision about the two glades at its ends
+    - n glades and n-1 paths with everything reachable
+    - the quantity minimised is a count of chosen glades
+    - the shape of the wood is explicitly unconstrained, so no special case will save you
+  decoy_signals:
+    - "\"cover every link with the fewest points\" invites sorting the links and sweeping, which is the correct instinct for links on a line and wrong here"
+    - "\"at least one of the two ends\" invites a matching argument, which is a much heavier technique than this needs"
+    - guards being identical invites believing the answer depends only on n
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Fix a glade as the top of the wood and look at one path going downwards
+        from a glade v. If v holds no guard, what is forced about the glade
+        below?
+    - text: >-
+        It must hold one. If v does hold a guard, that path is already watched
+        and the glade below is free again. So the glade below has to report two
+        answers, not one.
+    - text: >-
+        Send up the cheapest count with a guard and the cheapest without. With
+        a guard costs one plus the better of each child's two; without a guard
+        forces every child's with-guard answer.
+      reveals_pattern: true
+  why: >-
+    The constraint is written on the edge rather than on the vertex, but it
+    reduces to the same thing: what the glade above may do depends on what the
+    glade below chose, so two numbers must travel upwards. On a wood the answer
+    is always n minus the largest set of glades with no two joined — the
+    complement relationship is worth knowing as a check, but the recurrence is
+    the thing to be able to write.
+  classic_ref: minimum vertex cover on a tree
+
+- id: banner-arrangements-of-the-wood
+  pattern: tree-dp
+  title: How Many Ways to Hang the Banners
+  difficulty: hard
+  statement: >-
+    A wood of n glades and n-1 walking paths, every glade reachable from every
+    other. Each glade either flies a banner or does not, and no two glades
+    joined by a path may both fly one. Hanging no banners at all is a permitted
+    arrangement. Count the arrangements and report the count modulo 1000000007.
+  constraints: |
+    1 <= n <= 200000
+    the paths are given as n-1 lines "u v"
+    the count must be reported modulo 1000000007
+  signals_present:
+    - arrangements are counted rather than optimised, and the rule constrains neighbours
+    - n glades and n-1 paths with everything reachable
+    - a modulus is demanded, which says the count is astronomically large
+    - the empty arrangement is explicitly legal, which pins down the base case
+  decoy_signals:
+    - "\"count the arrangements\" invites a closed formula in n, but the answer depends on the shape and not on n alone"
+    - the modulus invites believing the difficulty is arithmetic
+    - "\"no two adjacent\" counted along a row is a Fibonacci sequence, which invites flattening the wood"
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Do it by hand on a chain of three glades. How many arrangements? Now on
+        a star with three leaves. Do the two agree on anything but n?
+    - text: >-
+        Five and nine — the shape decides it. Fix a glade as the top. Once you
+        have fixed whether a glade flies a banner, are its branches independent
+        of one another?
+    - text: >-
+        They are, so their counts multiply. Two counts per glade — with a
+        banner and without — and reduce after every multiplication, not at the
+        end.
+      reveals_pattern: true
+  why: >-
+    Exactly the same two states as the watchposts, with the operators changed:
+    a maximum over the two ways becomes a sum of them, and adding the children's
+    contributions becomes multiplying them, because once a glade's own state is
+    fixed its branches are independent. That is the lesson — the states come
+    from the CONSTRAINT and the operators come from the QUESTION. The chain of
+    three gives 5 and the three-leaved star gives 9, which is the fastest way to
+    prove to yourself that no formula in n exists.
+  classic_ref: counting independent sets on a tree
+
+- id: thicket-three-dyes
+  pattern: tree-dp
+  title: Three Dyes
+  difficulty: hard
+  statement: >-
+    A wood of n glades and n-1 walking paths, all reachable from one another.
+    Every glade is to be dyed with one of three dyes, and two glades joined
+    directly by a path must not carry the same dye. Some glades have already
+    been dyed by a previous crew and may not be changed; the rest are free.
+    Count the ways to finish the work, modulo 1000000007. If the crew has
+    already made the task impossible, report zero.
+  constraints: |
+    1 <= n <= 200000
+    each glade is given a fixed dye of 1, 2 or 3, or 0 if it is free
+    the paths are given as n-1 lines "u v"
+  signals_present:
+    - each glade takes one of three states and neighbours must differ
+    - n glades and n-1 paths with everything reachable
+    - arrangements are counted under a modulus, so the total is enormous
+    - some glades are pinned, which makes some states unavailable at some glades
+  decoy_signals:
+    - "\"colour so that neighbours differ\" invites testing two-colourability, which decides nothing about a count with three dyes"
+    - the pinned glades invite propagating constraints outwards from each one, which is a search rather than a fold
+    - three dyes on n glades invites a power-of-three formula, which is right only when there are no paths at all
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        How many numbers does a glade have to report to the glade above it now?
+        Count the distinct things the glade above could need to know.
+    - text: >-
+        Three — one per dye it might carry, because "how many ways below me"
+        depends on which dye it took. A pinned glade simply has zeroes in the
+        two states it is not allowed.
+    - text: >-
+        For each dye d at a glade, multiply over the children the sum of that
+        child's counts for the two dyes other than d, and reduce as you go.
+      reveals_pattern: true
+  why: >-
+    The number of states is not two by law — it is however many distinct
+    decisions a place can make, and here that is three. Everything else is
+    unchanged: multiply the independent branches, sum the ways a child may
+    differ, reduce after every multiplication. The pinned glades are not a new
+    mechanism either; they are a zero written into the states that are
+    forbidden, which is the general way a constraint enters a fold.
+  classic_ref: counting proper 3-colourings of a tree

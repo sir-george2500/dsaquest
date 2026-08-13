@@ -52,6 +52,7 @@ from .editor import code_editor
 from .journey import JOURNEY_CSS, JourneyScreen
 from .master import MASTER_CSS, MasterScreen, safe
 from .roster import ROSTER_CSS, RosterScreen
+from .theatre import THEATRE_CSS
 from .understanding import UNDERSTANDING_CSS
 
 CSS = (
@@ -95,6 +96,7 @@ Screen { background: $surface; }
     + DUEL_CSS
     + UNDERSTANDING_CSS
     + ROSTER_CSS
+    + THEATRE_CSS
 )
 
 

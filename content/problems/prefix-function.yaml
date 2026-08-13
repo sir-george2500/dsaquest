@@ -1,0 +1,281 @@
+# Problems that are really The Prefix Function.
+#
+# The tell these train: the question is about one string agreeing with ITSELF,
+# or about one pattern inside one text, with an exact answer demanded. None of
+# them may say "border", "period" or name the technique — the words allowed are
+# the ones a setter would actually write: "repeated", "begins and ends the
+# same", "how many times does this appear".
+
+- id: scriptorium-repeated-seal
+  pattern: prefix-function
+  title: The Repeated Seal
+  difficulty: easy
+  statement: >-
+    A seal is stamped along the top of a scroll by pressing one small block of
+    letters again and again, left to right, with no gap and no overlap, until
+    the row is finished. The apprentice who did it has gone home and the block
+    is lost. You are given the finished row of n letters. Report the length of
+    the smallest block that could have produced it by whole repetitions. If no
+    block shorter than the whole row can produce the row exactly, report n.
+  constraints: |
+    1 <= n <= 10^6
+    lowercase Latin letters only
+    the row is given on one line, with no spaces
+  signals_present:
+    - the row is built by repeating one block, so it agrees with itself at a fixed shift
+    - the smallest such block is asked for, not merely whether one exists
+    - the repetition must be exact, with no partial block at the end
+    - n up to 10^6 rules out testing every divisor by comparing the whole row
+  decoy_signals:
+    - "\"smallest block\" invites trying every divisor of n and comparing, which is O(n * d(n)) and looks fast enough until n is highly composite"
+    - a question about repeated content invites counting how often each letter appears
+    - "\"the block is lost\" invites reconstructing it by hand from the first few characters"
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        If the row is one block of length p repeated, then sliding the row p
+        places to the left leaves it agreeing with itself everywhere the two
+        copies still overlap. What is the smallest such shift?
+    - text: >-
+        The smallest shift that leaves the row agreeing with itself is n minus
+        the length of the longest piece that is both the beginning and the end
+        of the row. Compute that piece's length for the whole row.
+    - text: >-
+        Build the table of longest-border lengths in one pass and take
+        p = n - table[n-1]. Answer p when n % p == 0, and n otherwise — the
+        modulo check is what separates an exact repetition from a mere shift.
+      reveals_pattern: true
+  why: >-
+    "Repeated with no gap and no overlap" is a statement about the row agreeing
+    with a shifted copy of itself, and the smallest such shift is exactly n
+    minus the longest piece that is both a start and an end of the row. The
+    modulo test is the whole difficulty: 3 is the smallest shift for "abcabca"
+    as well, and that row is NOT a whole number of repetitions.
+  classic_ref: CPH 26 (periods); Codeforces 1029A / UVa 10298 family
+
+- id: ledger-motif-count
+  pattern: prefix-function
+  title: Counting the Motif
+  difficulty: medium
+  statement: >-
+    A ledger is one long unbroken run of letters. A motif is a shorter run. The
+    archivist wants to know how many times the motif appears in the ledger,
+    counting every starting position at which it appears — including positions
+    where two appearances share letters with each other. Report that count.
+  constraints: |
+    1 <= |motif| <= |ledger| <= 10^6
+    lowercase Latin letters only
+    the answer fits in a 32-bit signed integer
+  signals_present:
+    - one shorter run must be located inside one longer run
+    - appearances that share letters must both be counted
+    - the total length reaches 10^6, so comparing the motif at every position is too slow
+    - an exact count is required, with no tolerance for a wrong answer on one test
+  decoy_signals:
+    - "\"how many times does it appear\" reads like a tally and invites a frequency map, which cannot see position at all"
+    - overlapping appearances invite a sliding window over the ledger
+    - the two-string comparison invites fingerprinting every window and comparing numbers, which works but can be attacked
+  expected_complexity: O(n + m)
+  hints:
+    - text: >-
+        The naive scan restarts at the next position after every mismatch,
+        throwing away everything it had just proved. What did it prove? That
+        some beginning of the motif matched — how much of it is still usable?
+    - text: >-
+        After a mismatch you do not need to go back in the ledger at all. You
+        only need to know, for each position in the motif, how far to fall back
+        within the MOTIF and keep going.
+    - text: >-
+        Run the border table over motif + a separator that cannot occur in
+        either string + ledger, and count the positions where the value equals
+        the motif's length.
+      reveals_pattern: true
+  why: >-
+    One pattern, one text, overlaps counted, and an exact answer demanded at
+    10^6 — that combination is this technique's founding problem. The overlap
+    requirement is the giveaway that a scan which restarts after a hit is
+    wrong: on a motif of "aa" inside "aaa" the answer is 2, not 1.
+  classic_ref: CPH 26 (pattern matching); the KMP occurrence count
+
+- id: copyist-margin-overlap
+  pattern: prefix-function
+  title: The Spliced Margin
+  difficulty: medium
+  statement: >-
+    Two copyists each transcribed part of the same text and their sheets must
+    now be glued into one. Sheet A ends where sheet B begins, but nobody
+    recorded where — the end of A and the start of B may share some letters,
+    which must not be written twice. Find the largest number of letters that
+    the end of A and the start of B have in common, and report the length of
+    the joined sheet when they are overlapped by exactly that much.
+  constraints: |
+    1 <= |A|, |B| <= 5 * 10^5
+    lowercase Latin letters only
+    the shared piece may be as long as the shorter sheet, but no longer
+  signals_present:
+    - the end of one string must be matched against the beginning of another
+    - the LARGEST such overlap is wanted, so every candidate length is in play
+    - both sheets reach 5 * 10^5, ruling out testing every overlap length by comparison
+    - the answer is exact and structural, not numeric
+  decoy_signals:
+    - two strings and a shared piece invites the longest common substring, which is a different and harder question
+    - "\"shared letters\" invites counting which letters the two sheets have in common"
+    - the gluing story invites two pointers converging from the two ends
+  expected_complexity: O(|A| + |B|)
+  hints:
+    - text: >-
+        You are looking for a piece that is simultaneously the end of one
+        string and the beginning of another. Make it the end and the beginning
+        of a SINGLE string and the question becomes one you can answer in a
+        single pass.
+    - text: >-
+        Build B, then a separator that occurs in neither sheet, then A. Any
+        piece that is both the start and the end of that combined string is
+        exactly a start of B that is also an end of A.
+    - text: >-
+        The last entry of the border table of B + separator + A is the overlap
+        length. The joined sheet is |A| + |B| minus that value. The separator is
+        what stops the overlap being reported as longer than either sheet.
+      reveals_pattern: true
+  why: >-
+    "The end of this matched against the beginning of that" is the definition
+    of a border once the two strings are joined into one, which is why the
+    separator matters so much here: without it the reported overlap can exceed
+    the shorter sheet and the glued length comes out too small.
+  classic_ref: CPH 26 (borders); the standard string-merge / shortest-superstring-of-two
+
+- id: metronome-prefix-periods
+  pattern: prefix-function
+  title: The Metronome
+  difficulty: medium
+  statement: >-
+    A chant of n syllables is recited from the beginning, and after each
+    syllable the choirmaster writes down how regular the chant has been SO FAR.
+    His measure of regularity is this: the smallest positive shift s such that
+    every syllable of the part recited so far is identical to the syllable s
+    places before it, wherever such a syllable exists. For every k from 1 to n,
+    report that smallest shift for the first k syllables.
+  constraints: |
+    1 <= n <= 10^6
+    lowercase Latin letters only
+    output n numbers separated by single spaces
+  signals_present:
+    - a self-comparison at a shift, asked for every prefix of the input
+    - the answer for every prefix is wanted, not only for the whole string
+    - n reaches 10^6, so recomputing anything per prefix is impossible
+    - the measure is defined by agreement between positions, not by any value
+  decoy_signals:
+    - "\"for every k\" invites a prefix-sum table, but there is nothing to accumulate"
+    - "\"smallest shift\" invites binary searching the shift, which is not monotone"
+    - "\"how regular\" invites counting repeated syllables"
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        A shift of s works for the first k syllables exactly when the first
+        k - s syllables are identical to the last k - s of them. Rewrite the
+        question in those terms and it is about beginnings matching endings.
+    - text: >-
+        The smallest working shift for a prefix of length k is k minus the
+        longest piece that is both the start and the end of that prefix — and
+        that quantity is computed for every k as a by-product of one scan.
+    - text: >-
+        Build the border table and print k - table[k-1] for every k. No extra
+        pass and no per-prefix work of any kind.
+      reveals_pattern: true
+  why: >-
+    "Identical to the syllable s places before it" is the definition of a period,
+    and a period of length s is the same statement as a start-equals-end piece of
+    length k - s. The demand for an answer at every k is the tell that you need
+    the whole table rather than one number, which is exactly what the single
+    linear scan already produces.
+  classic_ref: UVa 455 / POJ 1961 (Period); CPH 26
+
+- id: index-prefix-tallies
+  pattern: prefix-function
+  title: The Index of Openings
+  difficulty: hard
+  statement: >-
+    An index must be built for a manuscript of n letters. For every k from 1 to
+    n, the index records how many times the manuscript's own opening of length
+    k appears anywhere inside the manuscript, counting every starting position
+    and counting appearances that share letters. The opening of length n
+    therefore always records 1. Report all n counts.
+  constraints: |
+    1 <= n <= 10^6
+    lowercase Latin letters only
+    each count fits in a 32-bit signed integer
+  signals_present:
+    - every opening of the string must be counted inside the string itself
+    - appearances may share letters, so nothing may be skipped after a hit
+    - n reaches 10^6, so searching for each opening separately is quadratic
+    - the object being counted is defined by the string's own beginnings
+  decoy_signals:
+    - n separate search problems invite running a matcher n times, which is O(n^2)
+    - "\"how many times does each appear\" invites a frequency map keyed by substring"
+    - the per-length answer invites fingerprinting every substring and tallying, which is O(n^2) substrings
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Every position of the manuscript ends some longest piece that is also
+        an opening. That position contributes to that opening — and to every
+        shorter opening which is also an ending of THAT piece.
+    - text: >-
+        Start every opening with a count of 1 for itself, then walk the
+        positions from the back, pushing each position's count one step down
+        the chain of shorter start-equals-end pieces.
+    - text: >-
+        cnt[table[i] - 1] += cnt[i], for i from n-1 down to 1, and only when
+        table[i] is greater than zero. The guard is not optional: without it
+        you write to index -1.
+      reveals_pattern: true
+  why: >-
+    Counting occurrences of every opening is one backwards sweep over the same
+    table that a single search would have built, because an occurrence of a long
+    opening is automatically an occurrence of every shorter opening that ends the
+    same way. The trap is the missing guard on the zero entry, which corrupts
+    exactly one count and leaves the rest correct.
+  classic_ref: Codeforces 432D family; CPH 26 (prefix function applications)
+
+- id: twin-seal-banner
+  pattern: prefix-function
+  title: The Twin Seal
+  difficulty: medium
+  statement: >-
+    A banner must be woven so that a given seal of n letters appears both at
+    its very start and at its very end. The banner must be strictly longer than
+    the seal, so the two appearances cannot be the same one, but they are
+    allowed to share letters in the middle. Report the length of the shortest
+    banner that satisfies this.
+  constraints: |
+    1 <= n <= 10^6
+    lowercase Latin letters only
+    the answer may reach 2 * 10^6
+  signals_present:
+    - one string must appear at both ends of a longer string, sharing letters if it can
+    - the shortest result is wanted, so the overlap must be as large as possible
+    - the shared middle is simultaneously an ending of the seal and a beginning of it
+    - the two appearances must be distinct, which forbids the whole seal as the overlap
+  decoy_signals:
+    - "\"shortest banner\" invites binary searching the length, but feasibility is not monotone in any usable way"
+    - weaving a string invites building the answer character by character
+    - the shared middle invites the longest common substring of the seal with itself
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        The two copies overlap by some number of letters. Whatever that number
+        is, the overlapping piece is both an ending of the seal and a beginning
+        of it. How large can such a piece be?
+    - text: >-
+        The largest piece that is both a beginning and an ending — and shorter
+        than the whole seal, since the two copies must differ — is the last
+        entry of the border table.
+    - text: >-
+        Answer 2n - table[n-1]. On a seal with no repeated structure at all the
+        table's last entry is 0 and the banner is simply the seal twice.
+      reveals_pattern: true
+  why: >-
+    The overlap between the two copies is precisely a piece that is both a
+    beginning and an ending of the seal, and "strictly longer" forbids the whole
+    seal from serving as that piece — which is exactly why the table stores the
+    longest PROPER such piece and no special case is needed.
+  classic_ref: CPH 26 (borders); the classic shortest-string-with-two-occurrences

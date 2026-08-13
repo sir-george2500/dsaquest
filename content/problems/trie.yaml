@@ -1,0 +1,148 @@
+# Problems that are really The Prefix Tree.
+#
+# The tell these train: a SET of sequences, queried by shared beginnings, over
+# and over. If the statement only ever asks about whole words, a hash set wins
+# and this pattern is the wrong answer — so every statement here asks something
+# a tally provably cannot answer.
+#
+# Note for future authors: the word "tries" contains this pattern's own id as a
+# substring and the loader rejects a statement that names its pattern. Write
+# "attempts".
+
+- id: apprentice-name-roll
+  pattern: trie
+  title: The Name Roll
+  difficulty: medium
+  statement: >-
+    The scriptorium keeps a roll of n apprentice names, one per line, some
+    repeated. A steward then calls out q openings — each opening is a run of
+    letters — and for each one he must be told how many names on the roll begin
+    with exactly that run. A name that IS the run counts, and so does a name
+    that merely starts with it.
+  constraints: |
+    1 <= n, q <= 2 * 10^5
+    the total length of all names is at most 10^6
+    the total length of all openings is at most 10^6
+    lowercase Latin letters only
+  signals_present:
+    - a fixed set of words is queried by their beginnings, repeatedly
+    - the answer is a COUNT of stored words sharing a beginning, not a yes or no
+    - the bound given is on the TOTAL length of the words, not on their number
+    - many names share long beginnings, and the same work would otherwise be repeated
+  decoy_signals:
+    - "\"how many begin with\" invites a map from name to count, which can answer only whole names"
+    - sorting the roll and binary searching the opening also works and is the intended near-miss — it costs a log factor and a comparison of full strings
+    - repeated openings invite caching the answers, which does nothing when every opening is distinct
+  expected_complexity: O(total length)
+  hints:
+    - text: >-
+        A hash map can tell you how many names equal a given word. Nothing in
+        it can tell you how many START with one, because it never stored the
+        beginnings as objects in their own right.
+    - text: >-
+        Store the roll so that every distinct beginning is a place you can
+        stand, with the names sharing that beginning stored once beneath it.
+        Then a query is a walk of length equal to the opening.
+    - text: >-
+        Build the tree of beginnings, keeping in each node a count of how many
+        names pass through it, and answer each query by walking the opening and
+        reading that count. The count must be maintained during insertion —
+        descending a subtree at query time is the mistake.
+      reveals_pattern: true
+  why: >-
+    Prefix questions against a fixed dictionary, with the constraint written on
+    the TOTAL length of the words rather than on their number — that is this
+    structure's memory model stated in the input bounds. The counter is kept
+    during insertion so that no query ever explores a subtree.
+  classic_ref: CPH 26.1 (trie structure); the standard prefix-count roll
+
+- id: binder-longest-known-word
+  pattern: trie
+  title: The Binder's Dictionary
+  difficulty: medium
+  statement: >-
+    A binder owns a dictionary of n known words. He is handed q lines of
+    unbroken text, each with no spaces, and for each line he must find the
+    longest known word that the line BEGINS with. If no known word begins the
+    line, report 0; otherwise report that word's length.
+  constraints: |
+    1 <= n, q <= 10^5
+    the total length of the dictionary is at most 10^6
+    the total length of the query lines is at most 10^6
+    lowercase Latin letters only
+  signals_present:
+    - a set of words is matched against the beginning of each query, repeatedly
+    - the LONGEST match is wanted, so every candidate length must be considered at once
+    - the bound is on the total length of everything, which is the shape of a shared structure
+    - the dictionary is fixed and the queries are many, so preprocessing the dictionary pays
+  decoy_signals:
+    - "\"longest word that begins the line\" invites testing every prefix of the line against a hash set, one lookup per length — which is correct and pays a hash of the whole prefix each time"
+    - the dictionary invites sorting and binary searching, which finds equality and not the longest prefix
+    - matching words inside text invites a single-pattern search algorithm run once per word
+  expected_complexity: O(total length)
+  hints:
+    - text: >-
+        Every candidate answer is a beginning of the query line. Walking the
+        line one letter at a time visits all of them in order — the only
+        question is how to know, at each step, whether what you have walked so
+        far is a known word.
+    - text: >-
+        If the dictionary is stored so that walking a letter is one array step,
+        then walking the query IS testing every prefix, at no extra cost.
+    - text: >-
+        Walk the query down the tree of the dictionary's beginnings, remember
+        the deepest position at which a node was marked as the end of a word,
+        and stop when the walk falls off. The end marker is what distinguishes
+        a stored word from a mere shared beginning.
+      reveals_pattern: true
+  why: >-
+    Walking the query letter by letter tests every one of its beginnings at
+    once, which is exactly what the structure buys. The end-of-word marker is
+    the load-bearing detail: without it, any beginning of a stored word looks
+    stored, and "car" would be reported for a dictionary containing only "card".
+  classic_ref: CPH 26.1; dictionary walk / word-break family
+
+- id: rune-pair-brightest
+  pattern: trie
+  title: The Brightest Pair
+  difficulty: hard
+  statement: >-
+    Each of n runes carries a non-negative number below 2^30. When two runes
+    are held together they glow with a brightness equal to the bitwise
+    exclusive-or of their two numbers. Find the greatest brightness obtainable
+    from any two distinct runes and report it.
+  constraints: |
+    1 <= n <= 2 * 10^5
+    0 <= value < 2^30
+    the two runes must be at different positions, though their values may be equal
+  signals_present:
+    - the objective is the maximum of an exclusive-or over pairs
+    - n at 2 * 10^5 makes the 2 * 10^10 pairs impossible to enumerate
+    - the values are bounded by a power of two, naming the number of bits explicitly
+    - a bit set high in the answer outweighs every combination of lower bits
+  decoy_signals:
+    - "\"maximum over pairs\" invites sorting, but exclusive-or respects no ordering at all"
+    - a pairwise maximum invites two pointers on a sorted array, which is simply wrong here
+    - the bit bound invites iterating over the 30 bits with a frequency map, which is a genuine alternative solution and a much fussier one
+  expected_complexity: O(n * 30)
+  hints:
+    - text: >-
+        Fix one rune. You want the stored value that differs from it as high up
+        as possible — and a difference in bit 29 beats every possible agreement
+        below it, so the choice at each bit is forced rather than weighed.
+    - text: >-
+        Write each number as a 30-symbol word over the alphabet {0, 1}, most
+        significant first. Now "differs as high up as possible" is a walk down
+        a structure of shared beginnings.
+    - text: >-
+        Insert every number into a binary tree of its bits, then for each
+        number walk from the top taking the opposite bit whenever that child
+        exists. The greedy is safe precisely because 2^b exceeds the sum of
+        everything below b.
+      reveals_pattern: true
+  why: >-
+    The bits of a number, most significant first, are a sequence compared left
+    to right — which is the same object this structure stores when the symbols
+    happen to be letters. The greedy walk is forced by the place value, and the
+    stated bound of 2^30 is the setter telling you the depth of the tree.
+  classic_ref: Maximum XOR pair; CPH 26.1 applied to bit sequences

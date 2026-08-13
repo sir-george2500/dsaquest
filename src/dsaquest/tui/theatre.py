@@ -94,9 +94,7 @@ class TheatreScreen(Screen):
         self.query_one("#theatre-idiom", Static).update(
             f"[b #f0c14b]{safe(frame.idiom)}[/]" if frame.idiom else ""
         )
-        self.query_one("#theatre-caption", Static).update(
-            f"[#c8c0b0]{safe(frame.caption)}[/]"
-        )
+        self.query_one("#theatre-caption", Static).update(f"[#c8c0b0]{safe(frame.caption)}[/]")
 
     # ------------------------------------------------------------- controls
 

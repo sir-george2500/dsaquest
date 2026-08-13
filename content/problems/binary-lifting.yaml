@@ -1,0 +1,149 @@
+# Problems that are really Climb in Powers of Two.
+#
+# The tell is always the same and always easy to miss: BOTH ends of the route
+# are handed to you, and there are many such questions. One question and a
+# plain walk is enough; many questions and the walk must be replaced by a
+# table. None of these statements may hint at powers of two, and none of them
+# may say "ancestor" without the learner having to work out that it is one.
+
+- id: elder-kinship-lines
+  pattern: binary-lifting
+  title: The Kinship Lines
+  difficulty: medium
+  statement: >-
+    A wood contains n glades joined by n-1 walking paths, every glade reachable
+    from every other, and the eldest glade is glade 1. The wardens keep kinship
+    by distance from the eldest: a glade's ELDER is its neighbour lying one step
+    closer to glade 1, and a glade's line of descent is the sequence of glades
+    from glade 1 down to it. Given q pairs of glades, report for each pair the
+    last glade their two lines of descent have in common.
+  constraints: |
+    1 <= n <= 200000
+    1 <= q <= 200000
+    the paths are given as n-1 lines "u v", in arbitrary order and orientation
+    a pair may name the same glade twice, and one glade may lie on the other's line
+  signals_present:
+    - both glades are given in each query, and there are up to 200000 queries
+    - the answer is the last glade shared by two routes running from one fixed glade
+    - n glades and n-1 paths with everything reachable, so each line of descent is unique
+    - the statement calls out the case where one glade lies on the other's line
+  decoy_signals:
+    - "\"the last shared glade\" invites walking both lines upwards one step at a time, which is correct and O(n) per query"
+    - "\"the eldest glade is glade 1\" reads as flavour rather than as the thing that makes a line of descent well defined"
+    - two routes converging invites two indices walking towards each other, which is a technique for a sorted row
+  expected_complexity: O((n + q) log n)
+  hints:
+    - text: >-
+        Write out the two lines of descent for one pair by hand. Where do they
+        stop agreeing, and what has to be true about the two glades' distances
+        from glade 1 before that question even makes sense?
+    - text: >-
+        They must be level first. Lifting the deeper one is a walk of up to n
+        steps — so ask instead how you could lift a glade by exactly k steps
+        without taking k steps.
+    - text: >-
+        Precompute, for every glade, where it lands after 1, 2, 4, 8 ... steps
+        upwards. Level the two, then step both upwards by the largest jumps that
+        still leave them on different glades.
+      reveals_pattern: true
+  why: >-
+    Two named endpoints and many queries is the shape. One query would be a
+    plain walk; 200000 of them makes the per-query walk O(nq) and forces a table
+    built once. The two called-out cases are the two places this is got wrong:
+    a pair naming the same glade, and one glade lying on the other's line, where
+    levelling alone already produces the answer and the second phase must not
+    run.
+  classic_ref: CPH 18.3, lowest common ancestor by method 1
+
+- id: kin-road-lengths
+  pattern: binary-lifting
+  title: How Far to Kin
+  difficulty: medium
+  statement: >-
+    A wood of n glades and n-1 walking paths, all reachable from one another.
+    For each of q pairs of glades, report the number of paths on the single
+    route between them. The pairs are given in advance in the input, but must be
+    answered in the order they are asked.
+  constraints: |
+    1 <= n <= 200000
+    1 <= q <= 200000
+    the paths are given as n-1 lines "u v"
+    a pair may name the same glade twice, in which case the answer is zero
+  signals_present:
+    - both endpoints are named in every query and there are up to 200000 queries
+    - the route between two glades is unique, since there are n glades and n-1 paths
+    - the quantity wanted is a distance rather than a set or a total
+    - the bound on q rules out one walk per query
+  decoy_signals:
+    - "\"distance between two places\" invites a shortest-path search, which on a structure with a unique route is far more machinery than the question needs"
+    - answering in the asked order invites believing the queries cannot be preprocessed, when it is the WOOD that gets preprocessed
+    - "\"the single route between them\" invites storing all pairwise distances, which is 4*10^10 numbers"
+  expected_complexity: O((n + q) log n)
+  hints:
+    - text: >-
+        Fix glade 1 as the top and write down how far each glade is from it.
+        Now draw the route between two glades. Which part of it did you count
+        twice?
+    - text: >-
+        The stretch above the last glade the two have in common. So the answer
+        is the two distances added, minus twice the distance to that shared
+        glade.
+    - text: >-
+        Precompute the depth of every glade and a table of where each glade
+        lands after 1, 2, 4, 8 ... steps upwards; then each query is a levelling
+        step, a descent, and one subtraction.
+      reveals_pattern: true
+  why: >-
+    The whole problem is one identity — depth(u) + depth(w) - 2 * depth(shared)
+    — and everything else exists to find the shared glade quickly enough. Note
+    that the identity does not care where the top is or whether depth starts at
+    0 or 1, since the offset cancels; what it cares about is that the two
+    depths and the shared depth were all measured the same way.
+  classic_ref: CPH 18.3, distances of nodes
+
+- id: wayfarers-kth-step
+  pattern: binary-lifting
+  title: The Wayfarer's k-th Step
+  difficulty: hard
+  statement: >-
+    A wood of n glades and n-1 walking paths, all reachable from one another. A
+    wayfarer answers q questions of the form "set out from glade u heading for
+    glade w, and name the glade you stand in after exactly k steps". Each step
+    crosses one path along the single route from u to w. If k is larger than the
+    number of paths on that route, report -1.
+  constraints: |
+    1 <= n <= 200000
+    1 <= q <= 200000
+    0 <= k <= n
+    the paths are given as n-1 lines "u v"
+  signals_present:
+    - both ends of the route are named, and there are up to 200000 such questions
+    - a fixed number of steps must be taken along a unique route
+    - the route may be longer than the answer, so the length of the route is needed first
+    - the bound on q rules out walking the route per question
+  decoy_signals:
+    - "\"the k-th place along a route\" invites materialising the route, which is O(n) per question"
+    - "\"exactly k steps\" invites a repeated-doubling argument on the number k, which is the right instinct pointed at the wrong object"
+    - the -1 case invites checking reachability, which is never in doubt here
+  expected_complexity: O((n + q) log n)
+  hints:
+    - text: >-
+        The route from u to w has two halves that meet at one glade. Which
+        half is k in, and what do you need to know to decide?
+    - text: >-
+        The length of the upward half, which is the distance from u to the
+        glade the two lines of descent share. If k fits in it, the answer lies
+        above u; otherwise count backwards from w instead.
+    - text: >-
+        With a table of where each glade lands after 1, 2, 4, 8 ... steps
+        upwards, both halves are the same operation: lift u by k, or lift w by
+        (total length - k).
+      reveals_pattern: true
+  why: >-
+    Two named endpoints again, and now the climb is used twice — once to find
+    the meeting glade and once to take the k steps. The second use is the point:
+    a climb of exactly k is a loop over the set bits of k, so k = 5 is one jump
+    of four and one of one rather than five steps. The decoy about doubling is
+    worth reading twice; doubling is exactly right, but it is the CLIMB that
+    doubles, not the arithmetic.
+  classic_ref: CPH 18.1 combined with 18.3 — k-th ancestor on a route

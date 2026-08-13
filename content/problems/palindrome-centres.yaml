@@ -1,0 +1,145 @@
+# Problems that are really Palindromes by Their Centres.
+#
+# The tell these train: the object sought is symmetric about a MIDDLE, so the
+# 2n-1 middles are the complete enumeration. None of these statements uses the
+# word for that object — they say "reads the same in both directions", which is
+# what a setter writes and what a learner must learn to hear.
+
+- id: mirror-hall-longest
+  pattern: palindrome-centres
+  title: The Mirror Hall
+  difficulty: medium
+  statement: >-
+    A corridor is tiled with n coloured tiles in a row. A stretch of
+    consecutive tiles is called balanced if reading its colours from left to
+    right gives the same sequence as reading them from right to left. Report
+    the length of the longest balanced stretch in the corridor, and the
+    position where it starts. If several are equally long, report the leftmost.
+  constraints: |
+    1 <= n <= 5000
+    colours are lowercase Latin letters
+    a single tile is balanced, so the answer is never less than 1
+  signals_present:
+    - the stretch must read identically in both directions
+    - the stretch is contiguous, so it has a well-defined middle
+    - n is 5000, which permits a quadratic scan and forbids anything cubic
+    - both a length and a position are wanted, so the winner must be tracked as it is found
+  decoy_signals:
+    - "\"same read either way\" invites comparing the corridor with its own reverse and taking the longest common stretch — which is famously WRONG, because a common stretch need not sit at mirrored positions"
+    - the two directions invite two pointers converging from the two ends of the corridor
+    - "\"longest such stretch\" invites a window that grows and shrinks, but the property is not monotone in a window at all"
+  expected_complexity: O(n^2)
+  hints:
+    - text: >-
+        Do not think about where a balanced stretch starts and ends. Think
+        about where its MIDDLE is. How many possible middles does a row of n
+        tiles have?
+    - text: >-
+        n tiles give n middles that sit on a tile and n - 1 that sit in a gap
+        between two tiles — 2n - 1 in all, and every balanced stretch belongs
+        to exactly one of them.
+    - text: >-
+        From each of the 2n - 1 middles, push both ends outwards while the
+        tiles agree, and keep the widest. Missing the in-between middles is
+        the classic failure: it silently loses every even-length answer.
+      reveals_pattern: true
+  why: >-
+    A contiguous stretch that reads the same both ways is defined by its centre,
+    and there are only 2n - 1 centres — so enumerating centres is a complete
+    search that costs a fraction of enumerating the O(n^2) pairs of endpoints.
+    The even case is the whole trap: an odd-only scan gets every sample right
+    that has an odd answer.
+  classic_ref: Longest palindromic substring; CPH 26 family
+
+- id: chime-symmetric-count
+  pattern: palindrome-centres
+  title: Counting the Chimes
+  difficulty: hard
+  statement: >-
+    A peal of n chimes is written down as a row of letters. Count the pairs of
+    positions (i, j) with i <= j such that the chimes from i to j inclusive
+    read the same forwards as backwards. Two such stretches that consist of the
+    same letters but start at different positions are counted separately.
+  constraints: |
+    1 <= n <= 10^5
+    lowercase Latin letters only
+    the answer can reach n * (n + 1) / 2, which is about 5 * 10^9
+  signals_present:
+    - every symmetric stretch must be counted, not merely the longest
+    - the count is by POSITION, so identical stretches at different places count twice
+    - n at 10^5 rules out expanding from every middle by hand
+    - the stated answer bound exceeds what a 32-bit integer holds
+  decoy_signals:
+    - "\"count the pairs (i, j)\" invites two pointers or a prefix-sum table over an array that does not exist"
+    - "\"read the same forwards as backwards\" invites fingerprinting every stretch and its reverse, which is O(n^2) stretches"
+    - counting identical-looking stretches invites a set, which would count DISTINCT ones and answer a different question
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Group the stretches by their middle. How many symmetric stretches share
+        one particular middle, if the furthest you can push outwards from it is
+        r steps?
+    - text: >-
+        Exactly r of them — one for each width from the smallest up to the
+        maximum. So the total is the sum of the maximum reach over all 2n - 1
+        middles, and no stretch is ever examined individually.
+    - text: >-
+        Compute the maximum reach at every middle in linear time by reusing the
+        rightmost symmetric stretch found so far: a middle inside it can be
+        seeded from its mirror, clamped to the part of that stretch which is
+        still ahead. Then sum the reaches into a 64-bit accumulator.
+      reveals_pattern: true
+  why: >-
+    Every symmetric stretch belongs to exactly one middle, and a middle with
+    reach r contributes exactly r of them — so the answer is the sum of the
+    reaches, with no enumeration at all. On a row of 10^5 identical letters that
+    sum is 5,000,050,000, which is the constraint's way of saying the
+    accumulator must be 64-bit.
+  classic_ref: Count palindromic substrings; Manacher's algorithm
+
+- id: ribbon-fold-queries
+  pattern: palindrome-centres
+  title: Folding the Ribbon
+  difficulty: hard
+  statement: >-
+    A ribbon carries n embroidered letters. A weaver submits q questions; each
+    names a first and a last position and asks whether the piece of ribbon
+    between them, inclusive, can be folded exactly in half so that every letter
+    lands on a letter identical to itself. Answer each question with yes or no.
+  constraints: |
+    1 <= n, q <= 2 * 10^5
+    1 <= first <= last <= n
+    lowercase Latin letters only
+    a piece of odd length folds about its middle letter, which lands on itself
+  signals_present:
+    - each question asks whether one named range reads identically in both directions
+    - q is as large as n, so each answer must cost far less than the length of the range
+    - the fold is about the range's own middle, which is determined by its two ends
+    - both parities occur, since the ranges may have odd or even length
+  decoy_signals:
+    - "\"answer many range questions\" invites a prefix-sum table, which cannot express symmetry"
+    - folding in half invites two pointers walking inwards from the two named ends, which is correct and costs the length of the range
+    - "\"identical letters\" invites comparing fingerprints of the range and of its reverse, which is a genuine alternative and pays a collision risk this problem does not need to take"
+  expected_complexity: O(n + q)
+  hints:
+    - text: >-
+        Every question names a range, and every range has exactly one middle.
+        If you already knew, for every middle, how far a symmetric stretch
+        reaches from it, could you answer a question without looking at a
+        single letter?
+    - text: >-
+        Yes: the range is symmetric exactly when the reach at its own middle is
+        at least half its length. Compute the reach at every middle once, and
+        each question becomes one comparison.
+    - text: >-
+        Precompute the two reach arrays — one for middles on a letter, one for
+        middles in a gap — in linear time, then index the correct array by the
+        parity of the range's length. Getting the index of the gap array wrong
+        by one is the usual bug.
+      reveals_pattern: true
+  why: >-
+    Q independent questions about symmetry, each answerable in O(1) once the
+    reach at every middle is known. The parity split is the difficulty: the
+    middle of an even-length range sits in a gap and is indexed differently, so
+    a solution that handles only one array is right on half the questions.
+  classic_ref: Manacher's radii as an O(1) palindrome oracle

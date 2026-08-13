@@ -994,6 +994,7 @@ stages:
     trial_problem_ids: [signal-run-k-frequencies, courier-fuel-window]
     secret:
       id: window-invariant
+      animation: window-invariant
       name: Shrink With While
       idiom: "while (invalid) evict(a[l++]);"
       memorise: true

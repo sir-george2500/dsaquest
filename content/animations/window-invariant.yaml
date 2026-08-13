@@ -1,0 +1,99 @@
+id: window-invariant
+title: The window breathes
+secret: window-invariant
+pattern: sliding-window
+summary: >-
+  Longest run with at most 2 distinct values. Watch what the left pointer does
+  when the third value arrives.
+kind: array
+data: [1, 2, 1, 3, 3, 2]
+labels: ["0", "1", "2", "3", "4", "5"]
+idiom: "while (distinct > k) { if (--freq[a[l]] == 0) --distinct; ++l; }"
+note: "distinct = 0   best = 0"
+
+steps:
+  - say: >-
+      Both ends start at the left and the window is empty. l is where the
+      window begins, r is the next thing to admit.
+    point: {l: 0, r: 0}
+
+  - say: >-
+      Admit a[0] = 1. One distinct value, so the window is legal and its
+      length is 1. That is the best so far.
+    mark: {0: "in"}
+    span: [0, 0]
+    note: "distinct = 1   best = 1"
+
+  - say: >-
+      Admit a[1] = 2. Two distinct values, still within the budget of two.
+      The window [0,1] is legal and longer.
+    point: {r: 1}
+    mark: {1: "in"}
+    span: [0, 1]
+    note: "distinct = 2   best = 2"
+
+  - say: >-
+      Admit a[2] = 1. It is already in the window, so the count of distinct
+      values does not move. Growing is free when the value is not new.
+    point: {r: 2}
+    mark: {2: "in"}
+    span: [0, 2]
+    note: "distinct = 2   best = 3"
+
+  - say: >-
+      Admit a[3] = 3. Now three distinct values live in the window and the
+      constraint is broken. This is the moment the pattern exists for.
+    point: {r: 3}
+    mark: {3: "active"}
+    span: [0, 3]
+    note: "distinct = 3   BROKEN, the budget is 2"
+
+  - say: >-
+      Evict a[0] = 1 from the left. Its count drops to one, not zero — there
+      is still a 1 at index 2 — so distinct stays at three. The window is
+      still broken.
+    mark: {0: "out"}
+    point: {l: 1}
+    span: [1, 3]
+    note: "distinct = 3   STILL broken"
+
+  - say: >-
+      This is why shrinking is a while loop and not an if. One step was not
+      enough. Evict a[1] = 2; its count reaches zero, so distinct falls to two
+      and the window is legal again.
+    mark: {1: "out"}
+    point: {l: 2}
+    span: [2, 3]
+    note: "distinct = 2   legal again, length 2"
+
+  - say: >-
+      Admit a[4] = 3, which is already present. Distinct is unchanged and the
+      window grows to length 3 — equal to the best, not better.
+    point: {r: 4}
+    mark: {4: "in"}
+    span: [2, 4]
+    note: "distinct = 2   best = 3"
+
+  - say: >-
+      Admit a[5] = 2. Three distinct again, so shrink from the left until it
+      is legal: a[2] = 1 leaves and its count hits zero.
+    point: {r: 5}
+    mark: {5: "active"}
+    span: [2, 5]
+    note: "distinct = 3   broken"
+
+  - say: >-
+      a[2] = 1 evicted, distinct back to two. The window [3,5] is legal and
+      its length is 3.
+    mark: {2: "out"}
+    point: {l: 3}
+    span: [3, 5]
+    note: "distinct = 2   best = 3"
+
+  - say: >-
+      r has reached the end, so the scan is over. The answer is 3. Notice
+      that l only ever moved right — every index entered once and left once,
+      which is why two nested loops still cost O(n).
+    mark: {3: "answer", 4: "answer", 5: "answer"}
+    span: [3, 5]
+    note: "answer = 3   each index entered once and left once"

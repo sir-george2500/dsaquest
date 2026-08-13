@@ -1,0 +1,193 @@
+# Problems that are really Polynomial String Hashing.
+#
+# The tell these train: ARBITRARY ranges of a string must be compared with each
+# other, in any order, many times — which is what no border array and no prefix
+# tree can do. Each statement is also chosen so that the number of comparisons
+# is large enough for the birthday bound to matter, because that is the half of
+# the technique students never learn.
+
+- id: ward-stone-twin-panels
+  pattern: string-hashing
+  title: The Twin Panels
+  difficulty: medium
+  statement: >-
+    A ward stone carries one long line of engraved letters. A conservator
+    submits q enquiries; each names two starting positions and a length, and
+    asks whether the two stretches of engraving beginning at those positions,
+    of that length, carry exactly the same letters. Answer every enquiry with
+    yes or no.
+  constraints: |
+    1 <= n <= 2 * 10^5
+    1 <= q <= 2 * 10^5
+    both stretches always lie entirely inside the line
+    lowercase Latin letters only
+  signals_present:
+    - two stretches at arbitrary positions must be compared for equality
+    - the pairs are unrelated to each other, so no ordering or shared structure can be exploited
+    - q is as large as n, so each answer must cost far less than the length compared
+    - the only relation ever asked about is equality
+  decoy_signals:
+    - many range queries invite a prefix-sum table, which answers "how much" and never "the same text"
+    - "\"beginning at these positions\" invites two pointers walking the two stretches, which is O(length) per enquiry"
+    - the repeated queries invite sorting the queries, which buys nothing when the pairs are unrelated
+  expected_complexity: O(n + q)
+  hints:
+    - text: >-
+        Comparing the letters costs the length of the stretch. You need a single
+        number per stretch such that equal stretches always produce equal
+        numbers — and you need to be able to produce that number for any stretch
+        without walking it.
+    - text: >-
+        Read each prefix of the line as a number in some base, modulo something.
+        The value of a stretch is then the difference of two prefix values, once
+        one of them has been scaled by a power of the base.
+    - text: >-
+        Build h[i+1] = h[i] * B + s[i] and the powers of B, both modulo two
+        different primes, and compare the pair. One modulus near 10^9 is not
+        enough here: 2 * 10^5 enquiries is well past the point where an
+        accidental collision becomes likely.
+      reveals_pattern: true
+  why: >-
+    Two arbitrary interior ranges, compared for nothing but equality, many
+    times. That is the exact shape this technique exists for — a border array
+    relates a prefix to a suffix and a prefix tree indexes from the start of a
+    word, and neither has any entry point into the middle of a line.
+  classic_ref: CPH 26.2 (string hashing); the standard substring-equality query
+
+- id: chorus-line-repeats
+  pattern: string-hashing
+  title: The Longest Refrain
+  difficulty: hard
+  statement: >-
+    A chorister has written out one long line of syllables. A refrain is any
+    stretch of consecutive syllables that occurs at least twice in the line;
+    the two occurrences may share syllables with each other. Report the length
+    of the longest refrain, or 0 if no stretch occurs twice.
+  constraints: |
+    1 <= n <= 10^5
+    lowercase Latin letters only
+    occurrences may overlap
+  signals_present:
+    - some stretch must be shown to occur twice, with no candidate given in advance
+    - all stretches of a given length must be compared with each other for equality
+    - "\"longest such length\" is monotone: if a length repeats, so does every shorter one"
+    - n at 10^5 makes the n^2 stretches impossible to write down but not impossible to fingerprint
+  decoy_signals:
+    - "\"longest\" plus monotone invites a search on the answer alone, without saying how the check is done"
+    - repeated stretches invite a frequency map keyed by the stretch itself, which costs the length of every stretch
+    - two occurrences invite two pointers converging, which has nothing to converge on here
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        If some stretch of length L occurs twice, then some stretch of length
+        L - 1 does too — take the first L - 1 syllables of it. So the property
+        is monotone in L and the largest L can be searched for.
+    - text: >-
+        The check for a fixed L is: do any two of the n - L + 1 windows of
+        length L carry the same syllables? That is a question about equality
+        between many windows, which is a set of numbers if you can price each
+        window at O(1).
+    - text: >-
+        Binary search L; for each L drop every window's double fingerprint into
+        a hash set and stop at the first repeat. Note what you are doing to
+        yourself: 10^5 windows compared with EACH OTHER is the birthday case,
+        so one modulus near 10^9 will collide by accident about five times.
+      reveals_pattern: true
+  why: >-
+    Every window of a fixed length must be compared against every other, which
+    is the case where a single modulus fails by accident rather than by attack.
+    The monotone outer search is the easy half; recognising that the inner check
+    is an all-pairs equality test — and pricing it correctly — is the problem.
+  classic_ref: The longest repeated substring; CPH 26.2 with binary search
+
+- id: palimpsest-common-passage
+  pattern: string-hashing
+  title: The Palimpsest
+  difficulty: hard
+  statement: >-
+    Two manuscripts have been recovered. Somewhere in each of them the same
+    passage was copied from a common source, but neither scribe recorded where.
+    Find the length of the longest stretch of consecutive letters that appears
+    in both manuscripts. If they share nothing at all, report 0.
+  constraints: |
+    1 <= |A|, |B| <= 10^5
+    lowercase Latin letters only
+    the shared stretch may appear anywhere in either manuscript
+  signals_present:
+    - a stretch must be found that occurs in both of two unrelated strings
+    - the longest such length is asked for, and the property is monotone in the length
+    - the comparison is between arbitrary interior stretches of two different strings
+    - both lengths reach 10^5, ruling out comparing every pair of positions
+  decoy_signals:
+    - two sequences and a longest shared thing invites the longest common SUBSEQUENCE, which is a quadratic dynamic program and a different answer
+    - "\"appears in both\" invites intersecting two sets of letters or of words"
+    - the two manuscripts invite two pointers walking them together, which assumes an alignment that does not exist
+  expected_complexity: O((|A| + |B|) log n)
+  hints:
+    - text: >-
+        If a stretch of length L is shared, so is a stretch of length L - 1. So
+        the answer can be searched for, and the only real question is how to
+        check one L quickly.
+    - text: >-
+        For a fixed L, put every window of length L from the first manuscript
+        into a set, then ask whether any window of the second is in it. That is
+        pure equality testing between stretches at arbitrary positions.
+    - text: >-
+        Binary search L, and price each window at O(1) with a prefix table of
+        polynomial values built for each manuscript. Use two moduli — this is
+        an all-pairs comparison across 2 * 10^5 windows and a single one near
+        10^9 will produce a false match by accident.
+      reveals_pattern: true
+  why: >-
+    Consecutive letters, so the answer is a stretch and not a subsequence; two
+    unrelated strings, so no border array relates them; and a monotone length,
+    so the outer loop is a search. What is left is comparing arbitrary windows
+    for equality at O(1), which is what this technique is.
+  classic_ref: Longest common substring by binary search and hashing; CPH 26.2
+
+- id: mosaic-tile-blocks
+  pattern: string-hashing
+  title: The Mosaic Floor
+  difficulty: expert
+  statement: >-
+    A floor is laid out as a grid of r rows and c columns, each cell holding
+    one coloured tile from a small palette. The restorer wants to know how many
+    DIFFERENT square blocks of exactly k by k tiles the floor contains: two
+    blocks count as the same when every corresponding cell holds the same
+    colour. Report that number.
+  constraints: |
+    1 <= r, c <= 1000
+    1 <= k <= min(r, c)
+    colours are lowercase Latin letters
+    there are (r - k + 1) * (c - k + 1) blocks in total, up to 10^6 of them
+  signals_present:
+    - up to 10^6 blocks must be compared with each other for exact equality
+    - equality is the only relation asked about; no ordering and no counting inside a block
+    - each block has k^2 cells, so materialising them costs 10^12 in the worst case
+    - the structure is two-dimensional, which no linear string scan addresses
+  decoy_signals:
+    - a grid and a k by k window invites two-dimensional prefix sums, which compare totals rather than contents
+    - "\"how many different\" invites a frequency map keyed by the block itself, which is exactly the cost you cannot pay"
+    - the sliding square invites a window over the rows, which maintains the wrong thing
+  expected_complexity: O(r * c)
+  hints:
+    - text: >-
+        Collapse one dimension first. If every horizontal run of k cells in a
+        row can be reduced to a single number, the grid becomes a grid of
+        numbers and a k by k block becomes a vertical run of k of them.
+    - text: >-
+        Apply the same idea twice: fingerprint each row's windows of width k,
+        then fingerprint each column of those fingerprints over a height of k.
+        Every block is now one number, or better, one pair of numbers.
+    - text: >-
+        Two independent moduli in each direction, and a set of the resulting
+        pairs. With 10^6 blocks compared against each other, a single modulus
+        near 10^9 is guaranteed to collide — the birthday bound at that count
+        is not a risk, it is a certainty.
+      reveals_pattern: true
+  why: >-
+    A million blocks of k^2 cells each, compared only for equality: the whole
+    problem is pricing one block at O(1). Rows first, then columns of row
+    values, is the same polynomial idea applied twice, and the block count is
+    what makes the choice of modulus part of the algorithm rather than a detail.
+  classic_ref: Two-dimensional hashing; CPH 26.2 extended to grids

@@ -1,0 +1,237 @@
+# Problems that are really The Queue Is Already Sorted.
+#
+# The load-bearing sentence in every one of these is the one saying that all
+# moves cost the same — usually written as scenery ("each leg takes a day").
+# The decoys go the other way: a statement that mentions money, fatigue or
+# tolls somewhere and then does not charge them, so the reader reaches for a
+# heap that is not needed.
+
+- id: courier-fewest-legs
+  pattern: bfs-shortest-path
+  title: The Courier's Legs
+  difficulty: easy
+  statement: >-
+    A courier guild serves n depots joined by m two-way roads. A courier may
+    ride any road in a day, and the guild pays her the same daily wage whatever
+    road she takes and however long it is. She must carry a letter from depot 1
+    to depot n. The guild wants the smallest number of days the delivery can
+    take, and refuses to pay for a letter that cannot arrive at all. Report the
+    number of days, or -1 if depot n cannot be reached.
+  constraints: |
+    1 <= n <= 200000
+    0 <= m <= 200000
+    every road may be ridden in either direction
+    the same pair of depots may be joined by several roads
+  signals_present:
+    - the answer is the fewest legs of a journey
+    - the wage is the same for every road, and that is said explicitly
+    - the road lengths are mentioned only to be dismissed
+    - unreachable is a defined answer, so the sweep must distinguish it
+  decoy_signals:
+    - "\"however long it is\" mentions length, which is the single word that would have forced a heap"
+    - a source, a target and a cost to minimise is the standard shape of a weighted routing question
+    - n and m at 2*10^5 fits both the queue and the heap, so the bounds decide nothing
+  expected_complexity: O(n + m)
+  hints:
+    - text: >-
+        Two sentences are fighting. One mentions how long a road is; the other
+        says the guild does not care. Which one is the cost function?
+    - text: >-
+        Every day costs one, so the total cost of a journey is exactly the
+        number of roads on it. There is nothing to order the frontier by that
+        it is not already ordered by.
+    - text: >-
+        Keep the frontier in a queue, write each depot's day count at the
+        moment you first put it in, and never write it twice.
+      reveals_pattern: true
+  why: >-
+    The road lengths are a decoy planted in plain sight: the wage sentence makes
+    every move cost exactly one, so the length of a path is the number of its
+    edges. That is the precise condition under which vertices leave a queue in
+    order of distance, and the first arrival at a depot is already the cheapest.
+  classic_ref: CPH 12 (BFS distances); CSES Message Route
+
+- id: plague-nearest-well
+  pattern: bfs-shortest-path
+  title: The Nearest Well
+  difficulty: medium
+  statement: >-
+    A city is mapped as a grid of r rows and c columns. Each cell is open
+    ground, a wall, or a well. A resident may walk from a cell to any of the
+    four cells sharing an edge with it, provided that cell is not a wall, and
+    each such step takes one minute. For every open cell, report the number of
+    minutes to the nearest well; print -1 for an open cell that can reach no
+    well at all. Wells themselves report 0.
+  constraints: |
+    1 <= r, c <= 1000
+    there may be no wells, or as many as 10^6 of them
+    walls may seal a region off entirely
+    cells are '.' open, '#' wall, 'W' well
+  signals_present:
+    - the distance from the NEAREST of several starting points, for every cell at once
+    - each step is declared to take the same one minute
+    - a grid with four-way movement, which makes every edge a unit edge
+    - unreachable is a defined output value
+  decoy_signals:
+    - "\"for every open cell\" invites one search per cell, or one search per well, both of which are far too slow"
+    - a grid of 10^6 cells with up to 10^6 sources reads like a problem that needs a clever data structure
+    - the wells being scattered invites sorting them or halving over distance
+  expected_complexity: O(r*c)
+  hints:
+    - text: >-
+        Running one search from each of a million wells is a million sweeps. Try
+        to answer every cell in ONE sweep instead — what would you have to put
+        in the frontier before it starts?
+    - text: >-
+        Put every well in the frontier at distance zero. The sweep then grows
+        outward from all of them together, and the first time it touches a cell
+        is by definition from the nearest well.
+    - text: >-
+        Seed the queue with all the wells, mark them zero, and run the ordinary
+        unit-step sweep; nothing else about the loop changes.
+      reveals_pattern: true
+  why: >-
+    Every step costs one minute, so the frontier is in distance order for free.
+    The only thing that differs from a single-source sweep is the
+    initialisation: seeding the queue with every well makes the single pass
+    answer "distance to the nearest well" for every cell, in the same O(r*c) a
+    single source would have cost.
+  classic_ref: multi-source BFS; USACO Silver grid distance family
+
+- id: knight-errand
+  pattern: bfs-shortest-path
+  title: The Errant Knight
+  difficulty: medium
+  statement: >-
+    A knight stands on square (1, 1) of an n by n board and must reach square
+    (x, y). In one move it steps two squares along one axis and one square along
+    the other, in any of the eight combinations, and may never leave the board.
+    Some squares are broken and may not be landed on, though the knight may pass
+    over them freely since it does not touch the squares between. Report the
+    fewest moves needed, or -1 if the destination cannot be reached.
+  constraints: |
+    1 <= n <= 1000
+    0 <= number of broken squares <= n*n
+    the starting square and the destination are never broken
+    all eight move shapes are always available
+  signals_present:
+    - the fewest moves, with every move costing the same by construction
+    - the positions are the states and the legal moves are the edges
+    - the neighbours are arithmetic rather than a stored list
+    - n*n up to 10^6 states, each touched once
+  decoy_signals:
+    - the board and the coordinates invite a closed-form or a two-dimensional table
+    - broken squares read like an obstacle-avoidance cost, which would suggest weighting them
+    - "\"may pass over them freely\" is scenery that changes nothing about the moves"
+  expected_complexity: O(n^2)
+  hints:
+    - text: >-
+        There are n*n possible positions and eight ways to leave each one. Draw
+        that as a network before you think about geometry.
+    - text: >-
+        Every move costs exactly one, so the cost of a route is the number of
+        moves on it. The first time you arrive at a square is therefore the
+        cheapest time you will ever arrive at it.
+    - text: >-
+        Eight offsets instead of four, a distance array the shape of the board
+        initialised to -1, and one queue.
+      reveals_pattern: true
+  why: >-
+    The board is an implicit graph: squares are vertices, the eight knight
+    shapes are edges, and every one of them costs the same single move. Nothing
+    about the geometry matters once that is seen, which is why the broken
+    squares are only a neighbour test and not a weight.
+  classic_ref: knight moves on a board; classic implicit-graph BFS
+
+- id: lock-dial-turns
+  pattern: bfs-shortest-path
+  title: The Sealed Dial
+  difficulty: hard
+  statement: >-
+    A strongbox is closed by four dials, each showing a digit from 0 to 9. One
+    action turns a single dial up or down by one, and 0 turns down to 9 and 9
+    turns up to 0. The box begins at 0000 and opens at a given combination, but
+    the lock jams permanently if the dials ever show any of k forbidden
+    readings. Report the fewest actions that open the box, or -1 if it cannot be
+    opened without jamming.
+  constraints: |
+    the combination and every forbidden reading are exactly four digits
+    0 <= k <= 10000
+    the starting reading 0000 may itself be forbidden
+    each action changes exactly one dial by exactly one step
+  signals_present:
+    - the states are configurations rather than numbered places
+    - every action costs exactly one, and there are eight of them from each state
+    - the state space is bounded and small enough to enumerate
+    - forbidden states are a filter on the neighbours, not a cost
+  decoy_signals:
+    - four independent dials invite solving each one separately and adding
+    - the wrap-around invites modular arithmetic as the whole solution
+    - "\"fewest actions\" with forbidden states reads like a search that needs pruning or heuristics"
+  expected_complexity: O(10^4 * 8)
+  hints:
+    - text: >-
+        Treat a reading of the dials as a place you can stand in. How many such
+        places are there, and how many places are one action away from each?
+    - text: >-
+        Ten thousand places, eight neighbours each. Every action costs the same,
+        so the cheapest way to reach a reading is the one with the fewest
+        actions.
+    - text: >-
+        Put the forbidden readings into a claimed set before you start, so the
+        sweep simply never enters them, then run the ordinary unit-cost sweep
+        from 0000.
+      reveals_pattern: true
+  why: >-
+    Nothing here is a place on a map, but the structure is identical: 10000
+    states, eight unit-cost transitions from each, and a question asking for the
+    fewest transitions. Solving the dials independently fails because a
+    forbidden reading couples them, and that coupling is exactly what makes it a
+    single network rather than four small ones.
+  classic_ref: LeetCode 752 family; state-space BFS
+
+- id: evacuation-route-print
+  pattern: bfs-shortest-path
+  title: Print the Way Out
+  difficulty: medium
+  statement: >-
+    A mine has n chambers joined by m two-way passages; walking any passage
+    takes one shift, whatever its length. Miners are trapped in chamber s and
+    the only exit is chamber t. The foreman needs the actual sequence of
+    chambers on a quickest route, not merely how long it takes, because the
+    rescue team must be told where to place lamps. Print any one quickest
+    sequence starting with s and ending with t, or the single word IMPOSSIBLE.
+  constraints: |
+    2 <= n <= 200000
+    0 <= m <= 200000
+    1 <= s, t <= n and s is never equal to t
+    several quickest routes may exist and any one is accepted
+  signals_present:
+    - the route itself is required, not only its length
+    - every passage takes the same one shift, said explicitly
+    - any one optimal answer is accepted, which rules out an optimisation over routes
+    - IMPOSSIBLE is a defined output
+  decoy_signals:
+    - "\"whatever its length\" mentions length in the same sentence that discards it"
+    - printing a sequence invites building it forwards and searching over choices
+    - "\"any one quickest sequence\" reads like an ordering question rather than a distance one"
+  expected_complexity: O(n + m)
+  hints:
+    - text: >-
+        Solve the easier question first: how many shifts is the quickest route?
+        The sequence falls out of the same sweep if you record one extra thing.
+    - text: >-
+        Every time you claim a chamber for the first time, remember which
+        chamber you claimed it from. That single array is enough to rebuild the
+        whole route afterwards.
+    - text: >-
+        Run the unit-cost sweep from s recording a parent for each chamber, then
+        walk parents back from t and reverse what you collected.
+      reveals_pattern: true
+  why: >-
+    The distance and the route are the same computation: the parent recorded at
+    the moment a chamber is first claimed is on some quickest route by
+    construction, because the first arrival is already the cheapest. "How far"
+    and "which way" get confused constantly, and the answer is that one array
+    separates them.
+  classic_ref: CSES Message Route; BFS with parent reconstruction

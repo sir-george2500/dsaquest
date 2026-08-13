@@ -1,0 +1,291 @@
+# Problems that are really The Cheapest Frontier First.
+#
+# The recognition being trained is a single question: does every edge cost the
+# same? So every statement here puts a number on the edges, and every decoy
+# pushes towards counting them instead. Two of these deliberately contain
+# weights a queue would answer plausibly and wrongly, and one contains negative
+# numbers, which rules the heap out in its turn.
+
+- id: toll-road-crossing
+  pattern: dijkstra-weighted
+  title: The Toll Roads
+  difficulty: medium
+  statement: >-
+    A realm has n towns joined by m two-way roads. Each road charges a toll, and
+    tolls differ from road to road. A merchant starting in town 1 wants to know,
+    for every town, the smallest total toll she would pay to arrive there. Some
+    towns may be unreachable, and those must be reported as -1. Report one
+    number per town, town 1 first.
+  constraints: |
+    1 <= n <= 100000
+    0 <= m <= 200000
+    0 <= toll <= 10^9
+    a total may exceed 2*10^9, and several roads may join the same two towns
+  signals_present:
+    - each edge carries a price and the answer is a total of prices
+    - the prices differ from one edge to another
+    - the smallest total from one source to every destination
+    - a single total can pass 2*10^9, so the accumulator must be 64-bit
+  decoy_signals:
+    - "\"for every town\" invites an all-pairs table, which is impossible at n = 10^5"
+    - the two-way roads and a single source read like a plain unit-cost sweep
+    - a toll of 0 being allowed invites treating those roads as free steps and the rest as walls
+  expected_complexity: O((n + m) log n)
+  hints:
+    - text: >-
+        Count the numbers in the statement. Every road has one, and they are not
+        the same. What does that do to the claim that the first arrival at a
+        town is the cheapest arrival?
+    - text: >-
+        It destroys it. A town reached over one expensive road may be reachable
+        far more cheaply over three cheap ones, so the frontier has to be kept
+        in order of cost rather than in order of arrival.
+    - text: >-
+        Keep the frontier in a min-heap keyed by the running total, take the
+        cheapest unfinished town each time, and skip any copy whose stored total
+        is worse than the one you have already recorded.
+      reveals_pattern: true
+  why: >-
+    Different numbers on different edges is the whole signal. Once the tolls
+    differ, the order a queue returns towns in has nothing to do with cost, so
+    the frontier must be ordered explicitly. The tolls being non-negative is
+    what licenses settling a town permanently the first time it comes off the
+    heap.
+  classic_ref: CPH 13 (Dijkstra); CSES Shortest Routes I
+
+- id: ferry-and-foot
+  pattern: dijkstra-weighted
+  title: Ferry and Foot
+  difficulty: medium
+  statement: >-
+    An archipelago has n landings joined by m two-way crossings. A crossing is
+    either a causeway, which may be walked for nothing, or a ferry, which costs
+    one coin each time it is taken. A traveller begins at landing 1 and wishes
+    to reach landing n spending as few coins as possible; she has unlimited time
+    and does not care how many crossings she makes. Report the fewest coins, or
+    -1 if landing n cannot be reached.
+  constraints: |
+    2 <= n <= 200000
+    0 <= m <= 400000
+    each crossing costs either 0 or 1 coin, given as that number
+    the answer never exceeds n
+  signals_present:
+    - the edges carry a cost and the answer is a total of costs
+    - exactly two costs appear in the whole input, and one of them is zero
+    - the number of crossings taken is explicitly not the objective
+    - m at 4*10^5, so a log factor is affordable but not obviously required
+  decoy_signals:
+    - "\"does not care how many crossings she makes\" is the sentence that rules out counting edges, and it reads like a throwaway"
+    - free causeways invite contracting them first and then counting ferries, which is a different and harder algorithm
+    - two kinds of edge invite splitting the input into two graphs
+  expected_complexity: O(n + m)
+  hints:
+    - text: >-
+        A free crossing is still a crossing. Ask what the cost of a route is,
+        and then ask whether the route with the fewest crossings is the same as
+        the route with the smallest cost.
+    - text: >-
+        It is not. A route of twenty causeways costs nothing while a route of
+        one ferry costs a coin, so the frontier must be ordered by coins, not by
+        crossings.
+    - text: >-
+        With only two possible costs the heap is overkill: keep the frontier in
+        a double-ended queue, put a vertex reached over a free crossing at the
+        FRONT and one reached over a ferry at the BACK, and the queue stays
+        sorted by cost.
+      reveals_pattern: true
+  why: >-
+    Two distinct costs are already unequal costs, so counting crossings answers
+    a different question and answers it wrongly. Zero-weight edges are also the
+    special case where the heap can be dropped: pushing to the front for a free
+    edge and the back for a paid one keeps the frontier holding at most two
+    distinct totals at a time, which is what a heap was buying.
+  classic_ref: 0-1 BFS; CPH 13 (Dijkstra) with the deque specialisation
+
+- id: debt-ledger-loop
+  pattern: dijkstra-weighted
+  title: The Ledger of Debts
+  difficulty: hard
+  statement: >-
+    A guild ledger records n counting houses and m one-way transfers. Transfer
+    a to b changes the courier's purse by w, and w may be negative, meaning the
+    house at b pays him on arrival. The courier starts at house 1 with an empty
+    purse and wants the smallest final purse at house n. Report that number,
+    UNREACHABLE if house n cannot be reached, or UNBOUNDED if he can make his
+    purse as small as he likes by walking in circles.
+  constraints: |
+    1 <= n <= 2500
+    0 <= m <= 5000
+    -10^9 <= w <= 10^9
+    a circuit of transfers may total a negative amount
+  signals_present:
+    - the edges carry a cost and the answer is a total of costs
+    - some costs are explicitly negative
+    - the answer may be unbounded, which only a negative circuit can cause
+    - n at 2500 and m at 5000, which is small enough for a round per vertex
+  decoy_signals:
+    - a single source and a total to minimise is the exact shape of an ordinary heap sweep, which is wrong here
+    - "\"as small as he likes\" invites searching for a circuit directly"
+    - the tiny bounds invite an all-pairs table, which would work and is not what the wording asks for
+  expected_complexity: O(n*m)
+  hints:
+    - text: >-
+        Look at the sign of w before anything else. The rule that lets you fix a
+        house's total the moment it is the cheapest unfinished one depends on
+        something being true of every edge. Is it true here?
+    - text: >-
+        It is not. A cheap house can still be improved later by a route that
+        goes somewhere expensive first and then collects a negative transfer, so
+        nothing may be settled permanently.
+    - text: >-
+        Relax every transfer, n - 1 times over. Any route uses at most n - 1
+        transfers, so after that nothing can improve — and if an n-th pass still
+        improves something, a negative circuit exists.
+      reveals_pattern: true
+  why: >-
+    A single negative edge withdraws the guarantee that the smallest tentative
+    total is final, which is the one claim a heap sweep is built on. With no
+    order to exploit, the fallback simply relaxes every edge n - 1 times, and
+    the extra pass that still improves something is the proof of an unbounded
+    answer. The small bounds are the setter telling you O(n*m) is intended.
+  classic_ref: CPH 13 (Bellman-Ford and negative cycles); CSES High Score
+
+- id: fuel-stops-layered
+  pattern: dijkstra-weighted
+  title: The Fuel Ration
+  difficulty: hard
+  statement: >-
+    A courier drives between n stations joined by m two-way stretches, each
+    stretch costing a certain number of minutes and burning one unit of fuel.
+    The tank holds at most k units and begins full. Certain stations have a
+    depot where the tank is refilled to k, taking f minutes each time. Starting
+    at station 1 with a full tank, report the fewest minutes to reach station n,
+    or -1 if it cannot be done.
+  constraints: |
+    2 <= n <= 20000
+    0 <= m <= 60000
+    1 <= k <= 10
+    1 <= minutes per stretch <= 10^6, 0 <= f <= 10^6
+  signals_present:
+    - each edge carries a duration and the answer is a total duration
+    - the durations differ, so counting stretches answers a different question
+    - the state carries something besides the station, namely the fuel remaining
+    - k is tiny, which is the setter sizing the extra dimension for you
+  decoy_signals:
+    - the fuel limit reads like a feasibility constraint to be searched over rather than part of the state
+    - refuelling costing minutes invites treating depots as a separate optimisation
+    - n*k up to 200000 looks like an ordinary graph size, which is exactly the point
+  expected_complexity: O((n*k + m*k) log (n*k))
+  hints:
+    - text: >-
+        Two identical arrivals at the same station are not identical if one of
+        them has more fuel left. What, then, is a "place" in this problem?
+    - text: >-
+        A place is a pair: which station, and how much fuel remains. There are
+        n*(k+1) of them, k is at most ten, and the edges between them are the
+        stretches and the refills.
+    - text: >-
+        Build the network over those pairs and run the ordinary cheapest-first
+        sweep on it, with a min-heap keyed by minutes.
+      reveals_pattern: true
+  why: >-
+    The durations differ, so this is a cost total and not a count of stretches.
+    The fuel does not change the algorithm at all — it changes what a vertex is.
+    Once the vertex is (station, fuel) the constraint disappears into the
+    adjacency, which is the standard move whenever a statement adds a small
+    resource to carry.
+  classic_ref: layered-state shortest path; CSES Flight Discount family
+
+- id: night-watch-relay
+  pattern: dijkstra-weighted
+  title: The Night Watch Relay
+  difficulty: medium
+  statement: >-
+    A message must pass from post 1 to post n across a chain of watchposts
+    joined by m two-way signal lines. Each line has a relay delay in seconds,
+    and the delays are not all equal. The captain has been reporting the route
+    that uses the fewest lines, and his messages keep arriving late. Report the
+    smallest total delay from post 1 to post n, and separately the total delay
+    along a route that uses as few lines as possible, so the captain can see the
+    difference. Both are guaranteed to exist.
+  constraints: |
+    2 <= n <= 100000
+    1 <= m <= 200000
+    1 <= delay <= 10^9
+    post n is always reachable from post 1
+  signals_present:
+    - each edge carries a delay and one of the answers is a total of delays
+    - the delays are explicitly stated not to be equal
+    - the two answers asked for are the two different questions, side by side
+    - a total may exceed 2*10^9
+  decoy_signals:
+    - the second half of the question genuinely IS a fewest-edges sweep, which makes it easy to answer the first half the same way
+    - "\"a chain of watchposts\" suggests a line, and the network is not one"
+    - the captain's mistake is stated in the problem, which readers skim past as flavour
+  expected_complexity: O((n + m) log n)
+  hints:
+    - text: >-
+        The statement is asking for two numbers, and they come from two
+        different algorithms. Say out loud what each one is minimising.
+    - text: >-
+        One minimises the sum of the delays; the other minimises the number of
+        lines and then merely reports the sum along that route. The second is
+        the captain's error, written down.
+    - text: >-
+        A min-heap ordered by total delay gives the first; an ordinary queue
+        with a parent array gives the route for the second, whose delay you then
+        add up.
+      reveals_pattern: true
+  why: >-
+    This is the whole boundary in one statement. Counting lines and adding
+    delays are different objectives, and the route with the fewest lines is a
+    genuine route whose total is simply not the smallest. Nothing in the output
+    of the second computation would ever tell you it was wrong — which is why
+    the statement had to ask for both.
+  classic_ref: CPH 13 (weighted vs unweighted shortest paths)
+
+- id: beacon-grid-tolls
+  pattern: dijkstra-weighted
+  title: The Beacon Grid
+  difficulty: medium
+  statement: >-
+    A courier crosses a grid of r rows and c columns, starting at the top-left
+    cell and finishing at the bottom-right. Moving into a cell costs the number
+    written in that cell, and moving out of one costs nothing; the starting cell
+    is paid for as well. She may step to any of the four cells sharing an edge
+    with her current cell. Report the smallest total she can pay.
+  constraints: |
+    1 <= r, c <= 500
+    0 <= the number in a cell <= 1000
+    the grid may contain repeated numbers, including many zeros
+    movement is allowed in all four directions, including upwards and leftwards
+  signals_present:
+    - a number attached to each move, and the answer is a total of those numbers
+    - the numbers differ from cell to cell
+    - movement is four-way, so the route may double back and a table over rows will not do
+    - r*c up to 250000 cells, each with four neighbours
+  decoy_signals:
+    - a grid with a top-left to bottom-right route is the standard shape of a two-direction table dynamic program, which four-way movement quietly forbids
+    - "\"moving out costs nothing\" invites putting the cost on the cell and forgetting it is really on the edge"
+    - many zeros invite treating the zero cells as free corridors and counting the rest
+  expected_complexity: O(r*c log(r*c))
+  hints:
+    - text: >-
+        Check which directions are allowed before you reach for a table filled
+        row by row. Can the cheapest route ever go upwards?
+    - text: >-
+        It can, so there is no order in which the cells can be filled once and
+        for all. Treat each cell as a place and each step as an edge whose cost
+        is the number in the cell you step into.
+    - text: >-
+        A min-heap keyed by the running total, four neighbours per cell, and the
+        stale-copy check when a cell comes off the heap with a worse total than
+        the one recorded.
+      reveals_pattern: true
+  why: >-
+    Four-way movement is the detail that rules out the table people reach for
+    first: with upward and leftward steps allowed there is no order in which a
+    cell's answer is final before its neighbours are known. The costs differ, so
+    the frontier must be ordered by cost, and a grid is only an adjacency list
+    written as arithmetic.
+  classic_ref: grid shortest path with cell costs; LeetCode 1631 family

@@ -15,10 +15,25 @@
 // Because if none does, any other route to the vertex you are about to settle
 // must still leave the settled region through some frontier vertex, and every
 // frontier vertex already costs at least as much — so it cannot come out
-// cheaper. Allow a negative edge and that step collapses. On the handbook's
-// four-vertex example (1-2 costing 2, 2-4 costing 3, 1-3 costing 6, 3-4 costing
-// -5) this file settles vertex 2 first and reports 5 for vertex 4, while the
-// route through 3 costs 6 - 5 = 1.
+// cheaper. Allow a negative edge and that step collapses. Form 1b below reports
+// precisely what the claim asserts — the value a vertex holds at the moment it
+// is selected — and on the handbook's four-vertex example (1->2 costing 2, 2->4
+// costing 3, 1->3 costing 6, 3->4 costing -5) it hands back 5 for vertex 4,
+// where the route through vertex 3 costs 6 - 5 = 1.
+//
+// Be precise about where the damage is. It is in the CLAIM, not in any one
+// line of code: an implementation that keeps writing into dist[] after a vertex
+// has been settled may well end up holding the right number anyway, and the
+// handbook's own listing does exactly that on this graph. You are bitten the
+// moment you BELIEVE the value at selection time — by breaking out of the loop
+// when the target is popped, or by reading an answer off a vertex as it
+// settles.
+//
+// Form 1, the lazy version, is bitten a different way. Its bound was "each
+// vertex expanded once"; with a negative edge a vertex is expanded again every
+// time it improves, and on a graph with a negative CYCLE it never stops at all.
+// That is why main() refuses to run it when a negative weight is present. An
+// algorithm outside its hypothesis is not slightly wrong. It is undefined.
 //
 // So the region has three tools and you must be able to say which:
 //
@@ -74,6 +89,53 @@ vector<long long> dijkstra(const WGraph& adj, int s) {
         // <<< HOLE
     }
     return dist;
+}
+
+// ---------------------------------------------------------------------------
+// 1b. THE CLAIM ITSELF, WRITTEN DOWN.
+//
+//     "Whenever a vertex is selected, its distance is final." That sentence is
+//     the algorithm. This function reports exactly what it asserts: the value
+//     carried by each vertex at the moment it is first taken off the heap, and
+//     nothing that is discovered afterwards.
+//
+//     With non-negative weights that is identical to form 1 — the claim is
+//     true, so believing it costs nothing. With a negative edge it is not, and
+//     the gap is visible in one number. On 1->2 costing 2, 2->4 costing 3,
+//     1->3 costing 6 and 3->4 costing -5, vertex 4 is taken off the heap
+//     holding 5, so this reports 5; the route through vertex 3 costs 6 - 5 = 1.
+//
+//     Read that against form 2's answer in the harness output. Be careful what
+//     you conclude from an implementation that merely *stores* into an array:
+//     the handbook's own listing keeps writing to distance[] after a vertex is
+//     processed, so on this graph its array happens to end up holding 1. The
+//     unsound step is believing the value at selection time — which is what you
+//     do the moment you `break` out of the loop when the target is popped, or
+//     read an answer off a vertex as you settle it.
+//
+//     It always terminates: at most one vertex is settled per pop.
+// ---------------------------------------------------------------------------
+vector<long long> dijkstra_at_settle_time(const WGraph& adj, int s) {
+    vector<long long> dist(adj.size(), INF), settled(adj.size(), INF);
+    vector<char> processed(adj.size(), 0);
+    priority_queue<pair<long long, int>, vector<pair<long long, int>>,
+                   greater<pair<long long, int>>> pq;
+    dist[s] = 0;
+    pq.push({0, s});
+    while (!pq.empty()) {
+        auto [d, u] = pq.top();
+        pq.pop();
+        if (processed[u]) continue;
+        processed[u] = 1;
+        settled[u] = d;                     // the claim: this value is final
+        for (const Edge& e : adj[u]) {
+            if (dist[u] + e.w < dist[e.to]) {
+                dist[e.to] = dist[u] + e.w;
+                pq.push({dist[e.to], e.to});
+            }
+        }
+    }
+    return settled;
 }
 
 // ---------------------------------------------------------------------------
@@ -152,8 +214,15 @@ vector<vector<long long>> floyd_warshall(int n, const vector<Arc>& arcs) {
 // Demo harness.
 //   n m           vertices 1..n, then m DIRECTED arcs "u v w"
 //   s             the source
-// Prints: the heap sweep's distances from s, then Bellman-Ford's (or
-// "NEGATIVE CYCLE"), then row s of the all-pairs table. Unreached prints as -1.
+// Prints four lines: the lazy heap sweep's distances from s (or the words
+// NEGATIVE WEIGHTS, because outside its hypothesis it may never terminate);
+// the value each vertex carried at the moment it was settled, which is what
+// the finality claim asserts and is wrong when a weight is negative;
+// Bellman-Ford's answer, or NEGATIVE CYCLE; and row s of the all-pairs table.
+// Unreached prints as -1.
+//
+// Run it on the two lines "4 4 / 1 2 2 / 2 4 3 / 1 3 6 / 3 4 -5 / 1" and read
+// the second and third rows against each other. That gap is this whole file.
 // ---------------------------------------------------------------------------
 static void print_row(const vector<long long>& d, int n) {
     for (int i = 1; i <= n; ++i) cout << (d[i] >= INF ? -1 : d[i]) << ' ';
@@ -171,19 +240,28 @@ int main() {
     WGraph adj(n + 1);
     vector<Arc> arcs;
     arcs.reserve((size_t)max(m, 0));
+    bool non_negative = true;
     for (int i = 0; i < m; ++i) {
         int u, v;
         long long w;
         if (!(cin >> u >> v >> w)) return 0;
         adj[u].push_back({v, w});
         arcs.push_back({u, v, w});
+        if (w < 0) non_negative = false;
     }
 
     int s = 1;
     cin >> s;
     if (s < 1 || s > n) s = 1;
 
-    print_row(dijkstra(adj, s), n);
+    // The guard is the lesson: the lazy sweep is not merely inaccurate outside
+    // its hypothesis, it may never finish. So it is not run outside it.
+    if (non_negative) {
+        print_row(dijkstra(adj, s), n);
+    } else {
+        cout << "NEGATIVE WEIGHTS\n";
+    }
+    print_row(dijkstra_at_settle_time(adj, s), n);
 
     vector<long long> bf;
     if (bellman_ford(n, arcs, s, bf)) {

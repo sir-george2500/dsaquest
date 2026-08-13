@@ -107,6 +107,13 @@ class Secret(_Frozen):
         default=False,
         description="The master explicitly tells the student to commit this to memory",
     )
+    animation: str = Field(
+        default="",
+        description=(
+            "Id of an animation in content/animations/. The student may watch and "
+            "step through it before being drilled — teach before you test."
+        ),
+    )
     baseline_drills: int = Field(
         ge=1, le=12, description="Opening judgement of how many drills; the engine adapts"
     )
