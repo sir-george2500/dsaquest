@@ -219,11 +219,19 @@ def choose_problem(
 def recent_problem_ids(
     conn: sqlite3.Connection, pattern_id: str, *, limit: int = 3
 ) -> frozenset[str]:
+    # GROUP BY with MAX(id), not DISTINCT with ORDER BY started_at. Under
+    # DISTINCT, SQLite collapses each problem_id to one arbitrary row — in
+    # practice its earliest — and then orders by *that* row's timestamp. So
+    # given a, b, c, d, a the query returned d, c, b: the problem just
+    # replayed was not excluded, and the oldest one was. MAX(id) asks the
+    # question actually intended, and orders by id for the same reason
+    # comebacks() does — second-resolution timestamps tie.
     rows = conn.execute(
         """
-        SELECT DISTINCT problem_id FROM attempt
+        SELECT problem_id FROM attempt
          WHERE pattern_id = ? AND problem_id IS NOT NULL
-         ORDER BY started_at DESC LIMIT ?
+         GROUP BY problem_id
+         ORDER BY MAX(id) DESC LIMIT ?
         """,
         (pattern_id, limit),
     ).fetchall()

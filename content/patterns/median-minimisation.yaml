@@ -1,0 +1,212 @@
+id: median-minimisation
+name: The Point That Minimises
+world: 4
+order: 3
+tagline: >-
+  When everything must be dragged to one value, the middle of the sorted row
+  minimises total distance and the average minimises total squared distance.
+
+prerequisites:
+  - sorting-by-key
+
+signals:
+  - cue: choose one position, value or height that everything else is moved to
+    strength: 3
+    note: >-
+      A single free number, with every input pulling on it. There is nothing to
+      select and nothing to order — only one point to place.
+  - cue: minimise the total of the absolute differences
+    strength: 3
+    note: >-
+      Absolute value is the whole tell. The total distance to a point on a line
+      is minimised at the middle of the sorted values, never at the average.
+  - cue: make every element equal at the smallest total cost, one unit at a time
+    strength: 3
+    note: >-
+      "Levelling" phrasing. Each unit of movement costs the same, so the cost is
+      a sum of absolute differences and the target is the middle value.
+  - cue: minimise the sum of SQUARED differences
+    strength: 3
+    note: >-
+      A different objective with a different answer: squares are minimised at
+      the arithmetic mean, and with an integer answer required you must test both
+      neighbouring integers.
+  - cue: the items must end up at consecutive or evenly spaced values, in the given order
+    strength: 2
+    note: >-
+      A ramp with one free offset. Subtract the index from each value and the
+      problem collapses to the plain middle-of-the-row question.
+  - cue: each position carries a count or weight of people, crates or requests
+    strength: 2
+    note: >-
+      The weighted form. The answer is the point where the running weight first
+      reaches half the total, which is the same statement with duplicates.
+
+anti_signals:
+  - cue: you are choosing which items to take rather than where to put one point
+    instead: sorting-by-key
+    note: Selection under a budget, not placement of a single value.
+  - cue: the answer is the arrangement of the items themselves
+    instead: exchange-argument
+    note: A permutation is asked for, not a number every item is moved towards.
+  - cue: you must decide whether a total cost is achievable within a stated bound
+    instead: binary-search-answer
+    note: >-
+      A feasibility question over an invented number. This pattern never guesses
+      a total — it names the point outright and then evaluates it once.
+  - cue: the values occupy stretches that must not overlap
+    instead: interval-scheduling
+    note: >-
+      Pairwise conflict means something is chosen or refused; here nothing is
+      chosen at all, only placed.
+  - cue: many range totals are asked over a static row
+    instead: prefix-sum
+    note: >-
+      Prefix sums appear inside this pattern to evaluate a candidate quickly,
+      but if nothing is being minimised the problem is only the table.
+
+confusable_with:
+  - pattern_id: sorting-by-key
+    tell: >-
+      Ask what the sort is FOR. Sorting to walk a prefix and take items is
+      selection; sorting only to reach index n/2 and read one value out is this.
+  - pattern_id: exchange-argument
+    tell: >-
+      Ask what you print. A single number that everything is moved to is this;
+      a reordering of the input is the other.
+
+invariant: >-
+  At the chosen point, moving it one step in either direction changes the total
+  by the difference between the counts on each side, so it cannot improve.
+
+complexity:
+  time: O(n log n)
+  space: O(n)
+  note: >-
+    The sort dominates. Selecting the middle alone can be done in O(n) with
+    std::nth_element, which is the intended solution when n reaches 1e7.
+
+data_structures:
+  - a sorted vector, read at index n/2
+  - a prefix-sum table when many candidate points must be scored
+  - a running weight total for the weighted form
+
+cpp_facilities:
+  - std::sort and std::nth_element
+  - std::llabs for the absolute differences
+  - long long accumulators
+  - integer rounding of the mean, testing both neighbours
+
+traps:
+  - description: >-
+      Using the arithmetic mean for an absolute-difference objective because
+      "average" sounds like the middle.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      Correct on symmetric inputs and wrong whenever one outlier drags the mean
+      away from the bulk: the total comes out slightly too large, every time.
+  - description: >-
+      Rounding the mean once for a sum-of-squares objective instead of scoring
+      both the floor and the ceiling.
+    mistake_code: BOUNDS_SINGLE_ELEMENT
+    symptom: >-
+      Off by a small amount on inputs whose mean lands near .5, and exact
+      everywhere else.
+  - description: >-
+      Reading the middle element without sorting, or sorting a copy and then
+      indexing the original.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      Answers that vary with the input order on data whose multiset is the same.
+      Shuffle a passing test and it fails.
+  - description: >-
+      Summing the distances in `int` when n is 2e5 and the coordinates reach 1e9.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      A negative total distance on the large tests, correct output on the
+      samples.
+  - description: >-
+      Forgetting to subtract the index before taking the middle in the
+      consecutive-values form.
+    mistake_code: BOUNDS_PREFIX_INDEX_SHIFT
+    symptom: >-
+      Correct only when the input is already nearly flat; the answer is too
+      large by roughly the total span the ramp should have absorbed.
+
+recall_rubric:
+  - key: absolute-answer
+    prompt: State which point minimises the sum of absolute differences.
+    essential: true
+    accepts:
+      - the median
+      - the middle of the sorted values
+      - a[n/2]
+      - any point between the two middles
+  - key: squared-answer
+    prompt: State which point minimises the sum of squared differences.
+    essential: true
+    accepts:
+      - the mean
+      - the arithmetic average
+      - the average of the values
+      - sum divided by n
+  - key: the-proof
+    prompt: >-
+      Give the balance argument: what happens to the total when the point is
+      nudged one step?
+    essential: true
+    accepts:
+      - it changes by the difference of the counts on each side
+      - moving right costs one per element on the left
+      - balanced when half are on each side
+      - equal numbers either side
+  - key: even-case
+    prompt: Say what happens when n is even and which index is safe to take.
+    essential: false
+    accepts:
+      - any value between the two middles is optimal
+      - the whole interval ties
+      - a[n/2] works
+      - the total is flat between them
+  - key: integer-mean
+    prompt: >-
+      Say what you must do when the squared objective requires an integer
+      answer.
+    essential: false
+    accepts:
+      - test the floor and the ceiling
+      - score both neighbours
+      - round both ways
+      - the mean may not be an integer
+  - key: ramp-form
+    prompt: >-
+      Describe the transform that turns "make them consecutive" into this
+      pattern.
+    essential: false
+    accepts:
+      - subtract the index
+      - a[i] - i
+      - shift each value down by its position
+      - then take the middle
+  - key: complexity
+    prompt: Give the complexity, and the faster way to find the middle alone.
+    essential: false
+    accepts:
+      - o(n log n)
+      - nth_element
+      - o(n) selection
+      - the sort dominates
+
+template_file: median-minimisation.cpp
+template_notes: >-
+  Form 1 is the whole pattern in four lines: sort, read the middle, sum the
+  distances. Form 2 is the squared objective and shows why the two must never be
+  confused — same input, different point, different total — and it scores both
+  integers around the mean rather than rounding once. Form 3 is the ramp
+  transform: subtract the index, then call form 1 unchanged, which is the
+  clearest possible demonstration that the transform is the entire trick.
+
+related:
+  - sorting-by-key
+  - exchange-argument
+  - prefix-sum

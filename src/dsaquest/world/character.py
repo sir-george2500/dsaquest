@@ -214,6 +214,16 @@ def speak(
 _UNRESOLVED = re.compile(r"\s*\{[a-z_][a-z0-9_]*\}")
 
 
+def strip_placeholders(line: str) -> str:
+    """Drop unresolved placeholders from a line quoted outside :func:`speak`.
+
+    A card shows a character's own words without knowing the context that would
+    fill ``{requirement}`` or ``{shortfall}``. Printing the braces raw is worse
+    than printing a slightly shorter sentence.
+    """
+    return re.sub(r"\s{2,}", " ", _UNRESOLVED.sub("", line)).strip()
+
+
 def _substitute(line: str, values: dict[str, object]) -> str:
     """Fill placeholders, and drop any the caller did not supply.
 

@@ -17,7 +17,6 @@ from textual import on
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Vertical, VerticalScroll
-from textual.markup import escape
 from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Input, Static
 
@@ -40,8 +39,20 @@ def safe(text: str) -> str:
     italic tag — the learner is shown a *different expression* from the one they
     were asked about, and the rest of the line silently turns italic. Every
     string that comes from content goes through this.
+
+    Not ``textual.markup.escape``: that escapes only bracket *runs* that look
+    like a tag, so a nested subscript desynchronises it. ``freq[a[r]]++;`` came
+    out as ``freq[a\\[r]]++;`` — the escape character itself printed inside the
+    expression. Eight lines across the shipped templates rendered wrong.
+
+    Escaping every ``[`` is what round-trips. Backslashes are deliberately left
+    alone: a backslash is only an escape when it precedes ``[``, so doubling
+    them corrupts the ``#define`` continuations and character literals that C++
+    templates are full of. Measured over 2494 lines of shipped content —
+    templates, statements, constraints, hints, invariants, rubric phrases —
+    this is the only variant with zero failures.
     """
-    return escape(text)
+    return text.replace("[", r"\[")
 
 
 MASTER_CSS = """

@@ -239,16 +239,12 @@ def next_challenge(
         mode = GameMode.COMPLETE
 
     budget = budget_for(conn, mode, difficulty, stage=PressureStage.BOSS)
-    attempt_id = begin_exercise(
-        conn,
-        pattern_id=pattern_id,
-        mode=mode,
-        seed=seed,
-        difficulty=difficulty,
-    )
-    watch = Stopwatch()
-    watch.start(Phase.RECOGNISE)
 
+    # The phase's content is chosen BEFORE the attempt is opened, so the row
+    # can record which problem was actually shown. Opening the attempt first
+    # left problem_id NULL on every boss phase, which made boss exposure
+    # invisible to both recent_problem_ids and the memorisation detector —
+    # the two places that need to know what a learner has already seen.
     hunter = recall = problem = template_file = hole_id = None
 
     if phase.kind in (PhaseKind.RECOGNISE, PhaseKind.SURVIVE):
@@ -268,6 +264,17 @@ def next_challenge(
         template_file = library[pattern_id].template_file
         holes = parse_holes(read_template(template_file))
         hole_id = holes[seed % len(holes)].id
+
+    attempt_id = begin_exercise(
+        conn,
+        pattern_id=pattern_id,
+        mode=mode,
+        seed=seed,
+        difficulty=difficulty,
+        problem_id=problem.id if problem is not None else None,
+    )
+    watch = Stopwatch()
+    watch.start(Phase.RECOGNISE)
 
     fight.current = Challenge(
         phase=phase,

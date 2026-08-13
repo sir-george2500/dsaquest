@@ -1,0 +1,240 @@
+# Problems that are really Sort by the Right Key.
+#
+# None of these may name the pattern, and none may say "sort" as an instruction
+# — the recognition being trained is *that the row may be reordered at all*, and
+# *which* order. `decoy_signals` records what makes each one hard, which is what
+# the post-answer feedback quotes back.
+
+- id: market-stall-tokens
+  pattern: sorting-by-key
+  title: Market Stall Tokens
+  difficulty: easy
+  statement: >-
+    A festival stall sells n unrelated trinkets, the i-th priced at c[i] tokens.
+    A visitor arrives holding exactly B tokens and wants to walk away with as
+    many separate trinkets as she can; she does not care which ones, only how
+    many, and change is worthless to her. Each trinket may be bought at most
+    once and there is no discount for buying several. Report the largest number
+    of trinkets she can leave with.
+  constraints: |
+    1 <= n <= 200000
+    1 <= c[i] <= 10^9
+    0 <= B <= 10^14
+    the prices are given in the order the trinkets sit on the stall
+  signals_present:
+    - the objective counts items and never mentions which ones
+    - the order the trinkets sit in is stated and then never used again
+    - one budget shared by every choice, and no interaction between the items
+    - n up to 2*10^5 with a subset to be chosen
+  decoy_signals:
+    - a budget and a maximisation is the exact vocabulary of a knapsack, which would be dynamic programming
+    - "\"as many as she can\" alongside a total cap reads like a stretch to be grown and shrunk under a limit"
+    - the prices arriving in stall order invites treating the row as fixed
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        Nothing in the question refers to where a trinket sits on the stall, so
+        the stall's arrangement is not information. What are you allowed to do
+        with the row once you notice that?
+    - text: >-
+        Suppose some best possible haul of k trinkets does not include the
+        cheapest one on the stall. Take any trinket out of that haul and put the
+        cheapest one in. Is the haul still affordable? Is it still k trinkets?
+    - text: >-
+        Arrange the prices in increasing order and buy from the front while the
+        money lasts; stop at the first price you cannot pay, because nothing
+        after it is any cheaper.
+      reveals_pattern: true
+  why: >-
+    The objective is a COUNT, and the count is exactly the case where the local
+    choice can be proved safe: k trinkets are affordable only if the k cheapest
+    are, so buying the cheapest available can never cost you a purchase. The
+    stall order is mentioned only to be discarded, and that is the licence to
+    reorder the row.
+  classic_ref: CPH 6.1 family; the counting half of the knapsack question
+
+- id: tollgate-note-count
+  pattern: sorting-by-key
+  title: Tollgate Notes
+  difficulty: easy
+  statement: >-
+    A tollgate accepts payment only in the realm's official notes, whose values
+    are 1, 2, 5, 10, 20, 50, 100 and 200 coppers. A courier must pay a toll of
+    exactly A coppers and carries an unlimited supply of every note. The
+    gatekeeper is slow and counts each note by hand, so the courier wants to
+    hand over as few pieces of paper as possible. Report the smallest number of
+    notes that pays the toll exactly.
+  constraints: |
+    1 <= A <= 10^18
+    the note values are exactly 1, 2, 5, 10, 20, 50, 100, 200
+    up to 10^5 independent tolls are asked in one run
+  signals_present:
+    - the denominations are a fixed, named, friendly system rather than arbitrary numbers
+    - an exact total must be made from repeatable pieces
+    - the objective counts the pieces used
+    - A reaches 10^18, so anything proportional to A is hopeless
+  decoy_signals:
+    - "\"fewest pieces summing to exactly A\" is the standard advertisement for a coin-change dynamic program"
+    - an unlimited supply of each piece reads like an unbounded knapsack
+    - the huge bound on A invites searching for the answer rather than constructing it
+  expected_complexity: O(1) per toll
+  hints:
+    - text: >-
+        A general set of denominations really would need dynamic programming.
+        Read the values again and ask what is special about this particular
+        list — why did the setter choose these and not, say, 1, 3 and 4?
+    - text: >-
+        In this system every value divides into the next few cleanly enough that
+        no combination of smaller notes can ever beat one larger note it fits
+        inside. So paying the largest note that still fits is never a mistake.
+    - text: >-
+        Walk the denominations from 200 downwards, take A divided by the current
+        value notes of it, and continue with the remainder.
+      reveals_pattern: true
+  why: >-
+    The list of denominations is the whole hint. On a canonical system the
+    largest-first choice is provably safe; on {1, 3, 4} it is not — 6 becomes
+    4+1+1 instead of 3+3. The statement licenses the local choice by naming the
+    system, never by the shape of the question, and A up to 10^18 rules out any
+    table over the amount.
+  classic_ref: CPH 6.1 (the coin problem)
+
+- id: salvage-hold-ore
+  pattern: sorting-by-key
+  title: Salvage Hold
+  difficulty: medium
+  statement: >-
+    A salvage ship has a hold that takes C kilograms. On the wreck lie n piles
+    of powdered ore; pile i weighs w[i] kilograms in total and the whole pile
+    would fetch v[i] crowns. Powder can be scooped, so any part of a pile may be
+    loaded and it fetches that same fraction of the pile's price. Load the hold
+    to maximise the crowns brought home, and report that value.
+  constraints: |
+    1 <= n <= 200000
+    1 <= w[i] <= 10^9, 1 <= v[i] <= 10^9
+    1 <= C <= 10^18
+    the answer is required to six decimal places
+  signals_present:
+    - a part of any pile may be taken, so the choices are not all-or-nothing
+    - one capacity shared by everything loaded
+    - each pile is described by exactly two numbers whose ratio is what matters
+    - the answer is a value to be maximised, not a count
+  decoy_signals:
+    - a capacity plus a value to maximise is the exact shape of a knapsack, and a knapsack is dynamic programming
+    - "\"maximise the value inside C\" invites a table over the capacity, which is impossible at C = 10^18"
+    - the two numbers per pile invite sorting by the larger one, or by the price alone
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        Read the sentence about powder again. It is not scenery — it is the one
+        hypothesis that separates this from the problem you think it is.
+    - text: >-
+        Because a pile can be split, the hold is really being filled one
+        kilogram at a time, and every kilogram is interchangeable. Which
+        kilogram would you always rather have?
+    - text: >-
+        Rank the piles by crowns per kilogram and fill from the best downwards,
+        taking whatever fraction of the last pile still fits. Compare the ranks
+        by cross multiplication, never by dividing.
+      reveals_pattern: true
+  why: >-
+    Divisibility is the entire licence. Once a pile can be split, the hold is
+    filled a kilogram at a time and a kilogram of a richer pile is always at
+    least as good, which is a one-line exchange argument. Delete the word
+    "powdered" and the same statement becomes 0/1 knapsack, where value per
+    kilogram is provably wrong and no ordering rescues it.
+  classic_ref: fractional knapsack; contrast with 0/1 knapsack
+
+- id: apprentice-tool-fit
+  pattern: sorting-by-key
+  title: Apprentice Tools
+  difficulty: medium
+  statement: >-
+    A workshop has m apprentices and n tools. Apprentice i can only work with a
+    tool whose grade is at least r[i], and tool j has grade g[j]. Each apprentice
+    takes at most one tool and each tool goes to at most one apprentice. The
+    foreman wants as many apprentices as possible working today; he does not
+    care who gets which tool. Report the largest number of apprentices that can
+    be given a workable tool.
+  constraints: |
+    1 <= m, n <= 200000
+    1 <= r[i], g[j] <= 10^9
+    apprentices and tools are listed in no particular order
+  signals_present:
+    - two lists, neither of which has any meaningful order
+    - the objective is a count of successful pairings, not which pairing
+    - each side is described by a single comparable number
+    - the compatibility rule is a plain inequality between the two numbers
+  decoy_signals:
+    - a matching between two sets reads like a flow problem or a bipartite matching, which would be enormously heavier
+    - "\"at least r[i]\" invites locating each requirement inside the tools by halving the range"
+    - two lists compared by size invites walking them from both ends
+  expected_complexity: O(n log n + m log m)
+  hints:
+    - text: >-
+        Neither list has a meaningful order, so both may be arranged however you
+        please. Arrange them, and then ask which apprentice you would serve
+        first.
+    - text: >-
+        Serve the least demanding apprentice with the weakest tool that still
+        works for them. Any better tool spent on that apprentice is a tool
+        wasted on someone who needed less.
+    - text: >-
+        Put both lists in increasing order and walk them together: advance
+        through the tools until one meets the current apprentice's requirement,
+        take it, and move to the next apprentice.
+      reveals_pattern: true
+  why: >-
+    Neither list carries order, so both may be reordered — and once both are
+    increasing the choice is forced: give the least demanding apprentice the
+    weakest adequate tool. The exchange argument is that spending a stronger
+    tool on a smaller requirement can only make a later apprentice worse off,
+    never better.
+  classic_ref: LeetCode 455 family (Assign Cookies)
+
+- id: guild-bulk-discount
+  pattern: sorting-by-key
+  title: Guild Bulk Discount
+  difficulty: hard
+  statement: >-
+    A guild sells n components and the buyer must take every one of them. The
+    guild's standing offer: for every group of three components taken together
+    at the till, the least valuable of the three is free. The buyer may split
+    the purchase into groups however she likes — groups of three, and if some
+    components are left over they are simply paid for in full. Report the
+    smallest total she can pay for all n components.
+  constraints: |
+    1 <= n <= 200000
+    1 <= p[i] <= 10^9
+    the total may exceed 2^31
+  signals_present:
+    - every item must be taken, so nothing is being selected
+    - the buyer chooses how the items are grouped, and grouping is not constrained by position
+    - the discount is decided by a comparison between the members of a group
+    - n up to 2*10^5 rules out trying groupings
+  decoy_signals:
+    - "\"choose how to group them\" invites a dynamic program over prefixes of the list"
+    - every item being taken makes it look like an arrangement problem where the order is the answer
+    - the offer applying to a group of three invites walking three indices at once
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        The total paid is the sum of everything minus the sum of the freebies,
+        so the question is really: which components can be made free, and how
+        expensive can those be?
+    - text: >-
+        A component is free only if two components at least as valuable sit in
+        its group. So the most valuable component can never be free, nor the
+        second — but the third can, and making the third free is worth more than
+        making anything cheaper free.
+    - text: >-
+        Put the prices in decreasing order and pay for all of them except the
+        ones at positions 3, 6, 9 and so on.
+      reveals_pattern: true
+  why: >-
+    Nothing is chosen and nothing is ordered in the answer — the total is the
+    sum minus the freebies, so the real question is which items can be made
+    free. Each freebie must be the smallest of three, so at best every third
+    item in decreasing order is free, and the exchange argument shows any other
+    grouping gives away less.
+  classic_ref: the "three for the price of two" family

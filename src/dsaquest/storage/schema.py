@@ -317,12 +317,44 @@ CREATE TABLE boss_record (
 """
 
 
+_V6 = """
+-- The understanding check: three statements made BEFORE the code was judged.
+--
+-- `code_correct` is stored alongside the grade of the reasoning so the pair can
+-- be queried together. That pair is the entire point: correct code with unsound
+-- reasoning is the memorisation failure this check exists to surface, and it is
+-- invisible if the two are only ever recorded apart.
+--
+-- No UNIQUE on attempt_id. A rematch is a new attempt; a check belongs to the
+-- attempt it was made in, and nothing here is ever rewritten — an answer that
+-- could be edited after the verdict would stop being evidence.
+CREATE TABLE understanding_check (
+    id           INTEGER PRIMARY KEY,
+    attempt_id   INTEGER REFERENCES attempt(id),
+    pattern_id   TEXT    NOT NULL,
+    mode         TEXT    NOT NULL,
+    key_idea     TEXT    NOT NULL DEFAULT '',
+    complexity   TEXT    NOT NULL DEFAULT '',
+    invariant    TEXT    NOT NULL DEFAULT '',
+    key_idea_ok  INTEGER NOT NULL DEFAULT 0 CHECK (key_idea_ok IN (0, 1)),
+    complexity_ok INTEGER NOT NULL DEFAULT 0 CHECK (complexity_ok IN (0, 1)),
+    invariant_ok INTEGER NOT NULL DEFAULT 0 CHECK (invariant_ok IN (0, 1)),
+    answered     INTEGER NOT NULL DEFAULT 0 CHECK (answered BETWEEN 0 AND 3),
+    code_correct INTEGER CHECK (code_correct IN (0, 1)),
+    created_at   TEXT    NOT NULL
+);
+
+CREATE INDEX idx_understanding_pattern ON understanding_check(pattern_id);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "initial schema", _V1),
     Migration(2, "lessons, drills, respect, character memory", _V2),
     Migration(3, "phase timing and deadlines", _V3),
     Migration(4, "master final test", _V4),
     Migration(5, "boss records", _V5),
+    Migration(6, "understanding checks", _V6),
 )
 
 LATEST_VERSION = max(m.version for m in MIGRATIONS)

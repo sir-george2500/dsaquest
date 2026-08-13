@@ -1,0 +1,189 @@
+# Problems that are really Earliest Finishing Time.
+#
+# None of these may name the pattern or describe the mechanism ("sort by end").
+# Two of them are the duals — covering and counting rooms — because a learner
+# who only recognises the selection form will not see those as the same sort.
+
+- id: lecture-hall-bookings
+  pattern: interval-scheduling
+  title: Lecture Hall
+  difficulty: easy
+  statement: >-
+    A guild hall takes bookings for a single day. Request i asks for the hall
+    from minute s[i] until minute e[i]. The hall holds one gathering at a time,
+    so two accepted requests may not overlap; a request that begins exactly when
+    another ends is fine, since the hall is emptied instantly. The steward is
+    paid per gathering held and so wants to accept as many requests as possible,
+    whatever their length. Report the largest number he can accept.
+  constraints: |
+    1 <= n <= 200000
+    0 <= s[i] < e[i] <= 10^9
+    the requests arrive in the order they were made
+  signals_present:
+    - each request occupies a stretch of the day, given as two numbers
+    - accepted requests must not overlap one another
+    - the objective counts accepted requests and explicitly ignores their length
+    - touching at an endpoint is defined as not overlapping
+  decoy_signals:
+    - "\"as many as possible\" with a shared resource reads like a budget question, where cheapest-first would be the rule"
+    - the shortest requests look cheapest, and taking the cheapest first is the reflex the previous pattern trained
+    - requests arriving in the order they were made invites treating that order as meaningful
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        Two requests interfere only with each other, not with a shared pot of
+        money. So the question is not what a request costs you but what it
+        DENIES you. What does accepting a request deny?
+    - text: >-
+        It denies you the rest of the day up to the moment it ends. So the least
+        damaging request to accept is the one that frees the hall soonest —
+        never the shortest, and never the one that starts first.
+    - text: >-
+        Arrange the requests by the minute they finish, keep one number holding
+        the end of the last acceptance, and accept every request that starts at
+        or after it.
+      reveals_pattern: true
+  why: >-
+    The constraint is pairwise — requests exclude each other rather than drawing
+    on a common budget — so cheapest-first has nothing to be cheap about. What a
+    request costs is the part of the day it denies you, and that is measured by
+    where it ENDS. The clause about touching endpoints is there to fix the
+    comparison, and it is the difference between two answers.
+  classic_ref: CPH 6.2 (scheduling); activity selection
+
+- id: festival-stage-slots
+  pattern: interval-scheduling
+  title: Festival Stage
+  difficulty: medium
+  statement: >-
+    A festival has one stage and n acts want it. Act i is ready to play from
+    time a[i] to time b[i] and will not move; an act is either given its whole
+    slot or turned away. The organiser has already listed the acts in increasing
+    order of the time they start, and remarks that this makes the answer
+    obvious. It does not. Two acts clash if their slots share more than a single
+    instant. Report the greatest number of acts that can be staged.
+  constraints: |
+    1 <= n <= 200000
+    0 <= a[i] < b[i] <= 10^9
+    the acts are given in non-decreasing order of a[i]
+  signals_present:
+    - each act occupies a fixed stretch that cannot be moved
+    - staged acts must not clash with one another
+    - the objective counts acts staged
+    - sharing a single instant is explicitly allowed, which pins down the comparison
+  decoy_signals:
+    - the input is pre-sorted by start time and the statement invites you to trust that order
+    - "\"already listed in increasing order\" makes it look like the row is fixed and only a sweep is needed"
+    - one act that spans the whole festival looks valuable because it is large
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        The organiser handed you an order and told you it was useful. Test that
+        claim on four acts: one running all day, and three short ones inside it.
+    - text: >-
+        Taking the act that starts earliest can cost you every other act.
+        Ranking by start time is exactly the wrong ranking; you need the ranking
+        that measures how much of the stage an act gives back.
+    - text: >-
+        Re-order the acts by the time they finish, then walk once accepting any
+        act whose start is not before the finish of the last one accepted.
+      reveals_pattern: true
+  why: >-
+    The pre-sorted input is the trap: start order is the setter's order, not the
+    correct key. One act spanning the whole festival is taken first under that
+    ranking and destroys the schedule. Rank by the finishing time — what the act
+    gives BACK — and the local choice becomes provably safe.
+  classic_ref: CPH 6.2; LeetCode 435 family (Non-overlapping Intervals)
+
+- id: net-cast-shoals
+  pattern: interval-scheduling
+  title: Casting Nets
+  difficulty: medium
+  statement: >-
+    A river runs in a straight line and n shoals of fish sit in it; shoal i
+    stretches from position l[i] to position r[i], and the shoals may overlap
+    each other freely. A net dropped at a single position catches every shoal
+    whose stretch contains that position, including at its two ends. Nets are
+    expensive. Report the smallest number of nets needed so that every shoal is
+    caught by at least one of them.
+  constraints: |
+    1 <= n <= 200000
+    -10^9 <= l[i] <= r[i] <= 10^9
+    the shoals are given in arbitrary order
+  signals_present:
+    - each shoal is a stretch of the line given by two coordinates
+    - one point may serve several stretches at once, and the stretches may overlap
+    - the objective counts the points placed, and every stretch must be served
+    - n up to 2*10^5 rules out testing candidate points one by one
+  decoy_signals:
+    - "\"cover every stretch\" reads like a union or a merge of ranges, which answers a different question"
+    - the coordinates invite building a difference array over the line, which finds crowding rather than a cover
+    - minimising a count of placements invites deciding feasibility for a fixed count and searching over it
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        Some shoal must be caught by the first net you place. Which shoal should
+        decide where that net goes, and where inside that shoal should it go?
+    - text: >-
+        Let the shoal that ENDS first decide: the net must fall inside it, and
+        the furthest downstream point that still does is its right end. Placing
+        it any earlier can only catch fewer of the others.
+    - text: >-
+        Order the shoals by their right ends and sweep, dropping a new net at
+        the right end of the first shoal whose left end is beyond the last net.
+      reveals_pattern: true
+  why: >-
+    This is the selection problem read backwards. The stretch that finishes
+    first must be served by some point, and the last position that serves it —
+    its right end — dominates every earlier choice, because it lies inside every
+    stretch an earlier point would have reached and possibly more. Same sort,
+    same proof, opposite objective.
+  classic_ref: LeetCode 452 family (Minimum Arrows to Burst Balloons)
+
+- id: watchtower-shifts
+  pattern: interval-scheduling
+  title: Watchtower Shifts
+  difficulty: hard
+  statement: >-
+    A garrison has rostered n patrols for the coming day; patrol i is out from
+    minute p[i] until minute q[i]. Every patrol must go out exactly as rostered
+    — nothing may be cancelled or moved — and each patrol needs its own horse
+    for its whole duration. A horse returned at minute t can be sent out again
+    at minute t. Report the smallest number of horses the garrison must keep so
+    that every rostered patrol can ride.
+  constraints: |
+    1 <= n <= 200000
+    0 <= p[i] < q[i] <= 10^9
+    patrols are listed in arbitrary order
+  signals_present:
+    - every patrol is compulsory, so nothing is selected or refused
+    - each patrol occupies a fixed stretch of the day
+    - a resource is freed exactly when a stretch ends and can be reused immediately
+    - the answer is the number of resources, not the number of patrols
+  decoy_signals:
+    - "\"smallest number of horses\" invites guessing a number and testing feasibility, which is a search over the answer"
+    - nothing being refused makes it look like an ordering question where the sequence is the answer
+    - the two coordinates per patrol invite the selection sweep that the previous problems trained, which answers a different question
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        Nothing is refused here, so no choice is being made about the patrols at
+        all. The answer is a property of the roster itself. Which property?
+    - text: >-
+        At the busiest instant of the day, every patrol then out needs its own
+        horse — and that many horses is also enough, because a horse is free
+        the moment its patrol returns. So the answer is the largest number
+        simultaneously out.
+    - text: >-
+        Separate the departure times from the return times, order each list on
+        its own, and walk the two together: a departure claims a horse, a return
+        that has already happened gives one back. Record the largest number
+        claimed at once.
+      reveals_pattern: true
+  why: >-
+    Nothing is accepted or refused, so this is not a selection — it is the same
+    family read as a count of simultaneous stretches. The two coordinate lists
+    are sorted SEPARATELY on purpose: which patrol a return belongs to is
+    irrelevant, only that a horse came free, and that decoupling is what makes
+    one linear walk enough.
+  classic_ref: LeetCode 253 family (Meeting Rooms II)

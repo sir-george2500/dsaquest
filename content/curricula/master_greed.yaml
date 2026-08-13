@@ -1,0 +1,1271 @@
+# Strategist Dovan Rhe's teaching plan — the Exchange, Master of Greed.
+#
+# Six secrets across four patterns. Every demonstration has been evaluated by
+# hand, and every counterexample in it is minimal: the smallest input on which
+# the plausible answer is wrong. That is deliberate. This is the one region
+# where a wrong algorithm is short, fast, readable and passes the sample, so
+# the master teaches the proof and the counterexample together or he teaches
+# nothing at all. The final test names nothing.
+
+master_id: master_greed
+patterns:
+  - sorting-by-key
+  - interval-scheduling
+  - exchange-argument
+  - median-minimisation
+title: Strategist Dovan Rhe, the Exchange — Six Secrets of the Local Choice
+
+opening: >-
+  You will find this region easy, and that is the danger. Every algorithm I
+  teach fits in four lines, runs in a log factor, and can be written before you
+  have understood the problem. Three of those four lines will be right. I am not
+  interested in your code. I am interested in one sentence you must be able to
+  say out loud before you write it: take any best possible answer, force my
+  first choice into it, and show that what comes out is still legal and no
+  worse. Say that sentence and the code is trivial. Fail to say it and you have
+  not written an algorithm, you have written a guess that happened to agree with
+  the sample. Six secrets. Four of them are choices. One is the proof that makes
+  a choice safe. The last is where the proof fails, and you will learn that one
+  properly, because a warrior who cannot find the boundary of his weapon will
+  swing it at the wrong thing.
+
+stages:
+  # ---------------------------------------------------------------- stage 0
+  - id: stage-sort-then-sweep
+    order: 0
+    pattern: sorting-by-key
+    trial_problem_ids: [market-stall-tokens]
+    secret:
+      id: sort-then-sweep
+      name: The Key Is the Algorithm
+      idiom: "sort(v.begin(), v.end()); for (x : v) if (fits(x)) take(x);"
+      memorise: true
+      baseline_drills: 4
+      teaches: >-
+        Every greedy algorithm you will ever write has the same two lines: put
+        the items in some order, then walk once taking whatever still fits. The
+        sweep is never where the difficulty is. The KEY is. Choose it wrongly
+        and the program is still four lines, still O(n log n), still passes the
+        sample, and still wrong. So the first thing to learn is not a technique
+        but a question: what is the objective actually counting? If it counts
+        HOW MANY, the cheapest item is always safe, and I can prove it in one
+        sentence — take any best haul of k items that omits the cheapest, throw
+        out any member, put the cheapest in, and you still have k items and you
+        have spent no more. If it counts HOW MUCH, that sentence does not exist
+        and neither does the algorithm. Most students reach for the largest item
+        first because large feels valuable. Large is not an argument.
+      demonstrations:
+        - expression: "sizes [9, 4, 3, 2], budget 9, largest first"
+          result: "1 item"
+          note: >-
+            9 fits exactly and leaves nothing. One item, and the reflex that
+            produced it felt like the obviously greedy choice.
+        - expression: "the same sizes and budget, cheapest first"
+          result: "3 items"
+          note: >-
+            Sorted: [2, 3, 4, 9]. 2 + 3 + 4 = 9 exactly, and the 9 is refused.
+            Three items instead of one, from re-reading the objective.
+        - expression: "an optimal 3-item haul that does not contain the 2"
+          result: "no such haul exists"
+          note: >-
+            The only 3-item haul inside 9 is [2, 3, 4]. In general: remove any
+            member of an optimal haul and insert the cheapest item — the count
+            is unchanged and the total cannot rise. That is the exchange, and it
+            is the entire proof.
+        - expression: "27 coppers from {1, 2, 5, 10, 20, 50}, largest first"
+          result: "3 notes"
+          note: "20 + 5 + 2. Here largest-first IS correct, because the system is canonical."
+        - expression: "6 coppers from {1, 3, 4}, largest first"
+          result: "3 coins"
+          note: >-
+            4 + 1 + 1. The optimum is 3 + 3, which is 2. Same code, same shape of
+            question, three coins instead of two. The system licensed the greedy,
+            not the question.
+        - expression: "200000 costs of 10^9 accumulated in an int"
+          result: "overflow after the third item"
+          note: >-
+            3 * 10^9 is already past INT_MAX = 2147483647. The budget check then
+            passes on a negative total and the count comes back as n.
+      watch_out:
+        - warning: "Taking the largest item first is a reflex, not an argument."
+          why: >-
+            It is correct only when the objective rewards size, and a COUNT does
+            not. On sizes [9, 4, 3, 2] with a budget of 9 it answers 1 where 3 is
+            available. Before you sort, say out loud what the objective counts;
+            the key follows from that sentence and from nothing else.
+        - warning: "Sorting destroys the original positions."
+          why: >-
+            The moment the statement asks which items were chosen, by index, the
+            sort has thrown away the answer. Carry the index alongside the key in
+            a pair — or, if the row must stay as given, this is not the pattern
+            at all and you are looking at a window or a hash map.
+        - warning: "The running total must be long long."
+          why: >-
+            2 * 10^5 items at 10^9 each reach 2 * 10^14, and the budget itself is
+            often stated up to 10^14. Signed overflow is undefined behaviour, so
+            the failure is not even a reliable wrong answer — it is whatever the
+            optimiser decided the impossible case meant.
+        - warning: "Passing the sample proves nothing here."
+          why: >-
+            The samples in a greedy problem are almost always small and almost
+            always agree with the wrong key, because the setter chose them to
+            illustrate the statement, not to break your solution. The smallest
+            counterexample to a plausible greedy is usually three items long.
+            Construct one by hand before you submit.
+      drills:
+        - id: sts-eval-count
+          kind: evaluate
+          prompt: >-
+            Item costs are [9, 4, 3, 2] and the budget is 9. What is the largest
+            number of items that can be bought?
+          options: ["1", "2", "3", "4"]
+          answer: "3"
+          explanation: >-
+            Sorted the costs are [2, 3, 4, 9] and 2 + 3 + 4 = 9 exactly. The 9 is
+            refused. Three items, and no selection of four costs 9 or less.
+        - id: sts-eval-largest
+          kind: evaluate
+          prompt: >-
+            The same costs [9, 4, 3, 2] and budget 9, but bought largest-first.
+            How many items does that buy?
+          options: ["1", "2", "3", "4"]
+          answer: "1"
+          explanation: >-
+            9 is taken, nothing remains, and nothing else fits — one item where
+            three were available. Largest-first answers a different question:
+            "how much of the budget can I spend", which nobody asked.
+        - id: sts-eval-coins
+          kind: evaluate
+          prompt: >-
+            Denominations {1, 2, 5, 10, 20, 50} and an amount of 27. Taking the
+            largest that fits each time, how many notes are used?
+          options: ["2", "3", "4", "5"]
+          answer: "3"
+          explanation: >-
+            20, then 5, then 2. On this system largest-first is provably optimal,
+            which is why the setter listed these particular values rather than
+            arbitrary ones.
+        - id: sts-prop-licence
+          kind: property
+          prompt: >-
+            Which single fact in a statement gives you permission to reorder the
+            input at all?
+          options:
+            - "the answer never refers to the positions the items were given in"
+            - "the values are positive"
+            - "n is large enough that O(n^2) will not pass"
+            - "the items all have the same units"
+          answer: "the answer never refers to the positions the items were given in"
+          explanation: >-
+            Sorting is only free if rearranging the input cannot change the
+            answer. The moment adjacency matters, or original indices must be
+            printed, the row is frozen and this whole family is unavailable.
+        - id: sts-prop-exchange
+          kind: property
+          prompt: >-
+            "Take any optimal selection of k items, remove one member, insert the
+            cheapest item." What does that sentence establish?
+          options:
+            - "an optimal selection containing the cheapest item exists, so taking it first costs nothing"
+            - "the cheapest item is in EVERY optimal selection"
+            - "the selection is unique"
+            - "the greedy answer equals the optimum for any objective"
+          answer: "an optimal selection containing the cheapest item exists, so taking it first costs nothing"
+          explanation: >-
+            "Some optimal answer agrees with my first choice" is exactly what a
+            greedy needs — not that every optimum agrees, and not anything about
+            other objectives. Repeat the argument on what remains and the whole
+            sweep is justified.
+        - id: sts-trap-noncanonical
+          kind: trap
+          prompt: >-
+            Largest-first is used to make 6 from the denominations {1, 3, 4}. It
+            passes both samples and fails the judge. What does it produce?
+          options:
+            - "4 + 1 + 1, three coins, where 3 + 3 is two"
+            - "3 + 3, which is optimal"
+            - "it reports that 6 cannot be made"
+            - "it loops forever"
+          answer: "4 + 1 + 1, three coins, where 3 + 3 is two"
+          explanation: >-
+            Largest-first is a property of the SYSTEM, never of the question. On
+            a canonical system it is provable; on {1, 3, 4} it is false at the
+            smallest interesting amount. When the denominations are arbitrary
+            the problem is a dynamic program.
+        - id: sts-recall-key
+          kind: recall
+          prompt: >-
+            The objective is the NUMBER of items bought inside a budget. Write
+            the statement that puts the cost vector into the order that makes
+            each choice safe.
+          answer: "sort(c.begin(), c.end())"
+          accepts:
+            - "sort(c.begin(),c.end());"
+            - "sort(c.begin(),c.end())"
+            - "sort(all(c))"
+            - "ranges::sort(c)"
+            - "std::sort(c.begin(),c.end())"
+          explanation: >-
+            Ascending, because the objective counts. Memorise the pairing rather
+            than the call: count means cheapest first, and any other objective
+            needs its own argument before it gets its own key.
+        - id: sts-apply-stop
+          kind: apply
+          prompt: >-
+            Inside `for (long long c : cost)`, with `budget` and `taken`
+            declared, write the statement that ends the sweep as soon as the
+            next item is unaffordable.
+          answer: "if (c > budget) break;"
+          accepts:
+            - "if(c>budget)break;"
+            - "if(c>budget)break"
+            - "if(budget<c)break;"
+            - "if(c>budget){break;}"
+          explanation: >-
+            `break`, not `continue`. The costs are ascending, so an item you
+            cannot afford guarantees that nothing after it is affordable either —
+            and that guarantee is the only reason the sweep is one pass.
+
+  # ---------------------------------------------------------------- stage 1
+  - id: stage-strict-weak-order
+    order: 1
+    pattern: sorting-by-key
+    trial_problem_ids: [salvage-hold-ore, guild-bulk-discount]
+    secret:
+      id: strict-weak-order
+      name: A Comparator Is a Claim
+      idiom: "a.value * b.weight > b.value * a.weight"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        You have decided on a key. Now you must express it, and this is where a
+        correct algorithm turns into a wrong program. Two rules, both of which
+        cost people contests every week. First: a comparator handed to std::sort
+        is a CLAIM that you have a strict weak ordering, and the library believes
+        you without checking. Write `<=` and you have claimed that an element
+        comes before itself; libstdc++'s final insertion pass has an inner loop
+        with no bound, relying on your comparator to stop it, and it will walk
+        off the front of the array instead. Second: never divide to compare a
+        ratio. `v / w` in integers makes 7/2 and 10/3 both equal 3 and invents a
+        tie between two items that genuinely differ; in doubles it is exact for a
+        while and then quietly is not. Multiply crosswise. It is the same
+        comparison in exact integers, and it costs nothing.
+      demonstrations:
+        - expression: "sorting 20 equal values with `return a <= b;`"
+          result: "undefined behaviour"
+          note: >-
+            The unguarded insertion loop stops when the comparator says "no
+            further" — and `<=` never says it for equal elements, so it runs past
+            index 0. Below about 16 elements that code path is not reached at
+            all, which is why every sample passes.
+        - expression: "value 7 weight 2 against value 10 weight 3, using v / w in int"
+          result: "3 and 3 — a tie"
+          note: >-
+            The true ratios are 3.5 and 3.33. Truncation invented a tie, so the
+            sort is free to place the worse item first and the answer comes out
+            slightly too small on exactly the tests built to separate them.
+        - expression: "the same pair, cross multiplied: 7 * 3 against 10 * 2"
+          result: "21 > 20"
+          note: >-
+            Exact, in integers, no division, no rounding. 7/2 > 10/3 becomes
+            7 * 3 > 10 * 2, which is the same inequality with both denominators
+            multiplied out.
+        - expression: "values and weights up to 10^9, cross multiplied"
+          result: "at most 10^18, which fits in a long long"
+          note: >-
+            LLONG_MAX is about 9.2 * 10^18, so the product is safe — but only
+            just. At 10^18 inputs the product needs __int128.
+        - expression: "vector<pair<long long,long long>> holding (finish, start), plain sort"
+          result: "ordered by finish, ties broken by start"
+          note: >-
+            pair compares lexicographically, so packing the key into .first
+            removes the comparator entirely — and a comparator you did not write
+            is a comparator you cannot get wrong.
+      watch_out:
+        - warning: "`<=` in a comparator is undefined behaviour, not a style choice."
+          why: >-
+            std::sort requires a strict weak ordering, whose first requirement is
+            comp(a, a) == false. With `<=` an element precedes itself, the
+            unguarded insertion loop never terminates on the left, and you get a
+            segfault or a silently scrambled range — on large inputs only. Write
+            `<`, always.
+        - warning: "Sorting by `v / w` computed in integers loses the fractional part that decides the order."
+          why: >-
+            7/2 and 10/3 both truncate to 3, so two genuinely different items
+            compare equal and the ordering between them becomes arbitrary. The
+            answer is then right except among near-ties, which is precisely where
+            the interesting tests live.
+        - warning: "A comparator built on floating point can be INCONSISTENT, not merely imprecise."
+          why: >-
+            Rounding can make comp(a, b) and comp(b, a) both false for items that
+            differ, or worse, both true across a chain — and an inconsistent
+            comparator is the same undefined behaviour as `<=`. Cross
+            multiplication is exact and removes the question.
+        - warning: "Cross multiplication can overflow even when the inputs are innocent."
+          why: >-
+            a.value * b.weight with both at 10^9 is 10^18, which fits; at 2 * 10^9
+            it is 4 * 10^18, still inside long long; at 10^18 it is not, and
+            signed overflow is undefined. When the bounds allow it, compare in
+            __int128 and pay the two instructions.
+        - warning: "std::sort is not stable, so equal keys come back in an unspecified order."
+          why: >-
+            If the statement requires ties to keep their input order — and some
+            do, silently, through the expected output — use std::stable_sort, or
+            add the original index as the last component of the key. Do not
+            discover this from a wrong answer on a test with duplicates.
+      drills:
+        - id: swo-eval-int-ratio
+          kind: evaluate
+          prompt: >-
+            Items are ranked by value/weight computed as `v / w` with both ints.
+            How do (v=7, w=2) and (v=10, w=3) compare?
+          options:
+            - "both give 3, so they compare equal and the order between them is arbitrary"
+            - "7/2 = 4 and 10/3 = 3, so the first wins"
+            - "the division is exact, so 3.5 beats 3.33"
+            - "it is a compile error"
+          answer: "both give 3, so they compare equal and the order between them is arbitrary"
+          explanation: >-
+            Integer division truncates, so 3.5 and 3.33 both become 3. The
+            comparator now claims two different items are equivalent, and the
+            sort may place either first.
+        - id: swo-eval-cross
+          kind: evaluate
+          prompt: >-
+            The same pair compared crosswise: what are 7 * 3 and 10 * 2, and
+            which item ranks higher?
+          options:
+            - "21 and 20 — the item with value 7 ranks higher"
+            - "21 and 20 — the item with value 10 ranks higher"
+            - "14 and 30 — the item with value 10 ranks higher"
+            - "they are equal"
+          answer: "21 and 20 — the item with value 7 ranks higher"
+          explanation: >-
+            7/2 > 10/3 multiplied out on both sides is 7 * 3 > 10 * 2, i.e.
+            21 > 20. Exact integers, no rounding, and the tie that truncation
+            invented has disappeared.
+        - id: swo-eval-overflow
+          kind: evaluate
+          prompt: >-
+            Values and weights are each at most 10^9. What is the largest product
+            a cross-multiplied comparison can produce?
+          options: ["10^9", "2 * 10^9", "10^18", "10^36"]
+          answer: "10^18"
+          explanation: >-
+            10^9 * 10^9 = 10^18, comfortably inside LLONG_MAX (about 9.2 * 10^18)
+            and far outside INT_MAX. Declare the operands long long; at inputs of
+            10^18 you would need __int128 instead.
+        - id: swo-prop-requirement
+          kind: property
+          prompt: >-
+            What exactly does std::sort require of the comparator you hand it?
+          options:
+            - "a strict weak ordering — in particular comp(a, a) must be false"
+            - "that it returns true when the two arguments are equal"
+            - "that it is a member function of the element type"
+            - "that it never returns false"
+          answer: "a strict weak ordering — in particular comp(a, a) must be false"
+          explanation: >-
+            Strict means irreflexive: nothing precedes itself. The library does
+            not check, and violating it is undefined behaviour rather than a
+            wrong order — which is why the symptom is a crash on large input and
+            nothing at all on the sample.
+        - id: swo-prop-pack
+          kind: property
+          prompt: >-
+            You store ranges as `pair<long long,long long>` holding (finish,
+            start) and call sort with no comparator. What order do you get?
+          options:
+            - "by finish, and ties broken by start, because pair compares lexicographically"
+            - "by start, since it is the second member and therefore the primary key"
+            - "an unspecified order, since pair has no comparison operator"
+            - "by the sum of the two members"
+          answer: "by finish, and ties broken by start, because pair compares lexicographically"
+          explanation: >-
+            Packing the key into .first buys the tie-break for free and removes
+            the comparator entirely. A comparator you did not write cannot be
+            written with `<=`.
+        - id: swo-trap-le
+          kind: trap
+          prompt: >-
+            `sort(v.begin(), v.end(), [](int a, int b){ return a <= b; });` runs
+            fine on the samples and crashes on the judge. Why?
+          options:
+            - "`<=` says an element precedes itself, so the unguarded insertion loop runs off the front of the array"
+            - "the lambda must take its arguments by const reference"
+            - "sort cannot accept a lambda, only a function pointer"
+            - "it is correct; the crash must be elsewhere"
+          answer: "`<=` says an element precedes itself, so the unguarded insertion loop runs off the front of the array"
+          explanation: >-
+            The comparator must be irreflexive. libstdc++'s final insertion pass
+            has no bound check and relies on the comparator to stop it; with `<=`
+            nothing stops it. Small inputs never reach that code path, which is
+            what makes this bug reach the judge alive.
+        - id: swo-recall-cross
+          kind: recall
+          prompt: >-
+            Write the C++ expression that is true when item a has a strictly
+            greater value-per-weight than item b, using no division.
+          answer: "a.value * b.weight > b.value * a.weight"
+          accepts:
+            - "a.value*b.weight>b.value*a.weight"
+            - "a.v*b.w>b.v*a.w"
+            - "b.value*a.weight<a.value*b.weight"
+            - "a.value*b.weight>a.weight*b.value"
+          explanation: >-
+            Multiply both sides of a.value/a.weight > b.value/b.weight by the two
+            positive weights. Exact in integers, no rounding, no invented ties —
+            and it is the shape you will reuse for every derived ratio key.
+        - id: swo-apply-pack
+          kind: apply
+          prompt: >-
+            `vector<pair<long long,long long>> v;` holds (finish, start) for each
+            range. Write the call that orders them by finish, ties broken by
+            start, without writing a comparator.
+          answer: "sort(v.begin(), v.end())"
+          accepts:
+            - "sort(v.begin(),v.end());"
+            - "sort(v.begin(),v.end())"
+            - "sort(all(v))"
+            - "ranges::sort(v)"
+            - "std::sort(v.begin(),v.end())"
+          explanation: >-
+            pair's own comparison is lexicographic, so putting the key first is
+            the entire trick. Fewer characters, no undefined behaviour available
+            to you, and the tie-break comes free.
+
+  # ---------------------------------------------------------------- stage 2
+  - id: stage-earliest-finish
+    order: 2
+    pattern: interval-scheduling
+    trial_problem_ids: [lecture-hall-bookings, net-cast-shoals]
+    secret:
+      id: earliest-finish
+      name: Take What Frees the Room Soonest
+      idiom: "if (r.start >= last) { ++taken; last = r.finish; }"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        Now the items conflict with each other rather than with a shared budget,
+        and everything you learned about cheapest-first evaporates, because there
+        is nothing to be cheap about. Ask instead what accepting an item DENIES
+        you. A booking denies you the hall until the moment it ends — so the
+        least damaging booking is the one that gives the hall back soonest, and
+        that is the whole key. Not the shortest: a short booking sitting across
+        the middle of the day can block two others. Not the earliest to start: a
+        booking that begins at dawn and runs until dusk starts earliest and
+        destroys the schedule. The proof is one exchange. Let O be an optimal
+        schedule and g the booking that finishes first of all. If O does not
+        contain g, swap g in for O's own first booking; g ends no later, so
+        nothing else in O is disturbed and the count is unchanged. Delete
+        everything overlapping g, and repeat.
+      demonstrations:
+        - expression: "ranges [1,10] [2,3] [4,5] [6,7], earliest START first"
+          result: "1 accepted"
+          note: >-
+            [1,10] is taken and blocks all three others. Starting earliest is
+            the setter's order, and it is the worst key available.
+        - expression: "the same four ranges, earliest FINISH first"
+          result: "3 accepted"
+          note: >-
+            Sorted by end: [2,3], [4,5], [6,7], [1,10]. The first three are taken
+            and [1,10] is refused because it starts at 1, before the last
+            acceptance ended at 7.
+        - expression: "ranges [1,5] [4,6] [5,10], SHORTEST first"
+          result: "1 accepted"
+          note: >-
+            [4,6] has length 2 and is taken first; it overlaps [1,5] and [5,10]
+            alike, so nothing else fits. By finishing time: [1,5], then [5,10],
+            which is 2.
+        - expression: "the same three ranges, earliest finish first"
+          result: "2 accepted"
+          note: >-
+            [1,5] ends at 5 and [5,10] starts at 5, so under the convention that
+            touching is allowed both fit. The short middle range is refused.
+        - expression: "ranges [1,2] [2,3] [3,4], touching allowed"
+          result: "3 accepted"
+          note: >-
+            Every range starts exactly where the last ended. Under the other
+            convention — touching counts as a clash — the answer is 2. One
+            comparison operator, two different answers.
+        - expression: "the covering dual on [1,10] [2,3] [4,5] [6,7]"
+          result: "3 points"
+          note: >-
+            Points at 3, 5 and 7. Each is the right end of the first range not
+            yet touched, and [1,10] is caught by the point at 3. Same sort, same
+            proof, opposite objective.
+      watch_out:
+        - warning: "Sorting by start time is the setter's order, not the key."
+          why: >-
+            Inputs are very often handed to you already sorted by start, which
+            reads like a gift. It is not: one range spanning the whole line is
+            taken first under that ranking and blocks everything. Re-sort by the
+            end, every time, even when the input looks ready.
+        - warning: "Sorting by duration fails on a short range that straddles two others."
+          why: >-
+            On [1,5], [4,6], [5,10] the shortest is [4,6], and taking it costs
+            you both of the others: 1 instead of 2. Short is not the same as
+            unobtrusive; what matters is where the range ENDS, not how much of
+            the line it covers.
+        - warning: "Decide what a touching endpoint means before you type the comparison."
+          why: >-
+            `start >= last` allows a range that begins exactly when the previous
+            one ended; `start > last` forbids it. On [1,2] [2,3] [3,4] that is 3
+            against 2. The statement always says which, usually in a sentence
+            that reads like scenery.
+        - warning: "The moment the ranges carry VALUES, this greedy is wrong."
+          why: >-
+            Maximising total value has no safe local choice: one long booking
+            worth 10 beats three short ones worth 3 each, and no key detects
+            that. Weighted interval scheduling is dynamic programming over the
+            sorted ends with a binary search for the last compatible range. The
+            sort survives; the greedy does not.
+        - warning: "Coordinates reaching 10^9 must not be stored in int and then subtracted."
+          why: >-
+            The comparison itself is fine, but any duration or gap computed as
+            `finish - start` on values near the limits, or an initial `last` set
+            to a large sentinel, overflows. Use long long and set the sentinel to
+            LLONG_MIN.
+      drills:
+        - id: eft-eval-start-key
+          kind: evaluate
+          prompt: >-
+            Ranges [1,10], [2,3], [4,5], [6,7]. Accepting greedily by earliest
+            start, how many are accepted?
+          options: ["1", "2", "3", "4"]
+          answer: "1"
+          explanation: >-
+            [1,10] is taken first and overlaps every other range. Earliest-start
+            is the ranking most inputs arrive in, and it is the one that fails
+            hardest.
+        - id: eft-eval-end-key
+          kind: evaluate
+          prompt: >-
+            The same four ranges, accepting greedily by earliest finishing time.
+            How many are accepted?
+          options: ["1", "2", "3", "4"]
+          answer: "3"
+          explanation: >-
+            Sorted by end the order is [2,3], [4,5], [6,7], [1,10]. The first
+            three are mutually clear; [1,10] starts at 1, which is before the
+            last acceptance ended at 7, so it is refused.
+        - id: eft-eval-shortest
+          kind: evaluate
+          prompt: >-
+            Ranges [1,5], [4,6], [5,10], accepting greedily by shortest duration
+            first. How many are accepted?
+          options: ["1", "2", "3", "0"]
+          answer: "1"
+          explanation: >-
+            [4,6] has length 2 and is taken first, and it overlaps both [1,5] and
+            [5,10]. Ranking by end gives [1,5] then [5,10], which is 2. Short is
+            not the same as harmless.
+        - id: eft-eval-touching
+          kind: evaluate
+          prompt: >-
+            Ranges [1,2], [2,3], [3,4], where a range starting exactly when
+            another ends does NOT clash. How many can be accepted?
+          options: ["1", "2", "3", "0"]
+          answer: "3"
+          explanation: >-
+            All three, because `start >= last` is satisfied at each step. Under
+            the opposite convention the answer is 2 — the same data, the same
+            algorithm, and one comparison operator apart.
+        - id: eft-prop-proof
+          kind: property
+          prompt: >-
+            Let g be the range that finishes first of all. What does the exchange
+            argument establish about g?
+          options:
+            - "some optimal schedule contains g, because swapping g for the optimum's first choice frees at least as much of the line"
+            - "every optimal schedule contains g"
+            - "g is the longest range that can be accepted"
+            - "g must be refused, since it blocks the start of the line"
+          answer: "some optimal schedule contains g, because swapping g for the optimum's first choice frees at least as much of the line"
+          explanation: >-
+            "Some optimum agrees with my first choice" is all a greedy needs. g
+            ends no later than whatever the optimum took first, so the swap
+            cannot break anything downstream, and the count is unchanged.
+        - id: eft-trap-weighted
+          kind: trap
+          prompt: >-
+            Each range now carries a value and the objective is the largest total
+            value. Ranges [1,10] worth 10, and [1,2], [3,4], [5,6] worth 3 each.
+            What does the earliest-finish greedy report?
+          options:
+            - "9 — it accepts three ranges, while accepting the single range worth 10 is better"
+            - "10 — it accepts the most valuable range"
+            - "19 — it accepts all four"
+            - "13 — it accepts [1,10] and [3,4]"
+          answer: "9 — it accepts three ranges, while accepting the single range worth 10 is better"
+          explanation: >-
+            The greedy maximises the COUNT, and the count is now the wrong
+            objective. With values there is no safe local choice at all: this is
+            dynamic programming over the ranges sorted by end. Notice the sort
+            survives and the sweep does not.
+        - id: eft-recall-comparator
+          kind: recall
+          prompt: >-
+            Write the body of the comparator that puts the ranges into the order
+            this pattern requires, for a struct with members `start` and
+            `finish`.
+          answer: "return a.finish < b.finish;"
+          accepts:
+            - "returna.finish<b.finish;"
+            - "returna.finish<b.finish"
+            - "returnb.finish>a.finish;"
+            - "a.finish<b.finish"
+          explanation: >-
+            By the end, strictly less than, and nothing about the start. Commit
+            the pairing: conflicting items are ranked by what they give BACK, and
+            what they give back is measured where they finish.
+        - id: eft-apply-accept
+          kind: apply
+          prompt: >-
+            Inside `for (const Range& r : v)`, with `int taken` and
+            `long long last = LLONG_MIN` declared and the ranges already ordered,
+            write the statement that accepts r when it is clear.
+          answer: "if (r.start >= last) { ++taken; last = r.finish; }"
+          accepts:
+            - "if(r.start>=last){++taken;last=r.finish;}"
+            - "if(r.start>=last){taken++;last=r.finish;}"
+            - "if(r.start>=last){++taken;last=r.finish;};"
+            - "if(last<=r.start){++taken;last=r.finish;}"
+          explanation: >-
+            One scalar carries the entire history of the sweep: the end of the
+            last acceptance. That is the whole state, which is why the pattern is
+            O(n) after the sort. Use `>` instead of `>=` when the statement says
+            touching is a clash.
+
+  # ---------------------------------------------------------------- stage 3
+  - id: stage-adjacent-swap
+    order: 3
+    pattern: exchange-argument
+    trial_problem_ids: [printer-queue-order]
+    secret:
+      id: adjacent-swap
+      name: The Swap That Writes the Comparator
+      idiom: "a.time * b.weight < b.time * a.weight"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        Until now the statement told you the key. Sometimes it does not, because
+        nothing is refused: every task is run, every tile is hung, and the only
+        decision is the ORDER. There is no budget to be cheap against and no
+        conflict to be early against, and students stall here. They should not,
+        because the key can be derived mechanically. Take two items that sit next
+        to each other. Write the cost of "a then b" and the cost of "b then a".
+        Subtract. Everything before the pair and everything after it cancels —
+        the pair occupies the same block of time either way — so what survives is
+        a comparison between a and b alone. That comparison IS your comparator.
+        And checking only neighbours is enough, because any permutation can be
+        reached from any other by repeated swaps of neighbours: if no adjacent
+        pair can be improved, nothing can. Two jobs, one subtraction, and the
+        whole ordering falls out.
+      demonstrations:
+        - expression: "durations 3 then 1, sum of finishing times"
+          result: "3 + 4 = 7"
+          note: "The first job finishes at 3, the second at 4."
+        - expression: "durations 1 then 3, sum of finishing times"
+          result: "1 + 4 = 5"
+          note: >-
+            Same two jobs, same total length, two units cheaper. The short job
+            belongs first because every job after it pays for its length.
+        - expression: "the algebra: a then b costs 2S + 2a + b; b then a costs 2S + 2b + a"
+          result: "difference is a - b"
+          note: >-
+            S is when the pair starts, and it appears identically on both sides,
+            as does everything after the pair. So a belongs first exactly when
+            a < b, and nothing else in the schedule enters the comparison.
+        - expression: "jobs (t=1, w=1) and (t=10, w=100), shortest first"
+          result: "1 * 1 + 100 * 11 = 1101"
+          note: "Shortest-first is the unweighted rule applied where the weights differ."
+        - expression: "the same two jobs, the heavy one first"
+          result: "100 * 10 + 1 * 11 = 1011"
+          note: >-
+            Ninety cheaper. The swap gives the rule: a first when
+            t_a * w_b < t_b * w_a. Here 1 * 100 = 100 against 10 * 1 = 10, so the
+            inequality fails and the heavy job goes first.
+        - expression: "tiles 3, 34, 5, 9, 30 arranged for the largest concatenation"
+          result: "9534330"
+          note: >-
+            The derived key need not be a number: a before b exactly when the
+            text a+b exceeds b+a. "3" beats "30" because 330 beats 303, which no
+            numeric ranking of the tiles themselves would ever produce.
+      watch_out:
+        - warning: "Check the direction of the derived comparator on two items by hand."
+          why: >-
+            The subtraction is easy to sign-flip, and a reversed comparator does
+            not give a slightly worse answer — it gives the worst possible one,
+            consistently. Two items, four numbers, thirty seconds: compute both
+            orders and confirm the comparator prefers the cheaper one.
+        - warning: "Do not sort by t / w as a double."
+          why: >-
+            Two jobs with genuinely different ratios can compare equal after
+            rounding, and worse, the comparison can become inconsistent, which is
+            undefined behaviour inside std::sort. Cross multiply:
+            `a.time * b.weight < b.time * a.weight`.
+        - warning: "The derivation is only valid if the swap leaves every OTHER item's cost unchanged."
+          why: >-
+            That cancellation is the whole proof. If exchanging two neighbours
+            changes what a third item pays — because of a shared deadline, a
+            penalty that depends on position, or a resource freed elsewhere — no
+            comparator exists and no amount of tweaking the key will find one.
+            Check the cancellation before you write the sort.
+        - warning: "Deadlines in the statement are often a decoy."
+          why: >-
+            "Maximise the sum of (deadline - finishing time)" has a FIXED sum of
+            deadlines, so it is identical to minimising the sum of finishing
+            times, and the deadlines never enter the decision. Write the
+            objective out algebraically before you rank by the number that looks
+            most important.
+        - warning: "The running clock and the weighted total both need long long."
+          why: >-
+            2 * 10^5 durations of 10^9 put the clock at 2 * 10^14, and weighting
+            that by 10^9 puts the total past what any 64-bit type holds — at
+            which point the statement is telling you to work modulo something, or
+            the bounds are smaller than you read. Check before you accumulate.
+      drills:
+        - id: asw-eval-two-jobs
+          kind: evaluate
+          prompt: >-
+            Two jobs of length 3 and 1 run back to back from time 0. What is the
+            smallest possible sum of their two finishing times?
+          options: ["4", "5", "7", "8"]
+          answer: "5"
+          explanation: >-
+            Short first: 1 and 4, summing to 5. Long first: 3 and 4, summing to
+            7. The total length is 4 either way; what differs is how long the
+            second job waits.
+        - id: asw-eval-weighted
+          kind: evaluate
+          prompt: >-
+            Jobs (t=1, w=1) and (t=10, w=100), minimising the sum of weight times
+            finishing time. What is the smallest total?
+          options: ["1011", "1101", "1110", "2112"]
+          answer: "1011"
+          explanation: >-
+            Heavy first: 100 * 10 + 1 * 11 = 1011. Short first: 1 * 1 + 100 * 11
+            = 1101. Shortest-first is the special case w = 1 and it is wrong the
+            moment the weights differ.
+        - id: asw-eval-concat
+          kind: evaluate
+          prompt: >-
+            Tiles carrying 3, 34, 5, 9 and 30 are hung in a row to spell the
+            largest possible number. What is it?
+          options: ["9534330", "9345330", "9530343", "9343053"]
+          answer: "9534330"
+          explanation: >-
+            The order is 9, 5, 34, 3, 30. Note 3 before 30, because "330" exceeds
+            "303" — a ranking no comparison of the tiles' own values produces.
+        - id: asw-prop-cancel
+          kind: property
+          prompt: >-
+            When you write the cost of "a then b" and of "b then a" and subtract,
+            what cancels?
+          options:
+            - "everything scheduled before the pair and everything after it, since the pair spans the same block either way"
+            - "only the terms involving a"
+            - "nothing cancels; the whole schedule must be recomputed"
+            - "the weights cancel, leaving only the durations"
+          answer: "everything scheduled before the pair and everything after it, since the pair spans the same block either way"
+          explanation: >-
+            That cancellation is the entire technique. What survives involves
+            only a and b, so it is a comparison between two items — which is
+            exactly what a comparator is.
+        - id: asw-prop-adjacent
+          kind: property
+          prompt: >-
+            Why is checking only ADJACENT pairs enough to prove the whole order
+            optimal?
+          options:
+            - "any permutation can be reached from any other by repeated swaps of neighbours, so no adjacent improvement means no improvement at all"
+            - "non-adjacent pairs never affect the total"
+            - "because the input is sorted before the check"
+            - "it is not enough; every pair must be checked, which is why this is O(n^2)"
+          answer: "any permutation can be reached from any other by repeated swaps of neighbours, so no adjacent improvement means no improvement at all"
+          explanation: >-
+            It is the bubble-sort observation used as a proof. If some other
+            order were strictly better, walking towards it by neighbour swaps
+            would have to improve the total at some single swap — and no adjacent
+            swap improves anything.
+        - id: asw-trap-shortest-weighted
+          kind: trap
+          prompt: >-
+            A solution to the weighted problem sorts by duration alone. On jobs
+            (t=1, w=1) and (t=10, w=100) what does it produce, and why is that
+            wrong?
+          options:
+            - "1101, because it ignores that making a heavy job wait costs 100 per unit of time"
+            - "1011, which is optimal — sorting by duration is correct"
+            - "it crashes, since the comparator ignores the weights"
+            - "1110, because the weights must be added to the durations"
+          answer: "1101, because it ignores that making a heavy job wait costs 100 per unit of time"
+          explanation: >-
+            The unweighted rule is the weighted rule with every w equal to 1. As
+            soon as the weights differ, the swap produces t_a * w_b < t_b * w_a
+            and the durations alone no longer decide anything.
+        - id: asw-recall-rule
+          kind: recall
+          prompt: >-
+            Write the comparator expression that orders jobs to minimise the sum
+            of weight times finishing time, with members `time` and `weight`.
+          answer: "a.time * b.weight < b.time * a.weight"
+          accepts:
+            - "a.time*b.weight<b.time*a.weight"
+            - "a.t*b.w<b.t*a.w"
+            - "b.time*a.weight>a.time*b.weight"
+            - "a.time*b.weight<a.weight*b.time"
+          explanation: >-
+            It is t_a/w_a < t_b/w_b with both weights multiplied out. Memorise
+            the shape, not a story about it — the same cross-multiplied form
+            appears every time a swap produces a ratio.
+        - id: asw-apply-concat
+          kind: apply
+          prompt: >-
+            Write the body of the comparator that arranges digit strings so their
+            concatenation is as large as possible, for two `const string&`
+            parameters a and b.
+          answer: "return a + b > b + a;"
+          accepts:
+            - "returna+b>b+a;"
+            - "returna+b>b+a"
+            - "returnb+a<a+b;"
+            - "a+b>b+a"
+          explanation: >-
+            Compare the two candidate ORDERS, not the two pieces. This is the
+            same adjacent swap with a cost function that happens to be string
+            comparison, which is why the derivation matters more than any of the
+            individual rules it produces.
+
+  # ---------------------------------------------------------------- stage 4
+  - id: stage-median-not-mean
+    order: 4
+    pattern: median-minimisation
+    trial_problem_ids: [caravan-meeting-post, pylon-height-levelling]
+    secret:
+      id: median-not-mean
+      name: The Middle, Not the Average
+      idiom: "sort(a.begin(), a.end()); x = a[n / 2];"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        A different shape: nothing is selected and nothing is ordered. One value
+        is chosen and everything is dragged to it. Which value depends entirely
+        on how the dragging is charged, and the two common charges have different
+        answers — which is why this is taught as a pair and never singly. Charge
+        the distance itself and the answer is the MIDDLE of the sorted values.
+        The proof is a balance: nudge the chosen point one step to the right and
+        every value on its left pays one more while every value on its right pays
+        one less, so the total moves by the difference between the two counts and
+        stops improving exactly when the sides are balanced. Charge the SQUARE of
+        the distance and the answer is the average instead, because now a distant
+        value pulls in proportion to how distant it is. On [1, 2, 9] the middle is
+        2 and the mean is 4, and each is a wrong answer to the other question.
+        Read which charge the statement makes before you touch the data.
+      demonstrations:
+        - expression: "a = [1, 2, 9], total distance to the middle value 2"
+          result: "1 + 0 + 7 = 8"
+          note: "The 9 is far away and pays for it, but it does not get to choose the point."
+        - expression: "a = [1, 2, 9], total distance to the average 4"
+          result: "3 + 2 + 5 = 10"
+          note: >-
+            Two worse. One outlier dragged the average away from where the bulk
+            of the values actually are, and the middle is immune to that.
+        - expression: "a = [1, 2, 9], sum of SQUARED distances to 4"
+          result: "9 + 4 + 25 = 38"
+          note: "The average wins this objective."
+        - expression: "a = [1, 2, 9], sum of squared distances to 2"
+          result: "1 + 0 + 49 = 50"
+          note: >-
+            Twelve worse. The ranking has reversed between the two objectives on
+            identical data — that is the whole reason to learn them together.
+        - expression: "a = [1, 2, 3, 10], total distance at 2 and at 3"
+          result: "10 and 10"
+          note: >-
+            With an even count every point between the two middle values ties, so
+            a[n/2] is always safe and no special case is needed.
+        - expression: "positions 1, 2, 100 carrying 1, 1 and 5 crates"
+          result: "197 at position 100, against 491 at position 2"
+          note: >-
+            With weights the balance is over the WEIGHT on each side, not the
+            count. 1 and 2 hold two crates between them and 100 holds five, so
+            the point moves to 100: 99 + 98 + 0 = 197.
+        - expression: "heights [1, 2, 9] that must end as h, h+1, h+2"
+          result: "6"
+          note: >-
+            Subtract the position from each: [1, 1, 7]. The middle is 1, and the
+            total is 0 + 0 + 6 = 6. The ramp constraint vanished into one
+            subtraction.
+      watch_out:
+        - warning: "The average is the answer to the SQUARED objective, and to nothing else."
+          why: >-
+            "Make them all equal at the smallest total cost" charges one unit per
+            unit of change, which is a sum of absolute differences, and its
+            minimiser is the middle. Using the average there is not a rounding
+            error; on [1, 2, 9] it is 10 against 8, and one outlier is enough to
+            cause it.
+        - warning: "For the squared objective, score BOTH integers around the mean."
+          why: >-
+            The true minimiser is sum/n, which is rarely an integer, and rounding
+            once is wrong whenever the fraction is near a half. Scoring
+            sum/n - 1, sum/n and sum/n + 1 costs 3n operations and removes the
+            entire class of bug — including the negative case, where C++ integer
+            division truncates towards zero and so already gives you the ceiling.
+        - warning: "The middle must be read from the SORTED values."
+          why: >-
+            a[n/2] of an unsorted array is an arbitrary element. The symptom is
+            an answer that changes when the input is shuffled, which no sample
+            will ever reveal. If n reaches 10^7, use std::nth_element and get the
+            middle in O(n) without sorting at all.
+        - warning: "With weights, balance the WEIGHT on each side, not the count."
+          why: >-
+            Positions 1, 2 and 100 holding 1, 1 and 5 crates put the answer at
+            100, not at 2 — 197 against 491. The plain middle is the weighted
+            middle with every weight equal to 1; expand each position into its
+            weight, conceptually, and take the point where the running weight
+            first reaches half the total.
+        - warning: "The total distance overflows int long before the coordinates do."
+          why: >-
+            2 * 10^5 values spread over a range of 10^9 give a total near 10^14
+            while each individual coordinate fits comfortably. Declare the
+            accumulator long long, and use llabs rather than abs so the argument
+            is not silently narrowed to int.
+      drills:
+        - id: mnm-eval-middle
+          kind: evaluate
+          prompt: >-
+            a = [1, 2, 9]. What is the smallest possible total of |a[i] - x| over
+            all choices of x?
+          options: ["8", "10", "12", "16"]
+          answer: "8"
+          explanation: >-
+            At x = 2: 1 + 0 + 7 = 8. No other point does better — moving right
+            costs two values one step each and saves one value one step, so the
+            total only rises.
+        - id: mnm-eval-mean
+          kind: evaluate
+          prompt: >-
+            For the same a = [1, 2, 9], what is the total of |a[i] - x| at the
+            average, x = 4?
+          options: ["8", "9", "10", "14"]
+          answer: "10"
+          explanation: >-
+            3 + 2 + 5 = 10, which is two worse than the middle. The 9 dragged the
+            average away from where two of the three values actually sit.
+        - id: mnm-eval-squares
+          kind: evaluate
+          prompt: >-
+            For a = [1, 2, 9], what is the smallest possible total of
+            (a[i] - x)^2 over integer x?
+          options: ["38", "40", "50", "56"]
+          answer: "38"
+          explanation: >-
+            At x = 4, the average: 9 + 4 + 25 = 38. At x = 2, the middle, it is
+            1 + 0 + 49 = 50. The two objectives have swapped their winners on
+            identical data.
+        - id: mnm-eval-even
+          kind: evaluate
+          prompt: >-
+            a = [1, 2, 3, 10]. What is the total of |a[i] - x| at x = 2, and at
+            x = 3?
+          options:
+            - "10 and 10 — every point between the two middle values ties"
+            - "10 and 11 — the lower middle is strictly better"
+            - "11 and 10 — the upper middle is strictly better"
+            - "8 and 12"
+          answer: "10 and 10 — every point between the two middle values ties"
+          explanation: >-
+            1 + 0 + 1 + 8 = 10 and 2 + 1 + 0 + 7 = 10. The counts on each side
+            are balanced across the whole stretch between them, so the total is
+            flat there and a[n/2] is always a safe choice.
+        - id: mnm-prop-balance
+          kind: property
+          prompt: >-
+            You nudge the chosen point one step to the right. By how much does
+            the total of absolute differences change?
+          options:
+            - "by the number of values on the left minus the number on the right"
+            - "by the total distance to all the values"
+            - "by one, always"
+            - "by the difference between the largest and smallest value"
+          answer: "by the number of values on the left minus the number on the right"
+          explanation: >-
+            Every value already passed pays one more; every value still ahead
+            pays one less. The total stops improving when the counts balance,
+            which is the definition of the middle — and it is why an outlier,
+            which is one value however distant, cannot move the answer.
+        - id: mnm-trap-round-once
+          kind: trap
+          prompt: >-
+            For the squared objective the code computes `x = sum / n` and scores
+            only that. On which inputs is it wrong?
+          options:
+            - "those whose average is not a whole number, where the neighbour above may score better"
+            - "those with an even number of values"
+            - "those containing a zero"
+            - "none; the truncated average is always optimal"
+          answer: "those whose average is not a whole number, where the neighbour above may score better"
+          explanation: >-
+            Integer division truncates, so a mean of 3.6 becomes 3 while 4 may be
+            the better integer. Score sum/n - 1, sum/n and sum/n + 1 — three
+            candidates, 3n work, and the truncation-towards-zero problem on
+            negative sums disappears at the same time.
+        - id: mnm-recall-target
+          kind: recall
+          prompt: >-
+            The vector a has already been sorted and n is its size. Write the
+            expression that gives the value minimising the total of absolute
+            differences.
+          answer: "a[n / 2]"
+          accepts:
+            - "a[n/2]"
+            - "a[n/2];"
+            - "a.at(n/2)"
+            - "a[a.size()/2]"
+          explanation: >-
+            The middle of the sorted values. For an even n the whole stretch
+            between the two middles ties, so this index needs no special case —
+            and if n is large enough to make the sort itself the problem,
+            nth_element produces the same element in O(n).
+        - id: mnm-apply-ramp
+          kind: apply
+          prompt: >-
+            The values must end up consecutive — h, h+1, h+2, ... — in the order
+            given. Write the statement inside `for (size_t i = 0; i < a.size();
+            ++i)` that reduces this to the plain question.
+          answer: "a[i] -= i;"
+          accepts:
+            - "a[i]-=i;"
+            - "a[i]-=i"
+            - "a[i]=a[i]-i;"
+            - "a[i]-=(longlong)i;"
+          explanation: >-
+            The cost is sum |a[i] - (h + i)| = sum |(a[i] - i) - h|, so
+            subtracting the position turns the ramp into "make them all equal".
+            It must happen BEFORE any sorting, since the positions are what the
+            statement fixed.
+
+  # ---------------------------------------------------------------- stage 5
+  - id: stage-when-greedy-lies
+    order: 5
+    pattern: exchange-argument
+    trial_problem_ids: [forge-billet-deadlines]
+    secret:
+      id: when-greedy-lies
+      name: Where the Argument Fails
+      idiom: "{1, 3, 4} and 6 — greedy says 3 coins, the truth is 2"
+      memorise: true
+      baseline_drills: 4
+      teaches: >-
+        Now the most important secret, and the one nobody teaches: how to know
+        that you are wrong. A greedy algorithm has no failure mode that looks
+        like failure. It compiles, it runs in a log factor, it agrees with every
+        sample, and it is simply not optimal — and the judge reports that as a
+        wrong answer on test 14 with no further explanation. The only defence is
+        the exchange argument itself, used as a TEST rather than as a
+        justification. Try to prove your local choice safe. If the proof will not
+        come, do not conclude that you are bad at proofs; conclude that you are
+        looking at the counterexample and have not found it yet. Then find it:
+        the smallest one is almost always two or three items long. Coins {1, 3, 4}
+        and the amount 6. Three items and a knapsack that cannot be split. Add
+        values to a scheduling problem and watch every key fail at once. Learn
+        these four shapes and you will recognise the boundary from the statement,
+        which is the difference between a warrior and someone holding a sword.
+      demonstrations:
+        - expression: "coins {1, 3, 4}, amount 6, largest first"
+          result: "3 coins"
+          note: "4 + 1 + 1. The optimum is 3 + 3, which is 2 coins."
+        - expression: "capacity 50, items (value 60, weight 10), (100, 20), (120, 30), by value per weight"
+          result: "160"
+          note: >-
+            Ratios 6, 5, 4. The greedy takes the first two for 160 and cannot fit
+            the third in the remaining 20. Taking the second and third gives 220.
+        - expression: "the same three items, if they may be split"
+          result: "240"
+          note: >-
+            60 + 100 + two thirds of 120 = 240, and now the greedy IS optimal.
+            One word in the statement — divisible — moves the problem across the
+            boundary in both directions.
+        - expression: "ranges [1,10] worth 10, and [1,2] [3,4] [5,6] worth 3 each"
+          result: "greedy 9, optimum 10"
+          note: >-
+            The earliest-finish sweep accepts three ranges and scores 9. Adding
+            values destroys the local choice: no key exists, and the problem
+            becomes a dynamic program over the ranges sorted by end.
+        - expression: "the swap test on any candidate greedy"
+          result: "either a proof or a counterexample"
+          note: >-
+            Take an optimal answer and force your first choice into it. If it
+            survives, you have a theorem. If the argument stalls, the exact place
+            it stalls tells you what the counterexample must look like.
+        - expression: "brute force over subsets of an 18-item instance"
+          result: "262144 checks, a few milliseconds"
+          note: >-
+            The professional answer: write the exhaustive version, generate small
+            random inputs, and compare. A greedy that survives ten thousand
+            random instances of size 8 is usually right, and one that fails will
+            fail within seconds.
+      watch_out:
+        - warning: "\"It passed the samples\" is evidence of nothing in this region."
+          why: >-
+            Samples are chosen to illustrate the statement, not to break a
+            solution, and a plausible-but-wrong greedy agrees with them almost
+            always. In every other pattern the samples catch index bugs; here
+            they catch nothing, because your indices are fine and your ALGORITHM
+            is wrong.
+        - warning: "A greedy fails exactly when a local choice changes what is available later in a way that is not captured by the key."
+          why: >-
+            In the 0/1 knapsack, taking a slightly better ratio consumes capacity
+            that a much better combination needed. In weighted scheduling,
+            accepting a short range refuses a valuable long one. The common shape:
+            the item you take affects OTHER items' feasibility, so no ranking of
+            items alone can be enough. That is the moment to reach for dynamic
+            programming.
+        - warning: "The counterexample is small, so look for it by hand first."
+          why: >-
+            Almost every failure of a candidate greedy shows up at two or three
+            items: {1, 3, 4} and 6 for coins, three items for the knapsack, four
+            ranges for the weighted schedule. Ten minutes with a pencil before
+            you submit is cheaper than a wrong-answer verdict and an hour of
+            rereading correct code.
+        - warning: "Do not repair a broken greedy by adding tie-breaks."
+          why: >-
+            When the key is wrong, tuning it makes the failing tests move rather
+            than disappear, and each new tie-break makes the solution harder to
+            reason about. Either produce the exchange argument for the new rule
+            or abandon the approach; a greedy nobody can prove is a greedy nobody
+            can debug.
+        - warning: "Stress-test against a brute force rather than staring at the code."
+          why: >-
+            A greedy is short enough that rereading it tells you nothing — the
+            code says exactly what you meant. Generate random instances of size 6
+            to 10, compute the true optimum by trying every subset or every
+            permutation, and compare. The first disagreement is your
+            counterexample, printed for you.
+      drills:
+        - id: wgl-eval-coins-greedy
+          kind: evaluate
+          prompt: >-
+            Denominations {1, 3, 4}, amount 6, taking the largest that fits each
+            time. How many coins does that use?
+          options: ["2", "3", "4", "6"]
+          answer: "3"
+          explanation: >-
+            4, then 1, then 1. The greedy commits to the 4 and can never undo it,
+            and the two coins it should have used are both smaller than the one it
+            took first.
+        - id: wgl-eval-coins-optimal
+          kind: evaluate
+          prompt: >-
+            Same denominations {1, 3, 4} and amount 6. What is the true minimum
+            number of coins?
+          options: ["1", "2", "3", "4"]
+          answer: "2"
+          explanation: >-
+            3 + 3. The gap is one coin at the smallest interesting amount, which
+            is exactly why this system is the standard counterexample — you can
+            hold the whole failure in your head.
+        - id: wgl-eval-knapsack
+          kind: evaluate
+          prompt: >-
+            Capacity 50 and indivisible items (value 60, weight 10), (100, 20),
+            (120, 30). Sorting by value per weight and taking greedily, what
+            total value is collected?
+          options: ["160", "180", "220", "240"]
+          answer: "160"
+          explanation: >-
+            Ratios are 6, 5 and 4. The first two are taken for 160, leaving 20 of
+            capacity that the third item cannot fit into. The optimum is
+            100 + 120 = 220, and no ordering of the items produces it.
+        - id: wgl-prop-divisible
+          kind: property
+          prompt: >-
+            Which single word in the statement decides whether value-per-weight
+            sorting is correct?
+          options:
+            - "divisible — a fractional item makes the ratio order provably optimal, and an indivisible one makes it wrong"
+            - "positive — negative values would break the ordering"
+            - "distinct — repeated weights make the comparator ambiguous"
+            - "sorted — the items must arrive in ratio order"
+          answer: "divisible — a fractional item makes the ratio order provably optimal, and an indivisible one makes it wrong"
+          explanation: >-
+            With divisibility the capacity is filled a unit at a time and every
+            unit is interchangeable, which is a one-line exchange argument.
+            Without it, taking a better ratio can consume capacity a better
+            combination needed, and the argument has nothing to say.
+        - id: wgl-prop-shape
+          kind: property
+          prompt: >-
+            What do the failing cases — 0/1 knapsack, weighted scheduling,
+            arbitrary coin systems — have in common?
+          options:
+            - "the item you take changes which OTHER items remain feasible, in a way no ranking of items alone can capture"
+            - "they all involve division"
+            - "they all have inputs too large to sort"
+            - "they all require the original order to be preserved"
+          answer: "the item you take changes which OTHER items remain feasible, in a way no ranking of items alone can capture"
+          explanation: >-
+            That interaction is the boundary of this whole region. When a local
+            choice only spends a shared budget or frees a shared line, a ranking
+            suffices; when it reshapes what is reachable afterwards, you need a
+            method that remembers states, which is dynamic programming.
+        - id: wgl-trap-tiebreak
+          kind: trap
+          prompt: >-
+            A greedy fails one test. The author adds a tie-break to the
+            comparator; a different test fails. He adds another. What is actually
+            happening?
+          options:
+            - "the key is wrong, so tuning it moves the failing tests instead of removing them"
+            - "the comparator is no longer a strict weak ordering"
+            - "the tests are contradictory"
+            - "nothing is wrong; this is the normal way to arrive at the right key"
+          answer: "the key is wrong, so tuning it moves the failing tests instead of removing them"
+          explanation: >-
+            Tie-breaks fix ties. They cannot fix an ordering that is optimal for
+            the wrong objective. Stop and attempt the exchange argument for the
+            rule you have: it either produces a proof or shows you the shape of
+            the counterexample.
+        - id: wgl-recall-counterexample
+          kind: recall
+          prompt: >-
+            Write the smallest coin system and amount on which taking the largest
+            coin that fits is not optimal. Give the system in braces, then the
+            amount.
+          answer: "{1, 3, 4} 6"
+          accepts:
+            - "{1,3,4}6"
+            - "{1,3,4},6"
+            - "134 6"
+            - "{1,3,4}and6"
+            - "coins{1,3,4}amount6"
+          explanation: >-
+            Greedy gives 4 + 1 + 1 and the optimum is 3 + 3. Memorise it. It is
+            the fastest way to check whether a coin-shaped problem has been
+            handed to you with a canonical system or an arbitrary one.
+        - id: wgl-apply-bruteforce
+          kind: apply
+          prompt: >-
+            To stress-test a greedy against the truth on n items with n <= 20,
+            write the for-loop header that enumerates every subset.
+          answer: "for (int m = 0; m < (1 << n); ++m)"
+          accepts:
+            - "for(intm=0;m<(1<<n);++m)"
+            - "for(intm=0;m<(1<<n);m++)"
+            - "for(intmask=0;mask<(1<<n);++mask)"
+            - "for(intm=0;m<(1<<n);++m){"
+          explanation: >-
+            The bits master already gave you this: the integers 0 to 2^n - 1 are
+            the subsets. Generate small random instances, compare the exhaustive
+            answer with the greedy one, and the first disagreement is your
+            counterexample — found in seconds rather than argued about for an
+            hour.
+
+final_test_problem_ids:
+  - tollgate-note-count
+  - apprentice-tool-fit
+  - festival-stage-slots
+  - watchtower-shifts
+  - banner-number-tiles
+  - dyke-stair-steps

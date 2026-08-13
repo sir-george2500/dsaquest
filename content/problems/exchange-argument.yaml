@@ -1,0 +1,149 @@
+# Problems that are really The Adjacent Swap.
+#
+# The tell these train: nothing is refused. Every item is used and only the
+# SEQUENCE is in question, so the sorting key is not written in the statement —
+# it has to be derived by swapping two neighbours. None of these may say so.
+
+- id: printer-queue-order
+  pattern: exchange-argument
+  title: The Printer Queue
+  difficulty: medium
+  statement: >-
+    One press must print n commissions today and every one of them will be
+    printed. Commission i occupies the press for t[i] hours and is owed to a
+    guild of w[i] members, each of whom waits idle until their commission is
+    finished and is paid one crown of compensation per hour of waiting. A
+    commission's members all wait until the moment it is finished, counting from
+    the start of the day. Choose the order in which the commissions are printed
+    so that the total compensation is as small as possible, and report that
+    total.
+  constraints: |
+    1 <= n <= 200000
+    1 <= t[i] <= 10^4
+    1 <= w[i] <= 10^4
+    the total can reach 4*10^18, which fits a signed 64-bit type and nothing narrower
+  signals_present:
+    - every commission is printed, so nothing is selected or refused
+    - the cost of a commission depends on everything printed before it
+    - two numbers per commission with no stated reason to prefer either
+    - the answer is a total produced by an ordering, and the ordering is the decision
+  decoy_signals:
+    - "\"as small as possible\" with two numbers per item invites ranking by the shorter time, which is the unweighted rule and is wrong here"
+    - many members waiting invites ranking by the largest guild first
+    - a total accumulated over a sequence invites a dynamic program over prefixes
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        Take any two commissions that would be printed one after the other and
+        write down the compensation for each of the two possible orders. Then
+        subtract. What survives?
+    - text: >-
+        Everything printed before the pair, and everything after it, cancels —
+        the pair occupies the same block of hours either way. What is left is a
+        comparison between those two commissions alone.
+    - text: >-
+        The swap proves that commission a belongs before b exactly when
+        t[a] * w[b] < t[b] * w[a]. Arrange by that comparison and sweep once,
+        adding w times the running clock.
+      reveals_pattern: true
+  why: >-
+    Nothing is refused and every commission is printed, so the answer is a
+    permutation, not a subset — and no key is named in the statement. Comparing
+    two adjacent orders makes everything else cancel and leaves a comparison
+    between the pair alone, which IS the comparator. The two numbers per item
+    with no stated preference is the signal that the key must be derived.
+  classic_ref: CPH 6.3 family; Smith's rule for weighted completion time
+
+- id: banner-number-tiles
+  pattern: exchange-argument
+  title: Banner Tiles
+  difficulty: medium
+  statement: >-
+    A herald owns n painted tiles, each carrying a short run of digits such as
+    "3", "34" or "907". He must hang all n tiles in a single row on a banner,
+    left to right, using every tile exactly once. Read straight across, the
+    banner spells one enormous number. Arrange the tiles so that this number is
+    as large as it can be and report it. If the result begins with a zero the
+    whole banner reads as the number zero, and you should print a single 0.
+  constraints: |
+    1 <= n <= 200000
+    each tile carries between 1 and 10 digits, with no leading zeros of its own
+    the total number of digits is at most 10^6
+  signals_present:
+    - every tile is hung, so nothing is chosen and nothing is discarded
+    - the value depends only on the sequence the tiles are placed in
+    - the pieces are compared against each other and not against any threshold
+    - n up to 2*10^5 rules out trying arrangements
+  decoy_signals:
+    - "\"as large as possible\" invites hanging the numerically largest tile first, which is wrong for 3 against 30"
+    - tiles of different lengths invite ranking by length, or padding them to equal length
+    - the enormous result invites big-integer arithmetic, which is not needed at all
+  expected_complexity: O(total digits * log n)
+  hints:
+    - text: >-
+        Take two tiles and consider only them. There are two ways round. Write
+        both results down as strings and compare them — nothing about the other
+        tiles enters that comparison.
+    - text: >-
+        Tile a belongs before tile b exactly when the joined text a-then-b reads
+        larger than b-then-a. Note that this is not the same as a being larger
+        than b: "3" beats "30" because 330 beats 303.
+    - text: >-
+        Order the tiles by that comparison — a + b greater than b + a — join
+        them, and print a single 0 if the first character is a zero.
+      reveals_pattern: true
+  why: >-
+    Every tile is used and only the sequence matters, so this is an arrangement,
+    not a selection. The derivation is the same swap as any weighted scheduling
+    problem, but it produces a key that is not a number: compare the two
+    candidate orders directly. Any attempt to rank the tiles by their own value
+    or their length fails on "3" against "30".
+  classic_ref: LeetCode 179 family (Largest Number)
+
+- id: forge-billet-deadlines
+  pattern: exchange-argument
+  title: Forge Billets
+  difficulty: hard
+  statement: >-
+    A forge must work n billets today and will finish every one of them, one at
+    a time and without pause. Billet i takes d[i] hours in the fire and was
+    promised to its owner by hour f[i], counting from the opening of the forge.
+    When a billet is finished at hour x its owner records a score of f[i] minus
+    x, which is positive if it is early and negative if it is late. The
+    smith wants the total of all n scores to be as large as it can be. Report
+    that total.
+  constraints: |
+    1 <= n <= 200000
+    1 <= d[i] <= 10^4
+    1 <= f[i] <= 10^9
+    the total may be negative, and its magnitude may exceed 2^31
+  signals_present:
+    - every billet is worked, so nothing is selected
+    - the score of a billet depends on when it finishes, hence on everything worked before it
+    - the answer is produced by choosing a sequence
+    - two numbers per billet, one of which turns out to be irrelevant
+  decoy_signals:
+    - "\"promised by hour f[i]\" is deadline language and invites ranking by the earliest deadline, as scheduling problems usually do"
+    - a positive-or-negative score invites discarding the billets that cannot be finished on time, but none may be discarded
+    - the mixture of durations and deadlines invites a dynamic program over which billets are already worked
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        Write the total out as a sum. One half of it does not depend on your
+        decision at all. Which half?
+    - text: >-
+        The promised hours are fixed, so their sum is a constant; maximising the
+        total means minimising the sum of the finishing hours. The deadlines
+        never enter the decision.
+    - text: >-
+        Swapping two adjacent billets shows that the shorter one belongs first,
+        so work them in increasing order of time in the fire and accumulate the
+        running clock.
+      reveals_pattern: true
+  why: >-
+    The deadlines are a decoy, and the algebra proves it: the total is the fixed
+    sum of the promised hours minus the sum of finishing hours, so only the
+    second half is yours to control. Minimising the sum of finishing hours is
+    the unweighted adjacent-swap rule, and the shorter billet belongs first
+    regardless of when either was promised.
+  classic_ref: CPH 6.3 (tasks and deadlines)

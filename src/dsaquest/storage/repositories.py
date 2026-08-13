@@ -973,6 +973,87 @@ def comebacks(conn: sqlite3.Connection) -> int:
 
 
 # --------------------------------------------------------------------------
+# Problem exposure — met before, or met for the first time
+# --------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class ProblemExposure:
+    """How one pattern went on repeated problems versus first encounters.
+
+    The two halves are what separate *remembering a problem* from *knowing a
+    pattern*. See ``analytics.memorisation`` for the judgment made on them; this
+    only counts.
+    """
+
+    pattern_id: str
+    fresh_correct: int
+    fresh_total: int
+    seen_correct: int
+    seen_total: int
+
+
+def problem_exposure(
+    conn: sqlite3.Connection, *, pattern_id: str | None = None
+) -> tuple[ProblemExposure, ...]:
+    """Split finished attempts into first encounters and repeats, per pattern.
+
+    A problem is "seen" from its *second* appearance in the log onwards, so the
+    first row for a ``problem_id`` is the only honest measure of that problem
+    as an unknown, and every row after it measures recall of it.
+
+    Three deliberate exclusions:
+
+    * ``problem_id IS NULL`` — recall drills and template completions record no
+      problem, so there is nothing to have seen before. Counting them as fresh
+      would inflate the side of the comparison that must stay clean.
+    * unfinished attempts — an abandoned attempt is not a wrong answer.
+    * nothing else. Every mode that names a problem counts, because memorising
+      a statement is memorising it whichever exercise showed it to you.
+
+    Ordered by ``id`` rather than ``started_at``: timestamps have second
+    resolution, so two attempts inside the same second compare equal and the
+    numbering of which came first becomes arbitrary.
+
+    ``pattern_id`` filters the *result*, not the window: encounter order is
+    always established over the whole log, so filtering can never turn a repeat
+    into a first encounter.
+    """
+    sql = """
+        WITH classified AS (
+            SELECT pattern_id,
+                   correct,
+                   ROW_NUMBER() OVER (PARTITION BY problem_id ORDER BY id) AS encounter
+              FROM attempt
+             WHERE finished_at IS NOT NULL
+               AND problem_id IS NOT NULL
+        )
+        SELECT pattern_id,
+               SUM(CASE WHEN encounter = 1 THEN correct ELSE 0 END) AS fresh_correct,
+               SUM(CASE WHEN encounter = 1 THEN 1 ELSE 0 END)       AS fresh_total,
+               SUM(CASE WHEN encounter > 1 THEN correct ELSE 0 END) AS seen_correct,
+               SUM(CASE WHEN encounter > 1 THEN 1 ELSE 0 END)       AS seen_total
+          FROM classified
+    """
+    params: list[object] = []
+    if pattern_id is not None:
+        sql += " WHERE pattern_id = ?"
+        params.append(pattern_id)
+    sql += " GROUP BY pattern_id ORDER BY pattern_id"
+
+    return tuple(
+        ProblemExposure(
+            pattern_id=row["pattern_id"],
+            fresh_correct=row["fresh_correct"],
+            fresh_total=row["fresh_total"],
+            seen_correct=row["seen_correct"],
+            seen_total=row["seen_total"],
+        )
+        for row in conn.execute(sql, params)
+    )
+
+
+# --------------------------------------------------------------------------
 # Boss records
 # --------------------------------------------------------------------------
 
@@ -1079,3 +1160,120 @@ def bosses_defeated(conn: sqlite3.Connection) -> set[str]:
     return {
         row["boss_id"] for row in conn.execute("SELECT boss_id FROM boss_record WHERE defeated = 1")
     }
+
+
+# --------------------------------------------------------------------------
+# Understanding checks
+# --------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class UnderstandingRecord:
+    """One check, as stored. ``code_correct`` may be None if never judged."""
+
+    pattern_id: str
+    mode: str
+    key_idea_ok: bool
+    complexity_ok: bool
+    invariant_ok: bool
+    answered: int
+    code_correct: bool | None
+    created_at: str
+
+    @property
+    def sound(self) -> bool:
+        return self.key_idea_ok and self.complexity_ok and self.invariant_ok
+
+    @property
+    def hollow(self) -> bool:
+        """Correct code, unsound reasoning."""
+        return bool(self.code_correct) and not self.sound
+
+
+def record_understanding(
+    conn: sqlite3.Connection,
+    *,
+    attempt_id: int | None,
+    pattern_id: str,
+    mode: GameMode,
+    key_idea: str,
+    complexity: str,
+    invariant: str,
+    key_idea_ok: bool,
+    complexity_ok: bool,
+    invariant_ok: bool,
+    answered: int,
+    code_correct: bool | None = None,
+) -> int:
+    """Store a check. Never updated afterwards — see the schema comment."""
+    cursor = conn.execute(
+        """
+        INSERT INTO understanding_check
+            (attempt_id, pattern_id, mode, key_idea, complexity, invariant,
+             key_idea_ok, complexity_ok, invariant_ok, answered, code_correct, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            attempt_id,
+            pattern_id,
+            mode.value,
+            key_idea,
+            complexity,
+            invariant,
+            int(key_idea_ok),
+            int(complexity_ok),
+            int(invariant_ok),
+            answered,
+            None if code_correct is None else int(code_correct),
+            utcnow(),
+        ),
+    )
+    return int(cursor.lastrowid)
+
+
+def _understanding_row(row: sqlite3.Row) -> UnderstandingRecord:
+    return UnderstandingRecord(
+        pattern_id=row["pattern_id"],
+        mode=row["mode"],
+        key_idea_ok=bool(row["key_idea_ok"]),
+        complexity_ok=bool(row["complexity_ok"]),
+        invariant_ok=bool(row["invariant_ok"]),
+        answered=int(row["answered"]),
+        code_correct=None if row["code_correct"] is None else bool(row["code_correct"]),
+        created_at=row["created_at"],
+    )
+
+
+def understanding_history(
+    conn: sqlite3.Connection, pattern_id: str | None = None, *, limit: int | None = None
+) -> tuple[UnderstandingRecord, ...]:
+    """Checks, newest last. Ordered by id so same-second rows keep their order."""
+    sql = "SELECT * FROM understanding_check"
+    params: list[object] = []
+    if pattern_id is not None:
+        sql += " WHERE pattern_id = ?"
+        params.append(pattern_id)
+    sql += " ORDER BY id"
+    if limit is not None:
+        sql += " LIMIT ?"
+        params.append(limit)
+    return tuple(_understanding_row(row) for row in conn.execute(sql, params))
+
+
+def hollow_solves(conn: sqlite3.Connection, pattern_id: str | None = None) -> int:
+    """Times the code was right and the reasoning was not.
+
+    The number this whole check exists to produce. Counted only where the code
+    was actually judged — a check attached to an unjudged attempt says nothing
+    about memorisation either way.
+    """
+    sql = (
+        "SELECT COUNT(*) FROM understanding_check "
+        "WHERE code_correct = 1 "
+        "  AND (key_idea_ok = 0 OR complexity_ok = 0 OR invariant_ok = 0)"
+    )
+    params: list[object] = []
+    if pattern_id is not None:
+        sql += " AND pattern_id = ?"
+        params.append(pattern_id)
+    return int(conn.execute(sql, params).fetchone()[0])

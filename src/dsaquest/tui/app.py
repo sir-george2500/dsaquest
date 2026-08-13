@@ -51,6 +51,8 @@ from .duel import DUEL_CSS, DuelScreen
 from .editor import code_editor
 from .journey import JOURNEY_CSS, JourneyScreen
 from .master import MASTER_CSS, MasterScreen, safe
+from .roster import ROSTER_CSS, RosterScreen
+from .understanding import UNDERSTANDING_CSS
 
 CSS = (
     """
@@ -91,6 +93,8 @@ Screen { background: $surface; }
     + JOURNEY_CSS
     + ARENA_CSS
     + DUEL_CSS
+    + UNDERSTANDING_CSS
+    + ROSTER_CSS
 )
 
 
@@ -100,6 +104,7 @@ class HomeScreen(Screen):
         Binding("r", "review", "Review due"),
         Binding("t", "train", "Train under a master"),
         Binding("d", "duel", "Duel"),
+        Binding("c", "roster", "The roster"),
         Binding("q", "quit", "Quit"),
     ]
 
@@ -162,6 +167,9 @@ class HomeScreen(Screen):
 
     def action_duel(self) -> None:
         self.app.push_screen(DuelScreen())
+
+    def action_roster(self) -> None:
+        self.app.push_screen(RosterScreen())
 
     def action_review(self) -> None:
         self.app.push_screen(SessionScreen(review_only=True))
@@ -576,13 +584,17 @@ class SessionScreen(Screen):
         else:
             failure = report.report.first_failure
             body = [f"[b red]{report.report.verdict.label}[/]"]
+            # The compiler's own words, and the judge's, go through safe():
+            # an error about `undefined_thing[q]` was being shown as an error
+            # about `undefined_thing`, which sends the learner hunting for a
+            # symbol that is not what the compiler complained about.
             if report.report.compile_log.strip():
-                body.append(f"\n{report.report.compile_log.strip()[:800]}")
+                body.append(f"\n{safe(report.report.compile_log.strip()[:800])}")
             elif failure is not None:
-                body.append(f"\n{failure.name}: {failure.diff_hint}")
+                body.append(f"\n{safe(failure.name)}: {safe(failure.diff_hint)}")
             template_file, hole_id = self.current  # type: ignore[misc]
             hole = find_hole(read_template(template_file), hole_id)
-            body.append(f"\n[dim]Reference answer:[/]\n{hole.body}")
+            body.append(f"\n[dim]Reference answer:[/]\n{safe(hole.body)}")
         body.append(f"\n[dim]{outcome.xp.explain()}[/]")
         self.show_feedback("\n".join(body), correct=accepted)
 

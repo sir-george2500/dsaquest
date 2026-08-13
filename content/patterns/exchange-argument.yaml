@@ -1,0 +1,222 @@
+id: exchange-argument
+name: The Adjacent Swap
+world: 4
+order: 2
+tagline: >-
+  When the answer is an order rather than a subset, compare two neighbours,
+  and the inequality that falls out of the swap IS your comparator.
+
+prerequisites:
+  - sorting-by-key
+
+signals:
+  - cue: you choose the ORDER in which everything is done, and everything is done
+    strength: 3
+    note: >-
+      Nothing is refused, nothing is left behind — the answer is a permutation.
+      That rules out every selection pattern in one reading.
+  - cue: the cost of an item depends on what was placed before it
+    strength: 3
+    note: >-
+      A waiting time, a completion time, a running total charged per item: the
+      cost of a position, not of an item alone. That coupling is what an
+      adjacent swap resolves.
+  - cue: minimise total waiting, total completion time, or the sum of finishing times
+    strength: 3
+    note: >-
+      The archetype. Sum of completion times with weights is exactly the
+      swap-derived ratio order.
+  - cue: arrange the pieces so the concatenation, product or stacked total is largest
+    strength: 2
+    note: >-
+      The same derivation with a non-numeric key: compare a+b against b+a and
+      let the comparison define the order.
+  - cue: two numbers per item and no obvious reason to prefer either as the key
+    strength: 2
+    note: >-
+      Two competing keys is the tell that the key must be derived rather than
+      read off. One number per item and the statement usually names the key.
+  - cue: n up to 2e5 and an answer that reads like "try every ordering"
+    strength: 1
+    note: Weak. It only says n! is dead, which says nothing about which order wins.
+
+anti_signals:
+  - cue: you must choose a SUBSET, and the rest is discarded
+    instead: sorting-by-key
+    note: >-
+      A subset against a budget has its key named in the statement. Derivation
+      by swapping is only needed when every item is used and the sequence is
+      what costs.
+  - cue: the items conflict pairwise and some must be refused
+    instead: interval-scheduling
+    note: Refusal means selection, not arrangement.
+  - cue: every item is used, but they occupy stretches that must not overlap
+    instead: interval-scheduling
+    note: >-
+      Overlap is a conflict, and a conflict means something will have to be
+      refused or duplicated. Arrangement problems have no illegal orders at all.
+  - cue: you are asked whether some total is achievable within a stated bound
+    instead: binary-search-answer
+    note: >-
+      A feasibility question over an invented number, rather than a cost to be
+      minimised by arranging what you were given.
+  - cue: you must pick one value that minimises a total distance to all the others
+    instead: median-minimisation
+    note: >-
+      That is a single point, not an arrangement. Sorting appears in both, but
+      nothing is being ordered relative to anything else.
+
+confusable_with:
+  - pattern_id: sorting-by-key
+    tell: >-
+      Ask whether anything is refused. Every item used and only the sequence in
+      question is this; a subset chosen against a bound, with the key named in
+      the statement, is the other.
+  - pattern_id: interval-scheduling
+    tell: >-
+      Ask whether two items can be incompatible. Arrangement problems have no
+      incompatibility at all — every order is legal and only the cost differs.
+  - pattern_id: median-minimisation
+    tell: >-
+      Ask what the answer looks like when you print it. A permutation of the
+      input is this; a single number that everything is dragged towards is the
+      other.
+
+invariant: >-
+  In every optimal arrangement no adjacent pair violates the derived comparator,
+  so any order that satisfies it everywhere is itself optimal.
+
+complexity:
+  time: O(n log n)
+  space: O(n)
+  note: >-
+    The derivation is free; the sort is the cost. Evaluating the resulting order
+    is one pass carrying a running clock or running total.
+
+data_structures:
+  - a vector of items sorted by a derived comparator
+  - a running clock or prefix total accumulated in the chosen order
+  - __int128, when the cross-multiplied comparison can overflow 64 bits
+
+cpp_facilities:
+  - std::sort with a derived lambda comparator
+  - cross multiplication in place of division
+  - std::string comparison for the concatenation form
+  - long long accumulators for the running total
+
+traps:
+  - description: >-
+      Sorting by the ratio as a floating-point division instead of cross
+      multiplying.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      Correct on random data and wrong on the tests built from equal or nearly
+      equal ratios, where a double cannot separate two orders that genuinely
+      differ.
+  - description: >-
+      Deriving the comparator in the wrong direction — writing `a.t * b.w >
+      b.t * a.w` when the swap proved `<`.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      The answer is consistently far from optimal rather than slightly off,
+      because the whole order is reversed. Test on two items by hand.
+  - description: >-
+      Writing the comparator as `<=` so that equal keys compare as ordered.
+    mistake_code: CPP_OUT_OF_BOUNDS
+    symptom: >-
+      Undefined behaviour inside std::sort: a crash or a scrambled range on
+      large inputs with many ties, and nothing at all on the samples.
+  - description: >-
+      Accumulating the running clock or weighted total in `int`.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      2e5 durations of 1e9 reach 2e14; the total goes negative and the printed
+      answer is a large negative number on the big tests only.
+  - description: >-
+      Assuming an order exists because a comparator can be written, when the
+      swap argument was never actually checked.
+    mistake_code: PATTERN_GREEDY_OVER_DP
+    symptom: >-
+      Passes the samples, fails a random test, and no amount of tweaking the key
+      fixes it — because no key works. The tell is that swapping two neighbours
+      changes the cost of a third item.
+
+recall_rubric:
+  - key: the-derivation
+    prompt: >-
+      Describe the derivation: what do you compare, and what do you do with the
+      inequality?
+    essential: true
+    accepts:
+      - swap two adjacent items
+      - compare the cost of ab against ba
+      - the inequality becomes the comparator
+      - adjacent exchange
+  - key: why-adjacent-suffices
+    prompt: >-
+      Say why checking only ADJACENT pairs proves the whole order optimal.
+    essential: true
+    accepts:
+      - any permutation is reachable by adjacent swaps
+      - bubble sort argument
+      - no adjacent violation means no violation at all
+      - repeated swaps reach the optimum
+  - key: the-archetype
+    prompt: >-
+      State the weighted completion-time rule and the unweighted one it collapses
+      to.
+    essential: true
+    accepts:
+      - sort by t over w
+      - shortest job first
+      - duration ascending when weights are equal
+      - t_a * w_b < t_b * w_a
+  - key: no-division
+    prompt: Say how the ratio comparison is written in code and why.
+    essential: false
+    accepts:
+      - cross multiply
+      - a.t * b.w < b.t * a.w
+      - no doubles
+      - avoid precision loss
+  - key: the-boundary
+    prompt: >-
+      Give the condition under which no swap-derived order exists, and what to
+      reach for instead.
+    essential: false
+    accepts:
+      - the swap changes a third item's cost
+      - not a local comparison
+      - dynamic programming
+      - no comparator works
+  - key: the-string-form
+    prompt: State the comparator for arranging pieces into the largest concatenation.
+    essential: false
+    accepts:
+      - a + b > b + a
+      - compare the two concatenations
+      - lexicographic on the joined strings
+      - ab against ba
+  - key: complexity
+    prompt: Give the complexity and name the dominant step.
+    essential: false
+    accepts:
+      - o(n log n)
+      - the sort dominates
+      - one pass to evaluate
+      - n log n
+
+template_file: exchange-argument.cpp
+template_notes: >-
+  Form 1 is the unweighted rule and the proof that produces it — read the
+  four-line comment above the comparator before the code, because the code is
+  trivial and the comment is the pattern. Form 2 is the weighted version, cross
+  multiplied, which is the same derivation with weights carried through. Form 3
+  is the concatenation form, included to show that the derived key need not be a
+  number at all: `a + b > b + a` is a comparator produced by exactly the same
+  swap.
+
+related:
+  - sorting-by-key
+  - interval-scheduling
+  - median-minimisation

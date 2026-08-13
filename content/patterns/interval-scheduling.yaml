@@ -1,0 +1,221 @@
+id: interval-scheduling
+name: Earliest Finishing Time
+world: 4
+order: 1
+tagline: >-
+  When the items conflict with each other, order them by where they END and the
+  next safe choice is always the first one that still fits.
+
+prerequisites:
+  - sorting-by-key
+
+signals:
+  - cue: each item occupies a stretch of time or space, given as a start and an end
+    strength: 3
+    note: >-
+      Two numbers per item that define an occupied range is the shape. The
+      conflict is pairwise overlap, not a shared budget.
+  - cue: chosen items must not overlap, clash or double-book
+    strength: 3
+    note: >-
+      Pairwise exclusion between chosen items is what separates this from plain
+      sorting, where any subset within the budget is legal.
+  - cue: maximise how many of them you can accept
+    strength: 3
+    note: >-
+      Counting non-conflicting stretches is the case the earliest-ending proof
+      covers. Maximising their total VALUE is not, and is dynamic programming.
+  - cue: minimise the number of shots, arrows, nets or sensors that touch every range
+    strength: 3
+    note: >-
+      The covering dual. Place each shot at the earliest end still uncovered;
+      it is the same sort and the same proof read backwards.
+  - cue: how many rooms, machines or platforms are needed so nothing clashes
+    strength: 2
+    note: >-
+      The other dual: the answer is the largest number of ranges alive at one
+      instant, found by sweeping starts and ends separately.
+  - cue: the input is already listed in order of start time
+    strength: 1
+    note: >-
+      Weak and often bait. Start order is the order the setter had, and it is
+      the wrong key — it must be re-sorted by end.
+
+anti_signals:
+  - cue: the items draw on one shared budget and never forbid one another
+    instead: sorting-by-key
+    note: >-
+      No pairwise conflict means no end time to rank by. The key is then named
+      by the objective — cheapest first for a count, value per unit for a
+      divisible capacity.
+  - cue: every stretch is used and only the ORDER in which they are run is in question
+    instead: exchange-argument
+    note: >-
+      Nothing is refused, so nothing conflicts. The key must be derived by
+      swapping two neighbours rather than read off the end of a range.
+  - cue: the ranges are updates to be applied to a row, not items to choose between
+    instead: prefix-sum
+    note: >-
+      "Add v to every cell in [l, r]" is a difference array. Nothing is being
+      accepted or rejected, so there is no conflict and no choice.
+  - cue: the answer is a single contiguous stretch of the input row
+    instead: sliding-window
+    note: >-
+      One stretch grown and shrunk over the row as given, rather than many
+      pre-existing stretches chosen between.
+  - cue: you must decide whether a given number of machines suffices, and that is monotone
+    instead: binary-search-answer
+    note: >-
+      "Can k machines do it?" is a feasibility question over an invented answer;
+      the greedy sweep answers "how many are needed" outright.
+
+confusable_with:
+  - pattern_id: sorting-by-key
+    tell: >-
+      Ask whether taking one item can forbid another. A shared budget forbids
+      nothing in particular and any cheap subset is legal; overlapping stretches
+      forbid each other pairwise, and that is what forces the end-time key.
+  - pattern_id: exchange-argument
+    tell: >-
+      Ask whether you are SELECTING or ORDERING. Here everything you accept is
+      run and some items are refused; there every item is run and only the
+      sequence is in question.
+
+invariant: >-
+  After each acceptance the last chosen stretch ends no later than the last
+  stretch of some optimal schedule that contains everything chosen so far.
+
+complexity:
+  time: O(n log n)
+  space: O(n)
+  note: >-
+    The sort dominates; the sweep is one pass carrying a single number, the end
+    of the last accepted stretch. The room-counting dual sorts two arrays and
+    walks them together, which is still O(n log n).
+
+data_structures:
+  - a vector of (end, start) pairs, sorted lexicographically
+  - one scalar carrying the end of the last accepted stretch
+  - two separately sorted arrays of starts and ends for the room-count dual
+
+cpp_facilities:
+  - std::sort on a vector of pairs, key packed into .first
+  - std::max to keep a running end
+  - long long coordinates when times reach 1e9
+  - std::upper_bound for the weighted variant, which is not this pattern
+
+traps:
+  - description: >-
+      Sorting by start time, or by duration, because both feel like the natural
+      ranking.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      Right answer on inputs where the stretches barely overlap, and too small
+      by one or two whenever a single long stretch sits at the front, or a short
+      stretch straddles two others.
+  - description: >-
+      Getting the touching case wrong — accepting a stretch that starts exactly
+      when the last one ended, or refusing it, without deciding which the
+      statement means.
+    mistake_code: BOUNDS_SINGLE_ELEMENT
+    symptom: >-
+      Off by one on the tests built from back-to-back bookings, and correct
+      everywhere else. `>=` against `>` on the comparison with the last end.
+  - description: >-
+      Applying the same greedy when each stretch carries a weight.
+    mistake_code: PATTERN_GREEDY_OVER_DP
+    symptom: >-
+      More stretches accepted than the model answer, and a smaller total value.
+      The count is right for the wrong objective.
+  - description: >-
+      Counting rooms by comparing each pair of stretches, or by re-scanning the
+      whole list for every start.
+    mistake_code: COMPLEX_TOO_SLOW
+    symptom: >-
+      Accepted at n = 2000 and timing out at n = 2e5, because the pairwise
+      check is 4e10 comparisons.
+  - description: >-
+      Reading times into `int` when the coordinates reach 1e9 and are then
+      summed or subtracted with a duration.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      A negative end time, so every later stretch looks compatible and the count
+      comes back as n.
+
+recall_rubric:
+  - key: the-key
+    prompt: Name the sorting key and say it in four words.
+    essential: true
+    accepts:
+      - earliest finishing time
+      - sort by end
+      - by end time
+      - finish first
+  - key: why-not-start
+    prompt: >-
+      Say why sorting by start time — or by shortest duration — is wrong, with
+      the shape of the counterexample.
+    essential: true
+    accepts:
+      - one long stretch at the front blocks everything
+      - a short stretch straddling two others
+      - earliest start takes a booking that runs all day
+      - shortest blocks two
+  - key: the-proof
+    prompt: >-
+      Give the exchange argument: why can the earliest-ending stretch always be
+      swapped into some optimal schedule?
+    essential: true
+    accepts:
+      - it frees at least as much of the line
+      - swap the optimum's first choice for it
+      - no later end
+      - exchange
+  - key: the-sweep
+    prompt: State what the sweep carries and the condition for accepting.
+    essential: false
+    accepts:
+      - the end of the last accepted
+      - start >= last end
+      - one scalar
+      - accept if it does not overlap
+  - key: the-duals
+    prompt: >-
+      Name the two problems that are the same sort read differently — covering
+      all ranges with points, and counting rooms.
+    essential: false
+    accepts:
+      - minimum arrows
+      - stab every interval at its end
+      - maximum overlap is the room count
+      - sweep starts and ends
+  - key: the-boundary
+    prompt: Say what change to the statement destroys this pattern.
+    essential: false
+    accepts:
+      - weights on the intervals
+      - maximise value not count
+      - dynamic programming
+      - weighted interval scheduling
+  - key: complexity
+    prompt: Give the time complexity and say which step dominates.
+    essential: false
+    accepts:
+      - o(n log n)
+      - the sort dominates
+      - one linear sweep
+      - n log n for the sort
+
+template_file: interval-scheduling.cpp
+template_notes: >-
+  Form 1 is the selection itself: sort by end, carry one number, accept when the
+  start clears it. Form 2 is the covering dual — the same sort, and a shot fired
+  at the end of the first uncovered range — and it is worth reading the two side
+  by side until it is obvious they are one algorithm. Form 3 is the room count,
+  which does NOT sort the pairs together: the starts and ends are separated and
+  walked in step, because an end that arrives before a start frees a room.
+
+related:
+  - sorting-by-key
+  - exchange-argument
+  - prefix-sum

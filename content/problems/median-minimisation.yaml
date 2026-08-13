@@ -1,0 +1,150 @@
+# Problems that are really The Point That Minimises.
+#
+# None of these may use the word "median", which is the answer rather than a
+# cue. What they must contain is the objective — absolute differences, or
+# squared ones — because the objective is what decides the point.
+
+- id: caravan-meeting-post
+  pattern: median-minimisation
+  title: The Meeting Post
+  difficulty: easy
+  statement: >-
+    A trade road runs dead straight and n caravans are parked along it, the i-th
+    at position x[i]. The traders want to meet at a single point on the road,
+    which may be anywhere, including where a caravan already stands. Moving a
+    caravan one league costs one crown, and each caravan travels straight to the
+    meeting point. Report the smallest total number of crowns that gets every
+    caravan to one place.
+  constraints: |
+    1 <= n <= 200000
+    -10^9 <= x[i] <= 10^9
+    the total may exceed 2^31
+    the caravans are given in arbitrary order along the road
+  signals_present:
+    - one point is chosen and everything else is moved to it
+    - the cost of moving is one crown per league, so the total is a sum of distances
+    - the point may be anywhere, so nothing is being selected from the input
+    - the positions are given in arbitrary order, so their order carries nothing
+  decoy_signals:
+    - "\"a single point everything moves to\" invites taking the average position, which is the answer to a different cost"
+    - "\"smallest total\" over a numeric choice invites searching over candidate positions"
+    - positions on a line with pairwise distances invites walking two ends towards each other
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        Suppose you have picked a point. Nudge it one league to the right. Every
+        caravan on its left now pays one crown more and every caravan on its
+        right pays one crown less. When is that trade not worth making?
+    - text: >-
+        It is not worth making when the number of caravans on each side is
+        balanced. So the point you want is the one with as many caravans below
+        it as above it — not the average, which one distant caravan can drag
+        away from the crowd.
+    - text: >-
+        Put the positions in order and meet at the one sitting at index n/2,
+        then add up the distances.
+      reveals_pattern: true
+  why: >-
+    Cost per league means the objective is a sum of absolute differences, and
+    the balance argument settles it: nudging the point changes the total by the
+    difference between the counts on either side, so the optimum is where those
+    counts balance. The average is the answer to the SQUARED cost, and one
+    outlier is enough to make the two disagree.
+  classic_ref: CPH 6.4 (minimizing sums)
+
+- id: pylon-height-levelling
+  pattern: median-minimisation
+  title: Levelling the Pylons
+  difficulty: medium
+  statement: >-
+    A line has n pylons and pylon i currently stands h[i] hands tall. A crew can
+    add or remove exactly one hand of masonry from any pylon in one shift, and
+    the pylons must all end up the same height — which may be any height at all,
+    not necessarily one of the current ones. Report the smallest number of
+    shifts needed. The engineer also wants the same figure under a second, older
+    contract, in which a pylon altered by k hands costs k squared shifts;
+    report that total as well, given that the final height must still be a
+    whole number of hands.
+  constraints: |
+    1 <= n <= 200000
+    0 <= h[i] <= 10^6
+    both totals may exceed 2^31, and the squared one reaches 2*10^17
+  signals_present:
+    - every value is dragged to one common value that is free to choose
+    - one contract charges the distance itself and the other charges its square
+    - the two contracts are asked about the same input, which is only interesting if the answers differ
+    - the final height is not required to be one of the given heights
+  decoy_signals:
+    - "\"make them all equal\" invites averaging, which is right for exactly one of the two contracts and wrong for the other"
+    - the second contract's whole-number requirement invites rounding once, which is off by a little whenever the average lands near a half
+    - a cost per unit of change invites deciding a target and testing feasibility by search
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        These are two different questions wearing one statement. Work out what
+        nudging the target height by one hand does to each total, separately.
+    - text: >-
+        Under the first contract the change is the difference between the counts
+        above and below, so the target balances the two sides. Under the second
+        it is proportional to how far the target sits from the average, so the
+        target is the average.
+    - text: >-
+        Order the heights and take the one at index n/2 for the first contract.
+        For the second take the sum divided by n and score both the value below
+        and the value above it, since the average is rarely a whole number.
+      reveals_pattern: true
+  why: >-
+    Two objectives on one input, deliberately, because the pair is the lesson:
+    a linear cost is minimised at the balancing point in the middle and a
+    squared cost at the average, and confusing them produces an answer that is
+    plausible and slightly wrong. The whole-number clause on the second contract
+    is what forces both neighbours of the average to be scored.
+  classic_ref: CPH 6.4 (minimizing sums), both halves
+
+- id: dyke-stair-steps
+  pattern: median-minimisation
+  title: The Dyke Stair
+  difficulty: hard
+  statement: >-
+    A sea dyke is built from n blocks standing in a fixed line, and block i is
+    currently a[i] hands high. Regulations require the finished dyke to rise as
+    a perfect stair in the order the blocks already stand: the second block
+    exactly one hand higher than the first, the third exactly one higher than
+    the second, and so on. The height of the first block is not fixed and may be
+    any whole number, including a negative one. Raising or lowering any block by
+    one hand costs one crown. Report the cheapest way to meet the regulation.
+  constraints: |
+    1 <= n <= 200000
+    -10^9 <= a[i] <= 10^9
+    the blocks may not be reordered
+    the answer may exceed 2^31
+  signals_present:
+    - the finished shape has exactly one free parameter, the height of the first block
+    - the cost is one crown per hand of change, so the total is a sum of absolute differences
+    - the blocks may not be reordered, so position is fixed and meaningful
+    - the required shape is a fixed offset from position
+  decoy_signals:
+    - "\"the blocks may not be reordered\" makes it look like a fixed row that must be swept rather than transformed"
+    - a shape constraint over a sequence invites a dynamic program over prefixes with the height as state
+    - the free first height invites searching over candidate starting heights, which is one dimension too many
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        Write down what block i must end up at in terms of the one free number
+        h. Then write the cost of block i. The i is sitting in an awkward place
+        — move it.
+    - text: >-
+        Block i must reach h + i, so its cost is the distance from a[i] to
+        h + i, which is the distance from a[i] minus i to h. Subtract the
+        position from each block and the shape constraint disappears entirely.
+    - text: >-
+        Replace each a[i] by a[i] minus i, then choose h as the balancing point
+        of that transformed list and add up the distances.
+      reveals_pattern: true
+  why: >-
+    The staircase has exactly one free parameter, and subtracting the position
+    from each height turns "must rise by one each step" into "must all be
+    equal" — the same question you have already solved. The transform is the
+    whole problem; everything after it is three lines. Note that the subtraction
+    must happen before any reordering, since the positions are fixed.
+  classic_ref: the a[i] - i transform; CPH 6.4 applied to a ramp

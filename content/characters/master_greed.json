@@ -1,0 +1,177 @@
+{
+  "id": "master_greed",
+  "name": "MASTER OF GREED",
+  "title": "Strategist Dovan Rhe, the Exchange",
+  "region": "ridge-of-greed",
+  "patterns": [
+    "sorting-by-key",
+    "interval-scheduling",
+    "exchange-argument",
+    "median-minimisation"
+  ],
+  "personality": {
+    "warmth": 0.25,
+    "verbosity": 0.45,
+    "praise_threshold": 0.9
+  },
+  "gate": {
+    "recognition": 0.75,
+    "understanding": 0.85,
+    "implementation": 0.7,
+    "retention": 0.75
+  },
+  "placeholders": {
+    "days": "whole days since the relevant event — the student's last visit, a past failure on this problem, or the length of the current unbroken practice streak",
+    "streak": "number of consecutive correct drills in the current run",
+    "attempts": "how many attempts the student previously needed on this problem",
+    "secret": "the name of the secret currently being taught or tested",
+    "idiom": "the C++ expression at the heart of the current secret",
+    "requirement": "name of the gate dimension that is short: recognition, understanding, implementation, or retention",
+    "shortfall": "how far the short gate dimension sits below its threshold, as a percentage",
+    "score": "how many final-test problems were answered correctly",
+    "total": "number of problems in the final test",
+    "required": "how many must be answered correctly to pass"
+  },
+  "dialogue": {
+    "greeting_first": [
+      "Sit. Everything I teach you today fits in four lines. That is the problem.",
+      "You have come to the ridge because the algorithms here are short. They are. They are also the only ones that can be wrong without looking wrong.",
+      "I am not going to ask you for code. I am going to ask you why your first choice was safe. Have an answer ready.",
+      "Other masters test whether you can build the thing. I test whether you are entitled to it."
+    ],
+    "greeting_returning": [
+      "Again. Same question as yesterday: why is that choice safe?",
+      "Sit. Begin.",
+      "You came back. Good. Show me the argument.",
+      "Continue. From the top of the ridge, everything below looks obvious. That is why students fall off it."
+    ],
+    "greeting_after_gap": [
+      "{days} days. The counterexamples waited for you. They are patient in a way I am not.",
+      "Gone {days} days. What you forget first is not the code — it is why the code was allowed. We start there.",
+      "{days} days away, and back. Noted. Now: the coin system 1, 3, 4, and the amount 6. What does the greedy answer?",
+      "{days} days. Long enough to remember the rule and forget the proof, which is the worst state to be in."
+    ],
+    "lesson_intro": [
+      "One choice. I will show you why it is safe. Watch the argument, not the code.",
+      "{secret}. Three lines, and one sentence you must be able to say before you write them.",
+      "This is short. Do not mistake short for obvious.",
+      "I name the technique now. What I will not do is let you use it before you can defend it."
+    ],
+    "lesson_memorise": [
+      "Keep this one. `{idiom}` is not a trick — it is the shape of a proof you will reuse.",
+      "Learn it until the argument arrives with the code, not after it.",
+      "Take it now. You will not rederive it under a clock.",
+      "This goes in the hand. The reason it works goes somewhere deeper."
+    ],
+    "drill_correct": [
+      "Correct.",
+      "Yes. Next.",
+      "Good. Continue.",
+      "Accepted."
+    ],
+    "drill_wrong": [
+      "No. You took the largest. Large is not an argument — read what the objective counts.",
+      "Wrong. You sorted by where the ranges begin. Rank them by what they give back.",
+      "No. That comparator claims an element precedes itself. The library believes you, and then walks off the array.",
+      "Wrong. You divided. Multiply crosswise and the invented tie disappears.",
+      "No. That is the average, and the question charged you per league, not per league squared.",
+      "Wrong. You have a rule and no reason. Find the two-item case that breaks it."
+    ],
+    "drill_streak": [
+      "{streak} in a row. The hand is quick now. I am still listening for the reason.",
+      "Steady. Hold it.",
+      "{streak} straight. Do not let the speed replace the argument.",
+      "Good rhythm. Keep it."
+    ],
+    "trial_intro": [
+      "Nothing named. Read it, decide, and be able to justify the decision.",
+      "The label comes off here. The constraints did not.",
+      "One problem. I will tell you nothing, and the statement already told you everything.",
+      "Choose. Then ask yourself what you would exchange to prove it."
+    ],
+    "fail_wrong_pattern": [
+      "Wrong tool. Nothing there was refused — every item was used, and only the order was in question. That is a swap, not a selection.",
+      "No. Those items conflicted with each other, not with a budget. Cheapest-first had nothing to be cheap about.",
+      "That was a single point, not a subset. Nothing was being chosen; something was being placed.",
+      "No. You reached for the technique you had just drilled instead of the one the statement described. Read it again with me."
+    ],
+    "fail_timeout": [
+      "Time. You had the choice in the first minute and spent the rest looking for permission.",
+      "Time ran out. Knowing it slowly is a fluency problem, and drills fix that. Nothing here is lost.",
+      "Time. Nothing you had was wrong. It was late. Again.",
+      "Time. You were hunting for something complicated. On this ridge there is rarely anything complicated."
+    ],
+    "fail_wrong_answer": [
+      "Right idea. Wrong key. Say out loud what the objective counts, then choose the order again.",
+      "The choice was safe and the comparator was not. `<=` is undefined behaviour, not a preference.",
+      "Correct approach, wrong arithmetic. Your ratio was compared by division and two different items came out equal.",
+      "You had it. The accumulator was an int, and the total passed two billion on test seven.",
+      "The sweep was right and the boundary was not. Decide what a touching endpoint means, then fix one operator."
+    ],
+    "success": [
+      "That is correct. Continue.",
+      "It holds. Next.",
+      "Accepted. Move on.",
+      "Done. The next one gives less away."
+    ],
+    "success_fast": [
+      "Fast, and you named the key before you typed. That is the right order of operations.",
+      "You saw what the objective counted in the first sentence. Good.",
+      "No hesitation and no wasted structure. Continue.",
+      "One sort, one pass, one argument. That is the whole discipline."
+    ],
+    "praise_exceptional": [
+      "That was well done. You found the boundary before you met it.",
+      "You refused the obvious key and said why. Few students do the second part.",
+      "Clean, and provable. I noticed which of those came first.",
+      "That is the best you have done here. You did not guess and then rationalise. You argued and then typed."
+    ],
+    "praise_major": [
+      "I have watched a great many students write four correct lines for the wrong reason and never learn the difference. You learned it. You have earned my respect.",
+      "You came here able to write a greedy algorithm. You leave able to say when you are not allowed one, which is the rarer skill by far. You have earned my respect.",
+      "I do not give this often, and I will not repeat it: you can now defend a local choice, and find the counterexample when it cannot be defended. You have earned my respect."
+    ],
+    "memorisation_detected": [
+      "You remember which key this problem wanted. You cannot say why. Those are different, and the difference is the entire ridge. A different problem.",
+      "You pass the problems you have seen and fail their variants. That is memory, not argument. We go back one step.",
+      "Change the objective from a count to a value and you are lost, which means you learned a rule and not a proof. Try this one."
+    ],
+    "improvement_noticed": [
+      "You failed this {days} days ago. Today you solved it, and you justified it. That is improvement. Continue.",
+      "You needed {attempts} attempts on this once. Today, one. I noticed.",
+      "This was the problem you tuned tie-breaks on for an hour. You did not tune anything today. Good.",
+      "Straighter than last time. You asked what the objective counted before you asked what to sort by."
+    ],
+    "commitment_noticed": [
+      "{days} days unbroken. Proofs come to the persistent more reliably than to the quick.",
+      "Many students reach this ridge. Most of them want the rule and not the reason, and most of them stop when I ask for the reason. You did not.",
+      "You have returned after every failure so far. I keep a record. Keep going.",
+      "Talent arrives here every week and leaves with four wrong lines. Attendance is the part I cannot teach, and you brought your own."
+    ],
+    "gate_locked": [
+      "Not yet. {requirement} is short by {shortfall} percent. Return when it is not.",
+      "The gate holds. Understanding is short — you can produce the key and not the argument behind it, and here that is half a solution.",
+      "No. Recognition is short. You know four techniques and cannot yet tell which one a statement is describing.",
+      "Implementation is short. The choice is right and the comparator is not. Drill, then return.",
+      "Retention is short. What you proved last week you have already dropped. Review, then the gate."
+    ],
+    "gate_open": [
+      "The gate is open. Come when you are ready, not when you are impatient.",
+      "Nothing is short any more. The final test waits.",
+      "Enough. You may attempt it.",
+      "You meet the requirements. The decision from here is yours."
+    ],
+    "final_test_intro": [
+      "I will name nothing. Every drill before this existed so that I would not have to.",
+      "{total} problems, and {required} of them must be right. Read each twice. Decide what the objective counts.",
+      "No help. Only the statements, and whatever argument you can still make.",
+      "Some of these have no safe local choice at all. Recognising that is also an answer."
+    ],
+    "victory": [
+      "It is done. The ridge is behind you.",
+      "You passed. Remember the shape of the failures, not only the shape of the rules. Go.",
+      "Finished. Everything after this assumes you can tell a proof from a habit. You can.",
+      "That is mastery of the local choice, and of its boundary. Nothing you meet later will be shorter. Go."
+    ]
+  }
+}

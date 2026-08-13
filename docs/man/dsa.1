@@ -180,6 +180,12 @@ Start a practice session.
 .B r
 Start a review session (due cards only).
 .TP
+.B t
+Train under a master, or open the journey map when none is teaching.
+.TP
+.B d
+Start a run of Pattern Duels.
+.TP
 .B q
 Quit.
 .SS During a session
@@ -191,7 +197,11 @@ Answer a Pattern Hunter question with option A, B, C or D.
 Advance to the next exercise after reading the feedback.
 .TP
 .B ctrl+s
-Submit a Code Completion answer for judging.
+Submit a Code Completion answer for judging. In a boss fight this opens the
+understanding check first; the code is captured before the questions are asked.
+.TP
+.B enter
+Move to the next field of an understanding check, and commit from the last.
 .TP
 .B escape
 Abandon the session and return to the map.
@@ -215,16 +225,41 @@ to disagree with the code. Trains \fBimplementation\fR.
 .TP
 .B Pattern Recall
 Cued recall of a pattern's structure, self\-graded against a rubric whose
-essential points cannot be waved through. Trains \fBrecall\fR. Not yet
-implemented.
+essential points cannot be waved through. Trains \fBrecall\fR.
 .TP
 .B Pattern Duel
-Two deliberately confusable statements to separate. Trains \fBrecognition\fR.
-Not yet implemented.
+Two deliberately confusable statements, shown side by side, to separate. Marked
+correct only when \fBboth\fR sides are right, so swapping them fails. Assigning
+one pattern to both statements is allowed and is reported as a collapse \(em no
+discrimination at all. Trains \fBrecognition\fR.
 .TP
 .B Boss Fight
-Unlabelled, multi\-pattern, explain\-then\-implement. Trains
-\fBimplementation\fR. Not yet implemented.
+Unlabelled, multi\-pattern, explain\-then\-implement, behind a mastery gate.
+Trains \fBimplementation\fR.
+.
+.SH UNDERSTANDING CHECK
+Before a boss fight's implement phase is judged, three questions are asked:
+the key idea, the expected complexity, and the invariant being maintained.
+.PP
+The order is the mechanism. Your code is captured the moment you press
+\fBctrl+s\fR, before the questions appear, so time spent answering cannot
+change what is submitted and the verdict cannot inform your reasoning. Code and
+reasoning are then graded independently, which is what allows "correct code,
+no idea why" to be recorded as exactly that.
+.PP
+Answers are matched against phrases the pattern's author wrote down. Nothing
+here understands English, so a correct answer phrased unusually can be marked
+unsound. Because of that a failed check costs nothing: no health, no failed
+phase, no lost exercise. It is recorded, and the master says so.
+.PP
+.nf
+UNDERSTANDING CHECK
+  key idea + complexity + invariant, asked before judging
+  code captured first, so the answers cannot be retrofitted
+  graded lexically against the author's accepts phrases
+  failing costs no health and fails no phase
+  correct code + unsound reasoning = recorded as memorised
+.fi
 .
 .SH VERDICTS
 Judge outcomes for a submission.
@@ -514,11 +549,14 @@ for the mastery model, the scheduling algorithm and the content format.
 .BR clangd (1)
 .
 .SH BUGS
-Modes Pattern Recall, Pattern Duel and Boss Fight are designed and supported
-by
-the data model but have no interface yet.
+Eleven of the planned thirty\-three patterns ship with content, taught by four
+of the eleven masters.
 .PP
-Six of the planned thirty\-three patterns ship with content.
+The understanding check runs on boss fights only. Master problems and trials do
+not ask for it yet.
+.PP
+Regions exist in the design and in the content, but not in the engine: a boss
+is reached through its master, not through the region it is placed in.
 .PP
 Report issues at https://github.com/sir-george2500/dsaquest
 .

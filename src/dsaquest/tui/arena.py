@@ -25,11 +25,15 @@ from ..boss.fight import Fight
 from ..content.exercises import samples_for
 from ..content.paths import read_template
 from ..domain.boss import Boss, PhaseKind
+from ..domain.enums import GameMode
 from ..game.modes.complete import exercise_source, find_hole, judge_completion
+from ..game.understanding import grade_understanding, remark
 from ..learning.mastery import all_mastery
 from ..learning.par import format_duration
+from ..storage import repositories as repo
 from .editor import code_editor
 from .master import safe
+from .understanding import UnderstandingPanel
 
 ARENA_CSS = """
 #arena-title { padding: 1 2 0 2; text-style: bold; }
@@ -72,6 +76,10 @@ class ArenaScreen(Screen):
         self._seed_counter = 0
         self._generation = 0
         self._ticker = None
+        self.checking = False
+        self.pending_code: str | None = None
+        self.check_answer = None
+        self.check_verdict = None
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
@@ -272,6 +280,8 @@ class ArenaScreen(Screen):
     def action_submit(self) -> None:
         if self.phase != "fighting" or self.fight is None or self.fight.current is None:
             return
+        if self.checking:
+            return
         challenge = self.fight.current
         try:
             text = self.query_one("#arena-editor", TextArea).text
@@ -282,8 +292,32 @@ class ArenaScreen(Screen):
             self.answer(text)
             return
 
+        # The code is frozen *here*, before the three questions are asked, so
+        # no amount of time spent stating your reasoning can improve what gets
+        # judged. That is what lets the clock stop instead of running: a check
+        # that eats your solve time is a check people learn to skip.
+        self.pending_code = text
+        self.stop_clock()
+        self.checking = True
+        choices = self.query_one("#arena-choices", Vertical)
+        choices.remove_children()
+        choices.mount(
+            UnderstandingPanel(note="Say it before it is judged. Nothing here costs you health.")
+        )
+
+    @on(UnderstandingPanel.Submitted)
+    def on_understanding(self, event: UnderstandingPanel.Submitted) -> None:
+        if not self.checking or self.fight is None or self.fight.current is None:
+            return
+        self.checking = False
+        context = self.app.context
+        self.check_answer = event.answer
+        self.check_verdict = grade_understanding(
+            context.library[self.fight.current.pattern_id], event.answer
+        )
+        self.query_one("#arena-choices", Vertical).remove_children()
         self.query_one("#arena-clock", Static).update("[yellow]Compiling and running…[/]")
-        self.judge_strike(text)
+        self.judge_strike(self.pending_code or "")
 
     @work(thread=True)
     def judge_strike(self, answer: str) -> None:
@@ -323,6 +357,8 @@ class ArenaScreen(Screen):
             lines.append("[dim]the clock ran out[/]")
         if outcome.detail:
             lines += ["", safe(outcome.detail)]
+        if self.check_verdict is not None:
+            lines += ["", self.record_understanding(outcome)]
         if was_enraged and self.fight.failures == self.boss.enrage_after:
             lines += ["", "[b red]IT IS ENRAGED[/]  [dim]no hints; everything is doubled[/]"]
         lines += ["", "[dim]space — continue[/]"]
@@ -330,6 +366,42 @@ class ArenaScreen(Screen):
         panel.display = True
 
         self.phase = "between"
+
+    def record_understanding(self, outcome) -> str:
+        """Store the check against this phase's attempt, and say what it showed.
+
+        Recorded whatever the code did — the pair is the evidence. A check kept
+        only when the code passed would answer a different question.
+        """
+        context = self.app.context
+        verdict = self.check_verdict
+        answer = self.check_answer
+        assert verdict is not None and answer is not None
+        # The challenge from the *outcome*, not fight.current — resolving a
+        # phase advances the fight, so by now fight.current is the next phase
+        # (or None) and its attempt id is not the one this check belongs to.
+        code_correct = outcome.cleared
+        repo.record_understanding(
+            context.conn,
+            attempt_id=outcome.challenge.attempt_id,
+            pattern_id=verdict.pattern_id,
+            mode=GameMode.BOSS,
+            key_idea=answer.key_idea,
+            complexity=answer.complexity,
+            invariant=answer.invariant,
+            key_idea_ok=verdict.part("key_idea").sound,
+            complexity_ok=verdict.part("complexity").sound,
+            invariant_ok=verdict.part("invariant").sound,
+            answered=verdict.answered,
+            code_correct=code_correct,
+        )
+        context.conn.commit()
+        said = remark(verdict, code_correct=code_correct)
+        self.check_verdict = None
+        self.check_answer = None
+        self.pending_code = None
+        style = "green" if verdict.sound else "yellow"
+        return f"[{style}]{safe(said)}[/]"
 
     def action_advance(self) -> None:
         if self.phase == "between":

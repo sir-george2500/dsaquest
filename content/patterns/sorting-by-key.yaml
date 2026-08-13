@@ -1,0 +1,244 @@
+id: sorting-by-key
+name: Sort by the Right Key
+world: 4
+order: 0
+tagline: >-
+  Put the row in an order that makes the next choice forced, then take
+  everything that still fits in one pass — the key is the whole algorithm.
+
+prerequisites:
+  - two-pointers
+
+signals:
+  - cue: you may choose any subset, and nothing in the statement cares about the original order
+    strength: 3
+    note: >-
+      If rearranging the input cannot change the answer, you are allowed to
+      sort, and sorting is the only free information you will be given.
+  - cue: maximise HOW MANY items fit inside one budget, capacity or count
+    strength: 3
+    note: >-
+      Counting is the case where the local choice is provably safe: k items fit
+      only if the k cheapest fit, so taking the cheapest available can never
+      cost you an item.
+  - cue: each item is taken whole or not at all, and one number per item decides it
+    strength: 2
+    note: >-
+      A single ranking key per item is what makes "sort, then sweep" possible.
+      Two independent keys that both matter is usually a different pattern.
+  - cue: the items are divisible — you may take a fraction of one
+    strength: 3
+    note: >-
+      Divisibility is the exact hypothesis that makes value-per-unit greedy
+      optimal. Remove it and the same statement becomes a knapsack.
+  - cue: n up to 1e5 or more with an answer that looks like it needs every subset
+    strength: 1
+    note: >-
+      Weak alone. It says only that 2^n is dead, which sorting, a window, a
+      search on the answer or dynamic programming might each fix.
+  - cue: the denominations, weights or sizes are a fixed friendly system (1, 2, 5, 10, 20, 50, 100)
+    strength: 2
+    note: >-
+      A canonical system is stated on purpose: it is the setter telling you the
+      largest-first choice has been proven safe for these numbers.
+
+anti_signals:
+  - cue: the items conflict with each other rather than drawing on one shared budget
+    instead: interval-scheduling
+    note: >-
+      A budget is spent; a conflict forbids. Once accepting one item can make
+      another illegal, cheapest-first has nothing to be cheap about and the key
+      becomes the end of the occupied stretch.
+  - cue: the number to decide is a capacity or threshold, and feasibility is monotone in it
+    instead: binary-search-answer
+    note: >-
+      "What is the smallest k that works?" searches over an invented answer.
+      This pattern never invents a number — it ranks the items it was given.
+  - cue: the answer is a contiguous stretch of the row as given
+    instead: sliding-window
+    note: >-
+      Contiguity is destroyed by sorting, so the moment adjacency matters the
+      row may not be reordered and this pattern is unavailable.
+  - cue: you must report the ORIGINAL positions of the chosen items
+    instead: hashing-frequency
+    note: >-
+      Sorting throws the indices away. Either carry them in a pair alongside
+      the key, or use a map from value to position and abandon the sort.
+  - cue: many range totals over a static row
+    instead: prefix-sum
+    note: Nothing is being chosen; a precomputed table answers the question directly.
+  - cue: order matters and you must choose the ARRANGEMENT, not the subset
+    instead: exchange-argument
+    note: >-
+      When the cost depends on the sequence itself, the key is not given to you
+      in the statement — you derive it by swapping two neighbours.
+
+confusable_with:
+  - pattern_id: interval-scheduling
+    tell: >-
+      Ask whether the items conflict with EACH OTHER. Plain sorting takes items
+      against a single shared budget and any subset is legal; interval work has
+      pairwise conflicts, so what you may take next depends on what you took
+      last.
+  - pattern_id: exchange-argument
+    tell: >-
+      Ask what the answer IS. A subset, chosen against a bound, and the key is
+      named by the statement — sort by it. A permutation, where the cost
+      depends on the order itself, and the key must be derived from swapping
+      two adjacent items.
+  - pattern_id: median-minimisation
+    tell: >-
+      Ask whether you are choosing items or choosing a POINT. Sorting to take a
+      prefix of the row is this; sorting only to reach into the middle of the
+      row for the one value that minimises a total distance is the other.
+
+invariant: >-
+  After each step the set taken so far can be extended to some optimal answer —
+  every item skipped was provably useless to every optimal answer that survives.
+
+complexity:
+  time: O(n log n)
+  space: O(n)
+  note: >-
+    The sweep is O(n) and the sort dominates. If the keys are small integers a
+    counting sort makes the whole thing O(n + K), which is occasionally the
+    intended solution rather than a micro-optimisation.
+
+data_structures:
+  - a vector of structs or pairs, sorted once
+  - a running total of what has been spent or filled
+  - a comparator, which is a claim about a total order
+
+cpp_facilities:
+  - std::sort with a lambda comparator
+  - std::stable_sort when ties must keep the input order
+  - std::pair and structured bindings, to pack the key into .first
+  - long long accumulators
+  - __int128 for cross-multiplied ratio comparisons
+
+traps:
+  - description: >-
+      Writing a comparator with `<=` (or `>=`) instead of a strict `<`, so it is
+      not a strict weak ordering.
+    mistake_code: CPP_OUT_OF_BOUNDS
+    symptom: >-
+      Passes every small test and then segfaults or produces a scrambled array
+      on a large one: libstdc++ drops the bounds check inside its insertion-sort
+      pass and runs off the end of the range when the comparator says an element
+      precedes itself. Needs about 17 equal keys to trigger.
+  - description: >-
+      Sorting by a ratio computed as `a.value / a.weight` in integers, so 7/2 and
+      10/3 both compare as 3.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      The order is right except among near-ties, so the answer is slightly too
+      small on exactly the tests that were built to separate them.
+  - description: >-
+      Taking the largest item first when the objective is the NUMBER of items.
+    mistake_code: INVARIANT_WRONG_MONOTONIC_DIRECTION
+    symptom: >-
+      Correct whenever the items happen to be similar in size and wrong the
+      moment one big item eats a budget that three small ones would have used.
+  - description: >-
+      Sorting by value per unit on a capacity problem whose items are
+      INDIVISIBLE — the 0/1 knapsack, which no ordering solves.
+    mistake_code: PATTERN_GREEDY_OVER_DP
+    symptom: >-
+      A total slightly below the model answer on tests where a worse ratio would
+      have filled the capacity exactly: 60 + 100 = 160 inside a capacity of 50
+      where 100 + 120 = 220 was available. Tuning the key moves the failing test
+      rather than removing it, which is the tell that the pattern is wrong.
+  - description: >-
+      Accumulating the running total in `int` when n is 1e5 and each value
+      reaches 1e9.
+    mistake_code: CPP_INT_OVERFLOW
+    symptom: >-
+      A negative total, so the budget check passes forever and the count comes
+      back as n on large tests only.
+  - description: >-
+      Sorting when the statement asks for the chosen items' original indices.
+    mistake_code: PATTERN_SORT_OVER_HASH
+    symptom: >-
+      The multiset of values is right and every printed index is wrong. The
+      giveaway is that you had to reconstruct positions afterwards by searching
+      the input again.
+
+recall_rubric:
+  - key: the-shape
+    prompt: State the two steps this pattern always consists of.
+    essential: true
+    accepts:
+      - sort then sweep
+      - sort and take
+      - one pass after sorting
+      - order the items then walk once
+  - key: the-key
+    prompt: >-
+      Say where the sorting key comes from and why choosing it correctly is the
+      whole design problem.
+    essential: true
+    accepts:
+      - the key decides the answer
+      - sort by the quantity the objective is about
+      - cheapest first for a count
+      - value per unit
+  - key: licence-to-sort
+    prompt: Name the property of the statement that makes sorting legal at all.
+    essential: true
+    accepts:
+      - the original order does not matter
+      - rearranging cannot change the answer
+      - a subset is asked for, not a stretch
+      - indices are not reported
+  - key: safety-proof
+    prompt: >-
+      Give the exchange argument for taking the cheapest item first when
+      maximising the count.
+    essential: false
+    accepts:
+      - swap the cheapest in
+      - any optimal set can be rewritten to contain it
+      - no worse
+      - exchange
+  - key: divisible-or-not
+    prompt: >-
+      Say what changes when the items may be taken in fractions, and what that
+      does to value-per-unit sorting.
+    essential: false
+    accepts:
+      - fractional is greedy
+      - 0/1 is dynamic programming
+      - divisible makes ratio sorting optimal
+      - knapsack
+  - key: comparator-law
+    prompt: State the requirement a comparator handed to std::sort must satisfy.
+    essential: false
+    accepts:
+      - strict weak ordering
+      - strict less than
+      - comp(a, a) must be false
+      - never <=
+  - key: complexity
+    prompt: Give the time and space complexity and say which step dominates.
+    essential: false
+    accepts:
+      - o(n log n)
+      - the sort dominates
+      - o(n) sweep
+      - counting sort
+
+template_file: sorting-by-key.cpp
+template_notes: >-
+  Three keys, three objectives, one shape. Form 1 is the count objective and the
+  cheapest-first key — read the comment above the loop until the proof is
+  automatic, because that proof is the pattern. Form 2 is the canonical coin
+  system and largest-first, with the guard that reports failure rather than
+  looping. Form 3 is the ratio key, cross-multiplied so no division and no
+  double ever enters the comparison, and it is the form to compare against the
+  0/1 knapsack you are NOT allowed to solve this way.
+
+related:
+  - interval-scheduling
+  - exchange-argument
+  - median-minimisation
+  - two-pointers
