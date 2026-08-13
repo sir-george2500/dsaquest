@@ -25,10 +25,11 @@ from ..content.lessons import CurriculumSet
 from ..domain.lesson import Drill, Stage
 from ..learning.par import format_duration
 from ..lessons import current_stage, deal, grade, greet, teach
+from ..lessons import final_test as ft
 from ..lessons.session import progress_summary
 from ..lessons.trial import Trial, judge_trial, open_trial, pending_trial
 from ..storage import repositories as repo
-from ..world.character import Master
+from ..world.character import Master, speak
 
 
 def safe(text: str) -> str:
@@ -82,11 +83,16 @@ class MasterScreen(Screen):
         #: Tests rely on it; it is also what would let a session be replayed.
         self._pinned_seed = seed
         self._seed_counter = 0
+        #: Buttons carry a generation because remove_children() is deferred:
+        #: advancing synchronously would mount opt0 while the old opt0 still
+        #: exists, and Textual rejects duplicate ids.
+        self._generation = 0
         self.master = master
         self.curriculum = curricula[master.id]
         self.stage: Stage | None = None
         self.drill: Drill | None = None
         self.trial: Trial | None = None
+        self.exam: ft.FinalTest | None = None
         self._ticker = None
         self.phase = "greet"
         self.started = datetime.now(UTC)
@@ -120,6 +126,12 @@ class MasterScreen(Screen):
         self.resume()
 
     # ------------------------------------------------------------ rendering
+
+    def _option_id(self, index: int) -> str:
+        return f"opt{index}-{self._generation}"
+
+    def _new_generation(self) -> None:
+        self._generation += 1
 
     def _seed(self) -> int:
         if self._pinned_seed is not None:
@@ -194,12 +206,15 @@ class MasterScreen(Screen):
 
         choices = self.query_one("#choices", Vertical)
         choices.remove_children()
+        self._new_generation()
         reply = self.query_one("#reply", Input)
 
         if self.drill.options:
             reply.display = False
             for index, option in enumerate(self.drill.options):
-                choices.mount(Button(f"{chr(65 + index)}.  {safe(option)}", id=f"opt{index}"))
+                choices.mount(
+                    Button(f"{chr(65 + index)}.  {safe(option)}", id=self._option_id(index))
+                )
         else:
             reply.display = True
             reply.value = ""
@@ -213,8 +228,10 @@ class MasterScreen(Screen):
     def on_button(self, event: Button.Pressed) -> None:
         if not (event.button.id and event.button.id.startswith("opt")):
             return
-        index = int(event.button.id.removeprefix("opt"))
-        if self.phase == "trial":
+        index = int(event.button.id.removeprefix("opt").split("-")[0])
+        if self.phase == "exam":
+            self.answer_exam(index)
+        elif self.phase == "trial":
             self.answer_trial(index)
         else:
             self.answer(index)
@@ -225,7 +242,10 @@ class MasterScreen(Screen):
             self.answer(event.value)
 
     def action_pick(self, index: int) -> None:
-        if self.phase == "trial" and self.trial and index < len(self.trial.round.options):
+        if self.phase == "exam" and self.exam and self.exam.current:
+            if index < len(self.exam.current.round.options):
+                self.answer_exam(index)
+        elif self.phase == "trial" and self.trial and index < len(self.trial.round.options):
             self.answer_trial(index)
         elif self.phase == "drill" and self.drill and index < len(self.drill.options):
             self.answer(index)
@@ -282,6 +302,8 @@ class MasterScreen(Screen):
             self.show_drill()
         elif self.phase in ("fluent", "trial_done"):
             self.finish_stage()
+        elif self.phase == "gate":
+            self.start_final_test()
 
     def finish_stage(self) -> None:
         self.drills_done = 0
@@ -309,17 +331,30 @@ class MasterScreen(Screen):
         self.stop_clock()
 
         if self.stage is None:
-            from ..world.character import speak
-
+            progress = repo.get_master_progress(conn, self.master.id)
             self.say(speak(conn, self.master, "gate_open", seed=self._seed()))
             panel = self.query_one("#lesson", Static)
             panel.display = True
-            panel.update(
-                "[b green]Every secret is fluent, and every trial is passed.[/]\n\n"
-                "[dim]His final test is what remains — nothing will be named.[/]\n\n"
-                "[dim]escape — leave[/]"
-            )
-            self.phase = "done"
+
+            lines = ["[b green]Every secret is fluent, and every trial is passed.[/]", ""]
+            if progress.passed:
+                lines += [
+                    f"[b yellow]His final test is behind you.[/]  "
+                    f"best {progress.best_score}/{progress.best_total}",
+                    "",
+                    "[dim]space — sit it again[/]",
+                ]
+            else:
+                lines += [
+                    "[b]THE FINAL TEST[/]",
+                    "",
+                    "[dim]Every secret at once. Nothing will be named. No hints.[/]",
+                    "",
+                    "[dim]space — begin[/]",
+                ]
+            lines += ["[dim]escape — leave[/]"]
+            panel.update("\n".join(lines))
+            self.phase = "gate"
         else:
             self.query_one("#lesson", Static).display = True
             self.show_lesson()
@@ -359,8 +394,9 @@ class MasterScreen(Screen):
 
         choices = self.query_one("#choices", Vertical)
         choices.remove_children()
+        self._new_generation()
         for index, (label, option) in enumerate(trial.round.labelled()):
-            choices.mount(Button(f"{label}.  {safe(option.name)}", id=f"opt{index}"))
+            choices.mount(Button(f"{label}.  {safe(option.name)}", id=self._option_id(index)))
 
         self.phase = "trial"
         self.start_clock()
@@ -378,6 +414,9 @@ class MasterScreen(Screen):
         self.query_one("#clock", Static).display = False
 
     def tick(self) -> None:
+        if self.phase == "exam":
+            self.tick_exam()
+            return
         if self.trial is None or self.phase != "trial":
             return
         trial = self.trial
@@ -395,6 +434,23 @@ class MasterScreen(Screen):
 
         if trial.budget.expired(elapsed):
             self.answer_trial(None)
+
+    def tick_exam(self) -> None:
+        if self.exam is None or self.exam.current is None:
+            return
+        live = self.exam.current
+        elapsed = live.watch.elapsed_ms
+        remaining = live.budget.remaining_ms(elapsed)
+        if remaining is None:
+            return
+        clock = self.query_one("#clock", Static)
+        clock.set_class(remaining <= 30_000, "urgent")
+        clock.update(
+            f"{format_duration(remaining)}  {live.budget.bar(elapsed)}   "
+            f"[dim]{live.number}/{live.total}[/]"
+        )
+        if live.budget.expired(elapsed):
+            self.answer_exam(None)
 
     def answer_trial(self, chosen_index: int | None) -> None:
         assert self.trial is not None
@@ -443,3 +499,95 @@ class MasterScreen(Screen):
         self.trial = None
         self.refresh_track()
         self.phase = "trial_done"
+
+    # ------------------------------------------------------------ final test
+
+    def start_final_test(self) -> None:
+        """The gate is checked here, not assumed by the caller."""
+        context = self.app.context
+        if not ft.available(context.conn, self.curriculum):
+            self.notify("Every secret must be drilled and tested first.", severity="warning")
+            return
+        self.exam = ft.open_test(context.conn, context.bank, self.curriculum, seed=self._seed())
+        self.say(speak(context.conn, self.master, "final_test_intro", seed=self._seed()))
+        self.next_exam_round()
+
+    def next_exam_round(self) -> None:
+        assert self.exam is not None
+        context = self.app.context
+        live = ft.next_round(context.conn, context.library, self.exam, seed=self._seed())
+
+        if live is None:
+            self.finish_final_test()
+            return
+
+        self.query_one("#lesson", Static).display = False
+        self.query_one("#drill", Static).display = False
+        self.query_one("#verdict", Static).display = False
+
+        statement = self.query_one("#statement", Static)
+        statement.display = True
+        statement.update(
+            f"[b red]FINAL TEST[/]  [dim]{live.number}/{live.total} · "
+            f"{live.problem.difficulty.value} · no hints[/]\n\n"
+            f"[b]{safe(live.problem.title)}[/]\n\n"
+            f"{safe(live.problem.statement.strip())}\n\n"
+            f"[dim]{safe(live.problem.constraints.strip())}[/]\n\n"
+            f"[b]Which pattern should you use?[/]"
+        )
+
+        choices = self.query_one("#choices", Vertical)
+        choices.remove_children()
+        self._new_generation()
+        for index, (label, option) in enumerate(live.round.labelled()):
+            choices.mount(Button(f"{label}.  {safe(option.name)}", id=self._option_id(index)))
+
+        self.phase = "exam"
+        self.start_clock()
+
+    def answer_exam(self, chosen_index: int | None) -> None:
+        assert self.exam is not None
+        self.stop_clock()
+        ft.answer_round(
+            self.app.context.conn,
+            self.app.context.library,
+            self.exam,
+            chosen_index,
+            scheduler=self.app.context.scheduler,
+        )
+        # No feedback between rounds: a final test does not coach.
+        self.next_exam_round()
+
+    def finish_final_test(self) -> None:
+        assert self.exam is not None
+        context = self.app.context
+        verdict = ft.conclude(context.conn, self.master, self.exam, seed=self._seed())
+
+        self.stop_clock()
+        self.query_one("#choices", Vertical).remove_children()
+        self.query_one("#statement", Static).display = False
+        self.say(verdict.master_line)
+
+        panel = self.query_one("#verdict", Static)
+        panel.set_class(not verdict.passed, "wrong")
+        head = "[b green]THE MASTER IS SATISFIED.[/]" if verdict.passed else "[b red]NOT YET.[/]"
+        lines = [
+            head,
+            "",
+            f"score [b]{verdict.score}/{verdict.total}[/]   needed {verdict.required}",
+            "",
+        ]
+        for index, outcome in enumerate(self.exam.outcomes, start=1):
+            mark = "[green]✓[/]" if outcome.correct else "[red]✗[/]"
+            note = " [dim](time)[/]" if outcome.timed_out else ""
+            lines.append(f"  {mark} {index}. {safe(outcome.problem.title)}{note}")
+        lines += ["", f"respect {verdict.respect_delta:+d} → {verdict.respect_total}"]
+        if not verdict.passed:
+            lines += ["", "[dim]Train, then return. Nothing is lost.[/]"]
+        lines += ["", "[dim]escape — leave[/]"]
+        panel.update("\n".join(lines))
+        panel.display = True
+
+        self.exam = None
+        self.refresh_track()
+        self.phase = "done"

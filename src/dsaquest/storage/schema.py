@@ -279,10 +279,29 @@ ALTER TABLE attempt ADD COLUMN pressure_stage INTEGER;
 """
 
 
+_V4 = """
+-- The master's final test: all his secrets at once, nothing named.
+--
+-- Attempts are counted but never held against the student. Failing a final
+-- test costs a little respect and nothing else; the remedy is more training,
+-- which is the only thing that would actually help.
+CREATE TABLE master_progress (
+    master_id     TEXT    PRIMARY KEY,
+    attempts      INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+    passed        INTEGER NOT NULL DEFAULT 0 CHECK (passed IN (0, 1)),
+    best_score    INTEGER,
+    best_total    INTEGER,
+    first_passed_at TEXT,
+    last_attempt_at TEXT
+);
+"""
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(1, "initial schema", _V1),
     Migration(2, "lessons, drills, respect, character memory", _V2),
     Migration(3, "phase timing and deadlines", _V3),
+    Migration(4, "master final test", _V4),
 )
 
 LATEST_VERSION = max(m.version for m in MIGRATIONS)

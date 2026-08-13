@@ -436,3 +436,186 @@ def test_square_brackets_in_content_survive_rendering(context):
         pytest.skip("no bracketed drill was dealt with this seed")
 
     _run(scenario())
+
+
+def _complete_curriculum(context, seed_base=500):
+    """Drill and pass every stage, so the final test unlocks."""
+    from dsaquest.lessons import (
+        current_stage,
+        deal,
+        grade,
+        judge_trial,
+        open_trial,
+        pending_trial,
+        teach,
+    )
+
+    master = context.masters[MASTER_ID]
+    curriculum = context.curricula[MASTER_ID]
+    for n in range(24):
+        stage = pending_trial(context.conn, curriculum)
+        if stage is not None:
+            trial = open_trial(
+                context.conn,
+                master,
+                context.library,
+                context.bank,
+                curriculum,
+                stage,
+                seed=seed_base + n,
+            )
+            judge_trial(
+                context.conn,
+                master,
+                context.library,
+                curriculum,
+                trial,
+                trial.round.correct_index,
+                scheduler=context.scheduler,
+                seed=seed_base + n,
+            )
+            continue
+        stage = current_stage(context.conn, curriculum)
+        if stage is None:
+            return True
+        teach(context.conn, master, curriculum, stage, seed=seed_base + n)
+        for i in range(16):
+            drill = deal(context.conn, curriculum, stage, seed=seed_base + n * 100 + i)
+            if drill is None:
+                break
+            if grade(
+                context.conn, master, curriculum, stage, drill, drill.answer, seed=i
+            ).became_fluent:
+                break
+    return False
+
+
+def test_the_final_test_is_gated_until_every_secret_is_tested(context):
+    """A gate that can be walked through is not a gate."""
+    from dsaquest.lessons import final_test
+
+    assert not final_test.available(context.conn, context.curricula[MASTER_ID])
+
+    async def scenario():
+        app = _launch(context)
+        async with app.run_test(size=(100, 50)) as pilot:
+            await pilot.pause()
+            screen = app.screen
+            screen.start_final_test()
+            await pilot.pause()
+            assert screen.exam is None, "the final test opened without the gate being met"
+
+    _run(scenario())
+
+
+def test_completing_the_curriculum_offers_the_final_test(context):
+    from dsaquest.lessons import final_test
+
+    assert _complete_curriculum(context)
+    assert final_test.available(context.conn, context.curricula[MASTER_ID])
+
+    async def scenario():
+        app = _launch(context)
+        async with app.run_test(size=(100, 50)) as pilot:
+            await pilot.pause()
+            screen = app.screen
+            assert screen.phase == "gate"
+            lesson = _flat(screen, "#lesson")
+            assert "FINAL TEST" in lesson
+            assert "Nothing will be named" in lesson
+
+    _run(scenario())
+
+
+def test_passing_the_final_test_earns_the_masters_respect(context):
+    assert _complete_curriculum(context)
+
+    async def scenario():
+        app = _launch(context)
+        async with app.run_test(size=(100, 50)) as pilot:
+            await pilot.pause()
+            screen = app.screen
+            before = repo.get_respect(context.conn, MASTER_ID)
+
+            await pilot.press("space")
+            await pilot.pause()
+            assert screen.phase == "exam"
+
+            for _ in range(10):
+                if screen.exam is None or screen.exam.current is None:
+                    break
+                screen.answer_exam(screen.exam.current.round.correct_index)
+                await pilot.pause()
+
+            verdict = _flat(screen, "#verdict")
+            assert "THE MASTER IS SATISFIED" in verdict
+            assert repo.get_respect(context.conn, MASTER_ID) > before
+
+        progress = repo.get_master_progress(context.conn, MASTER_ID)
+        assert progress.passed
+        assert progress.best_score == progress.best_total
+
+    _run(scenario())
+
+
+def test_the_final_test_gives_no_feedback_between_rounds(context):
+    """It tests; it does not coach. Feedback would let you correct mid-sitting."""
+    assert _complete_curriculum(context)
+
+    async def scenario():
+        app = _launch(context)
+        async with app.run_test(size=(100, 50)) as pilot:
+            await pilot.pause()
+            await pilot.press("space")
+            await pilot.pause()
+            screen = app.screen
+
+            first = screen.exam.current
+            screen.answer_exam(first.round.correct_index)
+            await pilot.pause()
+
+            assert screen.phase == "exam", "should go straight to the next problem"
+            assert screen.exam.current.number == 2
+            assert not screen.query_one("#verdict").display
+
+    _run(scenario())
+
+
+def test_failing_the_final_test_names_what_to_train(context):
+    assert _complete_curriculum(context)
+
+    async def scenario():
+        app = _launch(context)
+        async with app.run_test(size=(100, 50)) as pilot:
+            await pilot.pause()
+            await pilot.press("space")
+            await pilot.pause()
+            screen = app.screen
+
+            for _ in range(10):
+                if screen.exam is None or screen.exam.current is None:
+                    break
+                round_ = screen.exam.current.round
+                screen.answer_exam((round_.correct_index + 1) % len(round_.options))
+                await pilot.pause()
+
+            verdict = _flat(screen, "#verdict")
+            assert "NOT YET" in verdict
+            assert "Train, then return" in verdict
+
+        progress = repo.get_master_progress(context.conn, MASTER_ID)
+        assert not progress.passed
+        assert progress.attempts == 1
+
+    _run(scenario())
+
+
+def test_a_passed_final_test_is_never_revoked(context):
+    """A master does not un-recognise what you proved."""
+    assert _complete_curriculum(context)
+    repo.record_final_test(context.conn, MASTER_ID, score=4, total=4, passed=True)
+    repo.record_final_test(context.conn, MASTER_ID, score=0, total=4, passed=False)
+
+    progress = repo.get_master_progress(context.conn, MASTER_ID)
+    assert progress.passed
+    assert progress.best_score == 4

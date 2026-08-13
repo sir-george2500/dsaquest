@@ -837,3 +837,67 @@ def timeout_rate(conn: sqlite3.Connection, pattern_id: str, *, window: int = 20)
     if not rows:
         return None
     return sum(row["timed_out"] for row in rows) / len(rows)
+
+
+# --------------------------------------------------------------------------
+# The master's final test
+# --------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class MasterProgress:
+    master_id: str
+    attempts: int
+    passed: bool
+    best_score: int | None
+    best_total: int | None
+    first_passed_at: str | None
+    last_attempt_at: str | None
+
+    @property
+    def best_fraction(self) -> float | None:
+        if not self.best_total:
+            return None
+        return (self.best_score or 0) / self.best_total
+
+
+def get_master_progress(conn: sqlite3.Connection, master_id: str) -> MasterProgress:
+    conn.execute("INSERT OR IGNORE INTO master_progress (master_id) VALUES (?)", (master_id,))
+    row = conn.execute("SELECT * FROM master_progress WHERE master_id = ?", (master_id,)).fetchone()
+    return MasterProgress(
+        master_id=row["master_id"],
+        attempts=row["attempts"],
+        passed=bool(row["passed"]),
+        best_score=row["best_score"],
+        best_total=row["best_total"],
+        first_passed_at=row["first_passed_at"],
+        last_attempt_at=row["last_attempt_at"],
+    )
+
+
+def record_final_test(
+    conn: sqlite3.Connection, master_id: str, *, score: int, total: int, passed: bool
+) -> MasterProgress:
+    """Log one attempt at a master's final test.
+
+    ``passed`` is sticky: once earned it is never revoked, even if a later
+    rematch goes badly. A master does not un-recognise what you proved.
+    """
+    now = utcnow()
+    get_master_progress(conn, master_id)
+    with transaction(conn):
+        conn.execute(
+            """
+            UPDATE master_progress
+               SET attempts = attempts + 1,
+                   passed = MAX(passed, ?),
+                   best_score = CASE
+                       WHEN best_score IS NULL OR ? > best_score THEN ? ELSE best_score END,
+                   best_total = ?,
+                   first_passed_at = COALESCE(first_passed_at, CASE WHEN ? THEN ? END),
+                   last_attempt_at = ?
+             WHERE master_id = ?
+            """,
+            (int(passed), score, score, total, int(passed), now, now, master_id),
+        )
+    return get_master_progress(conn, master_id)
