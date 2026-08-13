@@ -118,7 +118,14 @@ class Pattern(_Frozen):
 
     id: str = Field(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$", description="Stable slug; never rename")
     name: str
-    world: int = Field(ge=1, le=8)
+    world: int = Field(
+        ge=1,
+        le=12,
+        description=(
+            "Display grouping, roughly one per region. Twelve because the roster "
+            "has eleven masters across ten regions, and eight cannot hold them."
+        ),
+    )
     order: int = Field(ge=0, description="Position within the world, for display")
     tagline: str = Field(description="One line: what this pattern buys you")
 

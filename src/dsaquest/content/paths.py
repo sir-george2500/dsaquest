@@ -75,3 +75,13 @@ def read_template(name: str) -> str:
 def exercises_file():
     """Sample inputs for Mode C differential judging."""
     return content_root() / "exercises.yaml"
+
+
+def exercises_dir():
+    """Per-pattern sample inputs, merged over :func:`exercises_file`.
+
+    One shared file cannot be written by several authors at once without them
+    clobbering each other, and content is authored in parallel. A directory
+    gives each author a file of their own.
+    """
+    return content_root() / "exercises"

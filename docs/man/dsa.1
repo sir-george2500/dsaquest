@@ -555,6 +555,15 @@ of the eleven masters.
 The understanding check runs on boss fights only. Master problems and trials do
 not ask for it yet.
 .PP
+Nothing is held out. Every authored problem is claimed by a trial or a final
+test, so a master's final test can draw a problem its own trials already
+showed. Run
+.RS 4
+python \-m dsaquest.content.validate
+.RE
+to see how many problems each pattern still needs; \fB\-\-strict\fR makes that
+a failure.
+.PP
 Regions exist in the design and in the content, but not in the engine: a boss
 is reached through its master, not through the region it is placed in.
 .PP
