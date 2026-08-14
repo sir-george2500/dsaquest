@@ -20,16 +20,19 @@ from ..content.paths import content_root
 from ..domain.boss import Boss
 from ..storage import repositories as repo
 from ..world.character import Master, strip_placeholders
-from .card import CARD_CSS, ROMAN, CardData, Stat, WardenCard
+from .card import BACK, CARD_CSS, INK, MUTE, ROMAN, CardData, Stat, WardenCard
 
 ROSTER_CSS = (
     CARD_CSS
-    + """
-RosterScreen { background: #100f0d; }
-#roster-title { padding: 1 2 0 2; text-style: bold; }
-#roster-sub { padding: 0 2 1 2; color: #8a7f6d; }
-#roster-body { padding: 0 1; }
-.roster-row { layout: horizontal; height: auto; }
+    + f"""
+RosterScreen {{ background: {BACK}; }}
+#roster-title {{ padding: 1 2 0 2; text-style: bold; }}
+#roster-sub {{ padding: 0 2 1 2; color: {MUTE}; }}
+#roster-body {{ padding: 0 1; }}
+/* Centred, not left-hugged. A card is capped at 104 columns so its quote line
+   stays readable; at 160 that left fifty-six columns of empty terminal on the
+   right alone and the roster looked like it had failed to lay out. */
+.roster-row {{ layout: horizontal; height: auto; align-horizontal: center; }}
 """
 )
 
@@ -39,6 +42,10 @@ RosterScreen { background: #100f0d; }
 CARD_WIDTH = 80
 TWO_COLUMN_WIDTH = CARD_WIDTH * 2 + 8
 MAX_SINGLE_WIDTH = 104
+
+#: The narrowest a card may be drawn. Below this the meta column beside the
+#: 28-cell portrait frame is under twenty cells and a name is all ellipsis.
+MIN_CARD_WIDTH = 60
 
 ORDINALS = {1: "FIRST", 2: "SECOND", 3: "THIRD", 4: "FOURTH", 5: "FIFTH", 6: "SIXTH"}
 
@@ -205,9 +212,9 @@ class RosterScreen(Screen):
         cards = self.cards()
         self._generation += 1
 
-        self.query_one("#roster-title", Static).update("[b #ece5d6]THE ROSTER[/]")
+        self.query_one("#roster-title", Static).update(f"[b {INK}]THE ROSTER[/]")
         self.query_one("#roster-sub", Static).update(
-            f"[#8a7f6d]{len(cards)} of them   ·   m masters   w wardens   a all[/]"
+            f"[{MUTE}]{len(cards)} of them   ·   m masters   w wardens   a all[/]"
         )
 
         body = self.query_one("#roster-body", VerticalScroll)
@@ -217,7 +224,14 @@ class RosterScreen(Screen):
             per_row, width = 2, CARD_WIDTH
         else:
             per_row = 1
-            width = max(CARD_WIDTH, min(self.size.width - 6, MAX_SINGLE_WIDTH))
+            # The floor is what the card can *survive*, not what it prefers.
+            # Held at eighty it overflowed an eighty column terminal by six
+            # cells: the right border fell off the screen and the blurb was cut
+            # mid-word with no ellipsis, because the widget was told it was
+            # eighty wide and given seventy-four. Letterspacing already falls
+            # back to plain text when it will not fit, so a narrow card degrades
+            # rather than breaks.
+            width = max(MIN_CARD_WIDTH, min(self.size.width - 6, MAX_SINGLE_WIDTH))
 
         for index in range(0, len(cards), per_row):
             row = Horizontal(classes="roster-row")

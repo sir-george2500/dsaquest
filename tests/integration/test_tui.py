@@ -27,28 +27,46 @@ def _run(coro):
     return asyncio.run(coro)
 
 
-def test_the_app_boots_to_a_campaign_map(context):
+def test_the_app_boots_to_the_road(context):
+    """`#map` is the road — chapters and who teaches them, not a pattern list.
+
+    This asserted "WORLD 1" and "Sliding Window", which is what the panel held
+    when it was a list of patterns grouped by world. It has been the road for
+    some time and these two assertions have been failing ever since, on HEAD as
+    well as here; they were left behind rather than broken.
+    """
+
     async def scenario():
         app = DsaQuestApp(context)
         async with app.run_test() as pilot:
             await pilot.pause()
             assert isinstance(app.screen, HomeScreen)
             rendered = str(app.screen.query_one("#map").visual)
-            assert "WORLD 1" in rendered
-            assert "Sliding Window" in rendered
+            assert "THE ROAD" in rendered
+            assert "The Warrior Awakens" in rendered, "the first chapter must be named"
+            assert "Elder Vhast" in rendered, "and so must the master who teaches it"
             banner = str(app.screen.query_one("#banner").visual)
             assert "Level 1" in banner
 
     _run(scenario())
 
 
-def test_locked_patterns_are_marked_on_the_map(context):
+def test_sealed_chapters_are_marked_on_the_road(context):
+    """The mark for sealed is ``×``, and has been since the emoji was dropped.
+
+    A lock emoji is two terminal cells wide and every other mark is one, so a
+    sealed chapter pushed its whole row a column right of an open one. `_mark`
+    maps it to a monospaced ``×``; this asserted on the emoji that no longer
+    reaches the screen.
+    """
+
     async def scenario():
         app = DsaQuestApp(context)
         async with app.run_test() as pilot:
             await pilot.pause()
             rendered = str(app.screen.query_one("#map").visual)
-            assert "🔒" in rendered, "nothing is shown as locked on a fresh profile"
+            assert "×" in rendered, "nothing is shown as sealed on a fresh profile"
+            assert "🔒" not in rendered, "the mark must be one cell wide, or the rows misalign"
 
     _run(scenario())
 

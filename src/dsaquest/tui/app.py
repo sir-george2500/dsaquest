@@ -49,8 +49,9 @@ from .arena import ARENA_CSS, ArenaScreen
 from .card import (
     BAD,
     BODY,
+    BUTTON_CSS,
+    EMBER,
     FAINT,
-    FRAME,
     GOLD,
     GOOD,
     INK,
@@ -58,6 +59,9 @@ from .card import (
     RULE,
     SEALED,
     clip,
+    gauge,
+    pack,
+    printed_width,
     quest_theme,
 )
 from .codex import CODEX_CSS, CodexScreen
@@ -70,14 +74,26 @@ from .story import STORY_CSS, StoryScreen, load_story
 from .theatre import THEATRE_CSS
 from .understanding import UNDERSTANDING_CSS
 
+#: The home screen's own measure. Wider than the prose measure because the road
+#: is a five-column table and not prose, and narrower than any real terminal so
+#: that the layout is the same shape everywhere.
+HOME_MEASURE = 104
+
 CSS = (
     """
 Screen { background: $surface; }
 
-/* One left edge. Every block on the home screen begins at column 4: the
-   banner's text, the quest's text, the actions and the road. It used to be
-   three edges — the road started at column 0, its rows at 2 and the boxed
-   panels at 4 — which read as three unrelated components stacked up. */
+/* The home screen is one column, capped. Uncapped it stretched to whatever the
+   terminal was: at 160 columns the quest box drew a gold rectangle 160 cells
+   wide around sixty cells of text, and the road's five columns drifted so far
+   apart that a row stopped reading as a row. Capped and left-aligned, the same
+   layout holds from eighty columns to a hundred and sixty. */
+#home { width: 100%; max-width: """
+    + str(HOME_MEASURE)
+    + """; height: 1fr; }
+
+/* One left edge. Every block begins at the same column: the banner's text, the
+   quest's text, the actions and the road. */
 #banner {
     height: auto; padding: 0 2; margin: 1 2 0 2;
     border-left: outer """
@@ -85,50 +101,63 @@ Screen { background: $surface; }
     + """;
 }
 /* The quest box is the loudest thing on the screen on purpose: it is the
-   answer to "what do I do now", and everything else is optional. It is the
-   only bordered box up here now — the banner used to be boxed too, in blue,
-   which made the eye land on the XP bar rather than on the quest. */
-#quest { height: auto; padding: 1 2; margin: 1 2 0 2; border: round """
+   answer to "what do I do now", and everything else is optional. Its heading
+   lives in the border rather than on a line of its own — a row saved on a
+   twenty-four row terminal is a row of the road made visible. */
+#quest {
+    height: auto; padding: 0 2; margin: 1 2 0 2; border: round """
     + GOLD
-    + """; }
+    + """;
+    border-title-color: """
+    + GOLD
+    + """;
+    border-title-align: left;
+}
 #actions { height: auto; padding: 1 2 0 2; }
+/* A stable gutter, so the road's column widths do not depend on whether the
+   road happens to be scrolling. Without it the same eleven rows fit at 120x40
+   and wrapped at 80x24, two columns over, because the scrollbar appeared and
+   silently took them. */
+#map-wrap { height: 1fr; scrollbar-gutter: stable; }
 #map { padding: 1 2 0 2; }
-#xpbar { color: $success; }
 
-.world { color: $accent; text-style: bold; padding: 1 0 0 0; }
-.locked { color: $text-disabled; }
-.done { color: $success; }
-.active { color: $warning; }
-
-#statement {
+/* Scoped to the session runner. Unscoped, these ids are not unique in the
+   application: `#statement` and `#verdict` also exist on the master screen and
+   `#editor` inside the arena, so a rule written for a practice round was
+   silently styling a boss fight. `max-height: 60%` was the expensive one — it
+   applied to the *master's* statement panel, where it clipped a trial's problem
+   statement to five rows, bottom border and all, with no scrollbar and no
+   indication that seventeen rows of the problem were missing. The player was
+   timed on a question they could not read. */
+SessionScreen #statement {
     padding: 1 2; border: round $primary; margin: 1 2;
     height: auto; max-height: 60%;
 }
-#prompt { padding: 0 2; color: $text-muted; }
-#options { padding: 0 2; height: auto; }
-#options Button { width: 100%; margin: 0 0 1 0; }
+SessionScreen #prompt { padding: 0 2; color: $text-muted; }
+SessionScreen #options { padding: 0 2; height: auto; }
 
-#feedback {
+SessionScreen #feedback {
     padding: 1 2; margin: 1 2; border: round $success; height: auto;
 }
-#feedback.wrong { border: round $error; }
+SessionScreen #feedback.wrong { border: round $error; }
 
-#editor { height: 1fr; margin: 1 2; border: round $primary; }
-#verdict { padding: 1 2; height: auto; }
+SessionScreen #editor { height: 1fr; margin: 1 2; border: round $primary; }
+SessionScreen #verdict { padding: 1 2; height: auto; }
 
 .dim { color: $text-muted; }
 .good { color: $success; text-style: bold; }
 .bad { color: $error; text-style: bold; }
 """
+    + BUTTON_CSS
     + MASTER_CSS
     + JOURNEY_CSS
-    + CODEX_CSS
     + ARENA_CSS
     + DUEL_CSS
     + UNDERSTANDING_CSS
     + ROSTER_CSS
     + THEATRE_CSS
     + STORY_CSS
+    + CODEX_CSS
 )
 
 
@@ -165,13 +194,25 @@ class HomeScreen(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
-        yield Static(id="banner")
-        yield Static(id="quest")
-        yield Static(id="actions")
-        yield VerticalScroll(Static(id="map"))
+        with Vertical(id="home"):
+            yield Static(id="banner")
+            yield Static(id="quest")
+            yield Static(id="actions")
+            yield VerticalScroll(Static(id="map"), id="map-wrap")
         yield Footer()
 
     def on_mount(self) -> None:
+        self.query_one("#quest", Static).border_title = "CURRENT QUEST"
+        self.refresh_view()
+
+    def on_resize(self, event) -> None:
+        """Every block on this screen is sized to the terminal, so redraw.
+
+        The banner's gauge, the road's five column widths and how many optional
+        actions fit on a line are all computed from the width available. Without
+        this they keep whatever they were built with, and a terminal resized
+        from 160 to 80 shows a road whose rows are twenty columns too wide.
+        """
         self.refresh_view()
 
     def on_screen_resume(self) -> None:
@@ -228,6 +269,9 @@ class HomeScreen(Screen):
     def action_map(self) -> None:
         self.app.push_screen(JourneyScreen())
 
+    def action_codex(self) -> None:
+        self.app.push_screen(CodexScreen())
+
     def action_strength(self) -> None:
         self.app.push_screen(RosterScreen())
 
@@ -247,38 +291,83 @@ class HomeScreen(Screen):
         road = chapter_statuses(context)
         walked = sum(s.fraction for s in road) / len(road) if road else 0.0
 
-        # The XP bar is drawn in two colours rather than one. `bar()` returns
-        # filled and empty cells in a single string, and wrapping the whole
-        # thing in [green] painted the *empty* track solid green — a level-one
-        # warrior with 0 XP was shown what read as a full bar, and it was the
-        # brightest thing on the screen.
-        track = level.bar(24)
-        filled = track.count("█")
+        # Everything below is sized off this, not off the terminal: `#home` is
+        # capped, so past 104 columns the layout stops growing rather than
+        # spreading its columns until a row no longer reads as a row.
+        column = min(self.size.width or HOME_MEASURE, HOME_MEASURE)
+        self._breathe()
+
+        # Each block loses a different amount to its own border, padding and
+        # margin. Measured once against the rendered widgets rather than
+        # derived: guessing put the road's header row one column over its
+        # container, and "0 of 11 cleared" wrapped to a line of its own.
+        self._draw_banner(context, story, level, streak, plan, column - 9)
+        self._draw_quest(step, story, walked, column - 10)
+        self._draw_actions(step, column - 8)
+        self._draw_road(context, story, road, step, boss_for, column - 10)
+
+    #: Under this many rows the screen drops every blank separator. The road is
+    #: the point of the screen and at eighty by twenty-four the airy version
+    #: showed two of its twelve chapters; the tight one shows eleven.
+    TIGHT_HEIGHT = 32
+
+    def _breathe(self) -> None:
+        gap = 0 if self.size.height < self.TIGHT_HEIGHT else 1
+        self.query_one("#banner").styles.margin = (gap, 2, 0, 2)
+        self.query_one("#quest").styles.margin = (gap, 2, 0, 2)
+        self.query_one("#actions").styles.padding = (gap, 2, 0, 2)
+        # The road keeps its top rule of space whatever happens. Butted straight
+        # against the actions it stopped being a separate block and the heading
+        # read as a sixth menu item.
+        self.query_one("#map").styles.padding = (1, 2, 0, 2)
+
+    def _draw_banner(self, context, story, level, streak, plan, width: int) -> None:
+        """Who you are, and where you stand. Two lines, both flush at both ends.
+
+        The identity goes left and the two volatile numbers go hard right, so
+        the block has an edge on both sides instead of trailing off wherever the
+        streak count happened to end.
+        """
+        name = safe(repo.warrior_name(context.conn, story.hero or "DELTA-X"))
         due = (
             f"[b {GOLD}]{plan.due_count} due[/]" if plan.due_count else f"[{SEALED}]nothing due[/]"
         )
-        self.query_one("#banner", Static).update(
-            f"[b {GOLD}]{safe(repo.warrior_name(context.conn, story.hero or 'DELTA-X'))}[/]  "
-            f"[{MUTE}]THE ALGORITHM WARRIOR[/]\n"
-            f"[{BODY}]Level {level.level}[/]  [{MUTE}]{level.title}[/]   "
-            f"[{GOOD}]{'█' * filled}[/][{FRAME}]{'▁' * (24 - filled)}[/] "
-            f"[{FAINT}]{level.xp_into_level:,}/{level.xp_for_level:,} XP[/]   "
-            f"[{FAINT}]{streak.current} day streak[/]   " + due
+        left = f"[b {GOLD}]{name}[/]  [{MUTE}]THE ALGORITHM WARRIOR[/]"
+        right = f"[{FAINT}]{streak.current} day streak[/]  [{SEALED}]·[/]  {due}"
+
+        standing = f"[{BODY}]Level {level.level}[/]  [{MUTE}]{safe(level.title)}[/]"
+        # The gauge takes what the two labels leave. Fixed at twenty-four cells
+        # it pushed "nothing due" onto a third line at eighty columns, and the
+        # banner — three rows for two rows of content — read as a wrapping bug.
+        bar_w = max(8, min(18, width - printed_width(standing) - 20))
+        earned = (
+            f"{gauge(level.xp_into_level / max(1, level.xp_for_level), bar_w, GOOD)} "
+            f"[{FAINT}]{level.xp_into_level:,}/{level.xp_for_level:,} XP[/]"
         )
 
+        # Both rows are flush at both ends. Ragged, the identity ran to the far
+        # right and the level line stopped halfway, so the block had one edge
+        # and one frayed side.
+        self.query_one("#banner", Static).update(
+            f"{left}{' ' * max(3, width - printed_width(left) - printed_width(right))}{right}\n"
+            f"{standing}{' ' * max(3, width - printed_width(standing) - printed_width(earned))}"
+            f"{earned}"
+        )
+
+    def _draw_quest(self, step, story, walked: float, width: int) -> None:
         chapter = step.chapter
-        where = f"Chapter {chapter.number} — {chapter.name}" if chapter else story.title
-        filled = int(round(walked * 30))
-        # An empty track drawn in RULE alone was invisible against the surface
-        # and read as a rendering failure rather than as nought per cent. The
-        # first cell is always lit, so the bar is always a bar.
+        where = safe(
+            clip(
+                f"Chapter {chapter.number} — {chapter.name}" if chapter else story.title, width - 24
+            )
+        )
+        pct = f"{walked:.0%} of the road"
+        bar = max(10, min(24, width - len(where) - len(pct) - 4))
+
         self.query_one("#quest", Static).update(
-            f"[{FAINT}]CURRENT QUEST[/]\n"
             f"[b {INK}]{safe(step.title)}[/]\n"
             f"[{BODY}]{safe(step.detail)}[/]\n\n"
-            f"[{FAINT}]{safe(where)}[/]   "
-            f"[{GOLD}]{'█' * filled}[/][{FRAME}]{'▁' * (30 - filled)}[/] "
-            f"[{MUTE}]{walked:.0%} of the road[/]"
+            f"[{FAINT}]{where}[/]   {gauge(walked, bar, GOLD)} [{MUTE}]{pct}[/]"
             + (
                 f"\n\n[{BAD}]" + safe("  ·  ".join(step.blockers[:4])) + "[/]"
                 if step.blockers
@@ -286,55 +375,113 @@ class HomeScreen(Screen):
             )
         )
 
+    def _draw_actions(self, step, width: int) -> None:
         primary = "Continue Journey" if step.is_action else "See what it wants"
         # The primary action sits on its own line, in the quest's own gold, and
-        # the five optional ones share a quieter line below it. Six equal keys
-        # in a row made the one that matters indistinguishable from the rest.
+        # the five optional ones share the line below it. Six equal keys in a
+        # row made the one that matters indistinguishable from the rest.
+        rest = [
+            f"[{FAINT}]\\[{key}][/] [{MUTE}]{label}[/]"
+            for key, label in (
+                (2, "Journey map"),
+                (3, "Training grounds"),
+                (4, "Review due"),
+                (5, "Duel"),
+                (6, "Roster"),
+                (7, "Codex"),
+            )
+        ]
         self.query_one("#actions", Static).update(
             f"[b {GOLD}]\\[1][/] [b {INK}]{primary}[/]   [{FAINT}](enter)[/]\n"
-            f"[{FAINT}]\\[2][/] [{MUTE}]Journey map[/]     "
-            f"[{FAINT}]\\[3][/] [{MUTE}]Training grounds[/]     "
-            f"[{FAINT}]\\[4][/] [{MUTE}]Review due[/]     "
-            f"[{FAINT}]\\[5][/] [{MUTE}]Duel[/]     "
-            f"[{FAINT}]\\[6][/] [{MUTE}]Roster[/]"
+            + "\n".join(pack(rest, width, gap=4))
         )
 
-        # The road, not a list of patterns. A wall of pattern percentages is a
-        # readout; this is where Delta-X has been and where he is going, and it
-        # is the only thing on this screen that answers "why am I doing this".
-        lines: list[str] = [f"[{FAINT}]THE ROAD[/]", ""]
+    def _draw_road(self, context, story, road, step, boss_for, width: int) -> None:
+        """Where Delta-X has been and where he is going.
+
+        Five columns, all sized from the width available, because a table whose
+        columns are fixed either overflows a narrow terminal — at a hundred
+        columns every one of the eleven rows wrapped, and the road became
+        twenty-two ragged half-lines — or drifts apart on a wide one.
+
+        The status word is gone and a per-chapter gauge stands in its place.
+        Ten rows reading "sealed" in the same grey is ten rows of nothing; the
+        gauge says the same thing about a sealed chapter (empty) and something
+        no word said about an open one (how far in).
+        """
+        # 1 mark + 1 + 4 number + 1 + name + 1 + master + 1 + 8 gauge + 1 + guardian
+        spare = max(36, width - 18)
+        # Seventy columns will not hold four text columns. Rather than clip all
+        # three — "Adjudicator Sevr…" beside "The Halving" beside "THE SEARCH
+        # WARDEN" wrapping onto a second line — the guardian is dropped at
+        # narrow widths. It is the one column the chapter's own name already
+        # implies: chapter III, The Halving, is guarded by The Search Warden.
+        wide = spare >= 64
+        if wide:
+            name_w = max(14, min(28, spare * 36 // 100))
+            master_w = max(12, min(30, spare * 33 // 100))
+            guard_w = spare - name_w - master_w
+        else:
+            name_w = max(14, spare * 45 // 100)
+            master_w = spare - name_w
+            guard_w = 0
+
+        here = step.chapter.number if step.chapter else None
+        cleared = sum(1 for s in road if s.complete)
+        count = f"{cleared} of {len(road)} cleared"
+        lines = [f"[{FAINT}]THE ROAD[/]{' ' * max(2, width - 8 - len(count))}[{SEALED}]{count}[/]"]
+        if self.size.height >= self.TIGHT_HEIGHT:
+            lines.append("")
+
         for status in road:
             chapter = status.chapter
             master = context.masters.get(chapter.master)
-            who = master.title if master else chapter.master
+            # The name, never the epithet. Nine of eleven epithets *are* the
+            # chapter's own name — "Warden Ilsa Korrin, the Straight Line"
+            # against a chapter called The Straight Line — and keeping whichever
+            # ones happened to fit gave a column where two rows out of eleven
+            # ran long for no reason a reader could see.
+            who = (master.title if master else chapter.master).split(",")[0]
+
+            current = chapter.number == here
             if status.complete:
-                style, note = GOOD, "cleared"
-            elif status.started or status.final_passed:
-                style, note = GOLD, f"{status.secrets_held}/{status.secrets_total} secrets"
-            elif status.reachable:
-                style, note = BODY, "open"
+                style = GOOD
+            elif current:
+                style = GOLD
+            elif status.started:
+                style = BODY
             else:
-                style, note = SEALED, "sealed"
+                style = MUTE if status.reachable else SEALED
+            mark = "▸" if current else _mark(status.mark)
+
             boss = boss_for(context, chapter)
-            guardian = clip(boss.name, 24) if boss else ""
+            guardian = safe(clip(boss.name, guard_w)) if (boss and guard_w) else ""
             # A guardian you cannot reach must not out-shout the chapter that
             # names it: "Grandmaster Ragine" sat in dead grey while THE
             # THIRTY-TWO burned warm brown two columns away.
             if status.boss_defeated:
                 colour = GOOD
             elif status.reachable:
-                colour = "#7a5c4a"
+                colour = EMBER
             else:
                 colour = SEALED
-            # One line per chapter, not two. Two lines an entry made eleven
-            # chapters a twenty-two row stripe that swamped the quest box above
-            # it, and the second line — "sealed   guardian THE ARRAY BEAST" —
-            # had no column structure at all: "guardian" landed at column 13 or
-            # 15 depending on whether the word before it was "open" or "sealed".
+
+            teacher = FAINT if status.reachable else SEALED
+            # A sealed chapter gets no track at all. Drawn for every row the
+            # eight-cell gauges stacked into a solid grey column that was the
+            # second loudest shape on a fresh save while saying nothing; drawn
+            # only where the road is walkable, the one lit track is exactly
+            # where the player is.
+            bar = (
+                gauge(status.fraction, 8, GOOD if status.complete else GOLD)
+                if status.reachable
+                else " " * 8
+            )
             lines.append(
-                f"[{style}]{_mark(status.mark)} {chapter.number:<5}"
-                f"{safe(clip(chapter.name, 21)):<22}[/][{FAINT}]{safe(clip(who, 37)):<38}[/]"
-                f"[{SEALED}]{note:<14}[/]" + (f"[{colour}]{safe(guardian)}[/]" if guardian else "")
+                f"[{style}]{mark} {chapter.number:<4} "
+                f"{safe(clip(chapter.name, name_w)):<{name_w}}[/] "
+                f"[{teacher}]{safe(clip(who, master_w)):<{master_w}}[/] "
+                f"{bar} [{colour}]{guardian}[/]"
             )
 
         if story.final is not None:
@@ -342,8 +489,11 @@ class HomeScreen(Screen):
             style = GOOD if felled else SEALED
             lines += [
                 "",
-                f"[{style}]{_mark('✓' if felled else '·')} {story.final.number:<5}"
-                f"{safe(clip(story.final.name, 21)):<22}[/][{FAINT}]{'THE ELITE CODER':<38}[/]",
+                f"[{style}]{'✓' if felled else '·'} {story.final.number:<4} "
+                f"{safe(clip(story.final.name, name_w)):<{name_w}}[/] "
+                f"[{SEALED}]{'THE ELITE CODER' if not guard_w else '':<{master_w}}[/] "
+                f"{gauge(1.0, 8, GOOD) if felled else ' ' * 8} "
+                f"[{GOOD if felled else SEALED}]{'THE ELITE CODER' if guard_w else ''}[/]",
             ]
 
         self.query_one("#map", Static).update("\n".join(lines))
@@ -356,9 +506,6 @@ class HomeScreen(Screen):
 
     def action_roster(self) -> None:
         self.app.push_screen(RosterScreen())
-
-    def action_codex(self) -> None:
-        self.app.push_screen(CodexScreen())
 
     def action_story(self) -> None:
         story = load_story()
@@ -550,15 +697,15 @@ class SessionScreen(Screen):
 
         body = []
         if outcome.correct:
-            body.append(f"[b green]Held.[/]  {outcome.credited}/{outcome.total} points")
+            body.append(f"[b $success]Held.[/]  {outcome.credited}/{outcome.total} points")
         else:
             body.append(
-                f"[b red]Not held.[/]  {outcome.credited}/{outcome.total} points — "
+                f"[b $error]Not held.[/]  {outcome.credited}/{outcome.total} points — "
                 f"an essential one is missing"
             )
         body.append("")
         for result in outcome.results:
-            mark = "[green]+[/]" if result.credited else "[red]-[/]"
+            mark = "[$success]+[/]" if result.credited else "[$error]-[/]"
             star = "[b]*[/]" if result.point.essential else " "
             body.append(f"  {mark}{star} {safe(result.point.prompt)}")
             if not result.credited and result.point.essential:
@@ -649,10 +796,12 @@ class SessionScreen(Screen):
 
         body = []
         if feedback.correct:
-            body.append(f"[b green]Correct.[/] {context.library[feedback.actual_pattern_id].name}")
+            body.append(
+                f"[b $success]Correct.[/] {context.library[feedback.actual_pattern_id].name}"
+            )
         else:
             body.append(
-                f"[b red]No.[/] That was "
+                f"[b $error]No.[/] That was "
                 f"[b]{context.library[feedback.actual_pattern_id].name}[/], "
                 f"not {context.library[feedback.chosen_pattern_id].name}."
             )
@@ -710,7 +859,7 @@ class SessionScreen(Screen):
         with contextlib.suppress(Exception):
             self.query_one("#editor", TextArea).text = self.edited_source
         self.query_one("#prompt", Static).update(
-            "[green]Edited externally.[/]  [dim]ctrl+s to submit, e to go back[/]"
+            "[$success]Edited externally.[/]  [dim]ctrl+s to submit, e to go back[/]"
         )
 
     def action_submit_code(self) -> None:
@@ -724,14 +873,14 @@ class SessionScreen(Screen):
         if not isinstance(self.current, tuple):
             return
         if self.edited_source is not None:
-            self.query_one("#prompt", Static).update("[yellow]Compiling and running…[/]")
+            self.query_one("#prompt", Static).update("[$warning]Compiling and running…[/]")
             self.judge_whole(self.edited_source)
             return
         try:
             editor = self.query_one("#editor", TextArea)
         except Exception:
             return
-        self.query_one("#prompt", Static).update("[yellow]Compiling and running…[/]")
+        self.query_one("#prompt", Static).update("[$warning]Compiling and running…[/]")
         self.judge_code(editor.text)
 
     @work(thread=True)
@@ -776,10 +925,10 @@ class SessionScreen(Screen):
         self.record(outcome, accepted)
 
         if accepted:
-            body = [f"[b green]Accepted.[/] {report.report.passed}/{report.report.total} tests"]
+            body = [f"[b $success]Accepted.[/] {report.report.passed}/{report.report.total} tests"]
         else:
             failure = report.report.first_failure
-            body = [f"[b red]{report.report.verdict.label}[/]"]
+            body = [f"[b $error]{report.report.verdict.label}[/]"]
             # The compiler's own words, and the judge's, go through safe():
             # an error about `undefined_thing[q]` was being shown as an error
             # about `undefined_thing`, which sends the learner hunting for a
@@ -801,11 +950,11 @@ class SessionScreen(Screen):
         self.correct_count += int(correct)
         extras = []
         for pattern_id in outcome.newly_unlocked:
-            extras.append(f"[b magenta]Unlocked: {pattern_id}[/]")
+            extras.append(f"[b $secondary]Unlocked: {pattern_id}[/]")
         for achievement in outcome.achievements:
-            extras.append(f"[b yellow]Achievement: {achievement.name}[/]")
+            extras.append(f"[b $warning]Achievement: {achievement.name}[/]")
         for level in outcome.levels_gained:
-            extras.append(f"[b cyan]Level {level}![/]")
+            extras.append(f"[b $secondary]Level {level}![/]")
         if extras:
             self.notify("\n".join(extras), timeout=6)
 

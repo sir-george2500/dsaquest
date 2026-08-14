@@ -244,13 +244,20 @@ class CodexScreen(Screen):
         self.query_one("#codex-sprite", Static).update(
             sprite_text(load_sprite(path)) if path.is_file() else ""
         )
+        # Spread to the height of the portrait beside it. Set solid, the three
+        # lines of identity and the creed filled six rows of a fourteen-row head
+        # and left eight blank ones in a column forty cells wide — the same dead
+        # column beside a face that the warden card and the master screen both
+        # had, and it is dead here for the same reason. The blanks go only when
+        # there is a portrait to reach the bottom of; narrow drops them with it.
+        air = "\n" if not self.has_class("narrow") else ""
         self.query_one("#codex-name", Static).update(
-            f"[b {INK}]{safe(master.title if master else master_id)}[/]\n"
+            f"[b {INK}]{safe(master.title if master else master_id)}[/]\n{air}"
             f"[{accent}]{safe(lore.epithet)}[/]"
-            + (f"\n[{FAINT}]{safe(lore.clan)}[/]" if lore.clan else "")
+            + (f"\n{air}[{FAINT}]{safe(lore.clan)}[/]" if lore.clan else "")
         )
         self.query_one("#codex-creed", Static).update(
-            f'[i {BODY}]"{safe(lore.creed)}"[/]' if lore.creed else ""
+            f'{air}[i {BODY}]"{safe(lore.creed)}"[/]' if lore.creed else ""
         )
 
         verdict = self.query_one("#codex-verdict", Static)

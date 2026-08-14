@@ -29,7 +29,7 @@ from ..art.sprite import load_sprite, sprite_text
 from ..content.loader import ContentError
 from ..content.paths import content_root
 from ..storage import repositories as repo
-from .card import BACK, BODY, CARD_BACK, FAINT, FRAME, GOLD, INK, MEASURE
+from .card import BACK, BODY, CARD_BACK, FAINT, FRAME, GOLD, INK, MEASURE, MUTE
 from .master import safe
 
 #: One left edge at column 4, and a bounded reading measure.
@@ -49,11 +49,32 @@ StoryScreen {{ background: {BACK}; align-vertical: middle; }}
 #story-mid VerticalScroll {{ width: 1fr; height: auto; max-height: 100%; }}
 /* The field sits directly under the sentence that asks for a name, in the
    text column's own left edge, with a prompt beside it. */
-#story-name {{ margin: 1 4 0 4; width: 34; border: tall {FRAME}; background: {CARD_BACK}; }}
-#story-name:focus {{ border: tall {GOLD}; }}
-#story-ask {{ padding: 1 4 0 4; color: {FAINT}; }}
+/* Height three and no padding of its own: Textual's Input reserves a row for a
+   `tall` border it no longer has, and the leftover row rendered as a slab of
+   card-back sitting a row below and a column left of the box — a shadow the
+   design does not have. */
+#story-name {{
+    margin: 0 4; width: 34; height: 3; padding: 0 1;
+    border: round {FRAME}; background: {CARD_BACK};
+}}
+#story-name:focus {{ border: round {GOLD}; }}
+#story-ask {{ padding: 1 4 0 4; color: {MUTE}; }}
 #story-progress {{ padding: 1 4 0 4; color: {FAINT}; }}
 """
+
+
+def paragraphs(text: str) -> str:
+    """One blank line between the author's lines.
+
+    The prologue is written a thought to a line, and each thought is two or
+    three lines long once wrapped. Rendered with the author's single breaks the
+    beat came out as one solid block of eight lines with three ragged right
+    edges inside it and nothing marking where one thought ended and the next
+    began — the hardest thing on the screen to read, on the screen whose only
+    job is to be read. This is presentation, not content: the file still holds
+    one line per thought.
+    """
+    return "\n\n".join(line.strip() for line in text.split("\n") if line.strip())
 
 
 @dataclass(frozen=True, slots=True)
@@ -168,7 +189,7 @@ class StoryScreen(Screen):
 
         hero = repo.warrior_name(self.app.context.conn)
         text = beat.text.replace("{hero}", hero)
-        self.query_one("#story-text", Static).update(f"[{BODY}]{safe(text)}[/]")
+        self.query_one("#story-text", Static).update(f"[{BODY}]{safe(paragraphs(text))}[/]")
 
         # The naming beat shows an input and nothing else does. Prefilled with
         # the legend's name, so a player who does not care can simply press on
@@ -178,7 +199,10 @@ class StoryScreen(Screen):
         ask = self.query_one("#story-ask", Static)
         ask.display = beat.ask_name
         if beat.ask_name:
-            ask.update(f"[{FAINT}]WHAT ARE YOU CALLED[/]")
+            # Uncoloured, so the rule above decides. Written FAINT here it
+            # overrode its own stylesheet and the only interactive thing on the
+            # beat was the dimmest text on it.
+            ask.update("WHAT ARE YOU CALLED")
         if beat.ask_name:
             if not field.value:
                 field.value = hero

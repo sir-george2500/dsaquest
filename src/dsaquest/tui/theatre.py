@@ -14,21 +14,32 @@ from __future__ import annotations
 
 from textual.app import ComposeResult
 from textual.binding import Binding
-from textual.containers import Vertical, VerticalScroll
+from textual.containers import VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Footer, Header, Static
 
 from ..anim.render import render
 from ..anim.scene import Animation
+from .card import BACK, BODY, FRAME, GOLD, INK, MEASURE, MUTE, gauge
 from .master import safe
 
-THEATRE_CSS = """
-TheatreScreen { background: #100f0d; }
-#theatre-title { padding: 1 2 0 2; text-style: bold; }
-#theatre-progress { padding: 0 2 1 2; }
-#theatre-stage { padding: 1 2; margin: 0 2; border: round #38332b; height: auto; min-height: 12; }
-#theatre-idiom { padding: 1 2 0 2; }
-#theatre-caption { padding: 1 2; margin: 0 2 1 2; border-left: thick #d9a441; height: auto; }
+THEATRE_CSS = f"""
+TheatreScreen {{ background: {BACK}; }}
+#theatre-title {{ padding: 1 2 0 2; text-style: bold; }}
+#theatre-progress {{ padding: 0 2 1 2; }}
+#theatre-stage {{
+    padding: 1 2; margin: 0 2; border: round {FRAME}; height: auto; min-height: 12;
+    max-width: {MEASURE + 6};
+}}
+#theatre-scroll {{ height: 1fr; scrollbar-gutter: stable; }}
+/* The idiom and the caption are one block behind one accent bar. They are two
+   statements about the same frame and they were set as two widgets on two left
+   edges — the idiom at column two, outside the bar, and the caption at column
+   five inside it. */
+#theatre-caption {{
+    padding: 1 2; margin: 1 2; border-left: outer {GOLD}; height: auto;
+    max-width: {MEASURE + 6};
+}}
 """
 
 #: Seconds per frame at each speed. Slow first: the default should be a pace you
@@ -64,17 +75,21 @@ class TheatreScreen(Screen):
         yield Header(show_clock=False)
         yield Static(id="theatre-title")
         yield Static(id="theatre-progress")
-        yield VerticalScroll(Static(id="theatre-stage"))
-        yield Static(id="theatre-idiom")
-        yield Vertical(Static(id="theatre-caption"))
+        # The caption scrolls with the picture it captions. Outside the scroll
+        # it was pushed to the bottom of the terminal, so at forty rows there
+        # were seven blank rows between the frame and the sentence explaining
+        # it, and the two stopped reading as one thing.
+        yield VerticalScroll(
+            Static(id="theatre-stage"),
+            Static(id="theatre-caption"),
+            id="theatre-scroll",
+        )
         yield Footer()
 
     def on_mount(self) -> None:
         self.title = self.animation.title
         self.sub_title = self.animation.summary or "step through it"
-        self.query_one("#theatre-title", Static).update(
-            f"[b #ece5d6]{safe(self.animation.title)}[/]"
-        )
+        self.query_one("#theatre-title", Static).update(f"[b {INK}]{safe(self.animation.title)}[/]")
         self.show()
 
     # ------------------------------------------------------------ rendering
@@ -83,18 +98,22 @@ class TheatreScreen(Screen):
         frame = self.animation.frame(self.index)
         total = len(self.animation)
 
-        filled = int(round((self.index + 1) / total * 28)) if total else 0
+        # Five raw hex values used to live on this screen — `#3a352c`, `#f0c14b`
+        # and `#c8c0b0` are not in the palette at all, they are a near-FRAME,
+        # a near-GOLD and a near-BODY invented here. A gold that is four points
+        # off the gold on every other screen does not read as a highlight, it
+        # reads as a rendering fault.
         state = "playing" if self.playing else "paused"
         self.query_one("#theatre-progress", Static).update(
-            f"[#d9a441]{'█' * filled}[/][#3a352c]{'░' * (28 - filled)}[/]  "
-            f"[#8a7f6d]frame {self.index + 1} of {total}   {state}   "
+            f"{gauge((self.index + 1) / total if total else 0, 28, GOLD)}  "
+            f"[{MUTE}]frame {self.index + 1} of {total}   {state}   "
             f"x{1 / SPEEDS[self.speed]:.1f}[/]"
         )
         self.query_one("#theatre-stage", Static).update(render(frame.scene))
-        self.query_one("#theatre-idiom", Static).update(
-            f"[b #f0c14b]{safe(frame.idiom)}[/]" if frame.idiom else ""
+        idiom = f"[b {GOLD}]{safe(frame.idiom)}[/]\n\n" if frame.idiom else ""
+        self.query_one("#theatre-caption", Static).update(
+            f"{idiom}[{BODY}]{safe(frame.caption)}[/]"
         )
-        self.query_one("#theatre-caption", Static).update(f"[#c8c0b0]{safe(frame.caption)}[/]")
 
     # ------------------------------------------------------------- controls
 

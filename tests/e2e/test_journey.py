@@ -211,9 +211,12 @@ def test_the_home_screen_leads_with_the_quest(context):
             screen = app.screen
             assert isinstance(screen, HomeScreen)
 
-            quest = str(screen.query_one("#quest", Static).visual)
-            assert "CURRENT QUEST" in quest
-            assert next_step(context).title in quest
+            # The heading lives in the box's border, not on a line of its own
+            # inside it. A twenty-four row terminal has to spend its rows on the
+            # road; a title bar is free.
+            panel = screen.query_one("#quest", Static)
+            assert panel.border_title == "CURRENT QUEST"
+            assert next_step(context).title in str(panel.visual)
 
             actions = str(screen.query_one("#actions", Static).visual)
             assert "Continue Journey" in actions

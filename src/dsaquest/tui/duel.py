@@ -37,17 +37,30 @@ from ..domain.enums import GameMode
 from ..game.modes.duel import Duel, DuelError, build_duel, build_duel_for, judge_duel
 from ..game.session import ExerciseResult, complete_exercise
 from ..storage import repositories as repo
+from .card import BACK, BAD, BODY, FAINT, FRAME, GOLD, GOOD, MEASURE, MUTE, RULE
 from .master import safe
 
-DUEL_CSS = """
-#duel-title { padding: 1 2 0 2; text-style: bold; }
-#duel-progress { padding: 0 2 1 2; color: $text-muted; }
-#duel-statements { padding: 1 2; margin: 0 2; border: round $primary; height: auto; }
-#duel-ask { padding: 1 2 0 2; text-style: bold; }
-#duel-choices { padding: 1 2; height: auto; }
-#duel-choices Button { width: 100%; margin: 0 0 1 0; }
-#duel-verdict { padding: 1 2; margin: 1 2; border: round $success; height: auto; }
-#duel-verdict.wrong { border: round $error; }
+#: Same rules as everywhere else: one left edge at column 5, a bounded
+#: measure, and the palette. Two problem statements set 115 characters to the
+#: line, side by side, is the hardest reading task in the game — and the duel
+#: is the one screen where the reading *is* the exercise.
+DUEL_CSS = f"""
+DuelScreen {{ background: {BACK}; }}
+#duel-title {{ padding: 1 2 0 2; text-style: bold; }}
+#duel-progress {{ padding: 0 2 1 2; color: {MUTE}; }}
+#duel-statements {{
+    padding: 1 2; margin: 0 2; border: round {FRAME}; height: auto;
+    max-width: {MEASURE + 6};
+}}
+#duel-scroll {{ height: 1fr; scrollbar-gutter: stable; }}
+#duel-ask {{ padding: 1 2 0 2; text-style: bold; }}
+#duel-choices {{ padding: 1 2; height: auto; max-width: {MEASURE + 6}; }}
+
+#duel-verdict {{
+    padding: 1 2; margin: 1 2; border: round {GOOD}; height: auto;
+    max-width: {MEASURE + 6};
+}}
+#duel-verdict.wrong {{ border: round {BAD}; }}
 """
 
 ROUNDS = 5
@@ -91,10 +104,17 @@ class DuelScreen(Screen):
         yield Header(show_clock=False)
         yield Static(id="duel-title")
         yield Static(id="duel-progress")
-        yield VerticalScroll(Static(id="duel-statements"))
-        yield Static(id="duel-ask")
-        yield Vertical(id="duel-choices")
-        yield Static(id="duel-verdict")
+        # The question and the options scroll with the statements they are
+        # about. Laid out after a container that had taken the remaining rows,
+        # the two options fell off the bottom of the screen — the duel asked
+        # "which pattern?" and showed neither answer.
+        yield VerticalScroll(
+            Static(id="duel-statements"),
+            Static(id="duel-ask"),
+            Vertical(id="duel-choices"),
+            Static(id="duel-verdict"),
+            id="duel-scroll",
+        )
         yield Footer()
 
     def on_mount(self) -> None:
@@ -102,7 +122,7 @@ class DuelScreen(Screen):
         self.sub_title = "tell the two apart"
         self.query_one("#duel-verdict", Static).display = False
         self.query_one("#duel-title", Static).update(
-            "[b magenta]PATTERN DUEL[/]\n"
+            f"[b {GOLD}]PATTERN DUEL[/]\n"
             "[i]Two statements that want to be mistaken for each other.[/]"
         )
         self.pose()
@@ -153,14 +173,21 @@ class DuelScreen(Screen):
             f"Duel {self.round_number} of {self.rounds}   [dim]{self.won} clean so far[/]"
         )
 
-        blocks = []
-        for label, problem in duel.labelled():
-            blocks.append(
-                f"[b yellow]STATEMENT {label}[/]  [dim]{safe(problem.title)}[/]\n"
-                f"{safe(problem.statement.strip())}\n"
-                f"[dim]{safe(problem.constraints.strip())}[/]"
-            )
-        self.query_one("#duel-statements", Static).update("\n\n".join(blocks))
+        # A rule between the two, and a blank line before the constraints. Set
+        # solid, the two statements and their four lines of constraints ran
+        # together as one twenty-line grey block, which on the screen whose
+        # whole exercise is telling two statements apart is the wrong shape
+        # entirely: the eye has to be able to find where A stops.
+        width = max(20, self.query_one("#duel-statements").content_size.width or MEASURE)
+        blocks = [
+            f"[b {GOLD}]STATEMENT {label}[/]   [{MUTE}]{safe(problem.title)}[/]\n\n"
+            f"[{BODY}]{safe(problem.statement.strip())}[/]\n\n"
+            f"[{FAINT}]{safe(problem.constraints.strip())}[/]"
+            for label, problem in duel.labelled()
+        ]
+        self.query_one("#duel-statements", Static).update(
+            f"\n\n[{RULE}]{'─' * width}[/]\n\n".join(blocks)
+        )
         self.ask()
 
     def refuse(self, reason: str) -> None:
@@ -168,7 +195,7 @@ class DuelScreen(Screen):
         self.duel = None
         self.finished = True
         self.query_one("#duel-statements", Static).update(
-            f"[b red]No duel to fight.[/]\n\n{safe(reason)}"
+            f"[b $error]No duel to fight.[/]\n\n{safe(reason)}"
         )
         self.query_one("#duel-ask", Static).update("[dim]escape to leave[/]")
         self.query_one("#duel-choices", Vertical).remove_children()
@@ -183,7 +210,7 @@ class DuelScreen(Screen):
         self._generation += 1
         label = chr(ord("A") + self.position)
         self.query_one("#duel-ask", Static).update(
-            f"Statement [b yellow]{label}[/] is which pattern?"
+            f"Statement [b $warning]{label}[/] is which pattern?"
         )
         choices = self.query_one("#duel-choices", Vertical)
         choices.remove_children()
@@ -262,17 +289,17 @@ class DuelScreen(Screen):
 
         body: list[str] = []
         if feedback.correct:
-            body.append("[b green]Both right.[/] You separated them.")
+            body.append("[b $success]Both right.[/] You separated them.")
         elif feedback.collapsed:
             said = name(feedback.assignment[0]).name
             body.append(
-                f"[b red]You called both of them {safe(said)}.[/]\n"
+                f"[b $error]You called both of them {safe(said)}.[/]\n"
                 "That is not a wrong answer so much as no answer — the two "
                 "statements are different, and nothing you did distinguished them."
             )
         elif feedback.swapped:
             body.append(
-                "[b red]Swapped.[/] You named both patterns and put each on the "
+                "[b $error]Swapped.[/] You named both patterns and put each on the "
                 "other's statement. You know the pair; you cannot yet tell which "
                 "is which."
             )
@@ -280,7 +307,7 @@ class DuelScreen(Screen):
             position = feedback.wrong_positions[0]
             label = chr(ord("A") + position)
             body.append(
-                f"[b red]No.[/] Statement {label} was "
+                f"[b $error]No.[/] Statement {label} was "
                 f"[b]{safe(name(feedback.actual[position]).name)}[/], "
                 f"not {safe(name(feedback.assignment[position]).name)}."
             )
@@ -290,7 +317,7 @@ class DuelScreen(Screen):
 
         for position, (label, _) in enumerate(duel.labelled()):
             body.append(
-                f"\n[b yellow]{label}[/] was "
+                f"\n[b $warning]{label}[/] was "
                 f"[b]{safe(name(feedback.actual[position]).name)}[/]\n"
                 f"{safe(feedback.why(position).strip())}"
             )
