@@ -102,6 +102,20 @@ class Gate(_Frozen):
         default=True,
         description="Whether the governing master's final test must be passed first",
     )
+    every_master_final_test: bool = Field(
+        default=False,
+        description=(
+            "Every master's final test, not merely this boss's. The Final Gate "
+            "needs this: the last opponent is not the end of one region."
+        ),
+    )
+    bosses_defeated: tuple[str, ...] = Field(
+        default=(),
+        description=(
+            "Bosses that must already be down. A boss guarding the whole road "
+            "cannot be reached by skipping the road."
+        ),
+    )
 
     def as_pairs(self) -> tuple[tuple[str, float], ...]:
         return (
@@ -119,7 +133,14 @@ class Boss(_Frozen):
     name: str = Field(description="Shown in caps at the top of the arena")
     title: str = Field(description="Its epithet")
     tier: BossTier
-    master_id: str = Field(description="The master whose region this boss guards")
+    master_id: str = Field(
+        default="",
+        description=(
+            "The master whose region this boss guards. Empty only for the "
+            "Final tier: the last opponent guards no region, he is what the "
+            "regions were leading to."
+        ),
+    )
     patterns: tuple[str, ...] = Field(
         min_length=1, description="Patterns the fight draws from. Never revealed."
     )
@@ -131,6 +152,16 @@ class Boss(_Frozen):
     )
 
     gate: Gate = Field(default_factory=Gate)
+    held_out_problem_ids: tuple[str, ...] = Field(
+        default=(),
+        description=(
+            "Problems reserved for this boss alone. Every other fight draws "
+            "from the general pool, which is fine when the point is whether "
+            "you recognise a pattern. The Final Gate's point is that nothing "
+            "is familiar, and that cannot be true of a problem the learner "
+            "has already been dealt in practice."
+        ),
+    )
     phases: tuple[BossPhase, ...] = Field(min_length=2)
 
     enrage_after: int = Field(

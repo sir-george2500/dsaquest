@@ -13,6 +13,7 @@ opens — see :func:`gate_status`.
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
@@ -59,10 +60,17 @@ class GateStatus:
     requirements: tuple[Requirement, ...]
     final_test_needed: bool
     final_test_passed: bool
+    masters_outstanding: tuple[str, ...] = ()
+    """Masters whose final test is unpassed, when the gate wants all of them."""
+
+    bosses_outstanding: tuple[str, ...] = ()
+    """Bosses named by the gate that are still standing."""
 
     @property
     def open(self) -> bool:
         if self.final_test_needed and not self.final_test_passed:
+            return False
+        if self.masters_outstanding or self.bosses_outstanding:
             return False
         return all(r.met for r in self.requirements)
 
@@ -71,6 +79,10 @@ class GateStatus:
         missing = [r.name for r in self.requirements if not r.met]
         if self.final_test_needed and not self.final_test_passed:
             missing.append("the master's final test")
+        # Named rather than counted. "4 masters" tells you how far you are;
+        # naming them tells you where to go next, which is the useful half.
+        missing += [f"{m}'s final test" for m in self.masters_outstanding]
+        missing += [f"{b} still stands" for b in self.bosses_outstanding]
         return tuple(missing)
 
 
@@ -166,7 +178,10 @@ class FightVerdict:
 
 
 def gate_status(
-    conn: sqlite3.Connection, boss: Boss, mastery: dict[str, PatternMastery]
+    conn: sqlite3.Connection,
+    boss: Boss,
+    mastery: dict[str, PatternMastery],
+    masters: Iterable[str] | None = None,
 ) -> GateStatus:
     """Whether the learner has earned the right to fight.
 
@@ -193,11 +208,27 @@ def gate_status(
         if needed > 0
     )
 
-    progress = repo.get_master_progress(conn, boss.master_id)
+    # A Final-tier boss governs no region, so there is no single master's
+    # final test to read; his gate speaks of all of them instead.
+    passed = repo.get_master_progress(conn, boss.master_id).passed if boss.master_id else True
+
+    masters_outstanding: tuple[str, ...] = ()
+    if boss.gate.every_master_final_test:
+        masters_outstanding = tuple(
+            master_id
+            for master_id in sorted(masters or ())
+            if not repo.get_master_progress(conn, master_id).passed
+        )
+
+    down = repo.bosses_defeated(conn)
+    bosses_outstanding = tuple(b for b in boss.gate.bosses_defeated if b not in down)
+
     return GateStatus(
         requirements=requirements,
         final_test_needed=boss.gate.master_final_test,
-        final_test_passed=progress.passed,
+        final_test_passed=passed,
+        masters_outstanding=masters_outstanding,
+        bosses_outstanding=bosses_outstanding,
     )
 
 
@@ -249,6 +280,11 @@ def next_challenge(
 
     if phase.kind in (PhaseKind.RECOGNISE, PhaseKind.SURVIVE):
         candidates = bank.for_pattern(pattern_id)
+        # A held-out set, where the boss has one, replaces the pool rather than
+        # extending it. Mixing the two would put a familiar problem in the one
+        # fight whose whole claim is that nothing is familiar.
+        reserved = [p for p in candidates if p.id in fight.boss.held_out_problem_ids]
+        candidates = reserved or candidates
         if not candidates:
             raise LookupError(f"{pattern_id} has no problems for a boss phase")
         problem = candidates[seed % len(candidates)]

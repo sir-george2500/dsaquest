@@ -11,7 +11,7 @@ from ..content.lessons import CurriculumSet
 from ..content.loader import ContentError, PatternLibrary
 from ..content.paths import content_root
 from ..content.problems import ProblemBank
-from ..domain.boss import REQUIRED_BOSS_POOLS, Boss, PhaseKind
+from ..domain.boss import REQUIRED_BOSS_POOLS, Boss, BossTier, PhaseKind
 
 
 def bosses_dir():
@@ -107,7 +107,12 @@ def _cross_validate(
                     f"recognition phase would have nothing to present"
                 )
 
-        if curricula is not None and boss.master_id not in curricula:
+        if not boss.master_id:
+            # Only the Final tier may belong to no region. Anywhere else an
+            # empty master means the boss can never be gated or rewarded.
+            if boss.tier is not BossTier.FINAL:
+                problems.append(f"{boss.id}: no master_id, which only a Final-tier boss may omit")
+        elif curricula is not None and boss.master_id not in curricula:
             problems.append(f"{boss.id}: unknown master {boss.master_id!r}")
         elif curricula is not None:
             governed = set(curricula[boss.master_id].patterns)

@@ -190,3 +190,42 @@
     looms cost less than the heap simulation's first thousand pops. "The
     earliest second at which that happens" then names the boundary you want.
   classic_ref: LeetCode 1482 / 1201 minimum-time family
+- id: elite-kiln-firing
+  pattern: binary-search-answer
+  title: The Kiln
+  difficulty: hard
+  statement: >-
+    A kiln holds n shelves, shelf i taking t[i] minutes to fire and able to
+    hold at most c[i] pieces. Shelves fire in parallel but a shelf may be
+    reloaded as often as you like, each reload costing its full firing time.
+    Given m pieces, print the least number of minutes after which every piece
+    can have been fired.
+  constraints: |
+    1 <= n <= 200000
+    1 <= m <= 10^18
+    1 <= t[i] <= 10^9
+    1 <= c[i] <= 10^9
+  signals_present:
+    - the answer is a duration, and more time is never worse
+    - asking whether everything fits within T is far easier than asking for the least T
+    - the total is far larger than any single shelf can hold
+  decoy_signals:
+    - sorting shelves by throughput invites a greedy that is wrong when c[i] differs
+    - the parallel shelves look like a scheduling problem with a priority queue
+    - the phrase "at most" tempts a window, but nothing here is contiguous
+  expected_complexity: O(n log(answer))
+  hints:
+    - text: Turn the question round. Given T minutes, how many pieces fit?
+      reveals_pattern: false
+    - text: >-
+        Shelf i fires floor(T / t[i]) times within T, so it contributes
+        c[i] * floor(T / t[i]).
+      reveals_pattern: false
+    - text: >-
+        That count is non-decreasing in T, so binary search T and sum the
+        contributions. Cap the running total or it overflows long long.
+      reveals_pattern: true
+  why: >-
+    The direct question has no formula. The yes/no version has an easy one, and
+    it is monotone in T, which is the whole licence to search the answer space.
+  classic_ref: CSES 1620 Factory Machines, generalised with capacities

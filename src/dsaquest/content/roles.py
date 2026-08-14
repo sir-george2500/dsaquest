@@ -37,6 +37,9 @@ class ProblemRole(StrEnum):
     MASTERY = "final test"
     """The master's final test. Nothing is named."""
 
+    HELD_OUT = "held out"
+    """Reserved for one boss, and unreachable anywhere else."""
+
 
 @dataclass(frozen=True, slots=True)
 class Use:
@@ -63,11 +66,12 @@ class Reuse:
 
     def __str__(self) -> str:
         where = ", ".join(str(use) for use in self.uses)
-        why = (
-            "the learner has already seen it under this master"
-            if self.same_master
-            else "shared between masters"
-        )
+        if any(use.role is ProblemRole.HELD_OUT for use in self.uses):
+            why = "it is held out for a boss and must appear nowhere else"
+        elif self.same_master:
+            why = "the learner has already seen it under this master"
+        else:
+            why = "shared between masters"
         return f"{self.problem_id}: used as {where} — {why}"
 
 
@@ -112,9 +116,12 @@ class RoleReport:
         return out
 
 
-def uses_by_problem(curricula) -> dict[str, list[Use]]:
+def uses_by_problem(curricula, bosses=()) -> dict[str, list[Use]]:
     """Every job every problem has been given, keyed by problem id."""
     uses: dict[str, list[Use]] = defaultdict(list)
+    for boss in bosses or ():
+        for problem_id in getattr(boss, "held_out_problem_ids", ()):
+            uses[problem_id].append(Use(boss.id, ProblemRole.HELD_OUT))
     for curriculum in curricula:
         for stage in curriculum.stages:
             for problem_id in stage.trial_problem_ids:
@@ -124,14 +131,14 @@ def uses_by_problem(curricula) -> dict[str, list[Use]]:
     return dict(uses)
 
 
-def check_roles(curricula, bank) -> RoleReport:
+def check_roles(curricula, bank, bosses=()) -> RoleReport:
     """Report every problem serving two roles, and every pattern too thin to avoid it.
 
     A shortfall suppresses the reuse findings for that pattern. Where there are
     not enough problems to go round, the reuse *is* the shortfall showing up
     downstream, and listing both would report one defect twice.
     """
-    uses = uses_by_problem(curricula)
+    uses = uses_by_problem(curricula, bosses)
 
     #: How many distinct problems each pattern's roles ask for.
     demand: dict[str, int] = defaultdict(int)
@@ -152,8 +159,13 @@ def check_roles(curricula, bank) -> RoleReport:
     for problem_id, jobs in sorted(uses.items()):
         if len(jobs) < 2:
             continue
+        held_out = any(use.role is ProblemRole.HELD_OUT for use in jobs)
         problem = _problem(bank, problem_id)
-        if problem is not None and problem.pattern in thin:
+        # A shortfall explains ordinary reuse and suppresses it. It does not
+        # explain taking the one thing reserved for the final boss: that is a
+        # different defect with a different fix, and "write more problems" is
+        # not the answer to it.
+        if not held_out and problem is not None and problem.pattern in thin:
             continue
         reuses.append(Reuse(problem_id, tuple(jobs)))
 

@@ -196,7 +196,7 @@ class RosterScreen(Screen):
 
             mastery = all_mastery(conn, context.library, scheduler=context.scheduler)
             for boss in context.bosses or ():
-                status = gate_status(conn, boss, mastery)
+                status = gate_status(conn, boss, mastery, context.masters)
                 out.append(boss_card(conn, boss, context.library, gate_open=status.open))
 
         return out

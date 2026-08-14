@@ -36,7 +36,8 @@ signals:
     strength: 2
     note: >-
       256 MB holds about 6.7 * 10^7 ints. A 10^4 by 10^4 table of ints is
-      3.8 * 10^8 bytes and does not fit, however fast the algorithm is.
+      4 * 10^8 bytes, which is 381 MB, and it does not fit however fast the
+      algorithm is.
   - cue: a time limit unusually generous — three seconds, five seconds
     strength: 1
     note: >-
@@ -104,8 +105,9 @@ complexity:
   note: >-
     The estimate itself is free — it is arithmetic done on paper before any code
     exists. What it produces is the complexity the solution is allowed to have:
-    n <= 10 permits O(n!), n <= 24 permits O(2^n * n), n <= 5000 permits O(n^2),
-    n <= 10^6 permits O(n log n), and n <= 10^18 permits only O(log n) or O(1).
+    n <= 10 permits O(n!), n <= 20 permits O(2^n * n), n <= 400 permits O(n^3),
+    n <= 5000 permits O(n^2), n <= 10^6 permits O(n log n), n <= 10^7 permits
+    O(n), and n <= 10^18 permits only O(log n) or O(1).
 
 data_structures:
   - the constraint block itself, read before the statement is re-read

@@ -177,3 +177,40 @@
     is the phrase that rules out cumulative totals: there is no contiguous stretch
     here whose sum could be taken modulo anything.
   classic_ref: LeetCode 1010 / Codeforces "pairs divisible by k" family
+- id: elite-ledger-reconciliation
+  pattern: hashing-frequency
+  title: The Reconciliation
+  difficulty: hard
+  statement: >-
+    Two clerks each recorded the same n transfers, but one of them wrote every
+    amount as the value AFTER a fixed unknown surcharge s was added, and the
+    other wrote it before. Neither list is in order and neither says which
+    clerk it came from. Print the smallest non-negative s for which the two
+    lists could describe the same transfers, or -1 if none does.
+  constraints: |
+    1 <= n <= 200000
+    0 <= a[i], b[i] <= 10^9
+  signals_present:
+    - two multisets that must be made equal, not two sequences
+    - the unknown is a single additive constant shared by every element
+    - order is explicitly irrelevant in both lists
+  decoy_signals:
+    - sorting both and comparing pairwise looks sufficient and is, only once you already know s
+    - the word "smallest" invites a binary search over s, but the predicate is not monotone
+    - a sliding window over one list matches nothing, since the lists are unordered
+  expected_complexity: O(n log n)
+  hints:
+    - text: If s were known, what one operation settles the whole question?
+      reveals_pattern: false
+    - text: >-
+        There are at most n candidate values for s, and each comes from pairing
+        the smallest element of one list with some element of the other.
+      reveals_pattern: false
+    - text: >-
+        Sort both. s must be b[0] - a[j] for some j, so try each candidate and
+        test it with a tally of one list against the other in O(n).
+      reveals_pattern: true
+  why: >-
+    "Could describe the same transfers" is multiset equality, and multiset
+    equality is a tally. The surcharge only changes which key you look up.
+  classic_ref: Codeforces 1092/1490 family (multiset matching under a shift)

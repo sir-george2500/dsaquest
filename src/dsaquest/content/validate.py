@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import sys
 
+from ..boss.loader import load_bosses
 from .lessons import load_curricula
 from .loader import ContentError, describe_content_root, load_library
 from .problems import load_problems
@@ -61,13 +62,14 @@ def _report_roles(library, *, strict: bool) -> bool:
     try:
         bank = load_problems(library)
         curricula = load_curricula(library, bank)
+        bosses = load_bosses(library, curricula)
     except ContentError as exc:
         print("\nRoles  could not be checked:", file=sys.stderr)
         for problem in exc.problems:
             print(f"  - {problem}", file=sys.stderr)
         return True
 
-    report = check_roles(curricula, bank)
+    report = check_roles(curricula, bank, bosses)
     print(
         f"\nRoles  {len(report.reserved)} problem(s) reserved by trials and final "
         f"tests, {len(report.unreserved)} free for ordinary practice"

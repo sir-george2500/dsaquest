@@ -188,3 +188,41 @@
     tool, and the second half — splitting on a position where the two survivors
     must differ — is the same lowest-set-bit idiom used to isolate a member.
   classic_ref: Single Number III (LeetCode 260) / the two-survivor cancellation split
+- id: elite-signal-masks
+  pattern: bit-manipulation
+  title: The Quiet Frequencies
+  difficulty: hard
+  statement: >-
+    n towers each broadcast on a subset of 20 frequencies, given as a mask.
+    A pair of towers is silent if they share no frequency. Print the number of
+    silent pairs.
+  constraints: |
+    1 <= n <= 200000
+    0 <= mask[i] < 2^20
+  signals_present:
+    - a fixed universe of exactly 20 members, so a subset is one integer
+    - "\"share no frequency\" is an AND against zero"
+    - n^2 pairs is 4 * 10^10 and will not finish
+  decoy_signals:
+    - a hash map of masks counts equal masks, which is not what is asked
+    - sorting the masks orders them by nothing meaningful
+    - the pair-counting phrasing suggests two pointers, but there is no order to converge on
+  expected_complexity: O(2^20 * 20)
+  hints:
+    - text: >-
+        For a given tower, which masks are compatible with it? Describe that
+        set in one word.
+      reveals_pattern: false
+    - text: >-
+        They are exactly the submasks of its complement. Counting submasks for
+        every tower separately is still too slow.
+      reveals_pattern: false
+    - text: >-
+        Tally masks, then run a sum-over-subsets so that f[m] holds how many
+        towers use only frequencies in m. The answer sums f[complement of
+        mask[i]], halved, minus the towers silent with themselves.
+      reveals_pattern: true
+  why: >-
+    Twenty is the tell. A universe that small makes a set an integer, and makes
+    a sweep over all 2^20 subsets cheaper than a sweep over all pairs.
+  classic_ref: CSES 1654 Bit Problem / SOS-DP family

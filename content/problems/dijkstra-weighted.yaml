@@ -289,3 +289,42 @@
     the frontier must be ordered by cost, and a grid is only an adjacency list
     written as arithmetic.
   classic_ref: grid shortest path with cell costs; LeetCode 1631 family
+- id: elite-toll-roads
+  pattern: dijkstra-weighted
+  title: The Toll Roads
+  difficulty: hard
+  statement: >-
+    A kingdom has n towns and m one-way roads, road j costing w[j] coins. You
+    hold k writs, and each writ waives the cost of one road you travel. Print
+    the least coins needed to travel from town 1 to town n, or -1 if it cannot
+    be done.
+  constraints: |
+    2 <= n <= 100000
+    1 <= m <= 300000
+    0 <= k <= 10
+    1 <= w[j] <= 10^9
+  signals_present:
+    - edges carry unequal costs, so the frontier is not uniform
+    - the state is not a town but a town together with writs remaining
+    - k is tiny, which is the setter telling you to multiply the graph by it
+  decoy_signals:
+    - a breadth-first sweep returns a path, and the path is real, and it is not cheapest
+    - "\"least coins\" with small k invites a DP over towns, which cycles"
+    - the writs look like a knapsack, but there is no capacity to fill
+  expected_complexity: O((n * k + m * k) log (n * k))
+  hints:
+    - text: What exactly are you standing on when you are half way? Name the state.
+      reveals_pattern: false
+    - text: >-
+        A town alone is not enough — arriving with three writs left is a
+        different position from arriving with none.
+      reveals_pattern: false
+    - text: >-
+        Run Dijkstra over pairs (town, writs used). A road gives two moves:
+        pay it and keep the writs, or spend one writ and pay nothing.
+      reveals_pattern: true
+  why: >-
+    Unequal costs rule out the unweighted sweep outright. Everything else is
+    the realisation that the node is a pair, which is the standard way a small
+    extra budget enters a shortest path.
+  classic_ref: CF 1725/CSES 1195 Flight Discount, generalised to k discounts

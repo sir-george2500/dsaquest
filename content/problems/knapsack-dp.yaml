@@ -259,3 +259,43 @@
     count multisets of an unlimited supply instead, which is a different
     question with a different answer.
   classic_ref: CPH 7, knapsack problems, with the counting variant of CPH 7's coin problem
+- id: elite-expedition-load
+  pattern: knapsack-dp
+  title: The Expedition
+  difficulty: hard
+  statement: >-
+    You may carry at most W kilograms and at most V litres. Each of n supplies
+    has a weight, a volume and a worth, and at most one of each may be taken.
+    Print the greatest total worth that fits both limits.
+  constraints: |
+    1 <= n <= 200
+    1 <= W <= 1000
+    1 <= V <= 1000
+    1 <= weight[i], volume[i] <= 1000
+    1 <= worth[i] <= 10^9
+  signals_present:
+    - two independent capacities, both of which must hold
+    - each item is take-it-or-leave-it, with no fractional option
+    - n * W * V is 2 * 10^8, which fits only if the state is exactly right
+  decoy_signals:
+    - sorting by worth per kilogram is the fractional answer and is wrong here
+    - the two limits look like they want two separate passes, which double-counts
+    - "\"at most one of each\" tempts a greedy sweep with a priority queue"
+  expected_complexity: O(n * W * V)
+  hints:
+    - text: Say in one sentence what your table holds, before writing any loop.
+      reveals_pattern: false
+    - text: >-
+        One axis cannot express two limits. The state is the first i supplies,
+        w kilograms and v litres.
+      reveals_pattern: false
+    - text: >-
+        dp[w][v] is the best worth within those limits. Iterate both capacities
+        downwards so an item cannot be taken twice, and keep the total in a
+        64-bit type.
+      reveals_pattern: true
+  why: >-
+    Two capacities is the whole difficulty, and it is answered by adding an
+    axis, not by adding a pass. The rolled-down iteration order is what keeps
+    each item to a single use.
+  classic_ref: Two-dimensional 0/1 knapsack (CPH 7.4, extended)

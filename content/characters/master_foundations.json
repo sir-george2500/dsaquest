@@ -1,0 +1,192 @@
+{
+  "id": "master_foundations",
+  "name": "MASTER OF FOUNDATIONS",
+  "title": "Elder Vhast, the Unhurried",
+  "region": "the-village",
+  "patterns": [
+    "constraint-budget",
+    "linear-scan",
+    "integer-safety"
+  ],
+  "personality": {
+    "warmth": 0.75,
+    "verbosity": 0.5,
+    "praise_threshold": 0.8
+  },
+  "gate": {
+    "recognition": 0.6,
+    "understanding": 0.7,
+    "implementation": 0.55,
+    "retention": 0.6
+  },
+  "placeholders": {
+    "days": "whole days since the relevant event — the student's last visit, a past failure on this problem, or the length of the current unbroken practice streak",
+    "streak": "number of consecutive correct drills in the current run",
+    "attempts": "how many attempts the student previously needed on this problem",
+    "secret": "the name of the secret currently being taught or tested",
+    "idiom": "the C++ expression at the heart of the current secret",
+    "requirement": "name of the gate dimension that is short: recognition, understanding, implementation, or retention",
+    "shortfall": "how far the short gate dimension sits below its threshold, as a percentage",
+    "score": "how many final-test problems were answered correctly",
+    "total": "number of problems in the final test",
+    "required": "how many must be answered correctly to pass"
+  },
+  "dialogue": {
+    "greeting_first": [
+      "Sit down. You have walked a long way to be told that the first thing to read is the constraints, and I am sorry, but that is what I am going to tell you.",
+      "You are in a hurry. Everyone arrives in a hurry. The village is where you learn that the hurry is what costs you the hour.",
+      "I teach six things and not one of them is an algorithm. The masters up the road will teach you algorithms. They will assume I have already taught you to read.",
+      "No test today. Sit, and tell me what a second is worth. If you do not know, that is what we are here for.",
+      "Whatever you already know, keep it. Nothing I say will contradict it. I am only going to slow you down at the one place where speed has never helped anyone."
+    ],
+    "greeting_returning": [
+      "Back. Good. Sit down; there is no rush.",
+      "We continue. Same beginning as yesterday: what is the largest n, and what does it forbid?",
+      "You came back. That is most of it, honestly. Begin when you are ready.",
+      "Sit. Read the constraints out loud to me first — I want to hear you do it before you write anything.",
+      "Again, then. Slowly."
+    ],
+    "greeting_after_gap": [
+      "{days} days. That is quite all right. Nothing here has moved, and neither has 2147483647.",
+      "{days} days away. Sit down. We will go back a little further than you think is necessary, and you will be glad of it in ten minutes.",
+      "Gone {days} days, and back. Good. Tell me what fits in one second, and we will start from wherever your answer lands.",
+      "{days} days. I have taught students who vanished for a season and returned. The ones who returned learned this material. Begin.",
+      "You have been away {days} days. Take a moment. The constraints will still be there when you look up."
+    ],
+    "lesson_intro": [
+      "Before the technique, the arithmetic. Always in that order.",
+      "{secret}. It is small. Do not mistake small for unimportant — everything after this village is built on it.",
+      "Watch the numbers, not my hands. The numbers are the lesson.",
+      "This one takes five minutes to learn and a week to make automatic. We have both.",
+      "I will show you where this fails before I show you where it works. It is easier to remember that way."
+    ],
+    "lesson_memorise": [
+      "Keep `{idiom}`. Not because it is clever — because you will not have time to derive it, and you will need it while thinking about something else.",
+      "This goes in the hand. Write it until your fingers know it and your attention is free for the problem.",
+      "Memorise it. I am not usually one for memorising, so take the request seriously.",
+      "You will use this every week for the rest of your life. Spend the ten minutes now.",
+      "Learn `{idiom}` the way you learned to hold a pen. It should cost you nothing to produce."
+    ],
+    "drill_correct": [
+      "Yes.",
+      "That is right. Next.",
+      "Good.",
+      "Correct. Take your time with the next one.",
+      "Yes — and notice you did not have to think about it that time."
+    ],
+    "drill_wrong": [
+      "No. Multiply it out on paper. n squared at a hundred thousand is ten billion, and there is no way around that.",
+      "No, and this is a common one. The bound is small because the setter wants you to try everything.",
+      "Not quite. Read the two lines again in order — one of them scores and one of them absorbs, and you have them the wrong way round.",
+      "No. The maximum has to be taken inside the loop. The best run rarely ends where the row does.",
+      "No. Two billion is not a large number. Ask how large it gets at the maximum, not on the sample.",
+      "No — the multiplication happened before the widening. The declaration on the left arrived too late to help.",
+      "Wrong, but usefully wrong. You assumed the division rounds down. Below zero it does not."
+    ],
+    "drill_streak": [
+      "{streak} in a row. Steady. That is exactly the pace.",
+      "Good rhythm. Do not speed up on my account.",
+      "{streak} straight, and none of them rushed. That is the part I am watching.",
+      "You are getting quicker without getting careless. Continue.",
+      "{streak}. Rest a moment if you want one. The drills are not going anywhere."
+    ],
+    "trial_intro": [
+      "Nothing named this time. Read the constraints first — you will find they say more than the story does.",
+      "One problem. Take as long as you need; I have never once been impressed by speed here.",
+      "The label comes off. The numbers stay on. That is all you need.",
+      "Read it twice. Then tell me what the largest n forbids, and only then start.",
+      "Go carefully. If you cannot see the method, count the possibilities — the count usually names it."
+    ],
+    "fail_wrong_pattern": [
+      "No. The difficulty there was not the shape of the algorithm, it was the size of the numbers. Look at what the total reaches.",
+      "Not that. The bound was eighteen. When a bound is that small and that specific, it is an instruction, not a limit.",
+      "You reached for a technique. That problem wanted an estimate — the loop was obvious the moment you knew what fit.",
+      "No. Nothing there needed to be remembered between positions except one number. Ask what the previous step already knew.",
+      "That was the right family and the wrong member. Let us read the statement together, slowly, and find the sentence you passed over."
+    ],
+    "fail_timeout": [
+      "Time. That is not a failure of memory, only of fluency, and fluency is the cheapest thing to fix. Nothing is lost.",
+      "The clock ran out. You had it — you were simply still checking. We will drill until the checking is faster.",
+      "Time. I want you to notice that you spent most of it looking for something clever that the bound had already ruled out.",
+      "Out of time, and nothing you wrote was wrong. That is a good failure. Again tomorrow.",
+      "Time. Slow is not the problem here; unpractised is. They look identical and they are not."
+    ],
+    "fail_wrong_answer": [
+      "Close. The algorithm held and the accumulator did not — it was an int, and the total passed two billion.",
+      "Right method. The maximum was taken after the loop, so the best run in the middle of the row was never scored.",
+      "You had it. The best started at zero, and on a row where everything is negative, zero is not an answer at all.",
+      "The estimate was right and the reading was not: the cost is t times n log n, not n log n. One sentence in the constraints decides it.",
+      "Nearly. The two lines were in the wrong order, so a position paired with itself. Score first, absorb second.",
+      "Correct shape, wrong arithmetic — you divided before comparing, and two different ratios came out equal."
+    ],
+    "success": [
+      "That is right. Continue when you are ready.",
+      "Good. That one had a trap in it and you did not step in it.",
+      "Correct. Rest a moment.",
+      "Yes. Next.",
+      "Done, and done properly. Move on."
+    ],
+    "success_fast": [
+      "Quick, and you still read the constraints first. That is the right order at any speed.",
+      "You estimated before you typed. I could tell from where you started.",
+      "Fast — and I notice you did not need to check whether it overflowed. It has become a habit. Good.",
+      "No wasted motion. That is what the drills were for.",
+      "You saw what the bound permitted in the first ten seconds. Continue."
+    ],
+    "praise_exceptional": [
+      "That was well done. You read the bound, believed it, and wrote the simple thing. Most students cannot bring themselves to.",
+      "Good. You found the trap before it appeared — I saw you widen that product before you had any reason to.",
+      "That is the best you have done here. You slowed down at exactly the place where slowing down pays.",
+      "You did not guess. You counted, and then you knew. There is a real difference and you have found it.",
+      "Very good. And you checked the negative case without being asked, which is the habit I most wanted you to leave with."
+    ],
+    "praise_major": [
+      "I have taught this material to a great many students, and most of them were impatient with it, and most of them came back a year later having learned it the expensive way. You learned it here. You have earned my respect.",
+      "You arrived able to write algorithms. You leave able to tell, before writing anything, which algorithms you are allowed. That is the whole village, and it is the only thing I have. You have earned my respect.",
+      "I do not say this often, and I will not repeat it: you have the habits. The constraints first, the size question always, the negative case checked. Whatever you meet up the road, it will not beat you for these reasons. You have earned my respect."
+    ],
+    "memorisation_detected": [
+      "You remember the answers. You are not yet asking the question that produces them. Try this one — it is the same secret wearing different numbers.",
+      "The problems you have seen, you solve; their variants, you do not. That is memory rather than habit, and habit is what we are building. Back one step, and slowly.",
+      "You produced the idiom correctly and could not say what would break without it. Let us go back and break it on purpose."
+    ],
+    "improvement_noticed": [
+      "You failed this {days} days ago, and today you did not. I keep track of that sort of thing. Continue.",
+      "You needed {attempts} attempts on this once. Today, one — and you were not faster, you were surer. That is the better kind of progress.",
+      "This was the problem where you started typing before reading. You read it twice today. I noticed.",
+      "Steadier than last time. You checked the size of the total before I could ask you to."
+    ],
+    "commitment_noticed": [
+      "{days} days unbroken. This material rewards attendance more than talent, which is unfashionable and true.",
+      "You have come back after every failure so far. That is the whole of it, really. Most of what I teach is only learned by people who return.",
+      "Many students pass through the village. The quick ones leave early and meet these lessons again later, at a worse moment. You stayed.",
+      "{days} days. I have not had to remind you once. Keep going at exactly this pace."
+    ],
+    "gate_locked": [
+      "Not yet, and there is no hurry. {requirement} is short by {shortfall} percent. Come back when it is not.",
+      "The gate holds. Understanding is short — you can produce the estimate and not yet say what it rules out.",
+      "Not yet. Recognition is short: you know the three shapes and cannot always tell which one a statement is describing. More reading, less writing.",
+      "Implementation is short. The ideas are there and the fingers are slow. Drills fix that, and only drills.",
+      "Retention is short. What you knew last week has gone quiet. Review it — it comes back faster than it left."
+    ],
+    "gate_open": [
+      "The gate is open. Go when you are ready, not before.",
+      "Nothing is short any more. Take a day if you want one; the test will wait.",
+      "You meet the requirements. That is my judgement, not your permission — the decision is yours.",
+      "Enough. You may attempt it whenever you like."
+    ],
+    "final_test_intro": [
+      "Nothing will be named. Everything before this existed so that I would not have to name it.",
+      "{total} problems, and {required} must be right. Read each constraint block before its story. Take your time.",
+      "No hints. Only the statements, and the habit of reading them properly.",
+      "Some of these are easier than they look. Reading the bound is what tells you which.",
+      "Go slowly. The only students who fail this fail it by hurrying."
+    ],
+    "victory": [
+      "That is done. You may go up the road now. They will be faster with you than I have been.",
+      "Finished. Remember: constraints first, size question always, negative case checked. That is what I am sending with you.",
+      "You passed. The village has nothing else for you — but the habits are yours now, and they do not expire.",
+      "Well done. Take a day before you go on. There is genuinely no hurry, whatever the next master tells you."
+    ]
+  }
+}

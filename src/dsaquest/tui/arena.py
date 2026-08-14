@@ -118,7 +118,7 @@ class ArenaScreen(Screen):
 
         context = self.app.context
         mastery = all_mastery(context.conn, context.library, scheduler=context.scheduler)
-        status = gate_status(context.conn, self.boss, mastery)
+        status = gate_status(context.conn, self.boss, mastery, context.masters)
 
         if not status.open:
             self.show_gate(status)

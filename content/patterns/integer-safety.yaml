@@ -33,8 +33,9 @@ signals:
     strength: 2
     note: >-
       That is the setter telling you the value only just fits in a long long:
-      9223372036854775807 is about 9.2 * 10^18. Adding two such values overflows
-      and the intended solution must avoid ever forming the sum.
+      9223372036854775807 is about 9.2 * 10^18. A bound of 10^18 leaves room to
+      add nine such values and none at all to multiply two, so the intended
+      solution avoids ever forming the product.
   - cue: an average, a ratio or a "closest to" comparison
     strength: 2
     note: >-

@@ -94,7 +94,7 @@ stages:
             the honest reading is that the answer is close, and close is a
             reason to look one rung further down.
         - expression: "100000 test cases, each sorting 200000 values"
-          result: "1.7 * 10^11 operations"
+          result: "3.5 * 10^11 operations"
           note: >-
             Which is why a statement bounding the SUM of n over all cases is a
             gift and must be read as one. Without that sentence, the obvious
@@ -103,9 +103,9 @@ stages:
         - warning: "Estimate from the WORK, not from the number of input lines."
           why: >-
             t test cases each costing n log n is t * n log n, not n log n. With
-            t at 10^5 and n at 2 * 10^5 that is 1.7 * 10^11 and hopeless — but
+            t at 10^5 and n at 2 * 10^5 that is 3.5 * 10^11 and hopeless — but
             if the statement bounds the sum of n over all cases at 2 * 10^5,
-            the same code is 3.4 million and fine. One sentence, four orders of
+            the same code is 3.5 million and fine. One sentence, five orders of
             magnitude, and it never appears in the story.
         - warning: "Budget the memory as well as the time."
           why: >-
@@ -228,11 +228,11 @@ stages:
             cases with n up to 2 * 10^5 each, and NO bound on the sum of n. It
             passes every sample and times out. What was misread?
           options:
-            - "the cost is t * n log n, about 1.7 * 10^11, not n log n"
+            - "the cost is t * n log n, about 3.5 * 10^11, not n log n"
             - "the sort is the wrong algorithm for this problem"
             - "the input reading is too slow and needs scanf"
             - "nothing was misread; the judge is slow"
-          answer: "the cost is t * n log n, about 1.7 * 10^11, not n log n"
+          answer: "the cost is t * n log n, about 3.5 * 10^11, not n log n"
           explanation: >-
             Estimating from one test case is estimating the wrong quantity. The
             fix is either a cheaper per-case method or the realisation that

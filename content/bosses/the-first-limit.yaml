@@ -1,0 +1,135 @@
+id: the-first-limit
+name: THE FIRST LIMIT
+title: The Wall at the End of the Village Road
+tier: 1
+master_id: master_foundations
+patterns:
+  - constraint-budget
+  - linear-scan
+  - integer-safety
+
+boss_hp: 80
+player_hp: 100
+damage_taken: 20
+enrage_after: 3
+
+# The first boss anyone meets, and the gate is set accordingly: Elder Vhast
+# would rather a student arrived slightly early and learned something than
+# waited outside a door. Retention is asked for all the same — these are habits,
+# and a habit held for one afternoon is not a habit.
+gate:
+  recognition: 0.45
+  understanding: 0.50
+  implementation: 0.40
+  retention: 0.35
+  master_final_test: true
+
+# Four phases, 80 damage, one health bar. Clearing everything is exactly
+# enough, so no phase is decorative — and the order is the village's own: read
+# the bound, say what it forbids, write the walk, then survive the number that
+# was larger than you thought.
+phases:
+  - kind: recognise
+    damage: 15
+    pattern: constraint-budget
+    title: Read the bound
+
+  - kind: explain
+    damage: 15
+    pattern: linear-scan
+    title: Say what the previous step knew
+
+  - kind: implement
+    damage: 25
+    pattern: linear-scan
+    title: One walk, and take the answer inside the loop
+
+  - kind: survive
+    damage: 25
+    pattern: integer-safety
+    title: The total was larger than you thought
+
+dialogue:
+  intro:
+    - >-
+      It is not a monster. It is a number, written at the bottom of the page,
+      and it has been there since before you read the story above it.
+    - >-
+      Elder Vhast will have told you there is no hurry. There is not. There is
+      only a limit, and it does not move, and it does not care how good your
+      algorithm is.
+    - >-
+      Nothing will be named. You have three habits and it has four ways of
+      asking whether you actually have them.
+    - >-
+      Every student who has ever left this village met this first. Most of them
+      met it again later, further up the road, at a much worse moment.
+
+  phase_won:
+    - You read the constraints before the story. It gives ground.
+    - Correct. It has three questions left.
+    - >-
+      You counted before you wrote. That is the whole of the village, and you
+      just did it under pressure.
+    - It steps back. That one was the cheap one.
+
+  phase_lost:
+    - >-
+      You wrote first and estimated afterwards. That is the wrong order, and it
+      is the only order it punishes.
+    - You multiplied the wrong two numbers. It costs you.
+    - >-
+      The algorithm was right. Something in it passed two billion and you did
+      not check.
+    - >-
+      You looked back at the row when the previous step had already told you
+      everything you needed.
+
+  enrage:
+    - >-
+      No more hints. The numbers are still on the page where they always were;
+      you simply have to read them yourself now.
+    - >-
+      Three times. It stops being patient before Elder Vhast does, which is not
+      a high bar.
+
+  victory:
+    - >-
+      The limit is still there. It always will be. You have simply stopped
+      walking into it.
+    - >-
+      Down. The road out of the village is open, and nothing on it gets easier —
+      only more interesting.
+    - >-
+      Beaten. Notice that you did not beat it by being fast.
+
+  perfect:
+    - >-
+      Four questions, no mistakes, no help. Elder Vhast will say "good" and mean
+      considerably more than that.
+    - >-
+      Not one number misread. There is nothing left in it for you here; go and
+      find something that fights back.
+
+  defeat:
+    - >-
+      It stands. Go back and read the constraint blocks of the last five
+      problems you solved, out loud, before the stories. That is the whole fix.
+    - >-
+      Not today. Nothing you learned is gone — you have simply not made it
+      automatic yet, and automatic is what this asks for.
+    - >-
+      You knew all three habits and used them in the wrong order. Elder Vhast
+      has time. So do you.
+
+  rematch:
+    - Again. The story is different and the number at the bottom is not.
+    - >-
+      You have beaten it before. It will ask the same four things about
+      different numbers, which is the only honest kind of rematch.
+
+  gate_locked:
+    - >-
+      It does not test students who are still learning the material. Finish with
+      Elder Vhast first, and let a few days pass so we both know it stayed.
+    - Not yet. {blockers}

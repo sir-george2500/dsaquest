@@ -17,7 +17,7 @@ from dsaquest.boss.loader import load_bosses
 from dsaquest.content.lessons import load_curricula
 from dsaquest.content.loader import load_library
 from dsaquest.content.problems import load_problems
-from dsaquest.domain.boss import PhaseKind
+from dsaquest.domain.boss import BossTier, PhaseKind
 from dsaquest.domain.enums import Dimension, GameMode, Rating
 from dsaquest.learning import apply_review, make_scheduler
 from dsaquest.learning.mastery import all_mastery
@@ -84,10 +84,47 @@ def test_every_boss_asks_the_learner_to_recognise_something(bosses):
 
 
 def test_a_boss_only_draws_on_patterns_its_master_teaches(bosses, library, bank):
+    """A region's warden may only test what that region taught.
+
+    The Final tier is exempt and has no master at all: the last opponent
+    guards no region, and the whole point of him is that he ranges across
+    every one of them. That is asserted separately below.
+    """
     curricula = load_curricula(library, bank)
     for boss in bosses:
+        if not boss.master_id:
+            continue
         governed = set(curricula[boss.master_id].patterns)
         assert set(boss.patterns) <= governed, boss.id
+
+
+def test_only_the_final_tier_may_belong_to_no_region(bosses):
+    for boss in bosses:
+        if not boss.master_id:
+            assert boss.tier is BossTier.FINAL, (
+                f"{boss.id} has no master but is not the final boss, so it can "
+                "never be gated or rewarded"
+            )
+
+
+def test_the_final_boss_draws_only_on_problems_held_out_for_him(bosses, bank):
+    """Nothing familiar. That is the entire claim of the last fight."""
+    final = [b for b in bosses if b.tier is BossTier.FINAL]
+    if not final:
+        pytest.skip("no final boss shipped")
+    for boss in final:
+        assert boss.held_out_problem_ids, f"{boss.id} has no held-out set"
+        for problem_id in boss.held_out_problem_ids:
+            assert problem_id in {p.id for p in bank}, f"{boss.id}: unknown {problem_id}"
+        # Every pattern he sets a recognition or survive phase on must have a
+        # held-out problem, or that phase falls back to the general pool.
+        held = {bank[p].pattern for p in boss.held_out_problem_ids}
+        for phase in boss.phases:
+            if phase.kind in (PhaseKind.RECOGNISE, PhaseKind.SURVIVE) and phase.pattern:
+                assert phase.pattern in held, (
+                    f"{boss.id}: phase {phase.title!r} would draw a problem the "
+                    f"learner may already have seen"
+                )
 
 
 # --------------------------------------------------------------------------

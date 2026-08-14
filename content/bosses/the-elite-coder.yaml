@@ -1,0 +1,170 @@
+id: the-elite-coder
+name: THE ELITE CODER
+title: The One Who Is Simply Better Than You
+tier: 6
+
+# No master_id. Every other boss guards a region and takes its colour from the
+# master who taught it. He guards nothing. He is what the regions were leading
+# to, and the only opponent in the game who is a person rather than a thing.
+master_id: ""
+
+patterns:
+  - hashing-frequency
+  - binary-search-answer
+  - bit-manipulation
+  - dijkstra-weighted
+  - knapsack-dp
+
+boss_hp: 150
+player_hp: 100
+damage_taken: 20
+enrage_after: 2
+
+# Nothing familiar. These five problems exist for this fight and are drawn
+# nowhere else — not in a trial, not in a final test, not in ordinary practice.
+# Every other fight asks whether you recognise a pattern in a statement you may
+# well have met. This one asks whether you recognise it at all.
+held_out_problem_ids:
+  - elite-ledger-reconciliation
+  - elite-kiln-firing
+  - elite-signal-masks
+  - elite-toll-roads
+  - elite-expedition-load
+
+# The Final Gate. Not one region's mastery but all of them, and every warden on
+# the road already down. The bar on retention is the highest in the game on
+# purpose: the whole point of the last fight is that it comes long after the
+# lessons, and a technique you held for an afternoon is not a technique.
+gate:
+  recognition: 0.70
+  understanding: 0.65
+  implementation: 0.65
+  retention: 0.60
+  master_final_test: false
+  every_master_final_test: true
+  bosses_defeated:
+    - the-array-beast
+    - the-search-warden
+    - the-thirty-two
+    - the-exchange
+    - the-rootless
+    - the-unread-line
+    - the-unweighted-lie
+    - the-branching
+    - the-silent-wrap
+    - the-query-swarm
+    - the-first-limit
+
+# Five phases dealing exactly 150. Two recognitions, because recognising the
+# pattern is the thing this whole product exists to train and the last fight
+# should ask it twice, on two problems that look nothing like each other.
+phases:
+  - kind: recognise
+    damage: 20
+    pattern: hashing-frequency
+    title: What is this, before you write anything
+
+  - kind: explain
+    damage: 30
+    pattern: binary-search-answer
+    title: Say why the predicate is monotone
+
+  - kind: recognise
+    damage: 25
+    pattern: dijkstra-weighted
+    title: And this one
+
+  - kind: implement
+    damage: 35
+    pattern: bit-manipulation
+    title: Write it, now, without the name
+
+  - kind: survive
+    damage: 40
+    pattern: knapsack-dp
+    title: Two limits, one table, no help
+
+dialogue:
+  intro:
+    - >-
+      I have read your record. Eleven masters, every warden on the road, and a
+      retention score that says you kept most of it. That is more than most
+      people manage and it is not why I am here.
+    - >-
+      Nothing I set you tonight has been in front of you before. Not in a
+      lesson, not in a trial, not in practice. I made sure of it.
+    - >-
+      You are going to want to recognise these. That is the correct instinct
+      and it is the only one that will help you.
+
+  phase_won:
+    - Yes. That was the one.
+    - >-
+      Good. You saw it in the constraints rather than in the wording, which is
+      the harder place to look.
+    - Correct. I will make the next one less obvious.
+    - >-
+      You did not reach for the first technique that fitted. I noticed.
+
+  phase_lost:
+    - >-
+      That was close to right, which is worse than being far from it. You
+      recognised one of the two things it was.
+    - >-
+      No. You have written that pattern forty times and did not see it here,
+      because here it was wearing different words.
+    - >-
+      You reached for the general tool. The general tool is almost never the
+      one that was wanted.
+    - Wrong, and you knew it before I said so. That is progress of a kind.
+
+  enrage:
+    - >-
+      Enough. No more statements that resemble anything. From here the wording
+      is against you as well as the problem.
+    - >-
+      Twice. I know now which of the five you are slowest at, and I have four
+      more of those.
+
+  victory:
+    - >-
+      Then you can do it. Not the technique — anyone can learn a technique.
+      You can look at something you have never seen and know what it is.
+    - >-
+      Down, and to problems you had no way to prepare for. That is the only
+      result in this game that means anything.
+    - >-
+      Go and find harder problems than mine. There are plenty, and you will
+      recognise most of them now.
+
+  perfect:
+    - >-
+      Five for five, on five things you had never met, with nothing named and
+      no help taken. I have very little to say to that.
+    - >-
+      Not one wrong turn. Whatever it was you could not do at the start of this
+      road, you can do it now.
+
+  defeat:
+    - >-
+      I stand. You know eleven regions' worth of technique and could not place
+      these five, which is precisely the gap you came here to close.
+    - >-
+      Not tonight. Take the ones you lost, and for each write down in one line
+      what the statement was actually asking for. Then come back.
+    - >-
+      You have not failed at algorithms. You have failed at recognition, and
+      recognition is the thing that improves fastest once you know that is what
+      you are practising.
+
+  rematch:
+    - Again. I have kept five more you have not seen.
+    - >-
+      You have beaten me before. That does not transfer — nothing I set you is
+      ever a problem you have solved.
+
+  gate_locked:
+    - >-
+      No. Every master, every warden, and a memory that has held them. I do not
+      fight people who are most of the way there.
+    - Not yet. {blockers}
