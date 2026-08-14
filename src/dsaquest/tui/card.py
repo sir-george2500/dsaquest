@@ -62,6 +62,17 @@ BAD = "#c04a3a"
 SEALED = "#4a453d"
 GOLD = "#d9a441"
 
+#: The one cool colour. It is already the theme's ``secondary``, the accent for
+#: the search warden and for the graphs master, and the settled-cell blue in the
+#: animation renderer — four places that each spelled a blue of their own.
+COOL = "#7f9fd9"
+
+#: A guardian you can reach but have not felled. Warmer than SEALED and much
+#: quieter than GOLD, so a boss's name sits behind the chapter that names it
+#: instead of shouting over it. It lived as a bare ``#7a5c4a`` in the home
+#: screen's road, the last invented colour left outside this file.
+EMBER = "#7a5c4a"
+
 #: The reading measure. Prose set wider than this is a wall: at 160 columns an
 #: unconstrained paragraph runs 150 characters and the eye loses its place
 #: returning to the left edge. Panels stay full width; the text inside them

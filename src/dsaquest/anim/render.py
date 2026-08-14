@@ -10,25 +10,35 @@ from __future__ import annotations
 
 from rich.text import Text
 
+from ..tui.card import BODY, COOL, FAINT, FRAME, GOLD, GOOD
 from .scene import ArrayScene, BitsScene, Mark, Scene, TableScene
 
 CELL = 5
 """Columns per array cell, including its right border."""
 
 #: How each mark is painted. Style first, then a glyph that survives without it.
+#:
+#: Ten raw hex values used to live in this file, four of them colours that exist
+#: nowhere else in the game: ``#f0c14b`` is a gold four points off GOLD,
+#: ``#6fd97f`` a green off GOOD, ``#6b8fbf`` a blue off the theme's secondary,
+#: and ``#3a352c`` a grey off FRAME. A highlight that is *almost* the highlight
+#: colour does not read as emphasis, it reads as a rendering fault — and the
+#: theatre sits one keystroke from the lesson it illustrates, so the two are
+#: seen side by side. Importing the palette is safe in this direction:
+#: ``tui.card`` depends on nothing but Rich and Textual.
 STYLES: dict[Mark, str] = {
-    Mark.PLAIN: "#a89e8d",
-    Mark.ACTIVE: "bold #f0c14b",
-    Mark.IN: "bold #6fd97f",
-    Mark.SETTLED: "#6b8fbf",
-    Mark.OUT: "dim strike #6b6459",
-    Mark.ANSWER: "bold #d9a441 reverse",
+    Mark.PLAIN: BODY,
+    Mark.ACTIVE: f"bold {GOLD}",
+    Mark.IN: f"bold {GOOD}",
+    Mark.SETTLED: COOL,
+    Mark.OUT: f"dim strike {FAINT}",
+    Mark.ANSWER: f"bold {GOLD} reverse",
 }
 
-RULE = "#3a352c"
-LABEL = "#6b6459"
-NOTE = "#a89e8d"
-POINTER = "#f0c14b"
+RULE = FRAME
+LABEL = FAINT
+NOTE = BODY
+POINTER = GOLD
 
 
 def render(scene: Scene) -> Text:
@@ -96,7 +106,7 @@ def _bits(scene: BitsScene) -> Text:
     positions = list(range(scene.bits - 1, -1, -1))
 
     if scene.expression:
-        out.append(f"  {scene.expression}\n\n", style="bold #f0c14b")
+        out.append(f"  {scene.expression}\n\n", style=f"bold {GOLD}")
 
     out.append("  ")
     for position in positions:
