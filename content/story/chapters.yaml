@@ -1,0 +1,259 @@
+# The order Delta-X walks the world in.
+#
+# Not world number, which is a display grouping, and not tier, which is only
+# the guardian's strength. This is the teaching order: what must be understood
+# before the next thing can be. Elder Vhast is world 5 and comes first, because
+# nothing else in the game means anything until you can look at n and say what
+# will fit.
+#
+# Every entry names a master and a guardian that already exist. The story is
+# built around them; it does not invent a parallel cast.
+
+title: The Path of Delta-X
+hero: DELTA-X
+villain: the-elite-coder
+
+chapters:
+  - id: the-village
+    number: I
+    name: The Warrior Awakens
+    master: master_foundations
+    arrival: >-
+      The road ends at a village so small it has no wall. An old man sits
+      outside the last house, doing nothing at all, and does not look up when
+      Delta-X sets down his pack.
+    master_says:
+      - '"You want to be fast."'
+      - '"Everyone arrives wanting to be fast. Sit down."'
+      - >-
+        "Before you write anything, you will learn to read a constraint and say
+        what will fit. That is not the beginning of the craft. That is the
+        craft, and the rest is detail."
+    boss_says: >-
+      "Beyond the village there is a limit that does not care how clever you
+      are. Meet it. Then we will talk about speed."
+    victory: >-
+      The old man nods once, which Delta-X will later learn is the most he ever
+      gives. "You counted before you ran. Good. Now go and learn something."
+    revelation: >-
+      Delta-X had thought the secret would be a list of algorithms. The first
+      master taught him arithmetic and sent him away.
+
+  - id: plains-of-arrays
+    number: II
+    name: The Straight Line
+    master: master_arrays
+    arrival: >-
+      The plains go on without a bend. A woman stands at a table of stones laid
+      in a single row, and she has clearly been waiting some time.
+    master_says:
+      - '"Most problems are simpler than you want them to be."'
+      - >-
+        "You will want to reach for two loops. I will teach you to walk the row
+        once, carrying what you have already seen."
+    boss_says: >-
+      "Something waits in the straight line. It knows one thing and wears four
+      faces, and it will not tell you which."
+    victory: >-
+      "Acceptable," Warden Korrin says, and means something else by it.
+    revelation: >-
+      Four techniques, one shape. Delta-X begins to suspect the masters are not
+      teaching him algorithms at all.
+
+  - id: halls-of-search
+    number: III
+    name: The Halving
+    master: master_search
+    arrival: >-
+      The halls are cold and precisely lit. The Adjudicator does not greet him.
+      He is timing something.
+    master_says:
+      - '"Your solution works. But it is slow."'
+      - >-
+        "You will learn to halve. Then you will learn the harder thing, which is
+        to halve an answer you cannot see."
+    boss_says: '"The line is guarded. Go and stand on it."'
+    victory: >-
+      "Faster," says Kol, and writes it down. It is the first thing he has
+      written down since Delta-X arrived.
+    revelation: >-
+      A record hangs on the far wall. Five problems, three minutes forty-one,
+      no penalty. The name on it is not a name — THE ELITE CODER.
+
+  - id: vault-of-bits
+    number: IV
+    name: The Thirty-Two
+    master: master_bits
+    arrival: >-
+      Down in the vault the air is dry and the lamps are set in thirty-two
+      niches. Grandmaster Ragine counts them every morning, and finds decimal
+      thinking sentimental.
+    master_says:
+      - '"You have been writing numbers as though they were quantities."'
+      - '"They are positions. Thirty-two of them. Nothing else."'
+    boss_says: '"Sixty-four bits stand between you and the stair. One per bit."'
+    victory: >-
+      "You stopped translating," Ragine says. "That is the whole lesson and it
+      took you four days."
+    revelation: >-
+      Delta-X notices that every master so far has taught him to look, not to
+      remember.
+
+  - id: vault-of-structures
+    number: V
+    name: The Ledger
+    master: master_structures
+    arrival: >-
+      Deeper in the same vault, a keeper writes in a book that has no last page.
+      He does not stop writing while he speaks.
+    master_says:
+      - '"I do not ask whether your code works."'
+      - '"I ask what one query costs you. Every single query. Say the number."'
+    boss_says: >-
+      "A swarm is coming that will ask you the same question two hundred
+      thousand times. Answer it once, correctly, and it cannot hurt you."
+    victory: '"Recorded," says Vore, and writes that down too.'
+    revelation: >-
+      Cost, Delta-X realises, is not a footnote to an algorithm. It is what
+      chooses the algorithm.
+
+  - id: ridge-of-greed
+    number: VI
+    name: The Exchange
+    master: master_greed
+    arrival: >-
+      On the ridge a strategist is trading with nobody, laying out stones and
+      taking them back.
+    master_says:
+      - '"Take the biggest one. Go on."'
+      - >-
+        "You were right that time. You will be right most times. I will not
+        accept an answer from you again without a proof that the local choice is
+        safe."
+    boss_says: >-
+      "Something on this ridge will offer you the largest thing in front of you
+      and accept whatever you take. It never argues. That is what makes it
+      dangerous."
+    victory: >-
+      "You took the smaller one," says Rhe. "And you can say why. Those are two
+      different achievements."
+    revelation: >-
+      A courier passes on the ridge road carrying a sealed record. Delta-X
+      catches one line of it: *another student is following the old path.*
+
+  - id: forest-of-trees
+    number: VII
+    name: The Rooted
+    master: master_trees
+    arrival: >-
+      The forest has no straight paths. Sage Orenna Thal is somewhere in it,
+      and she asks a question before she is visible.
+    master_says:
+      - '"Where does this begin?"'
+      - '"You said the top. Why the top? Who told you it had one?"'
+    boss_says: >-
+      "Something in here will hand you a shape with no root and wait to see
+      where you put it."
+    victory: '"And what would you do differently?" she asks. She means it kindly.'
+    revelation: >-
+      She never once told him a fact. He had said all of them himself.
+
+  - id: library-of-strings
+    number: VIII
+    name: The Prefix
+    master: master_strings
+    arrival: >-
+      The library is quiet in the way a place is quiet when someone has indexed
+      it. The scribe is amused by something Delta-X has not said yet.
+    master_says:
+      - '"You will tell me these four things are all the same thing."'
+      - '"They are all called repetition. They are not the same thing."'
+    boss_says: >-
+      "There is a line in here that has been written down already. It will say
+      only that something repeats."
+    victory: '"You asked which kind," says Ash. "That is the entire discipline."'
+    revelation: >-
+      Pinned inside a returned volume, a note in an unfamiliar hand:
+      *train hard. I will be waiting.*
+
+  - id: sea-of-graphs
+    number: IX
+    name: The Unbridged
+    master: master_graphs
+    arrival: >-
+      The Warlord does not have a hall. She has a coastline, and a great many
+      islands that are not connected in the way they appear to be.
+    master_says:
+      - '"You know breadth-first search."'
+      - '"But do you know when it is wrong?"'
+      - >-
+        "It will return you a path. The path will be real. It will not be the
+        shortest, and nothing will tell you."
+    boss_says: '"Something out there lies about distance. Go and be lied to."'
+    victory: '"Now you weigh things," Grune says. "Now you are worth arming."'
+    revelation: >-
+      The guardians he has defeated were not obstacles. They were the same
+      lesson each time, asked without a name attached.
+
+  - id: temple-of-numbers
+    number: X
+    name: The Remainder
+    master: master_math
+    arrival: >-
+      The Oracle is mid-sentence when Delta-X enters and does not appear to be
+      addressing anyone.
+    master_says:
+      - '"— and so the product is formed first, which is where it dies."'
+      - '"You. Multiply two numbers under a modulus. Slowly."'
+    boss_says: >-
+      "Something in the temple wraps silently. It will not crash. It will
+      simply be wrong, and confident."
+    victory: '"You used the wider type," says Cassiun, to the ceiling. "Good."'
+    revelation: >-
+      Every failure the masters have shown him is silent. Nothing in this craft
+      announces itself.
+
+  - id: the-forbidden-art
+    number: XI
+    name: The State
+    master: master_dp
+    arrival: >-
+      The Archivist's room is full of answers already earned, filed and never
+      recomputed. He is impossible to impress.
+    master_says:
+      - '"Define what dp[i] actually means."'
+      - '"In one sentence. If you cannot, you have not begun."'
+    boss_says: >-
+      "Something branches beyond that door. It will offer you two choices, over
+      and over, and remember nothing unless you make it."
+    victory: >-
+      "You said the sentence first," Solvane says, "and then the loop wrote
+      itself. That is the order. It is always the order."
+    revelation: >-
+      The Elite Coder is waiting at the far gate, and has been for some time.
+      "You have defeated my guardians," he says. "Good. Now I know your name."
+
+final:
+  id: the-final-gate
+  number: XII
+  name: The True Secret
+  boss: the-elite-coder
+  arrival: >-
+    The gate is not guarded. There is a table, and a man sitting at it who has
+    never been beaten, and five problems face down.
+  boss_says:
+    - '"I have read your record. Eleven masters. Every guardian on the road."'
+    - >-
+      "Nothing on this table has been in front of you before. Not in a lesson,
+      not in a trial, not in practice. I made sure of it."
+    - '"You are going to want to recognise these. That is the only thing that will help you."'
+  victory: >-
+    "Then you can do it," the Elite Coder says, and for the first time he is
+    not performing. "Not the technique. Anyone can learn a technique. You can
+    look at something you have never seen and know what it is."
+  revelation: >-
+    The True Secret was never a list. Delta-X had been told it eleven times, in
+    eleven different rooms, by people who never once said it out loud: the
+    greatest programmer is not the one who has memorised the most algorithms.
+    It is the one who can meet an unknown problem, see its structure, and
+    discover the way through.

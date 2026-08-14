@@ -221,7 +221,16 @@ def test_the_last_beat_leaves_the_story(context):
             await pilot.pause()
             screen = app.screen
             for _ in range(len(screen.story)):
-                await pilot.press("space")
+                if (
+                    isinstance(app.screen, StoryScreen)
+                    and screen.story.beats[screen.index].ask_name
+                ):
+                    # Space belongs to the name field on that beat, so it is
+                    # enter that moves on. A player typing a two-word name
+                    # would otherwise skip straight past the question.
+                    await pilot.press("enter")
+                else:
+                    await pilot.press("space")
                 await pilot.pause()
             assert not isinstance(app.screen, StoryScreen), "the prologue must end"
 

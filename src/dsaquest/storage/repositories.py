@@ -1277,3 +1277,56 @@ def hollow_solves(conn: sqlite3.Connection, pattern_id: str | None = None) -> in
         sql += " AND pattern_id = ?"
         params.append(pattern_id)
     return int(conn.execute(sql, params).fetchone()[0])
+
+
+# --------------------------------------------------------------------------
+# Small persistent flags
+# --------------------------------------------------------------------------
+
+
+def set_flag(conn: sqlite3.Connection, name: str, value: bool = True) -> None:
+    """Record a one-off fact, like having read the prologue.
+
+    Stored in ``achievement`` rather than a new table: it is the same shape —
+    a name and the moment it became true — and a migration for one boolean
+    would be a table nobody else ever writes to.
+    """
+    if value:
+        conn.execute(
+            "INSERT OR IGNORE INTO achievement (code, unlocked_at, detail) VALUES (?, ?, ?)",
+            (f"flag:{name}", utcnow(), "story flag"),
+        )
+    else:
+        conn.execute("DELETE FROM achievement WHERE code = ?", (f"flag:{name}",))
+
+
+def get_flag(conn: sqlite3.Connection, name: str) -> bool:
+    row = conn.execute("SELECT 1 FROM achievement WHERE code = ?", (f"flag:{name}",)).fetchone()
+    return row is not None
+
+
+def set_setting(conn: sqlite3.Connection, name: str, value: str) -> None:
+    """Store one small piece of player-chosen state, such as their name.
+
+    Reuses the achievement table's ``detail`` column rather than adding a
+    migration for a single string. The shape already fits — a key, when it was
+    set, and a value — and a table with one row in it is not worth a schema
+    version.
+    """
+    conn.execute(
+        "INSERT INTO achievement (code, unlocked_at, detail) VALUES (?, ?, ?) "
+        "ON CONFLICT(code) DO UPDATE SET detail = excluded.detail",
+        (f"setting:{name}", utcnow(), value),
+    )
+
+
+def get_setting(conn: sqlite3.Connection, name: str, default: str = "") -> str:
+    row = conn.execute(
+        "SELECT detail FROM achievement WHERE code = ?", (f"setting:{name}",)
+    ).fetchone()
+    return row["detail"] if row and row["detail"] else default
+
+
+def warrior_name(conn: sqlite3.Connection, default: str = "DELTA-X") -> str:
+    """What the player calls themselves. Their own name, or the legend's."""
+    return get_setting(conn, "warrior_name", default)

@@ -43,10 +43,23 @@ from ..game.modes.recall import build_round as build_recall
 from ..game.modes.recall import grade as grade_recall
 from ..game.session import ExerciseResult, begin_exercise, complete_exercise
 from ..judge import workspace
-from ..learning.mastery import all_mastery
 from ..learning.planner import PlannedItem, build_session
 from ..storage import repositories as repo
-from .arena import ARENA_CSS
+from .arena import ARENA_CSS, ArenaScreen
+from .card import (
+    BAD,
+    BODY,
+    FAINT,
+    FRAME,
+    GOLD,
+    GOOD,
+    INK,
+    MUTE,
+    RULE,
+    SEALED,
+    clip,
+    quest_theme,
+)
 from .duel import DUEL_CSS, DuelScreen
 from .editor import code_editor
 from .journey import JOURNEY_CSS, JourneyScreen
@@ -60,10 +73,25 @@ CSS = (
     """
 Screen { background: $surface; }
 
+/* One left edge. Every block on the home screen begins at column 4: the
+   banner's text, the quest's text, the actions and the road. It used to be
+   three edges — the road started at column 0, its rows at 2 and the boxed
+   panels at 4 — which read as three unrelated components stacked up. */
 #banner {
-    height: auto; padding: 1 2; background: $panel;
-    border: round $primary; margin: 1 2 0 2;
+    height: auto; padding: 0 2; margin: 1 2 0 2;
+    border-left: outer """
+    + RULE
+    + """;
 }
+/* The quest box is the loudest thing on the screen on purpose: it is the
+   answer to "what do I do now", and everything else is optional. It is the
+   only bordered box up here now — the banner used to be boxed too, in blue,
+   which made the eye land on the XP bar rather than on the quest. */
+#quest { height: auto; padding: 1 2; margin: 1 2 0 2; border: round """
+    + GOLD
+    + """; }
+#actions { height: auto; padding: 1 2 0 2; }
+#map { padding: 1 2 0 2; }
 #xpbar { color: $success; }
 
 .world { color: $accent; text-style: bold; padding: 1 0 0 0; }
@@ -102,25 +130,103 @@ Screen { background: $surface; }
 )
 
 
+#: A lock emoji is two terminal cells wide and every other mark is one, so a
+#: sealed chapter pushed its whole row a column to the right of an open one:
+#: eleven rows, two different left edges, alternating. The journey layer is
+#: right to hand out a mark; choosing a *monospaced* one is presentation.
+MARKS = {"🔒": "×", "→": "▸", "✓": "✓", "·": "·"}
+
+
+def _mark(mark: str) -> str:
+    return MARKS.get(mark, mark)
+
+
 class HomeScreen(Screen):
     BINDINGS = [
-        Binding("p", "practice", "Practice"),
-        Binding("r", "review", "Review due"),
-        Binding("t", "train", "Train under a master"),
-        Binding("d", "duel", "Duel"),
-        Binding("c", "roster", "The roster"),
-        Binding("s", "story", "Story"),
+        Binding("enter", "continue_journey", "Continue Journey"),
+        Binding("1", "continue_journey", "", show=False),
+        Binding("2", "map", "Journey map"),
+        Binding("3", "practice", "Training grounds"),
+        Binding("4", "review", "Review due"),
+        Binding("5", "duel", "Duel"),
+        Binding("6", "roster", "Roster"),
+        Binding("7", "strength", "Strength", show=False),
+        Binding("s", "story", "Story", show=False),
+        Binding("p", "practice", "", show=False),
+        Binding("r", "review", "", show=False),
+        Binding("t", "train", "", show=False),
+        Binding("d", "duel", "", show=False),
+        Binding("c", "roster", "", show=False),
         Binding("q", "quit", "Quit"),
     ]
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
         yield Static(id="banner")
+        yield Static(id="quest")
+        yield Static(id="actions")
         yield VerticalScroll(Static(id="map"))
         yield Footer()
 
     def on_mount(self) -> None:
         self.refresh_view()
+
+    def on_screen_resume(self) -> None:
+        """Redraw whenever the player comes back to it.
+
+        The home screen is mounted once and lives underneath everything else,
+        so without this it shows whatever was true when the app started — the
+        quest would not advance after a lesson, the road would not fill in
+        after a guardian fell, and a warrior who had just named themselves
+        would still be greeted as someone else.
+        """
+        self.refresh_view()
+
+    # ------------------------------------------------------------- the quest
+
+    def action_continue_journey(self) -> None:
+        """The one action that always knows what to do.
+
+        Everything else on this screen is optional. This is the road.
+        """
+        from ..journey import Objective, next_step
+
+        context: AppContext = self.app.context
+        step = next_step(context)
+
+        if step.objective is Objective.PROLOGUE:
+            story = load_story()
+            if story is not None:
+                repo.set_flag(context.conn, "prologue_read")
+                context.conn.commit()
+                self.app.push_screen(StoryScreen(story))
+            return
+
+        if step.objective in (
+            Objective.MEET_MASTER,
+            Objective.TRAIN,
+            Objective.TRIAL,
+            Objective.FINAL_TEST,
+        ):
+            master = context.masters.get(step.master_id)
+            if master is not None and context.curricula is not None:
+                self.app.push_screen(MasterScreen(master, context.curricula))
+            return
+
+        if step.objective in (Objective.BOSS, Objective.ELITE_CODER, Objective.GATE_SHUT):
+            # A shut gate still opens the arena: the guardian's own refusal,
+            # naming what it wants, is a better answer than a message box.
+            if context.bosses and step.boss_id in context.bosses:
+                self.app.push_screen(ArenaScreen(context.bosses[step.boss_id]))
+            return
+
+        self.app.push_screen(RosterScreen())
+
+    def action_map(self) -> None:
+        self.app.push_screen(JourneyScreen())
+
+    def action_strength(self) -> None:
+        self.app.push_screen(RosterScreen())
 
     def refresh_view(self) -> None:
         context: AppContext = self.app.context
@@ -131,40 +237,112 @@ class HomeScreen(Screen):
             context.conn, context.library, context.bank, scheduler=context.scheduler
         )
 
-        banner = (
-            f"[b cyan]DSA QUEST[/]\n"
-            f"[b]Level {level.level}[/] {level.title}   "
-            f"[green]{level.bar(28)}[/] "
-            f"{level.xp_into_level:,}/{level.xp_for_level:,} XP\n"
-            f"[yellow]{streak.current} day streak[/]   "
-            f"{'[b green]' if plan.due_count else '[dim]'}{plan.due_count} due[/]\n\n"
-            f"[dim]{plan.recommendation}[/]"
+        from ..journey import boss_for, chapter_statuses, load_chapters, next_step
+
+        story = load_chapters()
+        step = next_step(context)
+        road = chapter_statuses(context)
+        walked = sum(s.fraction for s in road) / len(road) if road else 0.0
+
+        # The XP bar is drawn in two colours rather than one. `bar()` returns
+        # filled and empty cells in a single string, and wrapping the whole
+        # thing in [green] painted the *empty* track solid green — a level-one
+        # warrior with 0 XP was shown what read as a full bar, and it was the
+        # brightest thing on the screen.
+        track = level.bar(24)
+        filled = track.count("█")
+        due = (
+            f"[b {GOLD}]{plan.due_count} due[/]" if plan.due_count else f"[{SEALED}]nothing due[/]"
         )
-        self.query_one("#banner", Static).update(banner)
+        self.query_one("#banner", Static).update(
+            f"[b {GOLD}]{safe(repo.warrior_name(context.conn, story.hero or 'DELTA-X'))}[/]  "
+            f"[{MUTE}]THE ALGORITHM WARRIOR[/]\n"
+            f"[{BODY}]Level {level.level}[/]  [{MUTE}]{level.title}[/]   "
+            f"[{GOOD}]{'█' * filled}[/][{FRAME}]{'▁' * (24 - filled)}[/] "
+            f"[{FAINT}]{level.xp_into_level:,}/{level.xp_for_level:,} XP[/]   "
+            f"[{FAINT}]{streak.current} day streak[/]   " + due
+        )
 
-        mastery = all_mastery(context.conn, context.library, scheduler=context.scheduler)
-        unlocked = repo.unlocked_patterns(context.conn)
-
-        lines: list[str] = []
-        world = None
-        for pattern in context.library:
-            if pattern.world != world:
-                world = pattern.world
-                lines.append(f"\n[b magenta]WORLD {world}[/]")
-            record = mastery[pattern.id]
-            playable = pattern.id in unlocked or not pattern.prerequisites
-            if not playable:
-                mark, style = "[🔒]", "dim"
-            elif record.overall >= 0.65:
-                mark, style = "[✓]", "green"
-            elif record.started:
-                mark, style = "[★]", "yellow"
-            else:
-                mark, style = "[ ]", "white"
-            lines.append(
-                f"  [{style}]{mark} {pattern.name:<32}[/] "
-                f"[{style}]{'█' * int(record.overall * 12):<12}[/] {record.overall:>4.0%}"
+        chapter = step.chapter
+        where = f"Chapter {chapter.number} — {chapter.name}" if chapter else story.title
+        filled = int(round(walked * 30))
+        # An empty track drawn in RULE alone was invisible against the surface
+        # and read as a rendering failure rather than as nought per cent. The
+        # first cell is always lit, so the bar is always a bar.
+        self.query_one("#quest", Static).update(
+            f"[{FAINT}]CURRENT QUEST[/]\n"
+            f"[b {INK}]{safe(step.title)}[/]\n"
+            f"[{BODY}]{safe(step.detail)}[/]\n\n"
+            f"[{FAINT}]{safe(where)}[/]   "
+            f"[{GOLD}]{'█' * filled}[/][{FRAME}]{'▁' * (30 - filled)}[/] "
+            f"[{MUTE}]{walked:.0%} of the road[/]"
+            + (
+                f"\n\n[{BAD}]" + safe("  ·  ".join(step.blockers[:4])) + "[/]"
+                if step.blockers
+                else ""
             )
+        )
+
+        primary = "Continue Journey" if step.is_action else "See what it wants"
+        # The primary action sits on its own line, in the quest's own gold, and
+        # the five optional ones share a quieter line below it. Six equal keys
+        # in a row made the one that matters indistinguishable from the rest.
+        self.query_one("#actions", Static).update(
+            f"[b {GOLD}]\\[1][/] [b {INK}]{primary}[/]   [{FAINT}](enter)[/]\n"
+            f"[{FAINT}]\\[2][/] [{MUTE}]Journey map[/]     "
+            f"[{FAINT}]\\[3][/] [{MUTE}]Training grounds[/]     "
+            f"[{FAINT}]\\[4][/] [{MUTE}]Review due[/]     "
+            f"[{FAINT}]\\[5][/] [{MUTE}]Duel[/]     "
+            f"[{FAINT}]\\[6][/] [{MUTE}]Roster[/]"
+        )
+
+        # The road, not a list of patterns. A wall of pattern percentages is a
+        # readout; this is where Delta-X has been and where he is going, and it
+        # is the only thing on this screen that answers "why am I doing this".
+        lines: list[str] = [f"[{FAINT}]THE ROAD[/]", ""]
+        for status in road:
+            chapter = status.chapter
+            master = context.masters.get(chapter.master)
+            who = master.title if master else chapter.master
+            if status.complete:
+                style, note = GOOD, "cleared"
+            elif status.started or status.final_passed:
+                style, note = GOLD, f"{status.secrets_held}/{status.secrets_total} secrets"
+            elif status.reachable:
+                style, note = BODY, "open"
+            else:
+                style, note = SEALED, "sealed"
+            boss = boss_for(context, chapter)
+            guardian = clip(boss.name, 24) if boss else ""
+            # A guardian you cannot reach must not out-shout the chapter that
+            # names it: "Grandmaster Ragine" sat in dead grey while THE
+            # THIRTY-TWO burned warm brown two columns away.
+            if status.boss_defeated:
+                colour = GOOD
+            elif status.reachable:
+                colour = "#7a5c4a"
+            else:
+                colour = SEALED
+            # One line per chapter, not two. Two lines an entry made eleven
+            # chapters a twenty-two row stripe that swamped the quest box above
+            # it, and the second line — "sealed   guardian THE ARRAY BEAST" —
+            # had no column structure at all: "guardian" landed at column 13 or
+            # 15 depending on whether the word before it was "open" or "sealed".
+            lines.append(
+                f"[{style}]{_mark(status.mark)} {chapter.number:<5}"
+                f"{safe(clip(chapter.name, 21)):<22}[/][{FAINT}]{safe(clip(who, 37)):<38}[/]"
+                f"[{SEALED}]{note:<14}[/]" + (f"[{colour}]{safe(guardian)}[/]" if guardian else "")
+            )
+
+        if story.final is not None:
+            felled = story.final.boss in repo.bosses_defeated(context.conn)
+            style = GOOD if felled else SEALED
+            lines += [
+                "",
+                f"[{style}]{_mark('✓' if felled else '·')} {story.final.number:<5}"
+                f"{safe(clip(story.final.name, 21)):<22}[/][{FAINT}]{'THE ELITE CODER':<38}[/]",
+            ]
+
         self.query_one("#map", Static).update("\n".join(lines))
 
     def action_practice(self) -> None:
@@ -666,6 +844,8 @@ class DsaQuestApp(App):
         self.pending_screen = None
 
     def on_mount(self) -> None:
+        self.register_theme(quest_theme())
+        self.theme = "quest"
         self.push_screen(HomeScreen())
         if self.pending_screen is not None:
             self.push_screen(self.pending_screen)

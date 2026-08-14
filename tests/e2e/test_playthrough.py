@@ -700,9 +700,16 @@ def test_no_screen_ever_shows_raw_markup(context):
 
             home = app.screen
             _assert_no_leaked_markup(home, "home")
+            # The home screen shows the road — chapters, masters, guardians —
+            # rather than the flat list of patterns it used to. The marker that
+            # must survive the markup parser is now the road's, and the thing
+            # worth asserting is that a player can see where they are.
             world_map = _flat(home, "#map")
-            assert "[ ]" in world_map, "the unstarted marker was eaten by the markup parser"
-            assert "WORLD 1" in world_map
+            assert "THE ROAD" in world_map
+            assert "The Warrior Awakens" in world_map, "the first chapter is missing"
+            assert "THE FIRST LIMIT" in world_map, "its guardian is missing"
+            assert "🔒" in world_map, "sealed chapters must read as sealed"
+            assert "THE ELITE CODER" in world_map, "the road must end somewhere"
 
             await pilot.press("t")
             await pilot.pause()

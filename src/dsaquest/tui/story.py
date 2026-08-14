@@ -23,26 +23,36 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import Screen
-from textual.widgets import Footer, Header, Static
+from textual.widgets import Footer, Header, Input, Static
 
 from ..art.sprite import load_sprite, sprite_text
 from ..content.loader import ContentError
 from ..content.paths import content_root
+from ..storage import repositories as repo
+from .card import BACK, BODY, CARD_BACK, FAINT, FRAME, GOLD, INK, MEASURE
 from .master import safe
 
-STORY_CSS = """
-StoryScreen { background: #0d0c0a; }
-#story-chapter { padding: 1 3 0 3; color: #6b6459; }
-#story-title { padding: 0 3 1 3; text-style: bold; }
-/* 1fr, not auto: an auto row grows past the screen, the screen sprouts its
-   own scrollbar, and the chapter and title scroll off the top while looking
-   for all the world like they were never rendered. The inner VerticalScroll
-   is what should absorb a long beat. */
-#story-mid { layout: horizontal; height: 1fr; padding: 0 2; }
-#story-art { width: 30; height: 14; padding: 0 1; }
-#story-text { width: 1fr; padding: 0 2; height: auto; }
-#story-mid VerticalScroll { width: 1fr; height: 1fr; }
-#story-progress { padding: 1 3; color: #6b6459; }
+#: One left edge at column 4, and a bounded reading measure.
+#:
+#: The prologue used to be a top-anchored strip of text over an empty screen:
+#: `#story-mid` took `1fr`, so at forty rows the naming input sat twenty rows
+#: below the sentence that asked for the name, alone at the bottom of a void.
+#: The beat is now a block that grows with its content, and the whole
+#: composition is centred vertically — a prologue is a page, not a dashboard.
+STORY_CSS = f"""
+StoryScreen {{ background: {BACK}; align-vertical: middle; }}
+#story-chapter {{ padding: 0 4; color: {FAINT}; }}
+#story-title {{ padding: 0 4 1 4; text-style: bold; color: {INK}; }}
+#story-mid {{ layout: horizontal; height: auto; max-height: 1fr; padding: 0 2; }}
+#story-art {{ width: 28; height: 14; padding: 0 1; }}
+#story-text {{ width: 1fr; padding: 0 2; height: auto; max-width: {MEASURE}; }}
+#story-mid VerticalScroll {{ width: 1fr; height: auto; max-height: 100%; }}
+/* The field sits directly under the sentence that asks for a name, in the
+   text column's own left edge, with a prompt beside it. */
+#story-name {{ margin: 1 4 0 4; width: 34; border: tall {FRAME}; background: {CARD_BACK}; }}
+#story-name:focus {{ border: tall {GOLD}; }}
+#story-ask {{ padding: 1 4 0 4; color: {FAINT}; }}
+#story-progress {{ padding: 1 4 0 4; color: {FAINT}; }}
 """
 
 
@@ -52,6 +62,8 @@ class Beat:
     title: str
     text: str
     art: str = ""
+    ask_name: bool = False
+    """This beat asks the player what to call themselves."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,6 +109,7 @@ def load_story(name: str = "prologue") -> Story | None:
                 title=str(b["title"]),
                 text=str(b["text"]).strip(),
                 art=str(b.get("art", "")),
+                ask_name=bool(b.get("ask_name", False)),
             )
             for b in beats
         ),
@@ -127,6 +140,11 @@ class StoryScreen(Screen):
             with Vertical(id="story-art"):
                 yield Static(id="story-sprite")
             yield VerticalScroll(Static(id="story-text"))
+        # The field is prefilled with the legend's name, so its placeholder is
+        # never seen and the box arrived unlabelled — a bordered rectangle with
+        # a word already in it, and no statement of what it wanted.
+        yield Static(id="story-ask")
+        yield Input(placeholder="your name", id="story-name")
         yield Static(id="story-progress")
         yield Footer()
 
@@ -137,9 +155,9 @@ class StoryScreen(Screen):
     def show(self) -> None:
         beat = self.story.beats[self.index]
         self.query_one("#story-chapter", Static).update(
-            f"[#6b6459]{' '.join(self.story.title.upper())}[/]"
+            f"[{FAINT}]{' '.join(self.story.title.upper())}[/]"
         )
-        self.query_one("#story-title", Static).update(f"[b #ece5d6]{safe(beat.title)}[/]")
+        self.query_one("#story-title", Static).update(f"[b {INK}]{safe(beat.title)}[/]")
 
         sprite_panel = self.query_one("#story-sprite", Static)
         art = self.sprite_for_beat(beat)
@@ -148,13 +166,36 @@ class StoryScreen(Screen):
         if art is not None:
             sprite_panel.update(art)
 
-        self.query_one("#story-text", Static).update(f"[#c8c0b0]{safe(beat.text)}[/]")
+        hero = repo.warrior_name(self.app.context.conn)
+        text = beat.text.replace("{hero}", hero)
+        self.query_one("#story-text", Static).update(f"[{BODY}]{safe(text)}[/]")
+
+        # The naming beat shows an input and nothing else does. Prefilled with
+        # the legend's name, so a player who does not care can simply press on
+        # and still be somebody.
+        field = self.query_one("#story-name", Input)
+        field.display = beat.ask_name
+        ask = self.query_one("#story-ask", Static)
+        ask.display = beat.ask_name
+        if beat.ask_name:
+            ask.update(f"[{FAINT}]WHAT ARE YOU CALLED[/]")
+        if beat.ask_name:
+            if not field.value:
+                field.value = hero
+            self.set_timer(0.05, field.focus)
 
         last = self.index == len(self.story) - 1
-        keys = "space — begin" if last else "space — on   ← back   esc — skip"
+        if beat.ask_name:
+            # Space belongs to the field here — names contain spaces — so the
+            # key that moves on has to change, and has to say so.
+            keys = "enter — that is my name"
+        elif last:
+            keys = "space — begin"
+        else:
+            keys = "space — on   ← back   esc — skip"
         self.query_one("#story-progress", Static).update(
-            f"[#d9a441]{'●' * (self.index + 1)}[/]"
-            f"[#3a352c]{'○' * (len(self.story) - self.index - 1)}[/]   [#6b6459]{keys}[/]"
+            f"[{GOLD}]{'●' * (self.index + 1)}[/]"
+            f"[{FRAME}]{'○' * (len(self.story) - self.index - 1)}[/]   [{FAINT}]{keys}[/]"
         )
 
     def sprite_for_beat(self, beat: Beat):
@@ -165,7 +206,22 @@ class StoryScreen(Screen):
             return None
         return sprite_text(load_sprite(path))
 
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        event.stop()
+        self.action_next()
+
+    def remember_name(self) -> None:
+        beat = self.story.beats[self.index]
+        if not beat.ask_name:
+            return
+        chosen = self.query_one("#story-name", Input).value.strip()
+        if chosen:
+            conn = self.app.context.conn
+            repo.set_setting(conn, "warrior_name", chosen[:24])
+            conn.commit()
+
     def action_next(self) -> None:
+        self.remember_name()
         if self.index + 1 < len(self.story):
             self.index += 1
             self.show()
@@ -178,6 +234,7 @@ class StoryScreen(Screen):
             self.show()
 
     def action_leave(self) -> None:
+        self.remember_name()
         self.finish()
 
     def finish(self) -> None:

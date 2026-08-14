@@ -1,75 +1,77 @@
 id: prologue
-title: The Long Road
+title: The Path of Delta-X
 beats:
-  - id: the-complaint
-    title: What brings you
-    art: master-arrays
+  - id: title
+    title: DSA QUEST
     text: >-
-      You can solve problems. That is not in question, and nobody here will
-      insult you by pretending otherwise. You sit down, you think, and often
-      enough you get there.
+      The world has produced many great programmers.
 
-      What you cannot do is look at a statement you have never seen and know,
-      before you have written anything, what shape it is. You have solved the
-      sliding window problem. You did not recognise the next one as a sliding
-      window problem. That gap is the whole reason this place exists.
+      But only a few have learned to see the hidden patterns behind problems —
+      to look at something they have never met and know, before writing a
+      single line, what shape it is.
+
+      They call that knowledge the TRUE SECRET OF ALGORITHMS.
 
   - id: the-masters
-    title: Eleven who will not flatter you
-    art: master-bits
+    title: The Masters
+    art: master-arrays
     text: >-
-      There are eleven masters between here and the end of the road, and each
-      governs a handful of patterns and nothing else. They are not lecturers.
-      A master teaches you one secret at a time, drills you on it until you
-      are fluent, and only then puts a statement in front of you with the
-      technique's name removed.
+      Eleven masters guard the road, and each holds a piece of it. One teaches
+      you to read a constraint. One to walk a row a single time. One to halve.
+      One that a number is thirty-two positions and not a quantity.
 
-      They will praise you. They will not praise you cheaply — praise that is
-      given for turning up is worth what it costs, which is nothing.
+      They do not lecture and they do not flatter. They teach one small thing,
+      drill it until it is reflex, and then take its name away and hand you a
+      problem.
 
-  - id: the-secrets
-    title: A secret is small
-    text: >-
-      A secret is not a topic. It is one line you can hold in your head and
-      recognise on sight — `n & 1` for the low bit, `while` and not `if` when
-      a window must shrink, the query that must come before the insert.
-
-      You will watch each one happen, step by step, before anyone tests you on
-      it. Then you will drill it until it is reflex. Then, and only then, the
-      name is taken away.
-
-  - id: the-wardens
-    title: What guards each region
-    art: the-array-beast
-    text: >-
-      At the edge of every region something waits, and it will not fight a
-      student. Its gate reads your record: whether you still recognise the
-      patterns, whether you can still write them, whether what you learned
-      weeks ago is still there.
-
-      That last one is the point. A warden is fought long after the lesson,
-      because a technique you held for an afternoon is not a technique you
-      have.
-
-  - id: the-elite
-    title: And at the end
+  - id: the-elite-coder
+    title: The Elite Coder
     art: the-elite-coder
     text: >-
-      Past the last region there is one opponent who is not a creature or a
-      construct. He is simply better than you, and knows it without needing to
-      say so.
+      One warrior has learned all of it.
 
-      Nothing he sets will be familiar. Every other fight draws on problems you
-      have met; his are held back, and have been from the beginning, precisely
-      so that the last thing you face cannot be answered from memory.
+      He entered every competition there was and left with the record in each.
+      Five problems, three minutes forty-one, no penalty. No challenger has
+      beaten him. No master has surpassed him.
+
+      He believes algorithms are not meant to be understood. They are weapons.
+
+      They call him THE ELITE CODER — and he is now searching for the True
+      Secret himself.
+
+  - id: the-warrior
+    title: A young warrior arrives
+    ask_name: true
+    text: >-
+      He knows some C++. He knows some data structures. He can sit with a
+      problem and, often enough, get there.
+
+      What he cannot do is look at a statement he has never seen and know what
+      it is. He has solved the sliding window problem. He did not recognise the
+      next one as a sliding window problem.
+
+      That gap is why he came. Give him your name, and he will carry it the
+      whole way.
+
+  - id: the-quest
+    title: What the road asks
+    art: the-array-beast
+    text: >-
+      Eleven masters. Eleven guardians standing at the edge of their regions,
+      each refusing to fight a student — they read your record before they will
+      raise a hand, and what they want to see is that you still hold what you
+      were taught weeks ago.
+
+      Beyond the last of them is a gate, and a man sitting at a table with five
+      problems face down.
 
   - id: begin
-    title: Begin
+    title: The village
     text: >-
-      Nothing here is timed cruelly. The clock is generous and it is not the
-      grade — it is a note in the margin, and it only starts mattering once
-      you are right.
+      The road ends at a village so small it has no wall.
 
-      Warden Ilsa Korrin is waiting on the Plains of Arrays. She thinks most
-      problems are simpler than the student wants them to be, and she is
-      usually right.
+      An old man sits outside the last house doing nothing at all. He is Elder
+      Vhast, and he will not be hurried, and he is going to spend three days
+      teaching you to count before he permits you to write anything.
+
+      This is where it starts, {hero}.
