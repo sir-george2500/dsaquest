@@ -31,6 +31,13 @@ pytestmark = pytest.mark.slow
 LIBRARY = load_library()
 TEMPLATES = sorted({p.template_file for p in LIBRARY})
 
+#: A surviving marker, and nothing else. Asserting on the bare word "HOLE"
+#: read the W of "WHOLE" as the start of one: euclidean-gcd.cpp explains that
+#: "the SET of common divisors ... IS THE WHOLE METHOD", and two tests called
+#: that a leaked marker. The markers are a comment and an arrow, so match them.
+MARKER = re.compile(r"//\s*(?:>>>|<<<)\s*HOLE\b")
+
+
 HOLE_IDS = [
     (template, hole.id) for template in TEMPLATES for hole in parse_holes(read_template(template))
 ]
@@ -91,7 +98,7 @@ def test_the_exercise_view_hides_the_answer(template: str):
         exercise = exercise_source(source, hole.id)
         assert TODO_MARKER in exercise
         assert hole.prompt in exercise
-        assert "HOLE" not in exercise, "marker syntax leaked into the learner's buffer"
+        assert not MARKER.search(exercise), "marker syntax leaked into the learner's buffer"
         assert _normalise(hole.body) not in _normalise(exercise), (
             f"{template}:{hole.id} — its entire body is visible elsewhere in the exercise"
         )
@@ -110,7 +117,7 @@ def test_stripping_markers_leaves_a_clean_program(template: str):
     """The reference is the oracle, so it must be marker-free and intact."""
     source = read_template(template)
     reference = reference_source(source)
-    assert "HOLE" not in reference
+    assert not MARKER.search(reference), "a marker survived the strip"
     for hole in parse_holes(source):
         assert _normalise(hole.body) in _normalise(reference), (
             f"{template}:{hole.id} was lost when markers were stripped"
