@@ -1,0 +1,256 @@
+# Problems that are really One Pass, One Running Answer.
+#
+# None of these may name the pattern, and none may say "in one pass" or "keep a
+# running" — that is the answer handed over. What is being recognised is that
+# the row must be read in the order it was given, that the answer is a single
+# number, and that position i-1 already knew almost everything position i needs.
+# `decoy_signals` records the heavier machinery each statement invites.
+
+- id: caravan-day-ledger
+  pattern: linear-scan
+  title: The Caravan's Best Days
+  difficulty: easy
+  statement: >-
+    A caravan master keeps n days of accounts; on day i the caravan made p[i]
+    coins, which is negative on a day it lost money. He wants to advertise his
+    best stretch of trading: a run of consecutive days, at least one day long,
+    whose profits add up to as much as possible. The days may not be reordered
+    or cherry-picked — a stretch is a block of the calendar. Report the largest
+    total such a stretch can have. For profits 4, -7, 5, 3, -2, 6, -4 the answer
+    is 12, from the four days 5, 3, -2, 6.
+  constraints: |
+    1 <= n <= 200000
+    -10^9 <= p[i] <= 10^9
+    the stretch must contain at least one day, so an empty stretch is not an answer
+    time limit 1 second
+  signals_present:
+    - the answer is a single number summarising the whole row
+    - the days are fixed in the order given and cannot be rearranged
+    - profits may be negative, which is what makes the question interesting at all
+    - "n at 2 * 10^5 makes the obvious pair of nested loops 2 * 10^10 operations"
+  decoy_signals:
+    - "\"a block of consecutive days with the largest total\" reads like a stretch to be grown and shrunk under a limit"
+    - totals over ranges of a fixed row invite a precomputed table of running totals
+    - the ban on reordering invites sorting anyway, which would destroy the only structure present
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Do not think about all stretches at once. Fix the LAST day of the
+        stretch and ask a narrower question: what is the best stretch that ends
+        on day k? Answer that for every k, and the answer to the problem is the
+        largest of them.
+    - text: >-
+        A stretch ending on day k is either day k alone, or the best stretch
+        ending on day k-1 with day k added. Only one comparison separates the
+        two, and the previous day already computed everything it needs.
+    - text: >-
+        Carry two numbers along the row: the best stretch ending here, updated
+        as max(p[k], ending_here + p[k]), and the largest value that has ever
+        taken — taken inside the loop, not after it.
+      reveals_pattern: true
+  why: >-
+    The row is frozen and the answer is one number, so the walk is forced to be
+    left to right. What makes it one walk rather than two nested ones is the
+    observation that the best stretch ending at a position needs only the best
+    stretch ending at the previous position — one comparison, one variable, and
+    the inner loop disappears. Note the all-negative case: with profits
+    -5, -2, -9 the answer is -2, not 0, because a stretch must be non-empty.
+  classic_ref: CPH 2 (maximum subarray sum, Algorithm 3); Kadane's algorithm
+
+- id: river-gauge-rises
+  pattern: linear-scan
+  title: The River Gauge
+  difficulty: easy
+  statement: >-
+    A river gauge is read once an hour for n hours, giving heights h[1] to h[n]
+    in the order they were taken. A calm spell is a run of consecutive readings
+    in which each reading is at least as large as the one before it. Report the
+    number of readings in the longest calm spell. A single reading is a calm
+    spell of length 1. For readings 1, 1, 2, 2, 0, 5 the longest calm spell is
+    1, 1, 2, 2, of length 4.
+  constraints: |
+    1 <= n <= 1000000
+    0 <= h[i] <= 10^9
+    the readings arrive in chronological order and may not be rearranged
+    time limit 1 second
+  signals_present:
+    - the property being tested compares each element with its immediate predecessor only
+    - the answer is a single length, not the spell itself
+    - readings are chronological, so the order is the entire structure of the problem
+    - "n reaches 10^6, so anything more than a constant amount of work per reading is uncomfortable"
+  decoy_signals:
+    - "\"longest run satisfying a condition\" reads like a stretch with two ends to be advanced independently"
+    - heights up to 10^9 invite a frequency structure that the question never needs
+    - "\"longest non-decreasing\" invites the far harder subsequence question, which needs a different tool entirely"
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        The condition only ever compares a reading with the one immediately
+        before it. So at each step there are exactly two possibilities: the
+        spell you are in continues, or it has just ended and a new one starts
+        here.
+    - text: >-
+        That means the entire history you need is a single number — how long
+        the spell you are currently inside has been going. Everything before it
+        is already accounted for.
+    - text: >-
+        Carry a counter that becomes counter + 1 when h[i] >= h[i-1] and 1
+        otherwise, and take the largest value it reaches inside the loop —
+        the longest spell very often does not reach the end of the row.
+      reveals_pattern: true
+  why: >-
+    A condition on adjacent elements can never require looking further back than
+    one position, so the state is one counter. The trap is scoring only after
+    the loop: on 1, 1, 2, 2, 0, 5 the run at the end has length 2 and the answer
+    is 4. Note also that this is the CONSECUTIVE question, not the subsequence
+    one — the word "consecutive" is the whole difference in difficulty.
+  classic_ref: the run-length family; contrast with longest non-decreasing subsequence
+
+- id: mill-stream-tally
+  pattern: linear-scan
+  title: The Mill Stream Tally
+  difficulty: medium
+  statement: >-
+    A mill records the weight of every sack it grinds, one number per sack, in
+    the order they were ground. There may be a very great many sacks and the
+    machine writing the record has almost no memory of its own. Report two
+    numbers: the largest weight recorded, and how many sacks carried exactly
+    that weight. For weights 3, 7, 2, 7, 7, 1 the answer is 7 and 3.
+  constraints: |
+    1 <= n <= 10000000
+    1 <= weight <= 10^9
+    memory limit 16 MB
+    time limit 2 seconds
+  signals_present:
+    - "n reaches 10^7 while the memory limit is 16 MB, so the input cannot be held at all"
+    - the answer is two scalars, both of which are summaries of everything read so far
+    - the record is a stream in a fixed order, and nothing asks about positions
+    - each sack is examined once and never referred to again
+  decoy_signals:
+    - "\"how many carried exactly that weight\" is the standard advertisement for a frequency map"
+    - the huge n invites sorting the weights and reading off the end of the row
+    - two questions about one row invites two passes, which the memory limit quietly forbids
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Work out what an array of 10^7 four-byte integers costs before writing
+        any code: it is 38 MB, and the limit is 16. Whatever the solution is,
+        it never holds the record.
+    - text: >-
+        If you cannot store the numbers, you must answer both questions while
+        the numbers are going past. Two counters are enough — but decide
+        carefully what happens to the second one when the first changes.
+    - text: >-
+        Keep the largest weight seen and how many times it has been seen. On a
+        strictly larger weight, replace the first and reset the second to 1; on
+        an equal weight, add one; otherwise do nothing.
+      reveals_pattern: true
+  why: >-
+    The memory limit is the statement. 10^7 ints is 38 MB against a 16 MB
+    budget, so the record cannot be stored, sorted or counted into a map — the
+    answer has to be complete at every moment, which forces both questions into
+    one walk. The bug this trains is resetting the count on a weight EQUAL to
+    the best rather than only on a larger one.
+  classic_ref: the streaming-summary family; CPH 1 on reading input as it arrives
+
+- id: watchpost-signal-rise
+  pattern: linear-scan
+  title: The Watchpost Rise
+  difficulty: medium
+  statement: >-
+    A chain of watchposts reports the beacon height it measured at each of n
+    successive moments, in chronological order. The captain wants the largest
+    rise the chain ever recorded: choose two moments i and j with i strictly
+    before j, and the rise is h[j] - h[i]. He must choose two moments even if
+    every rise available is a fall, in which case the answer is negative.
+    Report the largest rise. For heights 7, 1, 5, 3, 6, 4 the answer is 5, from
+    the 1 at moment 2 and the 6 at moment 5; for heights 9, 7, 5 the answer is
+    -2.
+  constraints: |
+    2 <= n <= 200000
+    -10^9 <= h[i] <= 10^9
+    the earlier moment must come strictly before the later one
+    time limit 1 second
+  signals_present:
+    - a pair of positions is chosen but one of them is forced to come first, so order is everything
+    - the answer is a single number and never asks which two moments were chosen
+    - "n at 2 * 10^5 makes examining every pair 2 * 10^10 operations"
+    - the answer may be negative, so nothing may be initialised to zero
+  decoy_signals:
+    - "\"choose two positions maximising a difference\" invites converging two indices from the ends"
+    - a maximum difference over a row invites sorting, which destroys the requirement that one moment precede the other
+    - the pair being ordered invites a table of running totals, which answers a different question
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Fix the LATER moment j and ask what the best partner for it is. Every
+        candidate for i is a moment you have already read, and only one property
+        of them matters.
+    - text: >-
+        The best rise ending at j is h[j] minus the smallest height seen strictly
+        before j. So the only thing the earlier part of the row needs to tell you
+        is its smallest value.
+    - text: >-
+        Walk the row carrying the smallest height seen so far. At each new
+        height, score it against that minimum first, then update the minimum —
+        in that order, or you will let a moment pair with itself.
+      reveals_pattern: true
+  why: >-
+    The requirement that i comes before j is the structure. It means the row
+    cannot be reordered and the answer for each later moment depends on exactly
+    one summary of everything earlier — the minimum. That collapses a quadratic
+    search over pairs into one walk with one carried number. Both traps are
+    about order and initialisation: score before updating the minimum, and never
+    start the answer at 0, since 9, 7, 5 must report -2.
+  classic_ref: LeetCode 121 family (best time to buy and sell), with negative answers allowed
+
+- id: granary-ring-run
+  pattern: linear-scan
+  title: The Granary Ring
+  difficulty: hard
+  statement: >-
+    n granaries stand in a ring, numbered 1 to n, with granary n adjacent to
+    granary 1. Granary i shows a balance b[i], which may be negative. An
+    inspector walks a run of consecutive granaries around the ring — the run
+    may wrap past granary n and continue at granary 1, must contain at least one
+    granary, and may not contain any granary twice. Report the largest total
+    balance a run can have. For balances 5, -2, 3, -6, 4 the answer is 10, from
+    the run 4, 5, -2, 3 that wraps around the end.
+  constraints: |
+    1 <= n <= 200000
+    -10^9 <= b[i] <= 10^9
+    a run may wrap around the end of the ring but may not use a granary twice
+    time limit 1 second
+  signals_present:
+    - the answer is a single number over a row whose order is fixed
+    - the row is closed into a ring, so a run either sits inside it or wraps once
+    - balances may be negative, which is the only reason the question is not trivial
+    - "n at 2 * 10^5 forbids trying every starting point with an inner loop"
+  decoy_signals:
+    - the ring invites duplicating the row and treating it as a stretch of length at most n, which is a heavier tool
+    - "\"largest total of consecutive elements\" invites a table of running totals over the doubled row"
+    - the wrap invites splitting into cases by starting position, which is 2 * 10^5 separate problems
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        There are only two shapes a run can have: one that does not wrap, and
+        one that does. Solve them separately and take the better — the first is
+        the ordinary question on the row as given.
+    - text: >-
+        A run that wraps is exactly the complement of a run that does not. So
+        its total is the total of everything minus the total of the block it
+        leaves out, and you want that left-out block to be as SMALL as possible.
+    - text: >-
+        Walk the row once carrying both the best and the worst run ending here.
+        The answer is max(best, total - worst), except when every balance is
+        negative — then total - worst is the empty run and you must report best.
+      reveals_pattern: true
+  why: >-
+    One walk carrying two running answers instead of one, which is what makes it
+    the hard member of this family rather than a different pattern. The ring
+    adds exactly one case — the wrapping run is the complement of a non-wrapping
+    one — and the trap is the all-negative row: on -3, -2, -5 the complement
+    rule proposes the empty run and the answer is -2. Verified on 5, -2, 3, -6,
+    4: the best inside is 6, the total is 4, the worst inside is -6, and
+    4 - (-6) = 10.
+  classic_ref: LeetCode 918 family (maximum circular subarray sum)

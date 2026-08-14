@@ -1,0 +1,300 @@
+# Problems that are really Read the Bound, Choose the Cost.
+#
+# The recognition being trained here is unusual: it is not "which clever
+# technique is hiding in this statement" but "how much am I allowed to spend,
+# and what does that permit". So every statement below is deliberately plain —
+# the difficulty lives entirely in the constraint block, and in each case the
+# obvious method either fits exactly or is refused outright by one number.
+#
+# None of these may name the pattern, and none may say "brute force" or "try
+# every" — that is the answer. `decoy_signals` records the heavier machinery
+# each statement invites, which is what the post-answer feedback quotes back.
+
+- id: quarry-crate-tallies
+  pattern: constraint-budget
+  title: Quarry Crate Tallies
+  difficulty: easy
+  statement: >-
+    A quarry loads crates onto a barge. There are n crates and the i-th weighs
+    w[i] stone. The harbour master keeps a ledger of every different collection
+    of crates whose total weight is exactly S — two collections differ if some
+    crate belongs to one and not the other, even when two crates happen to
+    weigh the same. Report how many entries the ledger will have. With crates
+    weighing 3, 1, 4, 1 and 5 and S = 5 the answer is 4: the crate of 5; the
+    crate of 4 with either of the two crates of 1; and the crate of 3 with both
+    of them.
+  constraints: |
+    1 <= n <= 20
+    1 <= w[i] <= 10^18
+    1 <= S <= 10^18
+    time limit 1 second
+  signals_present:
+    - n is capped at 20, a small and oddly specific bound with no structure offered alongside it
+    - the weights reach 10^18, so nothing can be indexed by a total
+    - every collection of crates is legal; nothing is refused and nothing conflicts
+    - the objective counts collections rather than optimising one
+  decoy_signals:
+    - "\"how many selections total exactly S\" is the standard advertisement for a subset-sum table"
+    - the weights being repeatable-looking invites a counting argument over distinct values
+    - a bound of 20 with a huge S invites splitting the crates in half and meeting in the middle
+  expected_complexity: O(2^n * n)
+  hints:
+    - text: >-
+        Read the two bounds against each other before you design anything. A
+        table indexed by weight would need 10^18 cells and is impossible. What
+        is the total number of different collections when n is 20?
+    - text: >-
+        2^20 is 1048576. A million collections, each totalled in twenty
+        additions, is about 2 * 10^7 operations — well inside a second. The
+        bound was not a limitation, it was an instruction.
+    - text: >-
+        Let a 20-bit integer stand for a collection: bit i set means crate i is
+        aboard. Run the integer from 0 to 2^n - 1, total the chosen weights,
+        and count the totals equal to S.
+      reveals_pattern: true
+  why: >-
+    Two numbers decide this and neither is in the story. S up to 10^18 kills
+    every table indexed by weight, and n <= 20 makes the number of collections
+    1048576, which is nothing. When a bound is that small and that specific the
+    setter has already done the arithmetic for you and is telling you what the
+    intended solution costs.
+  classic_ref: CPH 5 (complete search over subsets); the counting form of subset sum
+
+- id: envoy-tour-order
+  pattern: constraint-budget
+  title: The Envoy's Round
+  difficulty: medium
+  statement: >-
+    An envoy must call at every one of n towns, beginning at town 1 and never
+    returning to a town twice. The roads are one-way and priced by the guild,
+    so travelling from town i to town j costs c[i][j], which need not equal
+    c[j][i]. Report the cheapest total cost of a round that begins at town 1
+    and visits every town exactly once. With four towns and costs given by the
+    rows (0 5 9 4), (6 0 2 8), (7 3 0 6), (1 7 5 0) the cheapest round is
+    1 -> 4 -> 3 -> 2, costing 4 + 5 + 3 = 12.
+  constraints: |
+    2 <= n <= 10
+    0 <= c[i][j] <= 10^9, and c[i][i] = 0
+    the costs are not symmetric and do not obey the triangle inequality
+    time limit 1 second
+  signals_present:
+    - n is capped at 10, and nothing else about the input is restricted at all
+    - the costs are explicitly arbitrary, so no ordering of the towns can be argued for
+    - the answer is an ARRANGEMENT of every town, not a selection of some
+    - a full cost matrix is supplied, which is only affordable to store because n is tiny
+  decoy_signals:
+    - a cheapest route through a weighted network is the exact vocabulary of a shortest-path algorithm
+    - "\"never returning twice\" reads like a visited set and a traversal"
+    - the asymmetric matrix invites a cheapest-edge rule, which arbitrary costs immediately break
+  expected_complexity: O(n! * n)
+  hints:
+    - text: >-
+        The costs are stated to be arbitrary. That rules out every rule of the
+        form "always take the cheapest road next" — such a rule can be broken
+        by a matrix chosen to break it. So what is left?
+    - text: >-
+        The answer is an order of the towns. With town 1 fixed at the front
+        there are 9! = 362880 orders, and totalling each costs ten additions.
+        That is under 4 * 10^6 operations.
+    - text: >-
+        Put the remaining town numbers in a vector and walk every permutation
+        of it, totalling the costs along each order and keeping the smallest.
+      reveals_pattern: true
+  why: >-
+    n <= 10 is the whole statement. Arbitrary asymmetric costs remove every
+    local rule, and no polynomial method is known for this question in general —
+    but 9! is 362880, so the setter has capped n exactly where trying all orders
+    becomes affordable. A bound of 10 with a matrix attached means permutations,
+    every time.
+  classic_ref: CPH 5 (complete search over permutations); the tiny travelling-salesman family
+
+- id: relay-post-batches
+  pattern: constraint-budget
+  title: Relay Post Batches
+  difficulty: easy
+  statement: >-
+    The relay posts each report a batch of riders. A batch names n riders and a
+    number k, and gives each rider's arrival time in the order they were
+    written down, which is not the order they arrived. For every batch report
+    the k-th earliest arrival time in it. There may be very many batches, but
+    the postmaster guarantees that the number of riders written down across ALL
+    batches, added together, never exceeds 200000.
+  constraints: |
+    1 <= t <= 100000 batches
+    1 <= k <= n for each batch
+    the sum of n over all batches does not exceed 200000
+    1 <= arrival time <= 10^9
+    time limit 1 second
+  signals_present:
+    - a sentence bounding the SUM of n over all batches rather than n alone
+    - the number of batches is large while each batch may be tiny
+    - the work each batch needs is entirely obvious once the total is known to be bounded
+    - arrival times up to 10^9 with no structure, so nothing can be indexed by time
+  decoy_signals:
+    - "t = 10^5 batches each of n = 2 * 10^5 riders would be 2 * 10^10, which the sum sentence quietly forbids"
+    - "\"the k-th earliest\" invites a heap kept across batches, or an order-statistic structure"
+    - the huge batch count invites answering all batches together in one offline pass
+  expected_complexity: O(sum of n log n)
+  hints:
+    - text: >-
+        Multiply the two largest numbers in the constraint block and you get
+        2 * 10^10, which is hopeless. Now read the third line again. Which of
+        those two numbers is not actually allowed to be large at the same time
+        as the other?
+    - text: >-
+        The total number of riders in the whole input is at most 200000. So the
+        total cost of doing something proportional to n log n in every batch is
+        bounded by 200000 * 18, whatever the batches look like.
+    - text: >-
+        Handle each batch on its own: put its arrival times in increasing order
+        and print the one at position k - 1. Nothing needs to be shared between
+        batches at all.
+      reveals_pattern: true
+  why: >-
+    The sum-of-n sentence is a licence, not a warning. Without it, t times n
+    would be 2 * 10^10 and the obvious per-batch method would be dead; with it,
+    the total work is bounded by the total input, and the obvious method is the
+    intended one. Reading t and n as independent maxima is the single most
+    common way this bound is misread.
+  classic_ref: the Codeforces "sum of n over all test cases" convention
+
+- id: mason-triangle-slabs
+  pattern: constraint-budget
+  title: Mason's Triangle Slabs
+  difficulty: medium
+  statement: >-
+    A mason has n slabs, the i-th of length a[i]. Three slabs can be laid as a
+    triangular frame exactly when each of the three is shorter than the other
+    two put together; a frame with zero area does not count. Report how many
+    unordered groups of three slabs can be laid as a frame. With slabs 2, 3, 4,
+    9 and 10 the answer is 4: (2,3,4), (2,9,10), (3,9,10) and (4,9,10).
+  constraints: |
+    3 <= n <= 400
+    1 <= a[i] <= 10^9
+    slabs of equal length are still different slabs
+    time limit 1 second
+  signals_present:
+    - n is capped at 400, which is far below every bound that would force cleverness
+    - the condition involves three items at once and no two of them independently
+    - the objective is a count over groups of three
+    - the lengths reach 10^9, so nothing can be indexed by length
+  decoy_signals:
+    - counting triples that satisfy an inequality is the standard advertisement for sorting and then converging two indices
+    - "\"shorter than the other two together\" invites bisection for the last valid partner"
+    - a count over groups invites a frequency table, which 10^9 immediately forbids
+  expected_complexity: O(n^3)
+  hints:
+    - text: >-
+        Before hunting for a clever method, count how many groups of three
+        there even are when n is 400. The answer decides whether a clever
+        method is needed at all.
+    - text: >-
+        There are 10586800 groups of three, and each is checked with three
+        comparisons. That is roughly 3 * 10^7 operations, which finishes in
+        well under a second.
+    - text: >-
+        Three nested loops with i < j < k, testing the three inequalities on
+        each group and counting the ones that hold.
+      reveals_pattern: true
+  why: >-
+    A faster method exists — order the lengths and converge two indices for each
+    largest slab — but nothing in the statement asks for it. C(400, 3) is
+    10586800, so the cubic method is comfortably inside the limit, and a bound
+    of 400 is the setter saying so. Spending contest minutes on a method the
+    bound did not require is a way of losing to an easy problem.
+  classic_ref: LeetCode 611 family (valid triangle number), with the bound left small on purpose
+
+- id: tinker-square-pairs
+  pattern: constraint-budget
+  title: The Tinker's Square Pairs
+  difficulty: medium
+  statement: >-
+    A tinker lays out n cogs, the i-th stamped with the number a[i]. He calls a
+    pair of cogs harmonious when the two stamped numbers add up to a perfect
+    square. Report how many unordered pairs of cogs are harmonious. With cogs
+    stamped 1, 3, 6, 10 and 15 there are 5 harmonious pairs: 1+3 = 4, 1+15 = 16,
+    3+6 = 9, 6+10 = 16 and 10+15 = 25.
+  constraints: |
+    2 <= n <= 5000
+    1 <= a[i] <= 10^9
+    two cogs may carry the same number and are still two different cogs
+    time limit 1 second
+  signals_present:
+    - n is capped at 5000, one rung below every bound that forces a subquadratic method
+    - the property is a test on a pair and cannot be decided from one member alone
+    - the stamped numbers reach 10^9, so no table can be indexed by value
+    - the objective counts pairs, with nothing said about which
+  decoy_signals:
+    - counting pairs with a property is the standard advertisement for a frequency map keyed on the complement
+    - "\"adds to a perfect square\" invites enumerating the squares up to 2 * 10^9 and searching for partners"
+    - the pair count invites ordering the cogs and converging two indices
+  expected_complexity: O(n^2)
+  hints:
+    - text: >-
+        How many pairs exist when n is 5000? Work that out before deciding
+        whether the double loop is affordable, because the answer is the whole
+        design decision here.
+    - text: >-
+        C(5000, 2) is 12497500 — about 1.2 * 10^7 pairs, each needing one
+        addition and one square test. An integer square root is a handful of
+        operations, so the total is a few times 10^7.
+    - text: >-
+        Two nested loops with i < j. Add the two numbers, take the integer
+        square root r, and count the pair when r * r equals the sum.
+      reveals_pattern: true
+  why: >-
+    Everything about the statement invites a hash map keyed on complements, and
+    at n = 2 * 10^5 that would be forced. At n = 5000 the double loop is
+    12497500 pairs, which is a fraction of a second — and the value bound of
+    10^9 makes the map awkward while making nothing about the loop harder. One
+    number in the constraint block chose the method.
+  classic_ref: the pair-counting family, with the bound deliberately left at the quadratic rung
+
+- id: sentry-watch-split
+  pattern: constraint-budget
+  title: Splitting the Sentry Watch
+  difficulty: hard
+  statement: >-
+    A garrison must split its n sentries into a day watch and a night watch.
+    Each watch may take any of the sentries, including all of them or none, but
+    every sentry serves in exactly one watch. Sentry i carries a burden of
+    b[i], and the burden of a watch is the sum of its members' burdens. Report
+    the smallest possible difference between the two watches' burdens. With
+    burdens 14, 7, 9, 4 and 13 the smallest difference is 1, from watches of
+    (14, 9) and (7, 4, 13).
+  constraints: |
+    1 <= n <= 18
+    1 <= b[i] <= 10^18
+    every sentry must be assigned, and a watch may be left empty
+    time limit 2 seconds
+  signals_present:
+    - n is capped at 18, which is neither round nor arbitrary
+    - the burdens reach 10^18, so the total cannot be used as an index
+    - each sentry is an independent yes-or-no choice with no interaction between them
+    - the objective minimises a difference, which is a function of the whole assignment
+  decoy_signals:
+    - "\"split into two groups of nearly equal total\" is the textbook advertisement for a table over achievable sums"
+    - burdens up to 10^18 with a minimised difference invites ranking the sentries and placing each in the lighter watch
+    - a bound of 18 with huge values invites splitting the sentries in half and meeting in the middle
+  expected_complexity: O(2^n * n)
+  hints:
+    - text: >-
+        The usual table for this question is indexed by achievable total. Work
+        out how many cells that table would need with burdens of 10^18, and the
+        approach eliminates itself.
+    - text: >-
+        Every assignment is one yes-or-no answer per sentry, so there are 2^18 =
+        262144 of them. Totalling each takes eighteen additions: about
+        4.7 * 10^6 operations altogether.
+    - text: >-
+        Run an 18-bit integer from 0 to 2^n - 1, let the set bits be the day
+        watch, total those burdens, and score the absolute difference against
+        the total of all burdens minus twice that sum.
+      reveals_pattern: true
+  why: >-
+    Two constraints point in opposite directions and only one of them is
+    binding. Burdens of 10^18 destroy the sum-indexed table that this question
+    is famous for; n <= 18 makes the number of assignments 262144, which is
+    trivial. Placing each sentry in turn into the lighter watch is the reflex
+    answer, and on (14, 7, 9, 4, 13) it gives 3 where the truth is 1.
+  classic_ref: CPH 5 (complete search); the partition problem with a deliberately tiny n
