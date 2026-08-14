@@ -245,7 +245,7 @@ class MasterScreen(Screen):
         from ..content.animations import animation_for
 
         wanted = self.stage.secret.animation or self.stage.secret.id
-        return animation_for(wanted)
+        return animation_for(wanted, self.curriculum.pattern_of(self.stage))
 
     def action_watch(self) -> None:
         """Open the theatre. Available while teaching, and again during drills.

@@ -53,9 +53,20 @@ def load_animations() -> dict[str, Animation]:
     return animations
 
 
-def animation_for(secret_id: str) -> Animation | None:
-    """The animation attached to a secret, if one was authored."""
-    for animation in load_animations().values():
-        if animation.secret == secret_id:
+def animation_for(secret_id: str, pattern_id: str = "") -> Animation | None:
+    """The animation for a secret, or failing that for its pattern.
+
+    Matching on the pattern as well as the secret decouples the two. An
+    animation of BFS is true of BFS however a curriculum happens to carve it
+    into secrets, and secret ids are being authored in parallel with the
+    animations — requiring an exact secret match would mean an animation is
+    either written after its curriculum or silently attached to nothing.
+    """
+    animations = load_animations().values()
+    for animation in animations:
+        if secret_id and animation.secret == secret_id:
+            return animation
+    for animation in animations:
+        if pattern_id and animation.pattern == pattern_id:
             return animation
     return None

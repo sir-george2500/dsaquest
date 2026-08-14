@@ -1,0 +1,92 @@
+id: knapsack-table
+title: What dp[i][w] actually means
+pattern: knapsack-dp
+summary: >-
+  Three items, capacity 5. Every cell is a sentence, and the whole algorithm is
+  one choice made in each of them.
+kind: table
+rows:
+  - ["0", "0", "0", "0", "0", "0"]
+  - ["", "", "", "", "", ""]
+  - ["", "", "", "", "", ""]
+  - ["", "", "", "", "", ""]
+row_labels: ["none", "A w2 v3", "B w3 v4", "C w4 v5"]
+column_labels: ["0", "1", "2", "3", "4", "5"]
+idiom: "dp[i][w] = max(dp[i-1][w], dp[i-1][w - wt[i]] + val[i]);"
+note: "dp[i][w] = best value using only the first i items, in capacity w"
+
+steps:
+  - say: >-
+      Say the definition out loud before writing a loop. dp[i][w] is the best
+      value using only the first i items within capacity w. Row 0 uses no
+      items, so it is zero everywhere — not a special case, just the
+      definition applied to nothing.
+    cursor: [0, 0]
+    mark: {"0,0": "settled", "0,1": "settled", "0,2": "settled",
+           "0,3": "settled", "0,4": "settled", "0,5": "settled"}
+
+  - say: >-
+      Item A weighs 2 and is worth 3. At capacity 0 and 1 it does not fit, so
+      the answer is whatever it was without A — the row above.
+    cursor: [1, 1]
+    set: {"1,0": "0", "1,1": "0"}
+    mark: {"1,0": "in", "1,1": "in"}
+    note: "does not fit: copy from above"
+
+  - say: >-
+      At capacity 2, A fits. Two choices: leave it and keep 0, or take it and
+      get 3 plus whatever fits in the leftover capacity 0. Take it.
+    cursor: [1, 2]
+    set: {"1,2": "3"}
+    mark: {"1,2": "active"}
+    note: "max(0, 3 + dp[0][0]) = 3"
+
+  - say: >-
+      Capacities 3, 4 and 5 all fit A, and there is nothing else yet to
+      compete, so all three are 3. Row 1 is finished.
+    cursor: [1, 5]
+    set: {"1,3": "3", "1,4": "3", "1,5": "3"}
+    mark: {"1,2": "in", "1,3": "in", "1,4": "in", "1,5": "in"}
+    note: "row 1 done: the best you can do with only A"
+
+  - say: >-
+      Item B weighs 3, worth 4. Below capacity 3 it cannot fit, so those cells
+      copy straight down from row 1 — 0, 0, then 3.
+    cursor: [2, 2]
+    set: {"2,0": "0", "2,1": "0", "2,2": "3"}
+    mark: {"2,0": "in", "2,1": "in", "2,2": "in"}
+    note: "still the A-only answers"
+
+  - say: >-
+      Capacity 3 is the interesting cell. Leave B and keep 3, or take B for 4
+      plus dp[1][0] = 0. Four beats three, so B goes in and A comes out.
+    cursor: [2, 3]
+    set: {"2,3": "4"}
+    mark: {"2,3": "active"}
+    note: "max(3, 4 + 0) = 4  — the swap"
+
+  - say: >-
+      Capacity 5 is the one worth watching. Leave B and keep 3, or take B for 4
+      plus dp[1][2], which is 3 — because capacity 2 is exactly enough for A.
+      Seven. Both items, and the table found it without being told they fit.
+    cursor: [2, 5]
+    set: {"2,4": "4", "2,5": "7"}
+    mark: {"2,4": "in", "2,5": "answer"}
+    note: "max(3, 4 + dp[1][2]) = max(3, 4 + 3) = 7"
+
+  - say: >-
+      Item C weighs 4, worth 5. It fits from capacity 4 upward, and at 5 the
+      choice is: keep 7, or take C for 5 plus dp[2][1] = 0. Seven stands.
+    cursor: [3, 5]
+    set: {"3,0": "0", "3,1": "0", "3,2": "3", "3,3": "4", "3,4": "5", "3,5": "7"}
+    mark: {"3,0": "in", "3,1": "in", "3,2": "in", "3,3": "in",
+           "3,4": "in", "3,5": "answer"}
+    note: "max(7, 5 + dp[2][1]) = max(7, 5) = 7"
+
+  - say: >-
+      The answer is the bottom-right cell, and every cell on the way to it was
+      the same sentence with different numbers. That is why the definition
+      comes first: get dp[i][w] wrong in words and no amount of loop-fixing
+      will save the code.
+    cursor: null
+    note: "answer 7 = A + B. Every cell was one max of two choices."
