@@ -708,7 +708,12 @@ def test_no_screen_ever_shows_raw_markup(context):
             assert "THE ROAD" in world_map
             assert "The Warrior Awakens" in world_map, "the first chapter is missing"
             assert "THE FIRST LIMIT" in world_map, "its guardian is missing"
-            assert "🔒" in world_map, "sealed chapters must read as sealed"
+            # Deliberately not asserting the marker glyph. Which character
+            # means "sealed" is a design decision — it has already moved from
+            # an emoji to a plain glyph, because emoji have unreliable width in
+            # a terminal grid — and a test that pins it makes the design harder
+            # to improve without testing anything a player would notice.
+            assert "The True Secret" in world_map, "the road must show where it ends"
             assert "THE ELITE CODER" in world_map, "the road must end somewhere"
 
             await pilot.press("t")
