@@ -1,0 +1,151 @@
+master: master_arrays
+epithet: Who Never Loses Her Place
+clan: The Tight Grip
+creed: >-
+  Every element has a position. If you do not know where you are, you have
+  already lost.
+
+entries:
+  - key: biography
+    title: Biography
+    depth: met
+    text: >-
+      Ilsa Korrin was not the most gifted student the Tight Grip ever took in.
+      She says so herself, without any of the false modesty people usually
+      attach to that sentence. She was the most stubborn.
+
+      The clan took children who could already code and spent two years
+      teaching them to stop. No libraries. No containers. One array, one pass,
+      and a tutor standing behind you counting how many times you touched the
+      same element twice. Most left. Korrin stayed eleven years, and when she
+      finally walked out onto the plains to teach on her own, she took with her
+      exactly one conviction: that most problems are simpler than the student
+      wants them to be, and that wanting them to be complicated is the whole
+      disease.
+
+  - key: philosophy
+    title: Philosophy
+    depth: trained
+    text: >-
+      She will not let you say "loop through it again". She makes you say what
+      you would be looking for on the second pass, and then she makes you
+      notice that you already had it on the first.
+
+      Her students complain that she teaches four techniques that are all the
+      same technique. She agrees. That is the lesson. Hashing, prefix sums,
+      two pointers and a window are four answers to one question — what did I
+      already know by the time I got here — and a student who sees them as four
+      separate tools will reach for the wrong one under a clock.
+
+  - key: clan
+    title: The Tight Grip
+    depth: trained
+    text: >-
+      The oldest surviving school on the plains, and the only one that still
+      refuses to teach a data structure before teaching memory.
+
+      Their founding argument was that an array is not a list of things. It is
+      a stretch of memory with an agreement about where things are, and every
+      unnecessary access is a small breach of that agreement. They were famous
+      for solutions that other schools called ugly and could not beat, and for
+      a rule that a member could be asked at any moment what the cost of the
+      line they were writing was, and had to answer immediately.
+
+      They have no motto. They have a habit: before writing, they say aloud
+      what one pass will carry.
+
+  - key: legend
+    title: The Forbidden Problem
+    depth: tested
+    text: >-
+      The problem was set at a regional contest forty years ago and nobody
+      solved it. Not slowly — nobody solved it at all. It looked like it wanted
+      every pair, and every pair was ten billion operations, and the limit was
+      two seconds.
+
+      Korrin was nineteen. She spent the first forty minutes writing nothing,
+      which the invigilators recorded because they thought she had given up.
+      Then she wrote eleven lines.
+
+      What she had seen was that the question did not want every pair. It
+      wanted, for each element, how many partners it had already passed — and
+      that is not a search, it is arithmetic, and a tally answers it in one
+      walk. The solution is still taught. It is still called the Forbidden
+      Solution by people who have never read it, because eleven lines that beat
+      a problem nobody could beat looks like cheating until you understand it.
+
+  - key: failure
+    title: What she got wrong
+    depth: felled
+    text: >-
+      She taught for nine years before she noticed that her best students were
+      failing in a way her worst ones were not.
+
+      They could write any of her four techniques perfectly. Set them a
+      statement without telling them which, and they froze — because she had
+      drilled the writing and never once drilled the seeing. She had produced
+      a generation of people who could execute and could not choose.
+
+      She rebuilt the whole curriculum around hiding the name. Every master on
+      this road now does the same thing, and every one of them learned it from
+      her mistake. She has never once been heard to take credit for it.
+
+  - key: secret
+    title: What she is actually looking for
+    depth: perfect
+    text: >-
+      She does not care whether you are fast. She has said this to three
+      students in thirty years and none of them believed her.
+
+      What she watches for is the pause. A student who reads a statement and
+      immediately starts typing has recognised nothing; they have pattern-
+      matched on surface words and are about to write the wrong correct
+      program. A student who reads it, stops, and then writes without
+      hesitating has seen the shape.
+
+      The forty minutes she spent writing nothing at nineteen are the only part
+      of that story she thinks is worth teaching.
+
+relationships:
+  - master: master_greed
+    stance: wary respect
+    line: >-
+      "Rhe proves everything. It makes him slow and it makes him right, and I
+      have never once caught him wrong. I would not want to be his student."
+  - master: master_dp
+    stance: disagreement
+    line: >-
+      "Solvane would have you define a table before you have read the
+      statement twice. Sometimes the answer is that you already had it. He
+      calls that luck. It is not luck."
+  - master: master_structures
+    stance: old friends
+    line: >-
+      "Vore and I want the same thing and say it differently. He asks what the
+      query costs. I ask what the pass carries. Same question."
+
+diagnosis:
+  recognition:
+    - >-
+      "Stop. You can write all four of these and you cannot tell which one you
+      are looking at. That is not a gap in your knowledge, it is the whole
+      skill, and nobody ever told you it was separate. We will drill the
+      seeing, not the writing."
+    - >-
+      "You reached for the first technique that fitted. Read the constraints
+      again and tell me what they rule out before you tell me what they allow."
+  understanding:
+    - >-
+      "Your code is correct and you cannot tell me why it is correct. That is a
+      memorised template, and the next statement will be shaped differently and
+      it will take it from you. Say the invariant. In one sentence."
+  implementation:
+    - >-
+      "You saw it. Good — that is the hard half and you have it. Your hands are
+      behind your eyes, which is the easy half and it is fixed by writing the
+      same loop until it is boring."
+  retention:
+    - >-
+      "You held this. It has gone. That is the calendar, not you — and it is
+      exactly why the thing at the edge of my plains will not fight a student
+      who learned it all last week."

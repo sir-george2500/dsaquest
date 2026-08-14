@@ -1,0 +1,192 @@
+master: master_graphs
+epithet: Remembered for a Supply Route
+clan: The Long Way Round
+creed: >-
+  Find the sentence that prices a move. Nothing here crashes, so if you do not
+  find it you will be lied to politely for an hour.
+
+entries:
+  - key: biography
+    title: Biography
+    depth: met
+    text: >-
+      Thessaly Grune commanded before she taught and does not pretend the two
+      are the same work. Her campaigns are not what she is remembered for. What
+      she is remembered for is a supply route.
+
+      She was twenty-three and second in a chain of command that planned a
+      march by counting crossings. The map was accurate. The plan was
+      arithmetically correct and took the fewest legs to the front, and the
+      route nobody had drawn — three legs longer, over ground nobody wanted —
+      arrived first by four days. Nothing in the plan was wrong except the
+      question it had answered. No one was punished, because no one could point
+      at the mistake.
+
+      She spent four years learning to point at it, and she has been pointing
+      at it since. She is not gentle about it. The thing she is pointing at does
+      not announce itself and never will.
+
+  - key: philosophy
+    title: Philosophy
+    depth: trained
+    text: >-
+      She will not let you say "breadth-first search". She makes you say the
+      sentence in the statement that priced a move — each road takes a day, the
+      guild pays the same wage whichever way she rides — and then makes you
+      notice that it was written as scenery, and that no statement will ever
+      mark it for you. Uniform cost is a hypothesis wearing the clothes of
+      atmosphere.
+
+      Her students complain that she spends longer on the graphs where a
+      technique fails than on the technique. She agrees. The technique is free;
+      any handbook will hand it to you in nine lines. Its boundary has to be
+      hunted, and a technique carried without its boundary is a liability you
+      are carrying at speed.
+
+  - key: clan
+    title: The Long Way Round
+    depth: trained
+    text: >-
+      A war-school, and a young one by the standards of the plains — the Tight
+      Grip was already old when it was founded — and the only school on this
+      road founded on a defeat rather than a discovery.
+
+      Their founding argument is one sentence: the shortest route and the
+      fewest moves are different questions, and a map that does not say what a
+      move costs is not a map. They were mocked for the name. They kept it,
+      because the name is the lesson — three edges beating one edge is the
+      whole of it.
+
+      They have a rule instead of a motto. A member proposing a method had to
+      bring the input on which it fails, or say plainly that none exists and
+      why. A method arriving with neither was not judged wrong; it was refused
+      unheard. A technique you cannot break is a technique you do not yet own.
+
+  - key: legend
+    title: The Ledger of Debts
+    depth: tested
+    text: >-
+      One hundred thousand obligations, two hundred thousand one-way arcs
+      between them, and some of the arcs were forgiven debts and priced below
+      zero. Cheapest route from the first to the last.
+
+      Everyone reached for the heap. The heap believes that the smallest
+      unfinished distance is already final, and a single negative arc withdraws
+      that claim — so the answers came back as real routes at the wrong price,
+      with nothing to notice. The ones who saw it reached for the rounds
+      instead, which do not care about order and cost one hundred thousand
+      passes over two hundred thousand arcs: twenty billion relaxations, and
+      the clock does not care that you were right.
+
+      Grune read the input format and not the problem. The arcs ran forward
+      through a schedule, so no arc could ever come back — the graph could not
+      contain a cycle. That single sentence is worth an algorithm: on a graph
+      with no cycle, every obligation depends only on obligations earlier in
+      the order, so one pass in that order settles all of them. Three hundred
+      thousand operations, negative prices and all, no heap and no rounds.
+
+      She still keeps the four-vertex exhibit that started it, pinned where
+      students will walk past it. One to two costing 2, two to four costing 3,
+      one to three costing 6, three to four costing minus 5. The heap settles
+      vertex four holding 5. The answer is 1. It is the smallest object she
+      owns that proves the whole region.
+
+  - key: failure
+    title: What she got wrong
+    depth: felled
+    text: >-
+      For six years she taught the boundary so hard that her students stopped
+      trusting the queue at all.
+
+      They reached for the heap by reflex, on graphs where every move cost the
+      same. Not wrong — a logarithm they had not been asked to pay, which at a
+      million edges is a factor of about twenty, and a timeout on an algorithm
+      with nothing whatever wrong with it. She had produced warriors who could
+      not lose an argument and could not pass a judge.
+
+      She had taught distrust where she meant discrimination. Recognition cuts
+      both ways: the queue is the correct answer when the hypothesis holds, and
+      knowing that it holds is the same skill as knowing when it does not. It
+      is the only correction she has ever issued in writing.
+
+  - key: secret
+    title: What she is actually looking for
+    depth: perfect
+    text: >-
+      She is not listening for the name of an algorithm. She has said so, and
+      been disbelieved by people who had just heard her demand one.
+
+      What she listens for is whether you describe the graph before you name
+      the tool. The pass through the ledger was not an algorithm she knew and
+      the others did not — every one of them could have written it. It was a
+      sentence about the graph, that those arcs could not come back, and
+      everything else followed in one line from there.
+
+      So a student who answers "a heap" has named a container. A student who
+      says "the arcs are one-way and cannot return, so nothing needs ordering
+      at all" has said the only thing that mattered and has not yet named
+      anything. She arms the second one. She has never told the first one what
+      the difference was, on the grounds that being told is not how anybody
+      learns it.
+
+relationships:
+  - master: master_greed
+    stance: acknowledged debt
+    line: >-
+      "The cheapest-first sweep is Rhe's algorithm, not mine. Take the smallest
+      thing in front of you and never revisit it — that is his rule exactly,
+      and its exchange argument is that the rest of the journey can only add
+      cost. One arc priced below zero and the proof is gone. He taught me that
+      a method is its proof. I only found the graph that withdraws it."
+  - master: master_structures
+    stance: professional
+    line: >-
+      "I use Vore's heap and I pay his logarithm, and I want to know precisely
+      what I am buying with it: an ordering. When the weights are only zero and
+      one, the weights supply the ordering themselves and a deque does it for
+      nothing. He agrees with me. He would rather I said so more loudly."
+  - master: master_dp
+    stance: territorial
+    line: >-
+      "Solvane says every cell his recurrence reads must already be final. On a
+      graph that sentence is an in-degree queue, and it is mine. He thinks that
+      makes it a footnote to his region. I think he should say aloud, once,
+      that something has to order his states before he is allowed to fill them."
+
+diagnosis:
+  recognition:
+    - >-
+      "Stop. You can write all four of these and you cannot tell which one a
+      statement is describing. That is not a gap in the code — that is the
+      whole skill, and it is the only thing this shore was ever for. From here
+      you read statements and name the hypothesis. You will write nothing for a
+      while."
+    - >-
+      "You chose a container before you found the sentence that prices a move.
+      Read it again and tell me what it charges you for one step. If no
+      sentence charges you anything, say that too — that is an answer, and it
+      is the answer that picks the queue."
+  understanding:
+    - >-
+      "Your sweep is correct and you cannot tell me why the cheapest unfinished
+      vertex is already final. Say it: any other route to it must leave the
+      finished region through a frontier vertex that already costs at least as
+      much. Now say what breaks that sentence. If you cannot break it you do
+      not hold it, you are only carrying it."
+    - >-
+      "You wrote nine correct lines from memory. Memory is the enemy here — the
+      next statement will be shaped differently and the code will survive and
+      the condition will not. One sentence: what must be true of this graph for
+      what you just wrote to be right?"
+  implementation:
+    - >-
+      "You saw it. You named the hypothesis before you named the algorithm and
+      you were right on both. That is the half I cannot teach and you have it.
+      Your hands are behind your eyes — nine lines, written until they are
+      boring. Fluency is drilled, not understood."
+  retention:
+    - >-
+      "You held this. It is gone. That is the calendar and not a judgement on
+      you. Go back over the conditions and not the code: you will rebuild the
+      sweep in ninety seconds and you will not rebuild the sentence that made
+      it legal, which is why it is the sentence we review."

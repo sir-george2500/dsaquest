@@ -1,0 +1,175 @@
+master: master_foundations
+epithet: Who Answered With One Sentence
+clan: The Assay
+creed: >-
+  Say the number out loud. Then decide what you are allowed to want.
+
+entries:
+  - key: biography
+    title: Biography
+    depth: met
+    text: >-
+      Vhast had the quickest hands of his year and it took him four seasons to
+      work out that this was not helping him. He would have the code typed
+      before the room had finished reading. The code was correct. It was
+      refused, over and over, and he could never say by what.
+
+      He kept a list of what beat him, in the belief that it would turn out to
+      be a list of algorithms he did not know. When he finally read it end to
+      end there was one item on it: he had never once, before writing, asked
+      how large the input was allowed to get.
+
+      He went to the Assay at twenty-six, which is older than they like, and
+      they sat him down for two years and did not let him write a line. He has
+      not been in a hurry since. He teaches in the last house of a village with
+      no wall, and does nothing at all until somebody sits down.
+
+  - key: philosophy
+    title: Philosophy
+    depth: trained
+    text: >-
+      He teaches six things and not one of them is an algorithm, and he will
+      tell you so in the first minute so that you cannot be disappointed later.
+
+      The estimate is not a review step. It is the first step, and it is worth
+      thirty seconds because it narrows the search for a method from everything
+      you know to the two or three the bound permits. Students skip it because
+      it feels like it is not working. It is the only part of the hour that
+      cannot be wasted.
+
+      Then the half nobody teaches: a bound is a sentence a person wrote on
+      purpose. n at most 18 is not modesty. It is 262144 subsets, 4.7 million
+      operations to total all of them, and somebody worked that out before they
+      wrote the 18. He makes you say what the constraints forbid before you say
+      what you would write.
+
+  - key: clan
+    title: The Assay
+    depth: trained
+    text: >-
+      A school that never wrote a solution. Setters brought them problems and
+      the Assay returned a verdict and a number, and it was the number the
+      setters actually came for.
+
+      Their founding argument was that a complexity class is an opinion and a
+      count is a fact. No judge has ever refused an O(n log n); judges refuse
+      3.5 times 10 to the eleventh, every time, without reading it. So an
+      assayer at work may not write code, must state the count and the budget
+      in the same breath, and may be asked at any moment what one of those
+      operations costs.
+
+      They never say fast, and they never say slow. They say the number, and
+      then they stop talking.
+
+  - key: legend
+    title: The Sentence
+    depth: tested
+    text: >-
+      He never solved it. He read four lines underneath it.
+
+      The problem was drafted with up to 10^5 test cases, each with n up to
+      2 times 10^5, and the setter's own solution sorted each case. Vhast asked
+      the only question the Assay asks, which is what bounds the sum of n over
+      all cases. Nothing did. So the worst input the statement permitted was
+      2 times 10^10 numbers — the input file alone, before a single value was
+      sorted — and the model solution came to 3.5 times 10^11 operations. The
+      problem could not have been given the largest test it promised. The whole
+      field would have been judged against a bound nobody could build.
+
+      He wrote one sentence and handed it back: *the sum of n over all test
+      cases does not exceed 2 times 10^5.* The same model solution then costs
+      3.5 million, and the intended method is the obvious one again.
+
+      That sentence is in nearly every multi-case statement written since. Most
+      students read straight past it. It is a gift, and he is still faintly
+      annoyed about how few people unwrap it.
+
+  - key: failure
+    title: The verdict he got wrong
+    depth: felled
+    text: >-
+      He signed an assay once that cost a contest its rating.
+
+      n was 10^6 and the method was O(n log n), which he counted at 2 times
+      10^7 operations — a fifth of a second's budget — and certified. The
+      operations were lookups in an ordered map: twenty comparisons apiece,
+      every one of them a jump to a place in memory the machine had never
+      touched. He had counted 2 times 10^7 and the real figure went past 10^9.
+      The same values sorted once into a plain vector would have cost the same
+      comparisons and none of the waiting.
+
+      He had answered how many. He had never asked what one of them costs.
+
+      Since that morning the Assay's number is a decision procedure and not a
+      promise, and his rule is the one he now gives away in the first hour: an
+      estimate that lands within a factor of two of the budget is not an
+      estimate, it is a hope, and you go one class down.
+
+  - key: secret
+    title: What he is listening for
+    depth: perfect
+    text: >-
+      The arithmetic takes an afternoon. He has never once had a student fail
+      to learn it, and he has watched a great many of them fail here anyway.
+
+      What he listens for is the second after the number. They say it — 10^10,
+      correctly, unprompted — and then they say *but*. A bound of 60 permits
+      four nested loops, thirteen million operations, and he has sat quietly
+      while strong students spent forty minutes refusing to write it, because
+      writing it would look like they had not thought of anything.
+
+      They have not disbelieved the arithmetic. They have disbelieved that a
+      problem could want something so plain from them. He does not send a
+      student up the road when they can do the counting. He sends them when the
+      answer has stopped embarrassing them.
+
+relationships:
+  - master: master_arrays
+    stance: the next door
+    line: >-
+      "Korrin tells them most problems are simpler than they want. I tell them
+      most problems are smaller than they look. Hers is the harder half. I only
+      make sure that by the time they reach her they have stopped arguing with
+      the constraints."
+  - master: master_search
+    stance: no quarrel, different clocks
+    line: >-
+      "Sevrin Kol and I disagree about nothing whatever. We disagree about how
+      long a student may take to get there — and he is not wrong about the
+      clock, only about when to start it."
+  - master: master_math
+    stance: the same lesson twice
+    line: >-
+      "Cassiun will teach you `1LL * a * b` at the far end of the road and call
+      it a theorem about residues. It is the same three characters. If you
+      learned them here you will only have to nod."
+
+diagnosis:
+  recognition:
+    - >-
+      "You can do the arithmetic. Every time, correctly. What you cannot yet do
+      is read a statement and tell me which arithmetic it is asking for —
+      whether that bound is refusing a shape, or inviting you to try
+      everything, or saying nothing at all about the thing that will actually
+      overflow. Nobody told you that was a separate skill. It is, and it is the
+      one we will drill."
+    - >-
+      "You read the story and not the block underneath it. Read me the
+      constraints aloud. Then tell me what they forbid — and only after that,
+      what you would write."
+  understanding:
+    - >-
+      "You produce the estimate and you cannot tell me what it rules out. A
+      number you cannot argue from is not a decision, it is a ritual. Say it
+      again, and this time finish the sentence: ten to the tenth, therefore I
+      am not permitted to —"
+  implementation:
+    - >-
+      "You know exactly what to write and your fingers are still deciding.
+      That is the cheapest fault on this whole road, and it is cured by writing
+      the same six lines until they bore you. Take a week over it. I have one."
+  retention:
+    - >-
+      "You had this. It has gone quiet, which is the calendar and not a
+      judgement on you. We will go back a little further than you think is
+      necessary, and you will be glad of it in ten minutes."

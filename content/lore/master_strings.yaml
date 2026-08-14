@@ -1,0 +1,195 @@
+master: master_strings
+epithet: Who Has Read Every Submission
+clan: The Second Reading
+creed: >-
+  A fingerprint is not a proof. I will take either one from you — but you will
+  tell me which of them you are holding.
+
+entries:
+  - key: biography
+    title: Biography
+    depth: met
+    text: >-
+      Halvern Ash did not begin as a solver. He began as a copyist, and for
+      eleven years his work was to enter contest records into the library's
+      ledgers: every submission, accepted and rejected, in his own hand.
+
+      Which made him, without ever intending it, the only man alive who had read
+      a decade of wrong answers rather than a decade of right ones. He considers
+      this an unfair advantage and has never once offered to give it up. Show
+      him a bug and he will usually name the year it entered circulation, and
+      often the tutorial that carried it there.
+
+      He took up solving late and was, by his own account, unremarkable for
+      speed and very hard indeed to catch out. He still copies most mornings.
+      The hand remembers what the eye skips, he says, which is a sentence about
+      copying and also a sentence about drills, and he is quietly pleased when a
+      student notices that it is both.
+
+  - key: philosophy
+    title: Philosophy
+    depth: trained
+    text: >-
+      He teaches one distinction and spends seven secrets on it: whether the
+      thing you have established is certain, or merely very likely.
+
+      Three of his four techniques are exact and linear. The fourth is neither,
+      and he will not have it used as though it were the others. A student who
+      announces that two stretches are equal is asked — mildly, without any
+      edge — equal in what respect, under which modulus, and whether anybody
+      hostile has been consulted.
+
+      He finds mistakes funny. Not the student's; the mistake's. He treats them
+      as characters he has known for years and will tell you how many people
+      have made yours and roughly when the first of them did it. Students brace
+      for this to sting and report the opposite: it is remarkably hard to feel
+      singular about an error that has a shelf of its own.
+
+  - key: clan
+    title: The Second Reading
+    depth: trained
+    text: >-
+      An order of copyists, and the argument they were founded on is that an
+      error cannot be found in a copy by reading the copy. The eye reads what it
+      expects to read. The only witness is the original, and the only operation
+      worth anything is comparing a thing with itself.
+
+      Hence the name: no page ever left the order on one reading. And they kept
+      a rule about the word "same" — a member who said two things were the same
+      without saying in what respect owed the order a day's copying. Ash paid it
+      four times as a young man and says all four were fair.
+
+      Their stranger rule is the one he has carried into the library. A copy
+      checked by fingerprint rather than compared character by character was
+      marked as such in the margin, in a different ink. Nobody outside the order
+      required this of them. They simply held that a claim and a probable claim
+      ought not to look alike on the page.
+
+  - key: legend
+    title: Five hundred and twelve characters
+    depth: tested
+    text: >-
+      Two years after a certain regional, the library asked Ash to prepare the
+      tests for its rerun. He read the accepted solutions first — all of them,
+      because that is what he does — and found that forty-odd fingerprinted
+      their strings by letting an unsigned 64-bit integer overflow, which is
+      arithmetic modulo 2^64 and looks free.
+
+      He added two strings to the test file. Together they are five hundred and
+      twelve characters. Both are built by the rule A becomes AB and B becomes
+      BA, from a single letter, and under base 31 modulo 2^64 both come to
+      1696614343997855744.
+
+      Forty-one accepted solutions became wrong answers, and not one of them had
+      been unlucky. A power of two is a structured modulus, so the collision is
+      a construction rather than an accident: take base 131, or 53, or a million
+      and three — carry the same rule out to a thousand and twenty-four
+      characters and they collide as well. The attacker never has to learn your
+      base.
+
+      He is faintly embarrassed that it is his best-known work, since he
+      invented none of it. The construction had been published years earlier.
+      All he did was read it, and then read forty-one other people's code. He
+      would like it noted that both halves of that sentence are the job.
+
+  - key: failure
+    title: What he got wrong
+    depth: felled
+    text: >-
+      He had used the same fingerprint header for two years and it had never
+      once failed him. On a problem asking whether any two of a hundred thousand
+      windows were equal, it failed. He resubmitted it three times, changed
+      nothing that mattered, and lost.
+
+      The instructive part, he says, is that he had computed the risk. He had
+      computed it for the wrong shape. One pattern against n positions collides
+      with probability about n over M, and against a modulus near 1e9 that is
+      nothing at all. A hundred thousand fingerprints compared with EACH OTHER
+      is n(n-1)/2 over M, which is five. Not a risk. An expectation. He had run
+      a program whose expected number of false equalities was five and called it
+      correct on the grounds that it had been correct before.
+
+      Ask about the anti-hash tests he builds and he will tell you, without much
+      ceremony, that he began building them the month he worked out that nobody
+      had needed to attack him.
+
+  - key: secret
+    title: The eleventh shelf
+    depth: perfect
+    text: >-
+      You are told on arrival not to sit on the eleventh shelf, and every
+      student assumes it holds other students' failures.
+
+      It holds his own solutions. Not the wrong ones — the accepted ones he
+      could not prove. Every page on that shelf passed; two or three are famous
+      in the small way a library is famous. He keeps them together because the
+      distance between that shelf and a wrong answer is not skill or care. It is
+      which tests somebody happened to write, and the header that lost him a
+      contest had sat up there, accepted, for two years first.
+
+      So what he watches for is not whether you are right. The ledger tells him
+      whether you are right. It is the student who reports a correct answer and,
+      unasked, marks which part of it is only probable — the different ink, on
+      their own work, with nobody requiring it.
+
+      Four times, in thirty years. He remembers all four names and will not give
+      them to you, because you would look them up and go away trying to be
+      somebody instead of trying to be careful.
+
+relationships:
+  - master: master_arrays
+    stance: an unacknowledged debt
+    line: >-
+      "Korrin taught you that an array is a stretch of memory with an agreement
+      about where things are. Every technique in this library is that agreement
+      with letters in it. She would deny having taught me anything, and I would
+      not press her on it; she is busy."
+  - master: master_math
+    stance: borrowed tools
+    line: >-
+      "Cassiun thinks my use of his subject vulgar — a remainder pressed into
+      service as a name. He is quite right. I would only note that the entire
+      argument for a fingerprint is that a polynomial of degree n has at most n
+      roots modulo a prime, and that is his sentence, not mine."
+  - master: master_bits
+    stance: amused rivalry
+    line: >-
+      "Ragine's tree over the bits of a number is my tree with an alphabet of
+      two letters. We have agreed not to settle which of us had it first, on the
+      grounds that the answer is neither of us, by about forty years."
+
+diagnosis:
+  recognition:
+    - >-
+      "You built a fingerprint table, beautifully, in ninety seconds, for a
+      statement that named one pattern, one text, and demanded an exact count.
+      Your hands are excellent. Your ear is untrained, and nobody has told you
+      those were separate. So: statements only, for an hour, and you will name
+      what is being compared with what and write not one line. It will annoy
+      you. It is the whole remedy."
+    - >-
+      "Read the bound again, out loud this time. It is the sentence that chooses
+      between my four and you walked straight past it. Everyone walks past it,
+      which is precisely why it still works as a test."
+  understanding:
+    - >-
+      "Your table is correct. When I asked why the inner loop does not make it
+      quadratic, you told me that I had said so. That is a citation, not an
+      argument. k rises by at most one per position — say the rest of it back to
+      me.
+      Until you can, the technique belongs to somebody else and you are merely
+      holding it for them."
+  implementation:
+    - >-
+      "You had it as a border array inside ten seconds and then spent forty
+      minutes on i minus two m. That is not a hole in your understanding. That
+      is an index, and an index is cured by repetition and by nothing else at
+      all. Write the joined-string search five times this week. I am aware how
+      that sounds. I am a copyist; it is the only trade I have."
+  retention:
+    - >-
+      "You proved this a fortnight ago and it has gone quiet. The fallback chain
+      is always first to go, and it goes in the same order in every student I
+      have kept records on: the code stays, the argument leaves. That is the
+      schedule working, not you failing. Back one step — and this time keep the
+      argument, and let the code look after itself."

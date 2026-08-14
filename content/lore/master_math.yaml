@@ -1,0 +1,189 @@
+master: master_math
+epithet: The Man They Handed the Number To
+clan: The Last Safe Number
+creed: >-
+  Say the width before you say the number. — Nobody says the width. That is the
+  entire history of this temple.
+
+entries:
+  - key: biography
+    title: Biography
+    depth: met
+    text: >-
+      Cassiun was a computer before he was a teacher, in the older sense of the
+      word: for nineteen years he was the man the temple handed a number to
+      when the number had to be right. Tithe splits, harvest tallies, the
+      interval between two eclipses. He was never the fastest of them. He was
+      the one whose answers were never revised.
+
+      He came out of that room speaking the way he still speaks — to the room,
+      at dictation pace, saying the figures aloud, because for nineteen years
+      there had been a scribe behind him writing down whatever he said. He is
+      aware that he does this. He has been told. He does not consider it a
+      fault, on the grounds that the numbers are correct whoever they are said
+      to.
+
+  - key: philosophy
+    title: Philosophy
+    depth: trained
+    text: >-
+      He teaches four techniques and calls all four of them trivial on the
+      first day. Students hear cruelty or false modesty. He is being exact: the
+      sieve is six lines, the descent is four, the ladder of squarings is five,
+      and not one of them is what kills you.
+
+      What kills you is a multiplication you did not look at. So he will not
+      let you say what a loop does until you have said what width it does it
+      in. — He has watched a student derive Fermat's inverse correctly on a
+      board, name the exponent, name the hypothesis, and then type `int`
+      because the variable was called i. He tells that story every intake, and
+      every intake somebody does it.
+
+  - key: clan
+    title: The Last Safe Number
+    depth: trained
+    text: >-
+      An order of computers rather than a school of mathematicians, and the
+      distinction was their entire argument. Mathematics, they held, is about
+      what is true. Their work was about what can be FORMED.
+
+      Their founding labour was a table: for every operation, the largest input
+      at which it is still exact. 46340, because 46341 squared is 2147488281
+      and a 32-bit integer stops at 2147483647. Twenty, because 20 factorial is
+      2432902008176640000 and 21 factorial is not. 3037000499, because it is
+      the largest number whose square is below 9223372036854775807, and past it
+      a product of two residues has nowhere to be formed at all.
+
+      They had a rule and it was not a motto: no result leaves the order
+      without the width it was computed in. A number without its width was not
+      a wrong answer. It was not an answer.
+
+  - key: legend
+    title: The Modulus That Was Not 10^9 + 7
+    depth: tested
+    text: >-
+      Everyone in the hall read the same line of the constraints. The modulus
+      was given per test case, and it could be as large as ten to the eighteen
+      plus nine. Everyone read it as a formality, because a modulus is always a
+      formality.
+
+      Cassiun did not solve the problem faster than anybody. He solved it while
+      every other correct solution in the room was undefined behaviour. `a * b
+      % m` forms the product first and reduces afterwards — always, in every
+      reading of the precedence — and two residues below ten to the eighteen
+      make a product of ten to the thirty-six, and a signed 64-bit integer
+      stops at 9223372036854775807.
+
+      What made it a legend was that he named the exact place the ground gives
+      way, on the board, before writing a line. 3037000499. Below that modulus
+      the idiom is exact; the square is 9223372030926249001 and it fits. At
+      3037000500 the square is 9223372037000250000 and it does not. One
+      multiplication widened to 128 bits and the problem became ordinary.
+
+      He is unbothered by the fame. It is not a hard fact, he says. It is the
+      square root of the largest number you own. He is remembered for it only
+      because nobody else had ever needed to say it out loud.
+
+  - key: failure
+    title: What he got wrong
+    depth: felled
+    text: >-
+      His own failure was not an overflow, which he considers the only
+      interesting thing about it.
+
+      He was asked for a share — a division under a modulus — and the modulus
+      was ten to the ninth. Round, clean, and not prime, and he did not check.
+      He wrote a to the power m minus two, because he had written that a
+      thousand times, and the routine returned a number, and nothing objected.
+      For a value of 3 it returns 888888889. The true inverse is 666666667.
+      Multiply his answer by 3 and you get 666666667 — the inverse itself,
+      rather than 1 — which is a coincidence pretty enough that he stared at it
+      for an hour before understanding that it was not a coincidence. Ten to
+      the ninth is 2^9 times 5^9, Fermat has nothing to say about it, and what
+      that exponent actually computes there is the SQUARE of the inverse.
+
+      He had spent a career insisting that a type be checked against a
+      constraint. He had never once said aloud that a theorem must be checked
+      against its hypothesis. He says both now, in the same breath, every time.
+
+  - key: secret
+    title: What he is actually looking for
+    depth: perfect
+    text: >-
+      He does not much care whether you overflow. He expects it; everybody
+      does it once.
+
+      What he is measuring is the order in which you doubt. Tell a student they
+      are wrong and watch where the eyes go. The one who re-reads the algorithm
+      has learned nothing and will be back. The one whose hand goes first to
+      the declarations has been changed permanently and will not need him
+      again, and he can tell them apart in under two seconds.
+
+      And the talking past you is not rudeness, or not only. He says the
+      numbers for the record, the way he said them for nineteen years to a
+      scribe, because he stopped expecting the person in front of him to hear
+      them somewhere around the second decade. What he is actually waiting for
+      is a student who says the boundary back to him before he reaches it.
+      Three have. He remembers their names, and has never told them.
+
+relationships:
+  - master: master_graphs
+    stance: recognition
+    line: >-
+      "Grune is the only master on this road who tells her students that the
+      accumulator is the problem. Two hundred thousand edges at a billion each
+      is two times ten to the fourteen — ninety-three thousand times what an
+      int holds — while every individual weight sits comfortably inside one.
+      She learned that the way I learned it. Neither of us learned it politely."
+  - master: master_dp
+    stance: parallel disciplines
+    line: >-
+      "Solvane and I ask the same question in different rooms. He asks what a
+      cell MEANS; I ask what width it was computed in. — He will define a state
+      for an hour and then declare it `int`, and a count that doubles at every
+      branch is past two billion after thirty-one branches. I have mentioned
+      this to him. He has started mentioning it to them."
+  - master: master_arrays
+    stance: distant respect
+    line: >-
+      "Korrin teaches them to say what one pass carries before they write it.
+      Correct, and incomplete. — Nobody teaches them to say what one
+      multiplication forms. It is the same discipline, one operation further
+      down, and hers is the only region where they arrive having heard of it."
+
+diagnosis:
+  recognition:
+    - >-
+      "Read the CONSTRAINTS before the statement. — Not as advice. As method.
+      Everything I teach is announced there and nowhere else: a modulus means
+      one thing, a bound of ten to the twelve means there is no table, a given
+      exponent means you are not hunting for primes. You can write all four of
+      these. You are not yet reading the paragraph that tells you which."
+    - >-
+      "You reached for a sieve because the number was large. There is no sieve
+      to ten to the twelve and there never was. Say what the bound rules OUT
+      before you say what it permits."
+  understanding:
+    - >-
+      "You produced the expression and you cannot tell me which of its three
+      operations you would lose first, or why the outer reduction is there. It
+      is there because a value that was already zero has just become m, and m
+      is not a residue. Say that back to me. An expression you cannot take
+      apart is a charm, and charms do not survive a change of modulus."
+    - >-
+      "Correct, and memorised. — Tell me the hypothesis. Fermat wants a prime;
+      the descent wants nothing at all; the deque wants exactly two weights.
+      Which one did you just rely on, and what in the statement granted it to
+      you?"
+  implementation:
+    - >-
+      "The reasoning is sound and the types are not, which in this temple is
+      the same as being wrong — but it is the half that is fixed by writing.
+      You know what to compute. Write the four lines until the wider type
+      arrives with them, unbidden, as part of the same motion."
+  retention:
+    - >-
+      "You held this and it has gone. That is the calendar and nothing about
+      you. — Of everything I teach, the sign of the remainder goes first. It
+      always goes first. Review the boundaries and not the algorithms; the
+      algorithms are in every editorial and the boundaries are in none of them."

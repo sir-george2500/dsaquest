@@ -1,0 +1,178 @@
+master: master_search
+epithet: Forty-Seven Correct, Nineteen Accepted
+clan: The Interval
+creed: >-
+  A step that removes nothing is a step you have paid for and not spent.
+
+entries:
+  - key: biography
+    title: Biography
+    depth: met
+    text: >-
+      Sevrin Kol never submitted a wrong answer. Three seasons, forty-seven
+      solutions, forty-seven correct. Nineteen were accepted.
+
+      The other twenty-eight were correct and refused. He wrote the walk, the
+      walk was right, and the judge stopped it at two seconds. He kept the
+      record, because he keeps every record, and at twenty-four he read it end
+      to end and understood that he had not been beaten by anybody. He had lost
+      twenty-eight times to one sentence that nobody had ever bothered to say
+      to him.
+
+      He says it to every student in the first minute now. *Your solution
+      works. But it is slow.* It is not a cruelty. It is the sentence he was
+      owed, delivered on time for once.
+
+  - key: philosophy
+    title: Philosophy
+    depth: trained
+    text: >-
+      Order is information somebody has already paid for. A list that arrives
+      sorted has told you where things are not, and to walk it is to buy the
+      same fact a second time.
+
+      The loop is not the lesson. The loop is four lines and he will not spend
+      an hour on it. The lesson is the licence — the sentence *raising x can
+      only make this easier* — because bisection is not a way of looking at
+      data, it is the act of throwing away half the world on the evidence of
+      one probe, and that act has to be earned each time.
+
+      So he grades the decision and not the answer. He has accepted a linear
+      scan from a student once, from someone who could say precisely what made
+      the range unorderable. He has refused a correct halving perhaps thirty
+      times, from students who could not say why the discard was legal.
+
+  - key: clan
+    title: The Interval
+    depth: trained
+    text: >-
+      Its members write the name of their own school as `[lo, hi)`. Half-open,
+      because the right end was never theirs to claim.
+
+      Their founding argument is that a search is not a journey through data.
+      It is a statement about what remains possible, and every step must remove
+      a possibility or it is not a step.
+
+      Their examination is a roll of a million names and twenty questions.
+      Twenty, because 2^20 is 1048576 and a roll of a million names does not
+      contain more than that. A candidate who finds the name on the
+      twenty-first question has failed while holding the right answer. They
+      count probes and never seconds: a second is a fact about a machine, and a
+      probe is a fact about the problem.
+
+  - key: legend
+    title: The board nobody could build
+    depth: tested
+    text: >-
+      A square board, n = 100000, with row i and column j holding the product
+      i times j. Which value is the k-th smallest on the board?
+
+      Ten billion cells. Forty gigabytes at four bytes each — the board could
+      not be built, and the hall spent the round on ever more careful ways to
+      avoid building it: heaps of row iterators, partial merges, sampling.
+
+      Kol did not search the board. He searched the value. For any candidate x,
+      the number of cells not exceeding x is the sum over rows of min(n, x / i)
+      — one division per row, n divisions, and no board anywhere. That count
+      never falls as x rises, so it has exactly one boundary; the smallest x
+      whose count reaches k is the answer, and it must itself be a product, so
+      it is on the board. The range is 10^10 wide, which is 34 probes. Thirty
+      four times a hundred thousand divisions: 3.4 million operations against a
+      board he never allocated a byte of.
+
+      He is said to have submitted at eleven minutes. What is recorded is that
+      he submitted once.
+
+  - key: failure
+    title: The ruling he got wrong
+    depth: felled
+    text: >-
+      A student's solution passed everything in front of it. He read it, he
+      weighed it, and he recorded a pass.
+
+      It bisected a deadline on a feasibility check, and the check was a greedy
+      that was reasonable rather than optimal — it reported infeasible for some
+      x that was in fact feasible. Still monotone, so nothing hung and nothing
+      crashed; the flip point had simply moved by one, and it moved only on
+      inputs the tests did not happen to contain. The student carried the
+      method for a year. It failed them at the one sitting that mattered, and
+      they came back and told him so, and he wrote that down as well.
+
+      He had accepted *it passed* as evidence. It is not evidence. It is the
+      absence of a counter-example from a set of tests that somebody else
+      chose.
+
+      Nobody leaves this hall now without saying two sentences aloud before the
+      loop is written: raising x can only make this easier, and my check
+      achieves the best outcome available at x, not merely a good one.
+
+  - key: secret
+    title: What he is waiting for
+    depth: perfect
+    text: >-
+      He rules, and nobody appeals. In eleven years there have been three
+      appeals. Two of them were wrong.
+
+      He wants them because of what the technique actually is. Every step of a
+      bisection is a claim that something has been ruled out, and a student who
+      will not defend a claim to a cold man standing over them will not defend
+      one to themselves at two in the morning with a predicate that is nearly
+      monotone. The cold is not a temperament he cannot help. It is a surface
+      hard enough to push against.
+
+      The third appeal is pinned above his desk, in the student's own hand,
+      with his ruling struck through in his. He has never said her name aloud.
+      He has never taken it down.
+
+relationships:
+  - master: master_foundations
+    stance: measured, and conceded
+    line: >-
+      "Elder Vhast is slow deliberately, which I mistook for slow. I have
+      measured his students against mine at the same stage. His read the
+      constraint block first, every time. Mine have to be taught it twice. I do
+      not know how he does that and I have stopped attempting it."
+  - master: master_arrays
+    stance: accurate respect
+    line: >-
+      "Korrin turns ten billion into a hundred thousand. I turn a hundred
+      thousand into seventeen. Hers is the larger saving and she does not say
+      so. Mine is the one students ask about, which is a fact about people and
+      not about arithmetic."
+  - master: master_greed
+    stance: the same obligation
+    line: >-
+      "Rhe proves the local choice is safe. I prove the predicate is monotone.
+      It is one obligation wearing two names, his is the harder of the two, and
+      he takes longer over it, which is correct."
+
+diagnosis:
+  recognition:
+    - >-
+      "You can write the halving. Exactly, at both boundaries. You did not
+      write it here because nothing in the statement used the word sorted, and
+      you are still waiting to be told. From now I label nothing. Before you
+      write anything you will say one sentence: what is monotone in this
+      problem. Say it even when the answer is nothing."
+    - >-
+      "You scanned. The scan always applies, which is why it is the wrong
+      instinct. Read the bound again. Ten to the ninth with the order given is
+      not a hint, it is an instruction."
+  understanding:
+    - >-
+      "Your loop is correct and you cannot state its invariant. That is a shape
+      you have copied. The next problem will move the boundary by one and take
+      it from you. Everything before lo is what. Everything from hi onward is
+      what. Two clauses. Say them."
+  implementation:
+    - >-
+      "Your choice was right and your ends are wrong. That is the cheaper
+      failure and I would rather have it from you than the other one. It is
+      repaired by writing the same eight lines until they are dull: an array of
+      two, an answer at the first element, an answer above every element. Those
+      three, until they bore you."
+  retention:
+    - >-
+      "You held this. It has decayed. Recall halves faster than skill — that is
+      a fact about people, not a verdict on you. Review, then return. I will
+      measure again, and I will not hold the interval against you."

@@ -1,0 +1,206 @@
+master: master_greed
+epithet: Who Argues With a Stopwatch
+clan: The One Swap
+creed: >-
+  Take any best answer there is, force my first choice into it, and show me
+  what comes out is still legal and no worse. Say that, and the code is
+  trivial.
+
+entries:
+  - key: biography
+    title: Biography
+    depth: met
+    text: >-
+      Dovan Rhe settled cargo disputes on the trade road for eleven years
+      before he ever wrote a program. Two merchants, one road, one claim that
+      this loading order or that division of the haul was the best available,
+      and Rhe sitting between them with no way to check.
+
+      What he learned there is the whole of what he teaches. Most people who
+      are right are right by accident. They have a rule that has worked every
+      season they can remember, they cannot say why it works, and so they
+      cannot tell the season it stops working — and it always stops. Twice he
+      ruled against a man whose arrangement was genuinely better, because the
+      man could only insist on it.
+
+      He came to algorithms late and found the same disease with a compiler
+      attached. The wrong plan compiles. It runs in a log factor. It agrees
+      with the sample. And the judge writes "wrong answer on test 14" and
+      nothing else at all.
+
+  - key: philosophy
+    title: Philosophy
+    depth: trained
+    text: >-
+      He does not think a local choice is dangerous because it is often wrong.
+      It is dangerous because it has no failure that looks like failure. Every
+      other pattern on this road warns you: the crash, the timeout, the sample
+      that disagrees. Here the program is short, quick, readable and simply not
+      optimal.
+
+      So he refuses to teach the four techniques as techniques. He teaches one
+      sentence — some best answer agrees with my first choice, and here is the
+      swap that shows it — and treats the code as what falls out afterwards. A
+      student who has that sentence can derive a comparator he has never seen.
+      A student who has four rules has four rules, and a fifth problem.
+
+      He is also the only master on this road who insists you learn where his
+      own weapon stops working, and he spends an entire secret on it. He says a
+      warrior who cannot find the edge of his blade will swing it at a wall.
+
+  - key: clan
+    title: The One Swap
+    depth: trained
+    text: >-
+      A court of market adjudicators, older than the road they sat on, who
+      refused on principle to hear an argument about a plan in the abstract.
+
+      Their whole procedure was this: the man claiming his arrangement was best
+      had to submit to a single exchange of his opponent's choosing. One swap,
+      named in advance, carried out in front of everyone. If the result was
+      better, his claim fell; if nothing his opponent could propose improved it,
+      the claim stood and the matter was closed. They had a companion rule for
+      the other side, and it was strict — an opponent who could not produce his
+      swap within ten minutes conceded, because a suspicion you cannot make
+      concrete is not evidence of anything.
+
+      They are gone, and their habit is not. Before agreeing to anything, a
+      member of the One Swap says: propose the exchange.
+
+  - key: legend
+    title: The Commissions He Gave Back
+    depth: tested
+    text: >-
+      Two hundred thousand commissions. Each takes exactly one day of his time,
+      each carries a fee, and each has a day by which it must be finished or it
+      is worth nothing. Maximise the fees. The deadlines ran to a billion, so
+      the table everybody knew — one row per day — could not be built at all,
+      and the hall spent the afternoon trying to shrink it.
+
+      Rhe never chose which commissions to accept. He accepted all of them, in
+      order of deadline, and chose which one to give BACK. One heap of the fees
+      he was holding; the moment he held more commissions than the day he had
+      reached allowed, he released the smallest fee in it.
+
+      The step is one line of proof, and it is why the ridge calls him the
+      Exchange. When you are holding exactly one more than the deadline
+      permits, it does not matter which one you drop — every survivor is still
+      schedulable, whichever you choose. That is a fact about the deadlines, not
+      about the fees. So drop the cheapest; and the set in your hands after each
+      commission is the most profitable schedule of everything read so far.
+
+      One sort, one pass, one heap. He wrote it in eleven lines, and he wrote
+      the sentence above it first.
+
+  - key: failure
+    title: What he got wrong
+    depth: felled
+    text: >-
+      Years earlier, a problem gave him ranges on a line, each carrying a value,
+      and asked for the largest total value of a set that did not overlap.
+
+      He was certain the value could be folded into the key. Value per unit of
+      line, cross-multiplied, tie-broken by the end — eleven of them, ninety
+      minutes hunting an argument for one. At hour two he built the thing that
+      ended it: one range across the whole day worth 10, and three short ones
+      worth 3 apiece. The earliest-finish sweep takes all three and scores 9,
+      and no ordering of items reaches 10, because the choice changes what
+      remains reachable and a ranking cannot see that. He submitted nothing. A
+      student two tables away had sorted the same ranges by their ends, built a
+      table over them and gone home an hour earlier; that student keeps an
+      archive now.
+
+      What he had got wrong was not the eleven keys. It was treating his failure
+      to find a proof as a fact about himself. It is a fact about the PROBLEM,
+      and it arrives long before the verdict does. He teaches the stopwatch now:
+      give the argument a fixed number of minutes, and when they are gone, stop
+      looking for the proof and start looking for the counterexample — you are
+      already holding it. The one he sets in front of every student on this
+      ridge is the one he built at hour two of that contest.
+
+  - key: secret
+    title: What he is actually looking for
+    depth: perfect
+    text: >-
+      He is not a purist, and the reputation irritates him. He demands the
+      exchange argument for a reason that has nothing to do with rigour: it is
+      the cheapest search for a counterexample ever devised. Attempt the proof
+      honestly and one of two things happens, and both are useful — either you
+      have a theorem, or the exact point where the argument stalls tells you
+      what the failing test looks like. A student who has tried already knows
+      the shape of test 14 before the judge does.
+
+      Which means the answer he most wants to hear, and never says so, is "I
+      cannot prove this" delivered calmly in the first five minutes. He rates it
+      above a correct solution he watched a student guess into. He does not say
+      it aloud because the students who hear it begin saying it to get out of
+      thinking.
+
+      And he is asked, now and then, whether he has ever submitted a local
+      choice he could not prove, under a clock, with fifteen minutes left. He
+      has. What he has never done is submit one without knowing that is what he
+      was doing.
+
+relationships:
+  - master: master_dp
+    stance: the old quarrel
+    line: >-
+      "Nym would say I gamble and I would say he overpays, and each of us has
+      been right about the other in public. His method cannot lie. Mine is four
+      lines and a log factor and it lies beautifully. The quarrel was never
+      which is better — it is when, and I lost three hours to that question once
+      while he wrote a table and went home. Any student who leaves this ridge
+      unable to say which of us to walk to has learned nothing from either of
+      us."
+  - master: master_arrays
+    stance: respect, at a distance
+    line: >-
+      "Korrin's four techniques are the only ones I let a student use without
+      proving anything, because she proved them years ago and made them so plain
+      that nobody notices there was ever a theorem. She teaches you to trust what
+      you already have. I teach you to distrust what you just chose. We are not
+      in disagreement; we are standing at different minutes of the same hour."
+  - master: master_structures
+    stance: allies
+    line: >-
+      "Vore prices what I prove. When the exchange holds, the answer is a sort
+      and a sweep and I send the student on; when it does not, what he writes
+      next is Vore's or Solvane's and both of them cost more. I want him walking
+      through that door knowing which one it is and why."
+
+diagnosis:
+  recognition:
+    - >-
+      "You can defend all four of these once I have told you which one you are
+      looking at. That is the second half of the skill and you have it. So prove
+      my diagnosis wrong: read the next statement and tell me nothing at all
+      except what the objective counts. No key, no code, one sentence. If it
+      comes, then you knew the technique and the fault was in the reading — and
+      reading is what we will drill."
+    - >-
+      "You reached for the one you drilled last. Tell me instead what accepting
+      an item DENIES you: a shared budget, a stretch of the line, or nothing
+      whatever. Three answers, three techniques, and the statement said which
+      before you touched it."
+  understanding:
+    - >-
+      "You produced the key and you cannot produce the argument, and on this
+      ridge that is half a solution wearing the whole one's clothes. So work it
+      backwards. Take the rule you just used and try to break it with three
+      items. If you break it, the rule was wrong and you have saved yourself a
+      verdict. If you cannot, tell me what stopped you — that sentence is the
+      proof you told me you did not have."
+  implementation:
+    - >-
+      "The choice was safe. The comparator was not, and a proof nobody can type
+      is a proof nobody heard. This is the half repetition actually fixes, so we
+      repeat: `<` and never `<=`; multiply crosswise and never divide; pack the
+      key into .first and write no comparator at all. Twenty times, until your
+      hands stop having opinions."
+  retention:
+    - >-
+      "You proved this once and you have dropped it. That is not a failure of
+      yours — proofs decay faster than code, for the simple reason that you
+      wrote the code down and kept the argument in your head. From today the
+      argument goes in one line above the sort, in your own words. Then review
+      what you had, and we go on."

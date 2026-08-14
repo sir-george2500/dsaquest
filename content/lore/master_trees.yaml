@@ -1,0 +1,180 @@
+master: master_trees
+epithet: The Sage Who Will Not Tell You
+clan: The Unrooted
+creed: >-
+  Where did you decide to stand? And which of your answers came from the wood,
+  rather than from the standing?
+
+entries:
+  - key: biography
+    title: Biography
+    depth: met
+    text: >-
+      Orenna Thal was the fastest student the Unrooted ever admitted, which she
+      will tell you was the problem, and then she will ask you why.
+
+      She had the answer before the question was finished, every time, and she
+      was right often enough that nobody corrected her for three years. The
+      school's remedy, when it came, was to forbid her to assert anything for a
+      year. She could ask. She could listen. She could not state. She says she
+      learned more in that year than in the eight before it, and if you ask her
+      what, she asks you what a person learns when the only way to find out
+      whether they are right is to make somebody else say it.
+
+      She has taught in the forest for thirty-one years. No student has ever
+      been able to tell you how many facts she has handed them, because the
+      number is small enough to count and none of them were counting.
+
+  - key: philosophy
+    title: Philosophy
+    depth: trained
+    text: >-
+      One rule, and it costs her more than it costs her students: never say the
+      thing they could have been made to say.
+
+      Ask her why not simply tell them — the wood is not complicated, four
+      techniques are one walk folded four ways, and she could deliver the whole
+      region in an afternoon. She will ask what happens to a told fact under a
+      clock, forty minutes in, when the wording has gone and the statement is
+      still on the screen. A derived fact leaves a route back to itself. A told
+      one leaves only the telling, and the telling is what goes first.
+
+      Her students complain that every lesson takes twice as long, and that they
+      can do the next one without her. She has heard both complaints from the
+      same student in the same afternoon. She considers that a finished course.
+
+  - key: clan
+    title: The Unrooted
+    depth: trained
+    text: >-
+      A surveyors' school, older than the villages it worked for, which refused
+      on principle to draw a map with an origin marked on it.
+
+      Their founding argument was that a wood has no top. A top is a decision
+      made by the reader, and the reader then forgets making it. So the whole
+      discipline was knowing which of your conclusions survive that decision and
+      which are artifacts of it — root here and every parent changes, so does
+      any answer? A member could be stopped in the road by anybody and asked
+      "and if you had begun somewhere else?", and was expected to answer without
+      pausing.
+
+      Their examinations were spoken and contained no statements at all. A
+      candidate who asserted something was not marked wrong. They were asked
+      where they had been standing when they learned it.
+
+  - key: legend
+    title: The Wood That Owed
+    depth: tested
+    text: >-
+      The problem gave two hundred thousand glades, a number on every path, and
+      some of those numbers were debts — negative. Find the longest route. Two
+      sweeps answer it in four lines: walk to the farthest glade from anywhere,
+      then walk to the farthest from there.
+
+      Thal wrote the four lines. Then she asked what they assume, which is the
+      only question her school ever asks, and she could not answer it. So she
+      deleted them and wrote the fold instead — the two deepest branches at
+      every glade, longer to write and assuming nothing.
+
+      She had not proved the sweeps wrong. She had merely failed to prove them
+      right, and at the Unrooted those are the same instruction. Test seven took
+      most of the hall. Afterwards she built the smallest wood that shows why,
+      and it is the first thing she puts in front of a student who has grown
+      fond of four-line solutions: five glades, A-B worth 1, A-C worth -5, C-D
+      worth -5, C-E worth 2. From A the farthest glade is B; from B the farthest
+      is A; the sweeps report 1, and C to E is sitting there worth 2. The first
+      sweep had landed on a glade that ends no longest route at all, because a
+      debt let distance shrink as you walked.
+
+  - key: failure
+    title: What she got wrong
+    depth: felled
+    text: >-
+      For her first six years she gave her students nothing to keep. No line, no
+      idiom, nothing memorised — every fact derived, and derived again the
+      following week, because a thing you can rebuild is a thing you own.
+
+      They could rebuild anything. Under a clock they finished nothing. She had
+      produced a generation who, forty minutes into a two-hour contest, were
+      carefully reconstructing the jump table's recurrence from the meaning of a
+      power of two: correctly, from first principles, and far too late.
+
+      She hands the line over on the first day now, and asks about it for the
+      rest of the year. Ask whether that contradicts the year she spent
+      forbidden to speak, and she will ask you which of the two things she is
+      trying to put in your hand — the line, or the reason — and whether they go
+      to the same place, and whether they can be delivered by the same method.
+
+  - key: secret
+    title: What she is actually looking for
+    depth: perfect
+    text: >-
+      Some of her questions are false. Not many. She keeps count.
+
+      "You rooted at glade 1, so the answer is at the top — yes?" "Both ends of
+      that route were given to you, were they not?" A student who is deriving
+      hears the premise and stops dead. A student who is performing hears the
+      question mark and begins answering.
+
+      Refusal is what she is watching for, and it is the one thing on her list
+      she cannot teach. The fold, the two branches, the doubled index — those
+      are afternoons. Declining a premise offered by somebody who sounds certain
+      is not, and the trouble with being a master is that she is permanently the
+      person in the room who sounds certain.
+
+      Ask why she stopped stating facts and she gives you the pedagogy. Ask
+      twice and she tells you that she was wrong once, years ago, about
+      something small, and that the student carried it for four years — because
+      she had said it in the voice she is still stuck with.
+
+relationships:
+  - master: master_arrays
+    stance: recognition across a distance
+    line: >-
+      "Korrin asks what one pass carries. I ask what a child owes its parent.
+      She would tell you those are the same question. Ask her whether they are,
+      and notice how long she takes before she answers."
+  - master: master_dp
+    stance: reservation
+    line: >-
+      "Solvane names the state before he has finished reading, and he is right
+      almost every time. Ask his students what the state is FOR. Then notice
+      whether the answer arrives with them or somewhat after them."
+  - master: master_graphs
+    stance: wary agreement
+    line: >-
+      "Grune keeps her visited array, and she is right to — nothing in her sea
+      has one route to anywhere. Mine put it down after a week. Ask me which of
+      us is teaching the more dangerous habit, and then ask which of us says so
+      out loud."
+
+diagnosis:
+  recognition:
+    - >-
+      "You can write all four of my folds. So account for what you just did: you
+      read four lines and reached. Which word made you reach? From now you will
+      tell me what the question looks at — one glade, every glade, or a pair of
+      them — before you tell me what you would write. Thirty statements. Not one
+      line of code. Do you already know why?"
+    - >-
+      "How many links did it give you? You did not check, did you. Begin there:
+      what does n-1 forbid, and what does n allow back in?"
+  understanding:
+    - >-
+      "The fold is correct. What does a glade send upwards, and why would one
+      number not have done? If you cannot say that in a sentence, whose sentence
+      have you been typing — and what will you type when the wood is shaped
+      differently?"
+  implementation:
+    - >-
+      "You said two numbers per glade before I had finished the statement, so
+      the seeing is done and it is the half I cannot give you. Why is the screen
+      still empty? Would you rather I asked harder questions, or would you
+      rather write the same twelve lines until they bore you? Only one of those
+      fixes it. Which?"
+  retention:
+    - >-
+      "You held this. Where has it gone — and did you lose the line, or the
+      reason? Answer honestly, because those need different weeks. Then one
+      more: would you rather find out here, or in front of the thing at the edge
+      of my wood?"

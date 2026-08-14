@@ -1,0 +1,184 @@
+master: master_bits
+epithet: Nine Years on a Signal Line
+clan: The Unlit
+creed: >-
+  Read the whole row. The dark lamps are carrying half of it.
+
+entries:
+  - key: biography
+    title: Biography
+    depth: met
+    text: >-
+      One name, and she has never offered another. The Unlit do not use them.
+
+      Before she was a grandmaster of anything she was a relay clerk, nine
+      years on a signal line, sending numbers across valleys as rows of open
+      and shut shutters. Eight shutters to a frame. She did not learn to think
+      in twos out of discipline — she was paid in it, by the hour, and a clerk
+      who translated was a clerk who was slow.
+
+      She came to the machine at thirty and found people carefully converting a
+      number out of the machine's own notation, doing arithmetic on it, and
+      converting it back. Paying a toll, twice, at a bridge they already owned.
+      She has never got over it, and she does not intend to.
+
+  - key: philosophy
+    title: Philosophy
+    depth: trained
+    text: >-
+      Decimal is a courtesy the machine extends to you. Every `%`, every `/`,
+      every "is it odd" phrased as a remainder is a translation, and each
+      translation costs a step and offers you a fresh chance to be wrong about
+      a sign.
+
+      Her order of teaching is not by difficulty. It is by how much of the row
+      you may stop looking at. `n & 1` is one position. `n & (n - 1)` is one
+      position and everything that borrowed beneath it. `1 << k` is not a
+      number at all, it is a set.
+
+      She refuses to teach the builtin before the clearing loop, and it is not
+      because the loop is better — `__builtin_popcountll` is one instruction
+      and the loop is not. It is that a student who has never watched the bits
+      go out one at a time will use the builtin as a spell, and spells fail
+      quietly.
+
+  - key: clan
+    title: The Unlit
+    depth: trained
+    text: >-
+      Named for the clear bits, and named that way on purpose. A novice counts
+      what is lit. Everything worth knowing is a statement about the whole row
+      — the complement, the borrow, the position that is not set.
+
+      Their examination is a wall of thirty-two lamps. State the value. Then
+      the value with the lowest lit lamp put out. Then the value with every
+      lamp reversed. No paper, no pause, no second look at the wall.
+
+      They do not say sixty-four. They say two rows.
+
+  - key: legend
+    title: Twenty passes
+    depth: tested
+    text: >-
+      Twenty relics, and a question asked of every one of the 1048576 sets you
+      could make from them: for each set, the total of a value taken over all
+      of that set's subsets.
+
+      The hall wrote the submask loop — `for (int s = m; s; s = (s - 1) & m)`
+      — which is the right loop and is already the clever answer, since over
+      every m it costs 3^n rather than 4^n. At n = 20 that is 3486784401
+      operations. Three and a half billion. Refused, and the naive form would
+      have been 1.1 times 10^12.
+
+      Ragine did not think about subsets at all. She thought about one bit.
+      Twenty passes over the million cells; on pass i, every cell whose bit i is
+      set takes in the cell with bit i cleared. After pass i each cell holds the
+      total over every set that differs from it only in the first i positions,
+      and after twenty passes, over all of its subsets. Twenty times 2^20 is
+      20971520.
+
+      Twenty-one million against three and a half billion: a hundred and
+      sixty-six times cheaper than the loop everybody else was proud of.
+
+  - key: failure
+    title: Two characters
+    depth: felled
+    text: >-
+      The final she lost. Sixty-four relics, masks of two rows, and a solution
+      that was right in every respect she cared about.
+
+      It answered correctly on every test where nothing above the thirty-second
+      position mattered, and wrongly on the rest, in silence. She had called
+      `__builtin_popcount`, whose parameter is an unsigned int, on a sixty-four
+      bit value. The argument was cut down to its low thirty-two bits before
+      the counting began. No warning, no crash. The machine had not failed her.
+      It had obeyed her precisely.
+
+      The difference between her submission and the accepted one is two
+      characters. `ll`.
+
+      Nine years being paid to think in twos, and she had stopped reading
+      declarations. Contempt for the translation is not the same thing as
+      knowing the machine. Every student here now says the width of every value
+      in their solution out loud before submitting. They think it is a ritual
+      of hers. It is not.
+
+  - key: secret
+    title: There is no faculty
+    depth: perfect
+    text: >-
+      What students believe about her is that she sees it. That somewhere
+      behind the composure is a sense they were not born with, and their choice
+      is to acquire it or admit they cannot.
+
+      There is no faculty. There are perhaps nine facts she has not had to
+      derive since she was thirty, and everything else she writes down. In
+      binary. On paper. Like a child doing sums — 40 = 101000, every time, at
+      sixty-one years old — because her head is no more trustworthy than
+      anyone's and she stopped pretending otherwise a long time ago.
+
+      The Unlit examine without paper. She sat that examination at thirty-one
+      and passed it, and she has never once set it for a student.
+
+      The lamps in the thirty-two niches: students take the morning count for a
+      ritual of mastery. It is her writing it down. Thirty-two positions,
+      checked by eye, because she does not trust herself to know without
+      looking.
+
+      The ones who fail here fail trying to do it in their heads, because
+      reaching for the paper would be an admission. It is not an admission. It
+      is the technique.
+
+relationships:
+  - master: master_structures
+    stance: the other half of the vault
+    line: >-
+      "Vore keeps a ledger of what every query costs. My whole craft is making
+      the query cost one instruction. We have shared a vault for nine years and
+      never had an argument, which is not the same as having had a
+      conversation."
+  - master: master_dp
+    stance: borrowed vocabulary
+    line: >-
+      "Solvane indexes his tables with my masks and calls the index a state. He
+      is welcome to it. I would only like him to say once, aloud, that his
+      table has 2^n rows because a row of bits IS the set — and not the other
+      way round."
+  - master: master_foundations
+    stance: he starts them, I correct them
+    line: >-
+      "The old man teaches my first secret in the village and calls it
+      arithmetic. `1 << n`, and a loop over the masks, and he is right, and he
+      has a patience for it I do not. They arrive from him able to enumerate.
+      They also arrive believing a mask is a counter. I take that away."
+
+diagnosis:
+  recognition:
+    - >-
+      "You can write every one of these and you did not see that this was one
+      of them. That is not a gap in the technique, it is the whole difficulty —
+      and you have been trained out of noticing it, because until now somebody
+      always said the name first. Nothing is named from here. Look at the
+      bound. Twenty items is not a small input. It is an instruction."
+    - >-
+      "You reached for a container. The state space was 2^20 — a million
+      integers, each one a set. Read the size of the state space before you
+      choose the weapon. Always in that order."
+  understanding:
+    - >-
+      "The code is correct and you cannot tell me why `n & (n - 1)` removes
+      exactly one bit. That is a spell, not a technique, and a spell holds only
+      until the problem changes a word. Write the number in binary. Write
+      n - 1 underneath it. Now tell me what the AND deletes, and why nothing
+      above it moved."
+  implementation:
+    - >-
+      "You knew the mask. Your hand did not produce it. That is the easier
+      fault and there is only one repair — the same line, until it arrives
+      before the thought does. Twenty minutes a day is enough. It is not
+      interesting and I will not pretend otherwise."
+  retention:
+    - >-
+      "You held this and the calendar took it back. That is not a defect in
+      you; nothing decays faster than a thing learned in one sitting. Review it
+      before we go on. It returns far quicker than it left."

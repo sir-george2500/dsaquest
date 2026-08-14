@@ -1,0 +1,188 @@
+master: master_structures
+epithet: The Man Who Found the Discrepancy
+clan: The Standing Record
+creed: >-
+  Every query has a price. Name it before you write the line. You are going to
+  pay it two hundred thousand times.
+
+entries:
+  - key: biography
+    title: Biography
+    depth: met
+    text: >-
+      Maelin Vore came to this late, and from bookkeeping. He kept the tallies
+      at a river port for nine years, and the only thing anyone there remembers
+      about him is that he was the man who found the discrepancy.
+
+      It took him eleven days to find one cask. Not because the books were
+      wrong — the books were perfect — but because they could only be read
+      forwards, from the first page, and every question he had was about the
+      middle. He rewrote them that winter so that any stretch could be totalled
+      without reading the rest, and was told he had wasted a winter. Four years
+      later he saw a contest problem asking for exactly that and understood
+      that he had been solving one problem his whole working life.
+
+      He is not fast. He has never been fast. He has also never once been
+      surprised by a time limit.
+
+  - key: philosophy
+    title: Philosophy
+    depth: trained
+    text: >-
+      "Does it work" is a question the sample can answer for you. "What does
+      one query cost" is not, and it is the only one that chooses anything.
+
+      He teaches four rows and considers everything else in the vault to be
+      commentary on them. Point write with range read, and the quantity can be
+      undone: four lines. Point write, range read, no inverse: the general
+      tree, and no argument. Range write with point read: a difference array
+      under the same four lines. Range write with range read: tags, forty
+      minutes, and every trap in the region live at once.
+
+      The mistake he objects to most is not a wrong answer. It is a correct
+      answer at minute ninety of a two-hour contest, arrived at by building
+      sixty lines where four would have served — because the judge will never
+      tell you that is what happened, and so nobody ever learns it from a
+      verdict. They learn it from him, or not at all.
+
+  - key: clan
+    title: The Standing Record
+    depth: trained
+    text: >-
+      An order of auditors who kept the accounts of a city that was never
+      permitted to close its books. Ships arrived at night, grain moved between
+      stores at all hours, and the ledger had to be correct at every instant
+      rather than at the end of the year — which is, if you look at it squarely,
+      the definition of a data structure.
+
+      They would not let an apprentice write a solution for the first year.
+      They handed him other people's solutions and asked only for the price:
+      what one query costs, what one update costs, how many of each the
+      statement intends. A solution whose product exceeded the machine was
+      refused before anyone read the code. No member was permitted to say
+      "fast"; you gave a number, and the size it was measured at.
+
+      Their habit survives them. Before writing, a member of the Record files
+      two numbers and multiplies them.
+
+  - key: legend
+    title: The Questions He Refused to Answer in Order
+    depth: tested
+    text: >-
+      The problem gave a row of two hundred thousand values and two hundred
+      thousand questions, each of the form: how many DIFFERENT values does this
+      stretch contain. The hall spent the afternoon on persistent structures
+      and square-root decompositions, and most of it did not finish.
+
+      Vore asked the invigilator one question — whether the answers had to be
+      given in the order the questions were asked — and then he answered them
+      in a different order entirely.
+
+      What he had seen was that "how many different" is only hard because a
+      value can appear many times. Count each value at the position where it
+      LAST appears and the duplicates vanish: the answer to a stretch becomes
+      how many marks lie inside it, which is a plain tally and a subtraction.
+      Sort the questions by their right end, walk the row once, and each value
+      moves its mark forward at most as often as it occurs. One tally, one
+      pass, one array of n longs; he filed the price alongside it as the Record
+      requires, and the price was small enough that the invigilators checked it
+      twice.
+
+  - key: failure
+    title: What he got wrong
+    depth: felled
+    text: >-
+      Three years before that, the same shape of problem beat him, and it beat
+      him for three hours.
+
+      He built a persistent structure. Two hundred lines, entirely correct,
+      submitted with twenty minutes left. Two people in the room had solved it
+      with twelve lines, and when he read their solutions he found they had
+      done nothing clever at all: they had sorted the questions. Nothing in
+      that statement had ever required an answer before the next question was
+      read. A problem that truly forces you to answer in order says so, and
+      says it by folding the previous answer into the next input, and that
+      statement did not.
+
+      He had assumed it, because a ledger is written in order and he had spent
+      nine years writing one. The lesson he now makes every student in this
+      vault say out loud is that the queries are data too, and data can be
+      sorted. He does not consider the three hours to be the failure. The
+      failure is that he never asked.
+
+  - key: secret
+    title: What he is actually looking for
+    depth: perfect
+    text: >-
+      Every price on his lists is quoted in the same unit, and the unit is not
+      operations. It is minutes of yours. Four lines against sixty is not a
+      fact about memory; it is a fact about the forty minutes between them, and
+      about the fact that you have roughly three of those forty minutes in a
+      contest and no way to buy a fourth.
+
+      So the column of the ledger he actually reads is not what a student
+      built. It is what a student declined to build. The entry he marks is the
+      one where the constraints described a structure and the student wrote
+      nothing at all — checked which bound the enormous number was attached to,
+      found it was on the interval and not on the input, and answered it with a
+      division.
+
+      He has never said this to a student. He believes that a student who is
+      told it stops discovering it. He has written it down, which is not the
+      same thing, and is as close as he comes.
+
+relationships:
+  - master: master_arrays
+    stance: old friends
+    line: >-
+      "Korrin and I agree about everything and argue constantly. She asks what
+      one pass carries; I ask what one query costs. She would say those are the
+      same question. They are, and she got there first, and she has never once
+      mentioned it."
+  - master: master_dp
+    stance: professional respect, one reservation
+    line: >-
+      "Solvane and I keep the same kind of book. He files what a subproblem
+      answered; I file what it cost to be able to ask. His tables are exact and
+      they are the only thing I have ever watched him decline to price."
+  - master: master_greed
+    stance: approval
+    line: >-
+      "Rhe buys his certainty with minutes and knows exactly how many he is
+      spending. That is the only kind of spending I approve of. When his proof
+      does not come, what he writes next is mine or Solvane's, and both of ours
+      cost more — he is the one who tells the student so."
+
+diagnosis:
+  recognition:
+    - >-
+      "You can build all five of these. Put an unnamed statement in front of
+      you and you choose by whichever one you drilled last. Price that
+      correctly: it does not cost you a wrong verdict, it costs you forty
+      minutes and the two problems you never opened, and nothing in the judge's
+      reply will ever mention it. We drill the reading now, not the building."
+    - >-
+      "The constraints before the story. Does anything get written to, and can
+      the quantity be undone. Two sentences, and they choose the structure for
+      you — and you have been answering them from memory instead of from the
+      page."
+  understanding:
+    - >-
+      "You write both walks perfectly and you cannot tell me what cell i holds.
+      Then you do not own them; you are renting them from the last problem that
+      used them, and the rent comes due the first time a statement asks for a
+      minimum instead of a sum. One sentence: what is stored at index i, and
+      how wide is its block."
+  implementation:
+    - >-
+      "Your judgement is ahead of your hands. That is the cheaper shortfall and
+      the only one that drills genuinely fix, so price it and then pay it: the
+      walk is ten seconds from memory and four minutes derived, and at minute
+      fifty you will have neither the minutes nor the nerve. Write it until it
+      is boring."
+  retention:
+    - >-
+      "You held this and it has gone. Nothing is wrong with you — that is the
+      calendar, and a record exists precisely because memory does not. Go back
+      over the four rows before we spend anything further. Relearning this now
+      costs an hour. Relearning it in a contest costs the contest."

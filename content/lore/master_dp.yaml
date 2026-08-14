@@ -1,0 +1,224 @@
+master: master_dp
+epithet: He Will Not Write What He Cannot Say
+clan: The Kept Answer
+creed: >-
+  A cell you cannot describe is a cell you cannot check. Say what it holds, in
+  one sentence, and the loop will write itself.
+
+entries:
+  - key: biography
+    title: Biography
+    depth: met
+    text: >-
+      Solvane is not a discoverer and has never claimed to be. He is an
+      archivist, which by his own account is the smaller job and the harder
+      one: deciding what is worth writing down.
+
+      He came to the Forbidden Art from clerking. Eleven years keeping the
+      record of a court of appeals — the same disputes arriving in different
+      clothes, decided again from nothing every time, at enormous expense. He
+      noticed the expense before he noticed anything else, and says the whole
+      of his discipline is one observation from that room. The cost is never
+      the first answer. It is the second, and the twelve-thousandth.
+
+      He is called impossible to impress and does not dispute it. He disputes
+      the implication. He is not withholding praise; he simply does not think a
+      correct answer is evidence of anything, and he has twenty years of
+      records showing he is right.
+
+  - key: philosophy
+    title: Philosophy
+    depth: trained
+    text: >-
+      Six secrets, and he will tell you on the first day that the first one is
+      the only one. The recurrence is not the technique. The recurrence is what
+      a precise definition FORCES, and he has never once seen a student who
+      could state the definition and then fail to derive the transition.
+
+      What he refuses is the array. Naming a variable dp does not make it a
+      state. Two students write identical code; one can tell you what cell 7
+      holds and the other cannot; only one of them can repair it when it breaks
+      and only one of them will still have it in six months.
+
+      He is unusual in wanting the sentence written down — in a comment, in the
+      file, before the loop. A definition in your head is not falsifiable. A
+      definition on the page can be checked against a table you filled by hand,
+      and that, not rigour, is the reason it is worth having.
+
+  - key: clan
+    title: The Kept Answer
+    depth: trained
+    text: >-
+      Older than the Forbidden Art's reputation and a great deal duller. The
+      Kept Answer began as a copying house, and its founding argument is an
+      accountant's: the expensive thing is not producing an answer, it is
+      producing it twice.
+
+      They liked to demonstrate it with the smallest recursion anybody knows.
+      Written out from the definition, the fortieth Fibonacci number costs
+      331160281 calls — three hundred and thirty-one million, to produce
+      102334155. Write each answer down the first time it is computed and there
+      are 41 things to compute. Not a faster algorithm. The same algorithm,
+      with the answers kept.
+
+      Their rule is why Solvane is the way he is. Nothing entered the archive
+      without a sentence saying what it meant. A number arriving with no
+      definition was not filed and was not argued with; it was burned. The
+      archive, they said, is a store of MEANINGS that happens to contain some
+      values.
+
+  - key: legend
+    title: One Word in the Sentence
+    depth: tested
+    text: >-
+      A load-out problem. A hundred goods, each with a weight and a worth, and
+      a cart that would carry up to a billion. The room recognised it instantly
+      and the room was right: it is the oldest table in the region — dp[w] is
+      the best worth obtainable within w of room — and the answer sits at
+      dp[C].
+
+      And C was ten to the ninth. A hundred goods times a billion columns is
+      ten to the eleventh cells. There is no machine. Half the hall decided the
+      statement was miscopied and the other half went hunting for a greedy that
+      could not exist.
+
+      Solvane read the constraints again and found the line nobody had priced:
+      each good was worth at most a thousand. So the total worth in the entire
+      problem was at most a hundred thousand. And he changed one word of the
+      sentence. Not "the best worth I can obtain within w of room". "The least
+      room in which worth v can be achieved." Same goods, same split on the
+      last decision, same descending sweep — the axis he indexed by became the
+      thing the old cell held, and the thing the old cell held became the
+      index. A hundred goods times a hundred thousand columns is ten million
+      cells, which is nothing, and the answer is the largest v whose room fits
+      in the cart.
+
+      He did not invent an algorithm that day. He wrote a different sentence
+      about the same one, and the sentence is the only part that changed. He
+      considers this the least interesting thing he has ever been praised for
+      and the most important thing he has ever proved.
+
+  - key: failure
+    title: What he got wrong
+    depth: felled
+    text: >-
+      He refused a correct answer for nine years, and he will not soften the
+      account of it.
+
+      A man came to him for a ruling and brought a solution with no table in it
+      — a ranking, a single pass, and an argument three lines long that the
+      local choice was safe. Solvane sent him away to define a state. He came
+      back with one, exactly, and the table produced the same number by a route
+      nobody needed, and Solvane recorded that as a lesson learned.
+
+      It was not. The exchange argument had been a proof. It was shorter than
+      his definition and it was stronger — it held for every input, where his
+      table held for the inputs it had room for — and he had discarded it
+      because it did not have the SHAPE of rigour he recognised. He had
+      confused a method with its uniform. The man was Dovan Rhe, and they have
+      been arguing ever since. Solvane does not think he has fully stopped.
+
+  - key: secret
+    title: What he is actually looking for
+    depth: perfect
+    text: >-
+      He is not looking for correct answers. Twenty years of records say they
+      predict nothing at all.
+
+      What he watches for is the moment a student states their own definition
+      out loud, hears it, and DISCARDS it — before a line is written. That is
+      the single observation in the archive that has ever predicted anything,
+      and he has never found a way to teach it directly.
+
+      It is also why the archive has the shape it has. Everyone assumes it is a
+      record of answers that worked. Most of it is the other thing: definitions
+      stated precisely enough to be found wrong, and thrown away at a cost of
+      ten seconds each. That volume is far larger, he thinks it is far more
+      valuable, and he has never persuaded anybody to read it.
+
+      A definition can be wrong. A loop can only be debugged. That is the whole
+      of what he means by the word state, and it is why he asks for the
+      sentence first — not because it is rigorous, but because it is cheap to
+      throw away.
+
+relationships:
+  - master: master_greed
+    stance: the long argument
+    line: >-
+      "Rhe and I are said to disagree. We do not. He asks whether the local
+      choice can be proved safe; I ask what one cell holds; and on any given
+      problem both questions have the same answer, which is sometimes yes and
+      sometimes no. Where he is right he is completely right — a proof is
+      shorter than my table and stronger, because it holds for every input and
+      mine holds for the ones I had room for. Where he is wrong, nothing warns
+      him: no exchange argument exists, so none is found, so he concludes he
+      has not looked hard enough. Coins of one, three and four, and the amount
+      six. His rule pays three. Two is possible. Fifty of capacity and blocks
+      worth sixty at ten, a hundred at twenty, a hundred and twenty at thirty:
+      he ranks by ratio and collects 160, and the answer is 220, and it leaves
+      his best-rated block on the ground. Then add one word to the statement —
+      say the blocks may be CUT — and he is provably optimal at 240 and my
+      table is an insult. One word, in both directions. We are not arguing
+      about method. We are arguing about which sentence you read first, and
+      neither of us can teach the other's half."
+  - master: master_arrays
+    stance: answered
+    line: >-
+      "Korrin says I would have you define a table before you have read the
+      statement twice, and that when the answer was already in your hands I
+      call it luck. I have never called it luck. I have called it an unwritten
+      definition, which is a different accusation. Her prefix sum is a state:
+      sum[i] is the total of the first i elements. That is a sentence, it is
+      exact, and it is better than most of mine. She has one — she can say it —
+      she simply says it with her hands. My objection was never to her method.
+      It is that a student watching those hands learns the gesture."
+  - master: master_graphs
+    stance: shared ground
+    line: >-
+      "Grune says half of what I teach only works because something ordered the
+      states for me first. She is right, and she is reciting my second secret
+      back to me: every cell the transition reads must already be final. On a
+      graph that is her in-degree queue; on an array it is an ascending loop.
+      She thinks that makes it hers. I would settle for it being one thing with
+      two names."
+
+diagnosis:
+  recognition:
+    - >-
+      "You can build any of these tables and you cannot tell which one a
+      statement is asking for. Those are different skills and nobody has told
+      you they were separate. From here you will read statements and answer one
+      question only — what is fixed, and what is still free — and you will not
+      touch a keyboard until it is answered."
+    - >-
+      "You reached for the technique you drilled last rather than the one the
+      statement described. Read it again with me and say what is being spent
+      from a shared budget. If nothing is, one index was sufficient and you
+      built a second axis to store nothing."
+  understanding:
+    - >-
+      "Stop. Finish this sentence and do not use the word dp: this cell holds
+      the ___ , where i is ___ . You cannot, and your code is correct, which
+      means you have a shape and not a state. A shape survives exactly one
+      problem. Nothing you can say about that loop is checkable until the
+      sentence exists, so we begin with the sentence, and we will not write a
+      transition today."
+    - >-
+      "Your recurrence is right and it is not yours. Tell me what dp[i] means,
+      then tell me where the answer lives — the last cell or the largest one —
+      and notice that you cannot answer the second question without having
+      answered the first. That is not a coincidence. The definition tells you
+      where the answer lives. It tells you everything."
+  implementation:
+    - >-
+      "The state is right. That is the part I cannot drill into anybody and you
+      have it. The loop direction is not, and that is arithmetic — both cases
+      read row i minus one, so the cell to your left must still be stale, so
+      the sweep descends. Write it twenty times. It becomes a hand movement,
+      and it should."
+  retention:
+    - >-
+      "You defined this once and it has gone. That is the calendar; it is not a
+      verdict on you and I do not record it as one. Go back to the sentences
+      and not the code — the loops you can always rebuild, and the definitions
+      are exactly what a month takes first."
