@@ -1,0 +1,1389 @@
+# Elder Vhast's teaching plan — the Unhurried, Master of Foundations.
+#
+# Six secrets across three patterns, and not one of them is an algorithm. This
+# is the village: what the student learns here is how to READ — the constraint
+# block before the story, the size of a number before its meaning, the order of
+# two updates before the loop that contains them.
+#
+# Every figure below has been recomputed by brute force rather than recalled.
+# Where a book is quoted the quotation is exact: the Handbook's own example of
+# an int product going wrong prints -1757895751, and its own floating point
+# example prints 0.99999999999999988898. Both were run before they were
+# written down. Elder Vhast would not have it otherwise; he has the time.
+
+master_id: master_foundations
+patterns:
+  - constraint-budget
+  - linear-scan
+  - integer-safety
+title: Elder Vhast, the Unhurried — Six Secrets of Reading Before Writing
+
+opening: >-
+  Sit down. There is no hurry — whatever the others told you on the road, the
+  clock has never yet been the thing that beat a student in this village. You
+  will lose to something quieter. You will lose because you read a story about
+  merchants and barrels and started typing before you read the four lines
+  underneath it that said how many barrels there are. Those four lines are the
+  problem. The story is decoration. I will teach you six things, and none of
+  them is an algorithm: how much a second is worth, what a small number is
+  telling you, what the previous step of a loop already knew, what the best
+  answer ending HERE is, where a thirty-two bit integer quietly stops being
+  correct, and when a division may be trusted. Learn them and every master
+  after me will find you easier to teach. Skip them and you will write correct
+  algorithms that are refused, and you will not know why. Take your time. I
+  have a great deal of it.
+
+stages:
+  # ---------------------------------------------------------------- stage 0
+  - id: stage-operation-budget
+    order: 0
+    pattern: constraint-budget
+    trial_problem_ids: [quarry-crate-tallies]
+    secret:
+      id: operation-budget
+      name: A Second Is a Hundred Million
+      idiom: "n = 10^5 with O(n^2) is 10^10 — refused before a line is written"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        Begin with one number and hold it for the rest of your life: a judge
+        gets through something like 10^8 simple operations in a second. That is
+        all. It is not exact — a tight loop over an array beats a loop through
+        a hash map by a factor of ten, and neither is a hundred million of
+        anything in particular — but it is close enough to decide every
+        question you will be asked in this village. From it comes the only
+        arithmetic that matters: multiply the largest n the constraints permit
+        by the cost of the shape you were about to write, and compare with
+        10^8. n = 10^5 and a double loop is 10^10, which is a hundred seconds,
+        and no cleverness in the body of the loop will save it. n = 10^5 and a
+        sort is 1.7 million, which is nothing. Notice what this costs you: no
+        code, no thought about the problem at all, thirty seconds of
+        multiplication. Students skip it because it feels like it is not
+        working. It is the only part of the hour that cannot be wasted.
+      demonstrations:
+        - expression: "n = 100000, a loop inside a loop"
+          result: "10^10 operations"
+          note: >-
+            About a hundred seconds. There is no constant factor small enough
+            to rescue this, and knowing that before you type is worth more than
+            knowing any algorithm.
+        - expression: "n = 100000, one sort"
+          result: "1700000 operations"
+          note: >-
+            n times log2(n), and log2(100000) is 16.6, so 17 passes. Two
+            thousand times cheaper than the double loop on the same input.
+        - expression: "n = 5000, a loop inside a loop"
+          result: "25000000 operations"
+          note: >-
+            A quarter of the budget. The same shape that was hopeless at 10^5
+            is comfortable here, which is why the bound and not the shape is
+            what you read first.
+        - expression: "n = 1000000, one sort"
+          result: "20000000 operations"
+          note: "log2(10^6) is 19.9, so 20 passes. A fifth of the budget."
+        - expression: "n = 400, three nested loops"
+          result: "64000000 operations"
+          note: >-
+            Inside the budget, and this is why a bound of 400 exists at all: it
+            is the setter telling you a cubic method is intended.
+        - expression: "n = 500, three nested loops"
+          result: "125000000 operations"
+          note: >-
+            Over the budget by a quarter. The Handbook's table allows cubic up
+            to 500 and the stricter table stops at 400 — where they disagree,
+            the honest reading is that the answer is close, and close is a
+            reason to look one rung further down.
+        - expression: "100000 test cases, each sorting 200000 values"
+          result: "1.7 * 10^11 operations"
+          note: >-
+            Which is why a statement bounding the SUM of n over all cases is a
+            gift and must be read as one. Without that sentence, the obvious
+            per-case method is dead.
+      watch_out:
+        - warning: "Estimate from the WORK, not from the number of input lines."
+          why: >-
+            t test cases each costing n log n is t * n log n, not n log n. With
+            t at 10^5 and n at 2 * 10^5 that is 1.7 * 10^11 and hopeless — but
+            if the statement bounds the sum of n over all cases at 2 * 10^5,
+            the same code is 3.4 million and fine. One sentence, four orders of
+            magnitude, and it never appears in the story.
+        - warning: "Budget the memory as well as the time."
+          why: >-
+            256 MB holds about 6.7 * 10^7 four-byte integers. A table of 10^4
+            by 10^4 ints is 4 * 10^8 bytes, which is 381 MB, and it fails
+            however fast the algorithm is. Ten million ints is 38 MB and is
+            fine; ten million long longs is 76 MB and often is not.
+        - warning: "A recursion whose depth is n dies at about 10^5 frames."
+          why: >-
+            The default stack is a few megabytes and each frame costs tens of
+            bytes. The symptom is a segmentation fault on the largest test
+            only, which reads like a memory bug and is actually a depth bug —
+            rewrite the recursion as a loop with an explicit stack.
+        - warning: "The estimate hides constant factors, and some of them are large."
+          why: >-
+            Synchronised streams cost five to ten times on 10^6 lines of input;
+            std::endl flushes on every line; an unordered_map lookup is perhaps
+            ten times a vector index and can degrade further. None of these
+            change the complexity class, and all of them can change a pass into
+            a timeout. Turn the synchronisation off, print '\n', and index an
+            array when you can.
+        - warning: "Do not treat 10^8 as a promise in either direction."
+          why: >-
+            10^7 operations is certainly fine; 10^9 simple operations sometimes
+            passes in two seconds and usually does not. The number is a
+            decision procedure, not a physical law: when your estimate lands
+            within a factor of two of the budget, look for the next class down
+            rather than hoping.
+      drills:
+        - id: ob-eval-quadratic
+          kind: evaluate
+          prompt: >-
+            n is 100000 and you were about to write a loop inside a loop. How
+            many operations is that, and does it fit in one second?
+          options:
+            - "10^10 — no, that is roughly a hundred seconds"
+            - "10^5 — yes, comfortably"
+            - "2 * 10^5 — yes, comfortably"
+            - "10^7 — yes, with room to spare"
+          answer: "10^10 — no, that is roughly a hundred seconds"
+          explanation: >-
+            (10^5)^2 = 10^10, and at 10^8 operations a second that is about a
+            hundred seconds. This is the single most common estimate a student
+            gets wrong, because 100000 does not look large.
+        - id: ob-eval-sort
+          kind: evaluate
+          prompt: >-
+            n is 100000 and the plan is one sort. Roughly how many operations,
+            taking log2(100000) as 17?
+          options: ["1700000", "100000", "10^10", "17"]
+          answer: "1700000"
+          explanation: >-
+            n log n = 100000 * 17 = 1.7 million, which is under two per cent of
+            the budget. The same input that made the double loop hopeless makes
+            the sort free.
+        - id: ob-eval-cubic
+          kind: evaluate
+          prompt: >-
+            n is 400 and the method has three nested loops. How many operations,
+            and what does the bound of 400 tell you?
+          options:
+            - "6.4 * 10^7 — the bound was chosen to make the cubic method fit"
+            - "1.2 * 10^3 — cubic is always cheap"
+            - "6.4 * 10^10 — cubic is never affordable"
+            - "1.6 * 10^5 — the bound is irrelevant"
+          answer: "6.4 * 10^7 — the bound was chosen to make the cubic method fit"
+          explanation: >-
+            400^3 = 64000000, comfortably inside a second. A small, oddly
+            specific bound is never an accident; it is the setter's own estimate
+            handed to you.
+        - id: ob-eval-memory
+          kind: evaluate
+          prompt: >-
+            A table of 10^4 by 10^4 four-byte integers. How much memory, and
+            does it fit in the usual 256 MB?
+          options:
+            - "381 MB — no"
+            - "100 MB — yes"
+            - "40 MB — yes"
+            - "4 MB — yes, easily"
+          answer: "381 MB — no"
+          explanation: >-
+            10^8 cells at 4 bytes is 4 * 10^8 bytes, which is 381 MB. Time is
+            not the only budget, and a memory limit refuses a solution just as
+            firmly as a clock does.
+        - id: ob-prop-first
+          kind: property
+          prompt: >-
+            When, relative to everything else, should this arithmetic be done?
+          options:
+            - "before choosing the algorithm, because it decides which algorithms are allowed"
+            - "after implementing, to check whether the submission will pass"
+            - "only when the first submission times out"
+            - "never — complexity classes hide constant factors, so estimates are worthless"
+          answer: "before choosing the algorithm, because it decides which algorithms are allowed"
+          explanation: >-
+            The estimate is not a review step. It is the first step: it narrows
+            the search for an approach from everything you know to the two or
+            three classes the bound permits, which is what makes it worth thirty
+            seconds.
+        - id: ob-prop-sumn
+          kind: property
+          prompt: >-
+            A statement says "the sum of n over all test cases does not exceed
+            2 * 10^5". What has that sentence given you?
+          options:
+            - "permission to spend O(n log n) per case, because the total work is bounded by the total input"
+            - "a warning that the input is large and must be read quickly"
+            - "a guarantee that each individual case has n at most 2 * 10^5"
+            - "nothing; it is the same as bounding n"
+          answer: "permission to spend O(n log n) per case, because the total work is bounded by the total input"
+          explanation: >-
+            Without it, t times n could be 10^5 * 2 * 10^5 = 2 * 10^10. With
+            it, whatever the cases look like, the total is bounded by the sum —
+            so the obvious per-case method is the intended one.
+        - id: ob-trap-tn
+          kind: trap
+          prompt: >-
+            A solution runs in O(n log n) per test case. There are up to 10^5
+            cases with n up to 2 * 10^5 each, and NO bound on the sum of n. It
+            passes every sample and times out. What was misread?
+          options:
+            - "the cost is t * n log n, about 1.7 * 10^11, not n log n"
+            - "the sort is the wrong algorithm for this problem"
+            - "the input reading is too slow and needs scanf"
+            - "nothing was misread; the judge is slow"
+          answer: "the cost is t * n log n, about 1.7 * 10^11, not n log n"
+          explanation: >-
+            Estimating from one test case is estimating the wrong quantity. The
+            fix is either a cheaper per-case method or the realisation that
+            without a sum bound the setter intended something else entirely.
+        - id: ob-recall-budget
+          kind: recall
+          prompt: >-
+            State the rule of thumb for how many simple operations fit in one
+            second on a judge. A number is enough.
+          answer: "10^8"
+          accepts:
+            - "1e8"
+            - "100000000"
+            - "10^8operationspersecond"
+            - "ahundredmillion"
+            - "100million"
+          explanation: >-
+            A hundred million. Every other estimate in this village is that
+            number divided by the cost of the shape you were about to write.
+            Memorise it; you will not have time to derive it.
+        - id: ob-apply-pairs
+          kind: apply
+          prompt: >-
+            `int n;` holds the number of items. Write the C++ expression for the
+            number of unordered pairs among them, in a form that is still
+            correct when n is 200000.
+          answer: "1LL * n * (n - 1) / 2"
+          accepts:
+            - "1ll*n*(n-1)/2"
+            - "(longlong)n*(n-1)/2"
+            - "1ll*n*(n-1)/2;"
+            - "static_cast<longlong>(n)*(n-1)/2"
+            - "n*1ll*(n-1)/2"
+          explanation: >-
+            At n = 200000 the answer is 19999900000, about nine times what an
+            int holds. The 1LL widens the multiplication BEFORE it happens,
+            which is the only place widening does any good.
+
+  # ---------------------------------------------------------------- stage 1
+  - id: stage-small-n-licence
+    order: 1
+    pattern: constraint-budget
+    trial_problem_ids: [envoy-tour-order, sentry-watch-split]
+    secret:
+      id: small-n-licence
+      name: A Small Bound Is an Instruction
+      idiom: "for (int mask = 0; mask < (1 << n); ++mask)"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        You have learned to read a large bound as a refusal. Now learn the
+        other direction, which students miss for years. When a statement says
+        n <= 20, or n <= 10, or n <= 18, it is not being modest. Those numbers
+        are not round, and nobody writes an unround number by accident. They
+        are the setter's own estimate, handed to you: 2^20 is 1048576, and
+        10! is 3628800, and both are nothing. The bound is saying TRY
+        EVERYTHING — every subset, every order, every assignment — and it is
+        saying so precisely because the clever method you are about to spend
+        forty minutes hunting for does not exist, or is not needed. I have
+        watched more students lose to an easy problem than to a hard one, and
+        this is how it happens: they read n <= 18, feel insulted, and go
+        looking for elegance. Elegance was not asked for. Read the bound, count
+        the possibilities, and if the count is under 10^8, write the loop that
+        walks them.
+      demonstrations:
+        - expression: "n = 20, every subset"
+          result: "1048576 subsets"
+          note: >-
+            2^20. Totalling each with an inner loop of 20 is 2.1 * 10^7
+            operations altogether — a fifth of the budget.
+        - expression: "n = 24, every subset with an inner loop"
+          result: "402653184 operations"
+          note: >-
+            2^24 is 16777216, and times 24 that is 4 * 10^8 — four times the
+            budget. At 24 the subsets are still affordable but the inner loop is
+            not, which is what forces an incremental total or a split in half.
+        - expression: "n = 10, every order"
+          result: "3628800 orders"
+          note: >-
+            10!. With a fixed starting point it is 9! = 362880, and scoring each
+            costs ten additions. A bound of 10 with a cost matrix means
+            permutations.
+        - expression: "n = 13, every order"
+          result: "6227020800 orders"
+          note: >-
+            13! is over six billion. Between 10 and 13 the factorial method dies
+            completely, which is why bounds in this family are 8, 10, 11 and
+            never 15.
+        - expression: "n = 400, every group of three"
+          result: "10586800 groups"
+          note: >-
+            C(400, 3). Ten million groups of three, each checked in a few
+            operations: the cubic loop is the intended solution and no ordering
+            trick is required.
+        - expression: "n = 5000, every pair"
+          result: "12497500 pairs"
+          note: >-
+            C(5000, 2). The same reading one rung down: at 5000 the double loop
+            is twelve million pairs, and the hash map everyone reaches for buys
+            nothing.
+        - expression: "n = 18, every split into two groups"
+          result: "262144 assignments"
+          note: >-
+            2^18. Times 18 to total each, that is 4.7 * 10^6 — and it is
+            unaffected by values as large as 10^18, which is exactly what kills
+            the table-over-sums method the same statement invites.
+      watch_out:
+        - warning: "`1 << n` is an int shift, and it breaks at n = 31."
+          why: >-
+            The literal 1 is an int, so the shift is done in 32 bits however
+            wide the variable receiving it is. At n = 31 the result is negative
+            and at n >= 32 it is undefined. Write `1LL << n` the moment n can
+            reach 31 — and note that if n is that large the enumeration was
+            never affordable anyway, so a shift that big is usually a sign you
+            misread the bound.
+        - warning: "Count the work INSIDE the enumeration, not only the enumeration."
+          why: >-
+            2^24 subsets is 1.7 * 10^7 and fine; 2^24 subsets each totalled by a
+            loop of 24 is 4 * 10^8 and not. The rule is the same as always —
+            multiply the number of things by the cost of each — and here the
+            second factor is the one people forget.
+        - warning: "A small bound with huge VALUES is a deliberate pairing."
+          why: >-
+            n <= 18 with weights up to 10^18 is a statement engineered so that
+            the famous table indexed by achievable sum cannot be built, while
+            the enumeration remains trivial. When you see a tiny count beside an
+            enormous magnitude, the magnitude is there to close a door.
+        - warning: "The factorial ceiling is 12, not 20."
+          why: >-
+            12! is 479001600 and 13! is 6227020800. There is no gap: the method
+            is comfortable at 10, marginal at 11, and gone by 13. If a bound
+            says 15 and the answer looks like an ordering, the intended solution
+            is a subset method over 2^n states, not a permutation method.
+        - warning: "Do not store all the subsets you enumerate."
+          why: >-
+            A million subsets is nothing to visit and 40 MB to remember at four
+            bytes each — more if you keep a vector per subset. The enumeration
+            is cheap because it is a loop, not a collection; score each mask and
+            let it go.
+      drills:
+        - id: snl-eval-subsets
+          kind: evaluate
+          prompt: >-
+            The statement caps n at 20 and asks about collections of items. How
+            many collections are there?
+          options: ["1048576", "400", "20", "2432902008176640000"]
+          answer: "1048576"
+          explanation: >-
+            2^20 = 1048576. A million collections is well inside one second, so
+            the bound is not a restriction on the input — it is a description of
+            the intended solution.
+        - id: snl-eval-permutations
+          kind: evaluate
+          prompt: >-
+            n is capped at 10 and the answer is an ordering of all n items. How
+            many orderings, and does that fit in a second?
+          options:
+            - "3628800 — yes"
+            - "1024 — yes"
+            - "100 — yes"
+            - "3628800 — no, it is far too many"
+          answer: "3628800 — yes"
+          explanation: >-
+            10! = 3628800, and scoring each ordering costs about ten
+            operations, so roughly 3.6 * 10^7 altogether. Bounds of 8, 10 and 11
+            beside an arbitrary cost matrix always mean this.
+        - id: snl-eval-inner
+          kind: evaluate
+          prompt: >-
+            n is 24 and every subset is totalled with an inner loop over the n
+            items. How many operations altogether?
+          options:
+            - "4 * 10^8 — four times the budget"
+            - "1.7 * 10^7 — comfortable"
+            - "576 — trivial"
+            - "2 * 10^24 — hopeless"
+          answer: "4 * 10^8 — four times the budget"
+          explanation: >-
+            2^24 = 16777216 subsets times 24 is 402653184. The enumeration alone
+            was affordable; the inner loop is what broke it. Multiply the count
+            by the cost of each, always.
+        - id: snl-eval-factorial-ceiling
+          kind: evaluate
+          prompt: >-
+            What are 12! and 13!, and what does that pair of numbers tell you?
+          options:
+            - "479001600 and 6227020800 — the factorial method dies between them"
+            - "479001600 and 6227020800 — both are comfortable"
+            - "1728 and 2197 — factorials grow slowly"
+            - "they are both under 10^8"
+          answer: "479001600 and 6227020800 — the factorial method dies between them"
+          explanation: >-
+            One step of n multiplies the work by thirteen. That is why bounds
+            licensing permutations are always 8, 10 or 11, and why a bound of 15
+            is telling you to think in subsets instead.
+        - id: snl-prop-unround
+          kind: property
+          prompt: >-
+            A statement caps n at 18. What is the most useful thing to conclude
+            from the fact that the number is 18 and not 100000?
+          options:
+            - "the setter has already estimated the cost of enumerating everything, and it fits"
+            - "the input is small so the problem is easy"
+            - "the answer must have a closed form"
+            - "the values must also be small"
+          answer: "the setter has already estimated the cost of enumerating everything, and it fits"
+          explanation: >-
+            2^18 = 262144. An unround bound is an arithmetic result, not a
+            preference — someone worked out where the exhaustive method stops
+            fitting and wrote the number just under it.
+        - id: snl-prop-huge-values
+          kind: property
+          prompt: >-
+            n <= 18 sits beside weights as large as 10^18. Why are those two
+            bounds in the same statement?
+          options:
+            - "the huge weights forbid a table indexed by achievable total, while the tiny n keeps enumeration trivial"
+            - "the huge weights force floating point"
+            - "they are unrelated; only n matters"
+            - "the huge weights mean the answer is always the largest weight"
+          answer: "the huge weights forbid a table indexed by achievable total, while the tiny n keeps enumeration trivial"
+          explanation: >-
+            The pairing is engineered. One bound closes the door everyone
+            reaches for and the other opens the one that is actually intended —
+            reading only one of the two leaves you with the wrong method.
+        - id: snl-trap-shift
+          kind: trap
+          prompt: >-
+            `for (long long mask = 0; mask < (1 << n); ++mask)` with n = 40. The
+            loop body never runs. Why?
+          options:
+            - "`1 << n` is computed in int, where a shift of 40 is undefined — the long long on the left changes nothing"
+            - "the loop variable must be an int"
+            - "mask overflows before reaching the bound"
+            - "the comparison should use <="
+          answer: "`1 << n` is computed in int, where a shift of 40 is undefined — the long long on the left changes nothing"
+          explanation: >-
+            The literal 1 is an int, so the shift happens in 32 bits. `1LL << n`
+            fixes it — though at n = 40 the enumeration would need 10^12 steps
+            anyway, so the real lesson is that the bound was misread first.
+        - id: snl-recall-mask-loop
+          kind: recall
+          prompt: >-
+            Write the for-loop header that visits every subset of n items, with
+            n at most 20.
+          answer: "for (int mask = 0; mask < (1 << n); ++mask)"
+          accepts:
+            - "for(intmask=0;mask<(1<<n);++mask)"
+            - "for(intmask=0;mask<(1<<n);mask++)"
+            - "for(intm=0;m<(1<<n);++m)"
+            - "for(intmask=0;mask<(1<<n);++mask){"
+            - "for(intmask=0;mask<(1ll<<n);++mask)"
+          explanation: >-
+            The integers from 0 to 2^n - 1 ARE the subsets. Commit the header to
+            memory so that reading "n <= 20" and typing it are the same motion.
+        - id: snl-apply-member
+          kind: apply
+          prompt: >-
+            Inside that loop, with `long long total = 0;` declared, write the
+            statement that adds w[i] to total exactly when item i is in the
+            current subset.
+          answer: "if (mask & (1 << i)) total += w[i];"
+          accepts:
+            - "if(mask&(1<<i))total+=w[i];"
+            - "if((mask>>i)&1)total+=w[i];"
+            - "if(mask&(1<<i)){total+=w[i];}"
+            - "if(((mask>>i)&1)==1)total+=w[i];"
+          explanation: >-
+            One bit, one item. Note that total is long long: the enumeration
+            being small says nothing about the values being small, and in this
+            family they usually are not.
+
+  # ---------------------------------------------------------------- stage 2
+  - id: stage-carry-forward
+    order: 2
+    pattern: linear-scan
+    trial_problem_ids: [watchpost-signal-rise]
+    secret:
+      id: carry-forward
+      name: Ask What the Previous Step Knew
+      idiom: "best = max(best, x - smallest); smallest = min(smallest, x);"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        Here is the commonest way a student writes 10^10 operations without
+        noticing. The question asks about pairs, or about prefixes, and they
+        write a loop over positions with a loop inside it that looks back over
+        everything already seen. The inner loop is almost always unnecessary,
+        and one question removes it: what did position i-1 already know? Not
+        "what data did it have" — what SUMMARY. For the largest rise, the only
+        thing the whole prefix needs to tell you is its smallest value. One
+        number. Carry it, update it in one operation as each element arrives,
+        and the inner loop has nothing left to do. Then be careful about
+        something that looks like a detail and is not: the ORDER of the two
+        updates. Score the current element against the summary of everything
+        BEFORE it, and only then fold the current element into the summary. Do
+        it the other way and you have quietly allowed a position to pair with
+        itself, which the statement forbade.
+      demonstrations:
+        - expression: "heights 7 1 5 3 6 4, largest later-minus-earlier"
+          result: "5"
+          note: >-
+            The 1 at position 2 with the 6 at position 5. Carrying the smallest
+            so far — 7, then 1, then 1, then 1, then 1 — gives the answer in one
+            walk.
+        - expression: "the same row, examined pair by pair"
+          result: "15 pairs, and 2 * 10^10 at n = 2 * 10^5"
+          note: >-
+            Identical answer, and the shape that produces it is refused by the
+            constraints. The inner loop was never computing anything new.
+        - expression: "heights 9 7 5"
+          result: "-2"
+          note: >-
+            Every rise available is a fall, and the answer is negative. A best
+            initialised to 0 reports 0 here, which is not any pair in the row.
+        - expression: "updating the minimum before scoring, on 9 7 5"
+          result: "0"
+          note: >-
+            Wrong, and wrong in a way that looks right: the element pairs with
+            itself, giving a rise of zero. Two lines, and their order is the
+            whole correctness of the loop.
+        - expression: "weights 3 7 2 7 7 1, largest and how many times it occurs"
+          result: "7 and 3"
+          note: >-
+            Two summaries carried at once. The count resets only on a STRICTLY
+            larger value; on an equal one it increases.
+        - expression: "10^7 readings held in a vector of int"
+          result: "38 MB"
+          note: >-
+            Which is the other reason to carry a summary rather than the data:
+            with a 16 MB limit the row cannot be stored at all, and a walk that
+            never looks back does not need to store it.
+      watch_out:
+        - warning: "Score against the summary BEFORE folding the current element into it."
+          why: >-
+            Reversing the two lines lets position j pair with itself. On 9, 7, 5
+            that turns the correct -2 into 0, and on a row containing any pair
+            of equal values it silently allows a zero answer that the statement
+            forbade. Write the scoring line first, always.
+        - warning: "Initialise a maximum from the data, never from zero."
+          why: >-
+            Zero is only a safe starting value when the empty answer is legal,
+            and it usually is not. On an all-negative row a best starting at 0
+            reports 0 — an answer that corresponds to nothing. Start from the
+            first element, or from the smallest value the type holds.
+        - warning: "The summary must be updatable in O(1), or you have moved the inner loop rather than removed it."
+          why: >-
+            "The smallest so far" updates with one comparison. "The second
+            smallest so far" also does, with care. "The median so far" does not,
+            and needs a structure — which is a different pattern and a different
+            master. Before you commit, check that your carried quantity can be
+            extended by one element without rescanning.
+        - warning: "Anything accumulated over the row is long long."
+          why: >-
+            2 * 10^5 values of 10^9 reach 2 * 10^14. The scan is correct, the
+            complexity is correct, and an int accumulator makes the answer
+            negative on the largest test — a failure that has nothing to do with
+            the pattern and everything to do with the declaration.
+        - warning: "When n reaches 10^7, do not read the row into a vector at all."
+          why: >-
+            A walk that never looks back can consume the input as it arrives.
+            10^7 ints is 38 MB before the vector's own growth, and problems at
+            that bound usually pair it with a memory limit small enough to
+            refuse exactly that.
+      drills:
+        - id: cf-eval-rise
+          kind: evaluate
+          prompt: >-
+            Heights 7, 1, 5, 3, 6, 4 in time order. What is the largest value of
+            h[j] - h[i] over pairs with i strictly before j?
+          options: ["5", "6", "3", "-3"]
+          answer: "5"
+          explanation: >-
+            6 - 1 = 5, taking the 1 at position 2 and the 6 at position 5. The
+            only thing the loop needs from the prefix is its smallest value.
+        - id: cf-eval-negative
+          kind: evaluate
+          prompt: >-
+            Heights 9, 7, 5. What is the largest h[j] - h[i] with i strictly
+            before j?
+          options: ["-2", "0", "2", "4"]
+          answer: "-2"
+          explanation: >-
+            7 - 9 = -2 and 5 - 7 = -2, and 5 - 9 = -4 is worse. Two positions
+            must be chosen, so the answer is negative — and any code that
+            started its best at 0 has just reported 0.
+        - id: cf-eval-order
+          kind: evaluate
+          prompt: >-
+            On the same row 9, 7, 5, the loop updates the running minimum FIRST
+            and scores afterwards. What does it report?
+          options: ["0", "-2", "-4", "9"]
+          answer: "0"
+          explanation: >-
+            Each element is compared with a minimum that already includes
+            itself, so it pairs with itself for a rise of 0. The two lines are
+            one keystroke apart and one of the orders is simply wrong.
+        - id: cf-eval-count
+          kind: evaluate
+          prompt: >-
+            Weights 3, 7, 2, 7, 7, 1 pass by once and may not be stored. What is
+            the largest weight, and how many sacks carry it?
+          options:
+            - "7 and 3"
+            - "7 and 1"
+            - "7 and 2"
+            - "3 and 7"
+          answer: "7 and 3"
+          explanation: >-
+            Two carried numbers. On a strictly larger weight the count resets to
+            1; on an equal weight it increases; otherwise nothing happens.
+            Resetting on equality is the bug this drill exists for.
+        - id: cf-prop-question
+          kind: property
+          prompt: >-
+            What is the question that removes the inner loop?
+          options:
+            - "what summary of everything before this position does this position actually need?"
+            - "can the row be sorted first?"
+            - "is there a formula for the answer?"
+            - "how large can the values get?"
+          answer: "what summary of everything before this position does this position actually need?"
+          explanation: >-
+            Name the summary and you have named the variable to carry. If the
+            answer is "all of it", the pattern does not apply and you need a
+            structure or a different technique.
+        - id: cf-prop-updatable
+          kind: property
+          prompt: >-
+            Which carried quantity does NOT keep this pattern in O(n) overall?
+          options:
+            - "the median of everything seen so far"
+            - "the smallest value seen so far"
+            - "the total of everything seen so far"
+            - "the number of values seen so far that are negative"
+          answer: "the median of everything seen so far"
+          explanation: >-
+            The other three extend by one element in one operation. A median
+            does not — it needs an ordered structure, which is a different
+            pattern taught by a different master. Check for O(1) extension
+            before committing to the shape.
+        - id: cf-trap-recompute
+          kind: trap
+          prompt: >-
+            The loop over positions contains a call that re-totals the prefix
+            each time. n is 2 * 10^5. The answer is correct and the verdict is
+            Time Limit Exceeded. What happened?
+          options:
+            - "the total was recomputed instead of updated, making the walk quadratic — 2 * 10^10 operations"
+            - "the accumulator overflowed and slowed the loop"
+            - "the input reading was too slow"
+            - "the algorithm is right; the judge is at fault"
+          answer: "the total was recomputed instead of updated, making the walk quadratic — 2 * 10^10 operations"
+          explanation: >-
+            A second loop, or a call to accumulate, sitting inside the first is
+            the signature. The previous position had already computed almost
+            exactly that total; carrying it costs one addition.
+        - id: cf-recall-pair
+          kind: recall
+          prompt: >-
+            With `long long best` and `long long smallest` declared and x the
+            current element, write the two statements of the walk, in the order
+            they must appear.
+          answer: "best = max(best, x - smallest); smallest = min(smallest, x);"
+          accepts:
+            - "best=max(best,x-smallest);smallest=min(smallest,x);"
+            - "best=max(best,x-smallest);smallest=min(x,smallest);"
+            - "best=max(x-smallest,best);smallest=min(smallest,x);"
+          explanation: >-
+            Score, then absorb. Memorise the pair as one motion, because the
+            reversed order compiles, runs, passes the samples and answers a
+            different question.
+        - id: cf-apply-stream
+          kind: apply
+          prompt: >-
+            n reaches 10^7 and the memory limit forbids storing the input. With
+            `long long x;` declared, write the loop header that consumes the
+            values one at a time as they are read.
+          answer: "while (cin >> x)"
+          accepts:
+            - "while(cin>>x)"
+            - "while(cin>>x){"
+            - "for(inti=0;i<n;++i){cin>>x;"
+            - "while(std::cin>>x)"
+          explanation: >-
+            The row never exists in memory. That is the whole reason this shape
+            survives bounds where any storing solution is refused before it is
+            run.
+
+  # ---------------------------------------------------------------- stage 3
+  - id: stage-best-ending-here
+    order: 3
+    pattern: linear-scan
+    trial_problem_ids: [caravan-day-ledger, granary-ring-run]
+    secret:
+      id: best-ending-here
+      name: The Best That Ends Here
+      idiom: "cur = max(a[i], cur + a[i]); best = max(best, cur);"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        Now the sharpest instance of the same idea, and the one you will use
+        for the rest of your life. The largest total of a run of consecutive
+        values, where values may be negative. The naive method examines every
+        run: three nested loops, or two if you are careful. The trick is to ask
+        a narrower question than the one you were asked. Not "what is the best
+        run" but "what is the best run that ENDS at position k". That question
+        has only two possible answers — the run ending at k-1 with a[k] added,
+        or a[k] standing alone — because any longer run ending at k contains a
+        run ending at k-1, and if that inner one were not the best you would
+        swap it. So one comparison per position, and the answer to the real
+        question is the largest of those. Take that largest INSIDE the loop.
+        The best run very often ends in the middle of the row, and a maximum
+        taken after the loop only ever sees the last one.
+      demonstrations:
+        - expression: "profits -1 2 4 -3 5 2 -5 2"
+          result: "10"
+          note: >-
+            The run 2 4 -3 5 2. This is the Handbook's own example, and the
+            value has been recomputed by exhaustive search over all runs rather
+            than taken from the page.
+        - expression: "profits 4 -7 5 3 -2 6 -4"
+          result: "12"
+          note: "The run 5 3 -2 6. The best run stops two positions before the row does."
+        - expression: "the same row, with the maximum taken only after the loop"
+          result: "8"
+          note: >-
+            The running value ends at 8, so scoring once at the end throws away
+            the 12 that was reached at position 6. One line, moved inside the
+            loop, is the entire fix.
+        - expression: "profits -5 -2 -9, with best initialised to the first element"
+          result: "-2"
+          note: "The least bad single day, which is the correct answer when a run may not be empty."
+        - expression: "the same row, with best initialised to 0"
+          result: "0"
+          note: >-
+            Zero is not the total of any run of this row. It is the empty run,
+            and the statement said at least one day. Read that sentence before
+            choosing the starting value.
+        - expression: "balances 5 -2 3 -6 4 arranged in a ring"
+          result: "10"
+          note: >-
+            The run 4 5 -2 3, which wraps. The best run inside the row is 6, the
+            total is 4, and the worst run inside the row is -6, so the wrapping
+            answer is 4 - (-6) = 10.
+        - expression: "balances -3 -2 -5 in a ring"
+          result: "-2"
+          note: >-
+            The complement rule proposes total minus worst = -10 - (-10) = 0,
+            which is the empty run again. When every value is negative, the
+            answer is the ordinary one.
+      watch_out:
+        - warning: "Take the maximum inside the loop, not after it."
+          why: >-
+            On 4, -7, 5, 3, -2, 6, -4 the running value peaks at 12 and ends at
+            8. Scoring once at the end reports 8. Every row whose best run
+            reaches the last position passes, which is most small samples, so
+            this bug travels all the way to the judge.
+        - warning: "Decide whether the empty run is allowed before choosing the initial value."
+          why: >-
+            The Handbook's version allows it and starts at 0; most statements do
+            not and must start at the first element. On -5, -2, -9 the two
+            conventions give 0 and -2. This is a sentence in the statement, not
+            a default, and it is the difference between Accepted and Wrong
+            Answer on one hidden test.
+        - warning: "The reset is to a[i], not to zero."
+          why: >-
+            `cur = max(a[i], cur + a[i])` restarts the run AT the current
+            element. Writing `if (cur < 0) cur = 0;` is the empty-run
+            convention wearing different clothes, and it silently changes the
+            answer on all-negative rows.
+        - warning: "The running total needs long long even when each value fits in an int."
+          why: >-
+            2 * 10^5 values of 10^9 reach 2 * 10^14. The comparison logic is
+            unaffected and the answer is nonsense, which makes this the hardest
+            kind of bug to see: the algorithm you are staring at is correct.
+        - warning: "On a ring, the complement rule fails exactly when every value is negative."
+          why: >-
+            Total minus the worst run is the best WRAPPING run, but when the
+            worst run is the whole row the complement is empty. Guard it: if the
+            worst run equals the total, report the ordinary answer. On -3, -2,
+            -5 that is the difference between -2 and 0.
+      drills:
+        - id: beh-eval-cph
+          kind: evaluate
+          prompt: >-
+            Profits -1, 2, 4, -3, 5, 2, -5, 2. What is the largest total of a
+            run of consecutive days, where at least one day must be chosen?
+          options: ["10", "9", "6", "11"]
+          answer: "10"
+          explanation: >-
+            The run 2, 4, -3, 5, 2 totals 10. Every longer run pays for the -5,
+            and every shorter one gives up more than it saves.
+        - id: beh-eval-midrow
+          kind: evaluate
+          prompt: >-
+            Profits 4, -7, 5, 3, -2, 6, -4. What is the largest total of a run?
+          options: ["12", "8", "9", "5"]
+          answer: "12"
+          explanation: >-
+            5 + 3 - 2 + 6 = 12, and the run ends two positions before the row
+            does. Remember that when you decide where to take the maximum.
+        - id: beh-eval-after-loop
+          kind: evaluate
+          prompt: >-
+            On that same row, a solution takes the maximum only once, after the
+            loop, instead of at every step. What does it report?
+          options: ["8", "12", "4", "6"]
+          answer: "8"
+          explanation: >-
+            The running value ends at 8 because the final -4 is folded in. The
+            12 reached in the middle of the row was never recorded, and no small
+            sample will show you this.
+        - id: beh-eval-all-negative
+          kind: evaluate
+          prompt: >-
+            Profits -5, -2, -9, with at least one day required. What is the
+            largest total, and what does a solution that starts its best at 0
+            report?
+          options:
+            - "-2, but a best starting at 0 reports 0"
+            - "0, and starting at 0 is correct"
+            - "-16, the whole row"
+            - "-5, the first day"
+          answer: "-2, but a best starting at 0 reports 0"
+          explanation: >-
+            The least bad single day is -2. Zero is the empty run, which this
+            statement forbade — and it is not the total of any run of this row.
+        - id: beh-prop-two-cases
+          kind: property
+          prompt: >-
+            Why does the best run ending at position k have only two candidates?
+          options:
+            - "any longer run ending at k contains a run ending at k-1, and that inner run must itself be the best one"
+            - "because the values alternate in sign"
+            - "because runs are at most two elements long"
+            - "it does not; all runs ending at k must be examined"
+          answer: "any longer run ending at k contains a run ending at k-1, and that inner run must itself be the best one"
+          explanation: >-
+            Swap in the best inner run and the total can only rise. So the
+            choice is between extending that one and starting fresh at a[k] —
+            one comparison, which is what collapses the whole search.
+        - id: beh-prop-ring
+          kind: property
+          prompt: >-
+            On a ring, why does "total minus the worst run" give the best
+            wrapping run?
+          options:
+            - "a wrapping run is exactly the complement of a non-wrapping one, so making the leftover as small as possible makes the run as large as possible"
+            - "the ring can be doubled and scanned"
+            - "the worst run is always a single element"
+            - "it does not; wrapping runs must be enumerated separately"
+          answer: "a wrapping run is exactly the complement of a non-wrapping one, so making the leftover as small as possible makes the run as large as possible"
+          explanation: >-
+            Two ordinary walks, one for the best run and one for the worst, and
+            the ring costs nothing extra — apart from the all-negative guard,
+            where the complement is the empty run.
+        - id: beh-trap-clamp
+          kind: trap
+          prompt: >-
+            A solution writes `cur += a[i]; if (cur < 0) cur = 0;` and starts
+            best at 0. On which inputs is it wrong?
+          options:
+            - "rows where every value is negative — it reports 0, which is the empty run"
+            - "rows containing a zero"
+            - "rows longer than 10^5"
+            - "none; that is the standard form"
+          answer: "rows where every value is negative — it reports 0, which is the empty run"
+          explanation: >-
+            Clamping at zero IS the empty-run convention. It is correct when the
+            statement allows an empty run and wrong otherwise, and the two are
+            distinguished by one sentence you have to have read.
+        - id: beh-recall-update
+          kind: recall
+          prompt: >-
+            Write the two statements at the heart of this walk, for element
+            a[i], with `cur` and `best` already declared and initialised.
+          answer: "cur = max(a[i], cur + a[i]); best = max(best, cur);"
+          accepts:
+            - "cur=max(a[i],cur+a[i]);best=max(best,cur);"
+            - "cur=max(a[i],cur+a[i]);best=max(cur,best);"
+            - "cur=max(cur+a[i],a[i]);best=max(best,cur);"
+          explanation: >-
+            Extend or restart, then score. Both lines inside the loop, in that
+            order, and the reset is to a[i] rather than to zero.
+        - id: beh-apply-init
+          kind: apply
+          prompt: >-
+            The run must contain at least one element. Write the initialisation
+            of `cur` and `best` from the vector a before the loop begins.
+          answer: "long long cur = a[0], best = a[0];"
+          accepts:
+            - "longlongcur=a[0],best=a[0];"
+            - "longlongcur=a[0];longlongbest=a[0];"
+            - "autocur=a[0];autobest=a[0];"
+            - "longlongbest=a[0],cur=a[0];"
+          explanation: >-
+            From the data, not from zero, and the loop then starts at index 1.
+            The initialisation is where the empty-run question is answered, so
+            answer it deliberately.
+
+  # ---------------------------------------------------------------- stage 4
+  - id: stage-where-int-dies
+    order: 4
+    pattern: integer-safety
+    trial_problem_ids: [tithe-barrel-total, guild-roster-pairs]
+    secret:
+      id: where-int-dies
+      name: Two Billion Is Not a Large Number
+      idiom: "long long total = 0; total += 1LL * a * b;"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        A thirty-two bit integer holds up to 2147483647. Say the number aloud
+        once: two thousand one hundred and forty-seven million. It sounds like
+        a great deal and it is not — a hundred thousand values of a billion
+        pass it after the third one. So there is one question, and you ask it
+        of every line that adds or multiplies: how large can this get on the
+        LARGEST input the constraints permit? Not on the sample. Not typically.
+        At the maximum. The habit takes a week to build and then never costs
+        you anything again, because a long long is the same speed as an int for
+        addition and comparison on any judge you will meet. And learn the one
+        that catches everyone: writing `long long b = a * a;` with a an int
+        does not save you. The multiplication happens in int, where it has
+        already gone wrong, and the widening arrives afterwards to preserve the
+        damage. The Handbook's own example is a = 123456789, and the line
+        prints -1757895751 instead of 15241578750190521.
+      demonstrations:
+        - expression: "INT_MAX"
+          result: "2147483647"
+          note: "About 2.1 * 10^9. Memorise the digits; you will estimate against them often."
+        - expression: "200000 values of 10^9, added"
+          result: "2 * 10^14"
+          note: "A hundred thousand times past the int range, from inputs that each fit in an int."
+        - expression: "the number of unordered pairs among 200000 items"
+          result: "19999900000"
+          note: >-
+            n(n-1)/2, about 2 * 10^10 — nine times INT_MAX. Pair counts are the
+            most common overflow in competitive programming because nothing in
+            the statement looks large.
+        - expression: "int a = 123456789; long long b = a * a;"
+          result: "-1757895751"
+          note: >-
+            The true square is 15241578750190521. Both operands are int, so the
+            product is computed in int; the long long on the left is too late to
+            help. This was run, not remembered.
+        - expression: "int a = 50000; long long b = a * a;"
+          result: "-1794967296"
+          note: >-
+            2500000000 wrapped. Fifty thousand squared — numbers this ordinary
+            are where the trap actually lives.
+        - expression: "the smallest square that leaves the int range"
+          result: "46341^2 = 2147488281"
+          note: >-
+            46340^2 = 2147395600 still fits. So an int is safe for products of
+            values up to about 46340, and for nothing above it.
+        - expression: "1 + 2 + ... + n computed as n * (n + 1) / 2 in int"
+          result: "wrong from n = 46341 onwards"
+          note: >-
+            The SUM only passes INT_MAX at n = 65536, but the product n * (n + 1)
+            passes it at 46341 — and the product is computed first. Always ask
+            about the intermediate value, not only about the answer.
+      watch_out:
+        - warning: "Widen before the multiplication, never after it."
+          why: >-
+            `long long b = a * b;` with int operands computes in int and widens
+            the wreckage. Write `1LL * a * b`, or cast one operand. The
+            declaration on the left looks correct, which is exactly why this
+            survives every reading of the code.
+        - warning: "Ask about intermediate values, not just about the answer."
+          why: >-
+            n * (n + 1) / 2 has an answer that fits long after the product
+            inside it does not. The same is true of a sum you take a remainder
+            of afterwards, and of a difference of two large products. The
+            question is about the largest value the EXPRESSION ever holds.
+        - warning: "Signed overflow is undefined behaviour, not wrapping."
+          why: >-
+            The compiler may assume it never happens, so with -O2 a loop guarded
+            by an overflowing comparison can be optimised into something that
+            never terminates or never runs. This is why the symptom is sometimes
+            not even a consistent wrong answer, and why "it wrapped to a
+            negative" is a story about what usually happens rather than a rule.
+        - warning: "Do not guard a multiplication with the multiplication."
+          why: >-
+            `if (a * b > limit)` forms the product it is protecting you from, so
+            the guard passes exactly when it should have fired. Rearrange to
+            `a != 0 && b > limit / a`; integer division cannot overflow.
+        - warning: "Beware .size(), which is unsigned."
+          why: >-
+            `v.size() - 1` on an empty vector is 18446744073709551615, so
+            `for (size_t i = 0; i + 1 < v.size(); ++i)` is safe and
+            `i < v.size() - 1` is a crash on the empty case. Cast to int, or
+            rearrange the comparison so nothing is subtracted from a size.
+      drills:
+        - id: wid-eval-intmax
+          kind: evaluate
+          prompt: >-
+            What is the largest value a signed 32-bit integer holds?
+          options: ["2147483647", "4294967295", "9223372036854775807", "2147483648"]
+          answer: "2147483647"
+          explanation: >-
+            2^31 - 1, about 2.1 * 10^9. The unsigned version reaches
+            4294967295 and a signed 64-bit integer reaches
+            9223372036854775807; keep all three straight.
+        - id: wid-eval-pairs
+          kind: evaluate
+          prompt: >-
+            n is 200000 and the answer counts unordered pairs. What is
+            n * (n - 1) / 2?
+          options: ["19999900000", "40000000000", "199999", "2000000000"]
+          answer: "19999900000"
+          explanation: >-
+            About 2 * 10^10, which is nine times INT_MAX — produced entirely by
+            inputs that fit comfortably in an int. This is the classic.
+        - id: wid-eval-square
+          kind: evaluate
+          prompt: >-
+            `int a = 123456789; long long b = a * a;` What does b hold?
+          options:
+            - "-1757895751"
+            - "15241578750190521"
+            - "2147483647"
+            - "it does not compile"
+          answer: "-1757895751"
+          explanation: >-
+            Both operands are int, so the product is computed in int and only
+            then widened. The true square is 15241578750190521. `1LL * a * a`
+            fixes it, and costs nothing.
+        - id: wid-eval-46341
+          kind: evaluate
+          prompt: >-
+            What is the smallest positive integer whose square does not fit in a
+            signed 32-bit integer?
+          options: ["46341", "65536", "50000", "32768"]
+          answer: "46341"
+          explanation: >-
+            46340^2 = 2147395600 fits and 46341^2 = 2147488281 does not. Below
+            about 46000, int products are safe; above it, they are not.
+        - id: wid-prop-question
+          kind: property
+          prompt: >-
+            What is the question to ask of every line that adds or multiplies?
+          options:
+            - "how large can this get on the largest input the constraints permit?"
+            - "is this the fastest way to write it?"
+            - "does this need a signed or an unsigned type?"
+            - "how large is this on the sample?"
+          answer: "how large can this get on the largest input the constraints permit?"
+          explanation: >-
+            At the maximum, not typically and not on the sample. The whole
+            family of bugs is invisible except at the top of the range, which is
+            where the judge always looks.
+        - id: wid-prop-intermediate
+          kind: property
+          prompt: >-
+            The final answer of n * (n + 1) / 2 fits in an int up to n = 65535.
+            From which n is the expression nevertheless wrong in int arithmetic?
+          options:
+            - "from 46341, because the product n * (n + 1) overflows before the division happens"
+            - "from 65536, since that is where the answer overflows"
+            - "it is never wrong; the division repairs it"
+            - "from 32768, where n itself becomes large"
+          answer: "from 46341, because the product n * (n + 1) overflows before the division happens"
+          explanation: >-
+            The intermediate value is what overflows, and the division cannot
+            undo it. Ask the size question about the largest value the
+            expression ever holds, not about what it ends up as.
+        - id: wid-trap-guard
+          kind: trap
+          prompt: >-
+            A solution protects itself with `if (a * b > limit) return -1;`.
+            Values reach 10^18. Why does the guard never fire?
+          options:
+            - "the product it tests has already overflowed, so the comparison is made on a wrapped value"
+            - "limit is declared as an int"
+            - "the comparison should be >="
+            - "the guard fires, but the return value is ignored"
+          answer: "the product it tests has already overflowed, so the comparison is made on a wrapped value"
+          explanation: >-
+            A guard that computes the dangerous thing is not a guard. Divide
+            instead: `a != 0 && b > limit / a`, which cannot overflow and is
+            exact because integer division rounds down.
+        - id: wid-recall-widen
+          kind: recall
+          prompt: >-
+            `int a, b;` are declared. Write the expression that multiplies them
+            correctly into a 64-bit result.
+          answer: "1LL * a * b"
+          accepts:
+            - "1ll*a*b"
+            - "(longlong)a*b"
+            - "static_cast<longlong>(a)*b"
+            - "a*1ll*b"
+            - "1ll*a*b;"
+          explanation: >-
+            One operand widened before the multiplication, which promotes the
+            other. Learn it as a single token — it is three characters and it
+            removes the most common wrong answer in competitive programming.
+        - id: wid-apply-accumulate
+          kind: apply
+          prompt: >-
+            `vector<int> w;` holds up to 2 * 10^5 weights of up to 10^9 each.
+            Write the declaration and the loop that totals them correctly.
+          answer: "long long total = 0; for (int x : w) total += x;"
+          accepts:
+            - "longlongtotal=0;for(intx:w)total+=x;"
+            - "longlongtotal=0;for(autox:w)total+=x;"
+            - "longlongtotal=0;for(inti=0;i<(int)w.size();++i)total+=w[i];"
+            - "longlongtotal=0;for(constint&x:w)total+=x;"
+          explanation: >-
+            The elements may stay int; the accumulator may not. Each addition
+            widens x to long long because total is long long, so nothing is lost
+            on the way in.
+
+  # ---------------------------------------------------------------- stage 5
+  - id: stage-exact-arithmetic
+    order: 5
+    pattern: integer-safety
+    trial_problem_ids: [surveyor-plot-area]
+    secret:
+      id: exact-arithmetic
+      name: Divide Last, and Never in a double
+      idiom: "if (a != 0 && b > limit / a)"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        The last secret of the village, and the one that separates an answer
+        that is nearly right from one that is right. Two instruments cost
+        students contests. The first is the double, which is not a wider
+        integer. It represents every whole number exactly up to 2^53 —
+        9007199254740992 — and above that it starts skipping, so 2^53 and
+        2^53 + 1 compare EQUAL. It also cannot hold 0.1, which is why
+        0.3 * 3 + 0.1 prints 0.99999999999999988898 rather than 1. If your
+        answer is a whole number, never let a double touch it. The second is
+        integer division, which is exact but rounds towards zero rather than
+        downwards: -7 / 2 is -3, where the floor is -4. Above zero the two
+        agree, which is why every sample built from positive numbers passes and
+        the one hidden test with a negative endpoint does not. Three habits
+        follow: compare ratios by cross multiplication rather than by dividing;
+        round up with (a + b - 1) / b rather than with a cast to double; and
+        when the cross product itself overflows, widen to 128 bits rather than
+        reaching for floating point.
+      demonstrations:
+        - expression: "double x = 0.3 * 3 + 0.1; printed to twenty places"
+          result: "0.99999999999999988898"
+          note: >-
+            Not 1. The Handbook's own example, run rather than recalled, and the
+            reason == is never used to compare two doubles.
+        - expression: "2^53 == 2^53 + 1, as doubles"
+          result: "true"
+          note: >-
+            9007199254740992 is where a double stops being able to count. Every
+            integer above it is only approximately represented, so a 64-bit
+            answer never survives a trip through one.
+        - expression: "-7 / 2 and -7 % 2 in C++"
+          result: "-3 and -1"
+          note: >-
+            Truncation towards zero. The mathematical floor is -4 and the
+            remainder is 1, so both differ from what a counting argument expects
+            below zero.
+        - expression: "the number of carts of capacity 7 needed for 30 crates"
+          result: "(30 + 7 - 1) / 7 = 5"
+          note: >-
+            Ceiling division without a double anywhere. 30 / 7 is 4 and leaves
+            two crates on the ground.
+        - expression: "comparing means 200000000000000/200000 and 999999999/1"
+          result: "cross products 200000000000000 and 199999999800000"
+          note: >-
+            Exact in a long long, and the first mean is the larger by a
+            whisker. Dividing first would have made both 10^9 and declared a tie.
+        - expression: "two totals of 2 * 10^14 compared across counts of 2 * 10^5"
+          result: "4 * 10^19, which a long long cannot hold"
+          note: >-
+            LLONG_MAX is 9223372036854775807, about 9.2 * 10^18. The fix for the
+            division needs its own fix: __int128, or comparing quotients first
+            and remainders after.
+        - expression: "vector<int> v; and v.size() - 1 when v is empty"
+          result: "18446744073709551615"
+          note: >-
+            size() is unsigned, so the subtraction wraps instead of going
+            negative. A loop bounded by it runs 1.8 * 10^19 times rather than
+            zero.
+      watch_out:
+        - warning: "A double is not a wider integer."
+          why: >-
+            It holds integers exactly only up to 2^53 = 9007199254740992. A
+            64-bit answer passed through one comes back approximately right,
+            which on a judge is exactly as useful as being wrong. Keep whole
+            numbers in whole-number types from input to output.
+        - warning: "Never compare two doubles with ==."
+          why: >-
+            0.3 * 3 + 0.1 is not 1, so an equality test on computed values fails
+            for reasons that have nothing to do with your algorithm. If floating
+            point is genuinely required, compare with a tolerance — and first
+            check whether the comparison can be done in integers instead.
+        - warning: "Integer division truncates towards zero, which is not the floor."
+          why: >-
+            -7 / 2 is -3 and the floor is -4. Every counting formula written for
+            positive inputs is off by one somewhere below zero, and the symptom
+            appears only on tests whose range touches or crosses it.
+        - warning: "Round up with integers, not with a cast."
+          why: >-
+            (a + b - 1) / b is exact for non-negative a and b. ceil((double)a/b)
+            agrees with it until a exceeds 2^53, and then quietly stops — and
+            the inputs that reach that size are precisely the ones the judge
+            keeps for its last test.
+        - warning: "::abs takes an int."
+          why: >-
+            Calling abs on a long long can select the int overload and narrow
+            the argument, so a value of 3 * 10^9 comes back wrong. Use
+            std::llabs, or std::abs with <cmath> included, and check what your
+            compiler chose if the answer is wrong only for large magnitudes.
+      drills:
+        - id: ea-eval-double-sum
+          kind: evaluate
+          prompt: >-
+            `double x = 0.3 * 3 + 0.1;` printed to twenty decimal places. What
+            appears?
+          options:
+            - "0.99999999999999988898"
+            - "1.00000000000000000000"
+            - "1.00000000000000011102"
+            - "0.90000000000000002220"
+          answer: "0.99999999999999988898"
+          explanation: >-
+            Neither 0.3 nor 0.1 is representable in binary, so the sum lands
+            just below 1. This is why == is never used on computed doubles.
+        - id: ea-eval-2-53
+          kind: evaluate
+          prompt: >-
+            Up to which integer does a double represent every whole number
+            exactly?
+          options:
+            - "2^53 = 9007199254740992"
+            - "2^31 = 2147483648"
+            - "2^63 = 9223372036854775808"
+            - "10^18"
+          answer: "2^53 = 9007199254740992"
+          explanation: >-
+            Above it the representable integers become spaced out, and 2^53 and
+            2^53 + 1 compare equal. A long long answer must never travel through
+            a double.
+        - id: ea-eval-negative-division
+          kind: evaluate
+          prompt: >-
+            In C++, what are -7 / 2 and -7 % 2?
+          options:
+            - "-3 and -1"
+            - "-4 and 1"
+            - "-3 and 1"
+            - "-4 and -1"
+          answer: "-3 and -1"
+          explanation: >-
+            Truncation towards zero. The mathematical floor is -4 with remainder
+            1, so any counting formula that assumed the floor is off by one for
+            negative inputs.
+        - id: ea-eval-ceiling
+          kind: evaluate
+          prompt: >-
+            30 crates, carts of capacity 7. How many carts, and by which integer
+            expression?
+          options:
+            - "5, from (30 + 7 - 1) / 7"
+            - "4, from 30 / 7"
+            - "5, from 30 / 7 + 1"
+            - "4, from (30 + 7) / 7"
+          answer: "5, from (30 + 7 - 1) / 7"
+          explanation: >-
+            The +b-1 form is exact for non-negative operands, and unlike
+            30 / 7 + 1 it stays correct when the division comes out even —
+            28 crates need 4 carts, not 5.
+        - id: ea-prop-cross
+          kind: property
+          prompt: >-
+            Two means, s1/n1 and s2/n2, must be compared exactly with n1 and n2
+            positive. What is the right comparison?
+          options:
+            - "compare s1 * n2 with s2 * n1, after checking that the products fit"
+            - "compare (double)s1/n1 with (double)s2/n2"
+            - "compare s1 / n1 with s2 / n2 in integers"
+            - "compare s1 with s2, since the counts cancel"
+          answer: "compare s1 * n2 with s2 * n1, after checking that the products fit"
+          explanation: >-
+            Cross multiplication is exact — and the second half of the sentence
+            is the part students drop. With totals of 2 * 10^14 and counts of
+            2 * 10^5 the products reach 4 * 10^19 and need 128 bits.
+        - id: ea-prop-unsigned
+          kind: property
+          prompt: >-
+            Why is `for (size_t i = 0; i < v.size() - 1; ++i)` dangerous?
+          options:
+            - "on an empty vector, size() - 1 is 18446744073709551615 and the loop runs off the end"
+            - "size_t cannot index a vector"
+            - "the loop misses the last element"
+            - "it is fine; the compiler warns but the code is correct"
+          answer: "on an empty vector, size() - 1 is 18446744073709551615 and the loop runs off the end"
+          explanation: >-
+            size() is unsigned, so subtraction wraps instead of going negative.
+            Write `i + 1 < v.size()` and nothing is ever subtracted from a size.
+        - id: ea-trap-double-answer
+          kind: trap
+          prompt: >-
+            An answer that is a whole number up to 10^18 is computed with
+            doubles and printed with setprecision. It is accepted on the samples
+            and wrong on the large tests. Why?
+          options:
+            - "a double holds integers exactly only to 2^53, so the last digits of a 10^18 answer are lost"
+            - "setprecision rounds the output"
+            - "the multiplication order was wrong"
+            - "long double would have the same problem, so the algorithm must be at fault"
+          answer: "a double holds integers exactly only to 2^53, so the last digits of a 10^18 answer are lost"
+          explanation: >-
+            2^53 is about 9 * 10^15, three orders below the answer. The output
+            looks right to fifteen digits and the judge compares nineteen.
+        - id: ea-recall-guard
+          kind: recall
+          prompt: >-
+            Write the condition that is true when a * b would exceed `limit`,
+            for non-negative a and b, without forming the product.
+          answer: "a != 0 && b > limit / a"
+          accepts:
+            - "a!=0&&b>limit/a"
+            - "a!=0&&limit/a<b"
+            - "b!=0&&a>limit/b"
+            - "if(a!=0&&b>limit/a)"
+          explanation: >-
+            Divide instead of multiplying, and the dangerous value never exists.
+            The zero check is not decoration — dividing by a would be a crash,
+            and a product with a zero factor never exceeds a positive limit.
+        - id: ea-apply-ceiling
+          kind: apply
+          prompt: >-
+            `long long items, per;` are non-negative with per > 0. Write the
+            expression for the number of containers needed, rounding up, with no
+            floating point.
+          answer: "(items + per - 1) / per"
+          accepts:
+            - "(items+per-1)/per"
+            - "(items+per-1)/per;"
+            - "items/per+(items%per!=0)"
+            - "(items+(per-1))/per"
+          explanation: >-
+            Exact for non-negative operands and immune to the 2^53 ceiling that
+            makes the floating point version fail on the largest tests. Memorise
+            the shape; you will write it every week.
+
+final_test_problem_ids:
+  - relay-post-batches
+  - mason-triangle-slabs
+  - tinker-square-pairs
+  - river-gauge-rises
+  - mill-stream-tally
+  - mint-exchange-check
+  - cellar-cask-average

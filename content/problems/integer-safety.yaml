@@ -1,0 +1,243 @@
+# Problems that are really The Type Is Part of the Algorithm.
+#
+# These are the statements where the algorithm is not in question at all — the
+# loop is obvious, the formula is obvious, and the only thing between the
+# learner and an Accepted verdict is how large the intermediate values get.
+# None may name the pattern, and none may say "overflow", "64-bit" or "long
+# long"; a statement that warns you is not training the habit of asking.
+# `decoy_signals` records what each one invites instead.
+
+- id: tithe-barrel-total
+  pattern: integer-safety
+  title: The Tithe Barrels
+  difficulty: easy
+  statement: >-
+    A monastery receives n barrels of grain as tithe; the i-th holds w[i]
+    measures. The cellarer's cart is rated to carry R measures in total. Report
+    two numbers: the total the barrels hold, and how many measures over the
+    rating that total is — or 0 if the cart could carry them all. Nothing is
+    being chosen and nothing is being left behind; every barrel is counted.
+  constraints: |
+    1 <= n <= 200000
+    1 <= w[i] <= 10^9
+    1 <= R <= 10^14
+    time limit 1 second
+  signals_present:
+    - "up to 2 * 10^5 values each up to 10^9, all of which are added together"
+    - the rating itself is stated as 10^14, far above anything a 32-bit counter holds
+    - nothing is selected, sorted or searched — the method is a single obvious loop
+    - the answer is a difference of two large totals, which can be large itself
+  decoy_signals:
+    - a capacity and a list of weights is the exact vocabulary of a knapsack, though nothing here is chosen
+    - "\"how many over the rating\" invites stopping the loop early, which would answer a different question"
+    - the enormous rating invites searching for a threshold rather than simply adding
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        There is no algorithm to find here — the loop is the whole solution.
+        Before you write it, multiply the two numbers in the constraint block
+        that describe the input and see what the total can reach.
+    - text: >-
+        2 * 10^5 barrels of 10^9 measures is 2 * 10^14. A 32-bit counter stops
+        being correct at 2147483647, which this passes after the third barrel.
+    - text: >-
+        Accumulate into a 64-bit integer, and print max(0, total - R) as the
+        second number, computed in the same width.
+      reveals_pattern: true
+  why: >-
+    Nothing is being recognised except the size of the numbers. n times the
+    largest w is 2 * 10^14, and the rating is stated at 10^14 on purpose — both
+    are far past the 2147483647 that a 32-bit counter holds. The failure is
+    silent on every small test and arrives as a negative total on the largest
+    one, which is the signature of the whole family.
+  classic_ref: CPH 1 (working with numbers); the accumulator half of every easy problem
+
+- id: guild-roster-pairs
+  pattern: integer-safety
+  title: The Guild Roster
+  difficulty: medium
+  statement: >-
+    A city has g guilds and the i-th has c[i] members; every citizen belongs to
+    exactly one guild. The herald wants to know how many unordered pairs of
+    citizens belong to DIFFERENT guilds, since those are the pairs that may
+    trade. With guilds of 3, 2 and 1 members the answer is 11. Report that
+    count.
+  constraints: |
+    1 <= g <= 200000
+    1 <= c[i], and the total number of citizens is at most 200000
+    time limit 1 second
+  signals_present:
+    - the answer counts PAIRS drawn from as many as 2 * 10^5 citizens
+    - the input numbers are all small while the number they produce is not
+    - the method is a single formula over the guild sizes, with no search of any kind
+    - subtracting one large count from another, which can be large itself
+  decoy_signals:
+    - counting pairs with a property is the standard advertisement for a frequency map keyed on the complement
+    - "\"pairs from different groups\" invites a double loop over guild pairs, which is 4 * 10^10 at this bound"
+    - the guild sizes invite ordering them, which changes nothing about the count
+  expected_complexity: O(g)
+  hints:
+    - text: >-
+        Count the pairs you do NOT want instead. Two citizens of the same guild
+        are a pair you must exclude, and a guild of c members contributes
+        c * (c - 1) / 2 of them.
+    - text: >-
+        So the answer is n * (n - 1) / 2 minus the sum of c[i] * (c[i] - 1) / 2.
+        Now put n = 200000 into the first term and look hard at the result
+        before you declare any variable.
+    - text: >-
+        n * (n - 1) / 2 at n = 200000 is 19999900000 — about nine times what a
+        32-bit integer holds. Every term, and every product inside every term,
+        must be computed in 64 bits.
+      reveals_pattern: true
+  why: >-
+    The input is tiny, the loop is one line, and the answer is 19999900000 at
+    the top of the range — nine times INT_MAX from numbers that all fit
+    comfortably in an int. Pair counts are the most common way this family
+    catches people, because nothing in the statement looks large. Note also
+    that c[i] * (c[i] - 1) must be widened BEFORE it is multiplied, not after.
+  classic_ref: the complement-counting family; C(n, 2) as the classic overflow
+
+- id: surveyor-plot-area
+  pattern: integer-safety
+  title: The Surveyor's Plot
+  difficulty: medium
+  statement: >-
+    A surveyor marks three corner stones of a triangular plot at integer
+    coordinates (x1, y1), (x2, y2) and (x3, y3). Land is registered in half-rod
+    units, so the office asks not for the area but for TWICE the area, which is
+    always a whole number. Report it. For corners (0, 0), (4, 0) and (0, 3) the
+    answer is 12.
+  constraints: |
+    -10^9 <= each coordinate <= 10^9
+    the three corners may be collinear, in which case the answer is 0
+    time limit 1 second
+  signals_present:
+    - coordinates reach 10^9 in both directions and are multiplied together
+    - differences of coordinates reach 2 * 10^9, which is already past a 32-bit range
+    - the answer is exact by construction, so no rounding is available to hide behind
+    - the method is one formula with no loop at all
+  decoy_signals:
+    - an area invites floating point, which cannot represent the largest exact answers here
+    - the collinear case invites a special-case test that the formula already handles
+    - "\"twice the area\" invites halving something first, which throws the exactness away"
+  hints:
+    - text: >-
+        Twice the area of a triangle is the absolute value of the cross product
+        of two of its edges. Write that expression out with the differences
+        spelled in full before you think about types.
+    - text: >-
+        Each difference reaches 2 * 10^9, which already exceeds what a 32-bit
+        integer holds. A product of two of them reaches 4 * 10^18, and the
+        formula subtracts one such product from another.
+    - text: >-
+        Compute (x2-x1)*(y3-y1) - (x3-x1)*(y2-y1) with every operand widened to
+        64 bits before any multiplication, then take the absolute value. The
+        largest possible magnitude is 8 * 10^18, which a signed 64-bit integer
+        holds with about an eighth of its range to spare.
+      reveals_pattern: true
+  expected_complexity: O(1)
+  why: >-
+    There is no algorithm here whatsoever — the entire difficulty is that the
+    coordinates are stated at 10^9 rather than at 10^4. The differences leave
+    the 32-bit range, the products reach 4 * 10^18, and their difference reaches
+    8 * 10^18, which fits in a signed 64-bit integer and in nothing narrower. A
+    double would represent the answer to about fifteen digits and this needs
+    nineteen.
+  classic_ref: CPH 29 (geometry, the cross product); the shoelace formula for one triangle
+
+- id: mint-exchange-check
+  pattern: integer-safety
+  title: The Mint's Exchange Check
+  difficulty: medium
+  statement: >-
+    A mint offers to exchange a stack of a coins at a rate of b coppers each.
+    The vault will not accept a payment worth more than L coppers, and the
+    clerk must decide, before any coins move, whether the payment a * b would
+    exceed L. Answer q such questions. The clerk may not simply work out the
+    payment and compare it, because a and b are large enough that the payment
+    itself is not something he is able to write down.
+  constraints: |
+    1 <= q <= 200000
+    0 <= a, b <= 10^18
+    1 <= L <= 10^18
+    time limit 1 second
+  signals_present:
+    - both operands and the limit are stated at 10^18, the top of the signed 64-bit range
+    - the product of two of them is 10^36, which no ordinary integer type holds
+    - the statement says outright that the product may not be formed
+    - the question is a comparison, not a value, so the product never needs to exist
+  decoy_signals:
+    - "\"does a * b exceed L\" invites writing exactly that comparison, which is the bug"
+    - the huge bounds invite a floating-point check, which is inexact precisely near the boundary
+    - q at 2 * 10^5 invites sorting or preprocessing the questions, which buys nothing
+  expected_complexity: O(1) per question
+  hints:
+    - text: >-
+        A guard that computes the thing it is guarding against has already
+        failed by the time it is evaluated. Rearrange the inequality a * b > L
+        so that the dangerous operation never happens.
+    - text: >-
+        Divide instead of multiplying. a * b > L is the same question as
+        b > L / a, in integers, provided a is not zero — and integer division
+        cannot overflow.
+    - text: >-
+        Answer "no" when a is 0, and otherwise report whether b > L / a. Watch
+        the truncation: L / a rounds down, which is exactly what makes the
+        strict comparison correct here.
+  why: >-
+    The statement removes the algorithm entirely and leaves only the arithmetic
+    question: how do you compare a product with a limit without forming the
+    product? Dividing is the answer, and it is exact because truncation rounds
+    the threshold down. On this judge a 128-bit type would also work; the
+    division test is what you write when you do not have one, or when the check
+    sits in a loop that cannot afford it.
+  classic_ref: the checked-arithmetic family; the standard guard before a multiplication
+
+- id: cellar-cask-average
+  pattern: integer-safety
+  title: Two Cellars
+  difficulty: hard
+  statement: >-
+    Two cellars are compared. The first holds n casks whose volumes are given,
+    the second holds m casks whose volumes are given. The steward wants to know
+    which cellar's casks are larger ON AVERAGE, and the comparison must be
+    exact — the winner is decided by the true mean, not by a rounded one.
+    Report 1 if the first cellar's mean is greater, 2 if the second's is, and 0
+    if the two means are exactly equal.
+  constraints: |
+    1 <= n, m <= 200000
+    1 <= each volume <= 10^9
+    the two means are compared exactly, with no tolerance
+    time limit 1 second
+  signals_present:
+    - each cellar's total reaches 2 * 10^14 and each count reaches 2 * 10^5
+    - the comparison is between two ratios, and it is required to be exact
+    - the obvious cross-multiplication multiplies a total by a count
+    - no rounding, no tolerance, and no epsilon is offered anywhere in the statement
+  decoy_signals:
+    - two means invite a double each, which loses the comparison exactly where the two are close
+    - "\"which is larger on average\" invites dividing and comparing quotients, which ties whenever the two truncate alike"
+    - the two lists invite sorting or merging them, which the question never needs
+  expected_complexity: O(n + m)
+  hints:
+    - text: >-
+        Comparing s1/n against s2/m is the same as comparing s1 * m against
+        s2 * n, since both counts are positive. That removes the division — but
+        read the bounds again before you write the multiplication.
+    - text: >-
+        A total reaches 2 * 10^14 and a count reaches 2 * 10^5, so a cross
+        product reaches 4 * 10^19. A signed 64-bit integer stops at about
+        9.2 * 10^18, so this product does not fit either.
+    - text: >-
+        Compute both cross products in a 128-bit integer and compare them, or
+        compare s1 / n against s2 / m first and fall back to comparing the
+        remainders when the quotients tie.
+      reveals_pattern: true
+  why: >-
+    Two widenings deep. Doubles fail because two means differing in the
+    fifteenth digit must still be separated; the standard cross-multiplication
+    fix then fails in turn, because 2 * 10^14 times 2 * 10^5 is 4 * 10^19 and a
+    signed 64-bit integer holds 9223372036854775807. The habit being trained is
+    asking the size question about the FIX as well as about the original.
+  classic_ref: exact ratio comparison; the 128-bit half of CPH 1 on working with numbers
