@@ -348,6 +348,21 @@ def record_mistake(
 # --------------------------------------------------------------------------
 
 
+def attempts_at(conn: sqlite3.Connection, pattern_id: str) -> int:
+    """How many finished attempts this pattern has, ever.
+
+    Not windowed, unlike :func:`accuracy`: this is asked in order to decide
+    whether there is *enough history to say anything at all*, and a window
+    would answer a different question — one that starts saying no again after
+    a long enough absence.
+    """
+    row = conn.execute(
+        "SELECT COUNT(*) FROM attempt WHERE pattern_id = ? AND finished_at IS NOT NULL",
+        (pattern_id,),
+    ).fetchone()
+    return int(row[0]) if row else 0
+
+
 def accuracy(conn: sqlite3.Connection, pattern_id: str, *, window: int = 20) -> float | None:
     """First-attempt success rate over the most recent ``window`` attempts.
 
