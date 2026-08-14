@@ -14,6 +14,8 @@ XP, unlocks and all — not fixtures shaped to suit the query.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import pytest
 
 from dsaquest.analytics import memorisation as mem
@@ -22,11 +24,104 @@ from dsaquest.domain.enums import GameMode
 from dsaquest.game.session import ExerciseResult, begin_exercise, complete_exercise
 from dsaquest.storage import repositories as repo
 
-#: Three patterns, four problems each — the widest fresh sample the shipped
-#: content can offer. See the report note on content thinness.
+#: The three patterns with the widest fresh sample the shipped content can
+#: offer. See the report note on content thinness.
 PATTERNS = ("hashing-frequency", "prefix-sum", "two-pointers")
 
 DECOY = "binary-search"
+
+
+@dataclass(frozen=True, slots=True)
+class Profile:
+    """How one learner plays one pattern, independent of the bank's size.
+
+    A learner's defining trait decides which way round to count.
+
+    ``fresh_correct`` suits the learner **new problems defeat**: a memoriser
+    gets one right whether the pattern has four problems or nine, so the count
+    of successes is the constant and their accuracy properly falls as the
+    sample widens.
+
+    ``fresh_missed`` suits the **fluent** learner, whose trait is the opposite:
+    they drop about one new problem regardless. Writing fluency as an absolute
+    three successes made the fluent learner's fresh accuracy fall from 75% to
+    60% the moment a fifth hashing problem was authored — and the detector then
+    quite correctly refused to clear them, which is the detector working and
+    the fixture lying.
+    """
+
+    repeat_wrong: int
+    fresh_correct: int | None = None
+    fresh_missed: int | None = None
+
+    def correct_from(self, count: int) -> int:
+        if self.fresh_missed is not None:
+            return max(0, count - self.fresh_missed)
+        return min(self.fresh_correct or 0, count)
+
+
+#: Nothing new solved and nothing repeated missed is the caricature; the other
+#: two are the ordinary shape of the same failure.
+MEMORISER = {
+    "hashing-frequency": Profile(repeat_wrong=0, fresh_correct=0),
+    "prefix-sum": Profile(repeat_wrong=1, fresh_correct=1),
+    "two-pointers": Profile(repeat_wrong=2, fresh_correct=1),
+}
+FLUENT = dict.fromkeys(PATTERNS, Profile(repeat_wrong=1, fresh_missed=1))
+
+
+@dataclass(frozen=True, slots=True)
+class Sample:
+    """What a profile produces once the bank decides how many problems there are.
+
+    Derived rather than written out. The totals used to be literals — 24 seen,
+    12 fresh, 8 correct on hashing — which silently assumed four problems per
+    pattern; authoring a fifth broke three tests that have nothing to do with
+    content, and we are still deliberately writing more.
+    """
+
+    fresh_correct: int
+    fresh_total: int
+    seen_correct: int
+    seen_total: int
+
+    def __add__(self, other: Sample) -> Sample:
+        return Sample(
+            self.fresh_correct + other.fresh_correct,
+            self.fresh_total + other.fresh_total,
+            self.seen_correct + other.seen_correct,
+            self.seen_total + other.seen_total,
+        )
+
+
+def sample_for(context, pattern: str, profiles: dict[str, Profile]) -> Sample:
+    """The exact tally ``_run`` will produce for one pattern under ``profiles``."""
+    profile = profiles[pattern]
+    count = len(context.bank.for_pattern(pattern))
+    seen_total = 2 * count
+    return Sample(
+        fresh_correct=profile.correct_from(count),
+        fresh_total=count,
+        seen_correct=seen_total - min(profile.repeat_wrong, seen_total),
+        seen_total=seen_total,
+    )
+
+
+def whole_sample(context, profiles: dict[str, Profile]) -> Sample:
+    total = Sample(0, 0, 0, 0)
+    for pattern in profiles:
+        total = total + sample_for(context, pattern, profiles)
+    return total
+
+
+def play_through(context, profiles: dict[str, Profile]) -> None:
+    for pattern, profile in profiles.items():
+        _run(
+            context,
+            pattern,
+            fresh_correct=profile.correct_from(len(context.bank.for_pattern(pattern))),
+            repeat_wrong=profile.repeat_wrong,
+        )
 
 
 def _play(context, problem, *, correct: bool, mode: GameMode = GameMode.HUNTER) -> int:
@@ -80,15 +175,12 @@ def _memoriser(context) -> None:
     The other two are the ordinary shape of the same failure: a lucky first
     encounter, a slip on a repeat.
     """
-    _run(context, "hashing-frequency", fresh_correct=0, repeat_wrong=0)
-    _run(context, "prefix-sum", fresh_correct=1, repeat_wrong=1)
-    _run(context, "two-pointers", fresh_correct=1, repeat_wrong=2)
+    play_through(context, MEMORISER)
 
 
 def _fluent(context) -> None:
     """Knows the technique. New problems cost a little, as they should."""
-    for pattern in PATTERNS:
-        _run(context, pattern, fresh_correct=3, repeat_wrong=1)
+    play_through(context, FLUENT)
 
 
 def _barely_started(context) -> None:
@@ -142,11 +234,14 @@ def test_the_memoriser_is_caught(memoriser):
     report = mem.assess_all(memoriser.conn)
     overall = report.overall
 
-    assert overall.seen_total == 24
-    assert overall.fresh_total == 12
-    assert overall.seen_accuracy == pytest.approx(21 / 24)
-    assert overall.fresh_accuracy == pytest.approx(2 / 12)
-    assert overall.gap == pytest.approx(21 / 24 - 2 / 12)
+    expected = whole_sample(memoriser, MEMORISER)
+    assert overall.seen_total == expected.seen_total
+    assert overall.fresh_total == expected.fresh_total
+    assert overall.seen_accuracy == pytest.approx(expected.seen_correct / expected.seen_total)
+    assert overall.fresh_accuracy == pytest.approx(expected.fresh_correct / expected.fresh_total)
+    assert overall.gap == pytest.approx(
+        expected.seen_correct / expected.seen_total - expected.fresh_correct / expected.fresh_total
+    )
 
     assert overall.finding is mem.Finding.MEMORISING
     assert overall.memorising
@@ -157,9 +252,12 @@ def test_the_fluent_learner_is_never_accused(fluent):
     report = mem.assess_all(fluent.conn)
     overall = report.overall
 
-    assert overall.seen_total == 24
-    assert overall.fresh_total == 12
-    assert overall.gap == pytest.approx(21 / 24 - 9 / 12)
+    expected = whole_sample(fluent, FLUENT)
+    assert overall.seen_total == expected.seen_total
+    assert overall.fresh_total == expected.fresh_total
+    assert overall.gap == pytest.approx(
+        expected.seen_correct / expected.seen_total - expected.fresh_correct / expected.fresh_total
+    )
 
     assert overall.finding is mem.Finding.PATTERN_HOLDS
     assert not overall.memorising
@@ -219,8 +317,12 @@ def test_a_gap_the_sample_cannot_support_is_not_an_accusation(memoriser):
     """
     report = mem.assess_all(memoriser.conn)
 
+    caricature = sample_for(memoriser, "hashing-frequency", MEMORISER)
     hashing = report["hashing-frequency"]
-    assert (hashing.fresh_correct, hashing.seen_correct) == (0, 8)
+    assert (hashing.fresh_correct, hashing.seen_correct) == (
+        caricature.fresh_correct,
+        caricature.seen_correct,
+    )
     assert hashing.finding is mem.Finding.MEMORISING
 
     prefix = report["prefix-sum"]
