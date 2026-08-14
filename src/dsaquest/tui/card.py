@@ -58,6 +58,20 @@ ACCENTS: dict[str, str] = {
     "master_bits": "#5fd7c0",
     "master_search": "#7f9fd9",
     "master_greed": "#b08ad9",
+    "master_trees": "#6fae7f",
+    "master_strings": "#c0705f",
+    "master_graphs": "#7f9fd9",
+    "master_dp": "#9d7ad9",
+    "master_math": "#e8d8a0",
+    "master_structures": "#8fa3c4",
+    "master_foundations": "#d9a441",
+    # A boss takes its master's colour: it is the region's own thing, and the
+    # player should feel they are still in the Ridge of Greed when they meet it.
+    "the-exchange": "#b08ad9",
+    "the-rootless": "#6fae7f",
+    "the-unread-line": "#c0705f",
+    "the-unweighted-lie": "#7f9fd9",
+    "the-elite-coder": "#dfe6f0",
 }
 DEFAULT_ACCENT = "#d9a441"
 

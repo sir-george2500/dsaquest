@@ -1,0 +1,280 @@
+# Problems that are really Take the Extreme, Then Let It Change.
+#
+# None of these may name the pattern, and none may say "priority queue" or
+# "heap" as an instruction — the recognition being trained is *that the
+# collection is still changing when the question is asked*. `decoy_signals`
+# records what makes each one hard, which is what the post-answer feedback
+# quotes back. Every statement here would fall to sorting if the row stopped
+# moving, and in every one of them it does not.
+
+- id: quarry-rope-splice
+  pattern: heap-extraction
+  title: Quarry Ropes
+  difficulty: easy
+  statement: >-
+    A quarry has n lengths of rope. Two lengths may be spliced into one, and the
+    splice costs the foreman as many coins as the combined length of the two
+    pieces he joined; the joined piece then lies with the others and may be
+    spliced again. He must end with a single rope. Report the smallest total
+    number of coins the splicing can cost.
+  constraints: |
+    1 <= n <= 200000
+    1 <= length[i] <= 10^9
+    the total may exceed 2^31
+  signals_present:
+    - consuming two pieces produces a new piece that must be considered alongside the rest
+    - the cost of a step depends on which two are chosen, and the two cheapest are always safe
+    - the produced piece has a length that did not exist in the input
+    - n up to 2*10^5, with n - 1 joins to make
+  decoy_signals:
+    - "\"take the two smallest each time\" reads like a fixed order settled once at the start"
+    - a single number per item and a total to minimise invites sorting the lengths and walking the row
+    - the shape of the objective looks like an ordinary accumulation over a static list
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        Write down the first join for lengths [4, 3, 2, 6]. What is in the
+        collection afterwards, and is it still the collection you sorted?
+    - text: >-
+        The joined piece is a new member with a length no ordering fixed in
+        advance could have placed. So the question "which two are smallest now"
+        has to be answerable again after every single step.
+    - text: >-
+        Keep the pieces in a structure whose top is always the smallest, take
+        two, add their sum to the answer, and put the sum back in.
+      reveals_pattern: true
+  why: >-
+    The decisive cue is that a step CREATES a member. Sorting answers "which is
+    smallest" once, for a row that never moves again; here the row gains an
+    element of unknown rank n - 1 times, so the answer must be recomputed after
+    each step and only a structure that stays correct under insertion can do it
+    in a log factor.
+  classic_ref: Huffman-style merging; CSES Stick Lengths family
+
+- id: signal-fire-brightest
+  pattern: heap-extraction
+  title: Signal Fires
+  difficulty: easy
+  statement: >-
+    Watchers along a frontier report the brightness of each signal fire they
+    see, one report at a time, and there are far too many reports to write them
+    all down — the recording slate holds only a few thousand numbers. The
+    captain wants the total brightness of the k brightest fires reported over
+    the whole night. Report that total.
+  constraints: |
+    1 <= k <= 1000
+    1 <= n <= 5*10^6 reports, arriving one at a time and not stored
+    1 <= brightness[i] <= 10^9
+    memory available is far smaller than n numbers
+  signals_present:
+    - only the k best are ever wanted, and k is much smaller than n
+    - the reports arrive over time and cannot all be held at once
+    - the collection of survivors changes as each report arrives
+    - the objective is a total over the survivors, not an ordering of them
+  decoy_signals:
+    - "\"the k brightest\" is the standard advertisement for sorting the whole list and taking a prefix"
+    - the huge n with a small k invites a single pass tracking a running maximum
+    - a total to accumulate looks like an ordinary sweep with no structure at all
+  expected_complexity: O(n log k)
+  hints:
+    - text: >-
+        Sorting needs every number at once and you are not allowed to keep them.
+        What is the smallest set of numbers you could carry that is always
+        enough to answer at the end?
+    - text: >-
+        Carry exactly k. When a new report arrives, it is either better than the
+        WEAKEST one you are carrying or it is not — and if it is, the weakest is
+        the one to throw away.
+    - text: >-
+        Hold a collection of size k whose top is its SMALLEST member; push each
+        arrival and, whenever the size passes k, discard the top.
+      reveals_pattern: true
+  why: >-
+    Two cues combine: the data does not fit, and only k of it matters. Bounding
+    the collection at k costs O(n log k) time and O(k) memory. The inversion is
+    the whole trick — keeping the k LARGEST requires a structure showing its
+    SMALLEST, because the smallest survivor is the only one that can ever be
+    evicted.
+  classic_ref: top-k by bounded heap; the streaming half of nth_element
+
+- id: physicians-round
+  pattern: heap-extraction
+  title: The Physician's Round
+  difficulty: medium
+  statement: >-
+    A physician treats one patient at a time. Patient i arrives at minute a[i]
+    and needs d[i] minutes of care; while he is treating someone, later arrivals
+    simply wait. Whenever he becomes free he begins on the waiting patient with
+    the smallest need, breaking ties by arrival, and he never idles while
+    someone waits. Report the minute at which the last patient is finished.
+  constraints: |
+    1 <= n <= 200000
+    0 <= a[i] <= 10^9, 1 <= d[i] <= 10^9
+    the patients are listed in no particular order
+  signals_present:
+    - items arrive over time and each is dealt with the moment it becomes the most urgent
+    - the set of waiting patients changes between every two decisions
+    - which patient is chosen depends on who has arrived by then, not on the input order
+    - the answer is a time, accumulated over a sequence of choices
+  decoy_signals:
+    - two numbers per patient and a schedule to build reads like ranking the whole list once and sweeping it
+    - "\"smallest need first\" invites sorting by need and never reconsidering"
+    - arrival times plus durations look like a line-sweep over intervals
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        Sort by need alone and the physician may pick someone who has not
+        arrived yet. Sort by arrival alone and he ignores the rule. What is true
+        of the candidate set at the moment he becomes free?
+    - text: >-
+        Walk time forward. Everyone who has arrived by the current minute is a
+        candidate, and the candidate set both GROWS (new arrivals) and SHRINKS
+        (the one chosen) as the clock moves.
+    - text: >-
+        Sort by arrival to feed the simulation, and hold the waiting patients in
+        a structure whose top is the one with the smallest need.
+      reveals_pattern: true
+  why: >-
+    Both halves are needed and they are different structures: the arrival order
+    is fixed and decided once by a sort, while the waiting set changes at every
+    decision and must answer "who is smallest now". Event-driven simulation is
+    this pattern's second form — the queue holds what is pending, and time
+    advances to the next moment that matters.
+  classic_ref: CSES Tasks and Deadlines family; event-driven scheduling
+
+- id: assayers-running-middle
+  pattern: heap-extraction
+  title: The Assayer's Middle
+  difficulty: medium
+  statement: >-
+    An assayer weighs ore samples one after another. After each weighing he
+    must record the middle weight of everything weighed so far: when the count
+    is odd that is the single middle value, and when it is even it is the
+    smaller of the two middle values. Report the recorded value after each
+    sample.
+  constraints: |
+    1 <= n <= 200000
+    1 <= weight[i] <= 10^9
+    the answers must be produced after every sample, not only at the end
+  signals_present:
+    - the middle of a growing collection is asked for after every arrival
+    - the collection only ever grows, but the answer must be correct at every step
+    - the quantity wanted is an order statistic rather than a total
+    - n up to 2*10^5, with an answer required per step
+  decoy_signals:
+    - "\"the middle value\" invites keeping a sorted row and inserting into it, which is O(n) per step"
+    - re-sorting after each sample is correct and passes every sample input
+    - a value read off the centre of a row looks like a two-pointer or a window
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        Inserting into a sorted vector is O(n) because everything after the
+        insertion point shifts. At 2*10^5 samples that is 2*10^10 moves. What do
+        you actually need to SEE at each step — the whole row, or one element?
+    - text: >-
+        Split the samples into a smaller half and a larger half. If you could
+        see the largest of the smaller half and the smallest of the larger half,
+        you would have the middle without sorting anything.
+    - text: >-
+        Keep two collections facing each other — one showing its largest, one
+        showing its smallest — and after each insertion move one element across
+        so their sizes differ by at most one.
+      reveals_pattern: true
+  why: >-
+    "After every arrival" is the cue: the collection is still changing when the
+    question is asked, so nothing fixed in advance survives. One such structure
+    shows an end; two facing each other show the middle, and the invariant that
+    makes it work — sizes within one, and every member of the low half at most
+    every member of the high half — is the whole implementation.
+  classic_ref: CSES Sliding Window Median family; running median by two heaps
+
+- id: kiln-cooling-splits
+  pattern: heap-extraction
+  title: Kiln Loads
+  difficulty: medium
+  statement: >-
+    A kiln holds n trays, tray i carrying c[i] pots. The master potter may
+    perform at most q interventions; one intervention takes the tray that
+    currently carries the most pots and splits it into two trays carrying as
+    equal a share as possible, with the odd pot going to the larger of the two.
+    He wants the fullest tray at the end to be as empty as possible. Report the
+    number of pots on the fullest tray after all interventions.
+  constraints: |
+    1 <= n <= 200000
+    1 <= q <= 200000
+    1 <= c[i] <= 10^9
+  signals_present:
+    - the largest is taken repeatedly, and the collection changes between takings
+    - consuming one item produces two new items whose sizes did not exist before
+    - the number of interventions is bounded and each one acts on the current worst
+    - both n and q reach 2*10^5, so a scan per intervention is 4*10^10 steps
+  decoy_signals:
+    - "\"as empty as possible\" plus a fixed budget is the exact vocabulary of searching for a threshold and testing it"
+    - sorting the trays once and splitting the front of the row looks sufficient
+    - splitting to make things equal reads like a distribution or averaging argument
+  expected_complexity: O((n + q) log n)
+  hints:
+    - text: >-
+        After the first split the two halves are new numbers. Where do they
+        belong in an order you fixed before the loop started?
+    - text: >-
+        Scanning the trays to find the fullest costs O(n) and you would do it q
+        times. The question is only ever about ONE tray — the fullest — and it
+        must stay answerable after every split.
+    - text: >-
+        Hold the tray loads in a structure whose top is the largest, and q times
+        pop the top, push its two halves, and continue.
+      reveals_pattern: true
+  why: >-
+    A split creates two members of unknown rank, exactly as a merge creates one,
+    so no ordering fixed in advance can contain them. Only the extreme is ever
+    touched and nothing in the interior is searched or erased, which is what
+    separates this from a balanced tree — and the smaller constant is worth
+    having at 2*10^5 interventions.
+  classic_ref: repeated-split minimisation; the max-heap twin of stick merging
+
+- id: relay-post-dispatch
+  pattern: heap-extraction
+  title: Relay Posts
+  difficulty: hard
+  statement: >-
+    A courier service runs m relay lines. Line j will dispatch riders at the
+    minutes listed in its own schedule, and each schedule is already given in
+    increasing order; the schedules have n minutes between them in total. The
+    dispatcher must call out every dispatch minute across all lines in
+    increasing order. Report that combined sequence, with repetitions kept.
+  constraints: |
+    2 <= m <= 100000
+    1 <= n <= 1000000 minutes in total across all schedules
+    each line's own minutes are given in increasing order
+    minutes fit in a signed 32-bit integer and may repeat across lines
+  signals_present:
+    - the smallest is taken repeatedly, and the candidate set changes after every taking
+    - taking one candidate immediately promotes another from the same line
+    - each source is already ordered, so only the fronts of the sources compete
+    - n up to 10^6 with m up to 10^5, so an O(nm) scan of the fronts is 10^11 steps
+  decoy_signals:
+    - every input list is already sorted, which invites concatenating and sorting once for O(n log n)
+    - two lists at a time reads like walking two pointers inwards, and m lists like doing that repeatedly
+    - "\"already in increasing order\" suggests binary searching each value into place"
+  expected_complexity: O(n log m)
+  hints:
+    - text: >-
+        At any moment, which minutes can possibly be the next one called? Not
+        all n of them — only one per line. How many candidates is that?
+    - text: >-
+        m candidates, and after you take one, that line offers its next minute
+        immediately. So the candidate set is small, it changes at every step,
+        and you always want its smallest.
+    - text: >-
+        Hold one entry per line — the minute and which line it came from — in a
+        structure showing its smallest, and after each pop push that line's next
+        minute if it has one.
+      reveals_pattern: true
+  why: >-
+    Concatenating and sorting is O(n log n) and correct; this is O(n log m) with
+    m far below n, and it is the form that survives when the lines are streams
+    with no end. The cue is that each removal promotes a replacement of unknown
+    rank, so the candidate set is live and only the front of each line ever
+    competes.
+  classic_ref: k-way merge; the merge step of external sorting

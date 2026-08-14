@@ -1,0 +1,1487 @@
+# Keeper Maelin Vore's teaching plan — the Ledger, Master of Structures.
+#
+# Seven secrets across five patterns. The Keeper's question is never "does it
+# work" but "what does it cost you, every single query", so every demonstration
+# below carries a number: cells touched, bytes held, lines written, seconds
+# lost. Two of the seven are about the same operation seen from opposite sides
+# — what a prefix can be subtracted from and what it cannot — because that one
+# boundary decides which structure a student reaches for under a clock, and
+# reaching for the wrong one costs forty minutes rather than a wrong answer.
+#
+# Every count in the demonstrations has been evaluated by hand against the
+# handbook's own worked array [1, 3, 4, 8, 6, 1, 4, 2]. The final test names
+# nothing.
+
+master_id: master_structures
+patterns:
+  - heap-extraction
+  - ordered-set
+  - fenwick-tree
+  - segment-tree
+  - range-counting
+title: Keeper Maelin Vore, the Ledger — Seven Secrets of the Standing Record
+
+opening: >-
+  Everything you have written until now was read once and thrown away. Here it
+  is kept. A structure is a promise made to every future query — that the answer
+  will still be correct after the tenth write, and the ten-thousandth, and that
+  it will cost the same each time. I do not ask whether your program produces
+  the sample output. I ask what one query costs, and what one update costs, and
+  how many of each the statement intends to make; multiply those three numbers
+  and the choice of structure is made for you before you have written a line.
+  Seven secrets. Four of them are structures. Two of them are the boundary
+  between two structures that look identical and are not, and if you learn only
+  those two you will still leave here better than you came. The last one is the
+  reminder that some counts need no structure at all, and a student who builds a
+  tree over 10^18 positions has failed a question I set before he opened his
+  editor. Begin.
+
+stages:
+  # ---------------------------------------------------------------- stage 0
+  - id: stage-visible-end
+    order: 0
+    pattern: heap-extraction
+    trial_problem_ids: [quarry-rope-splice]
+    secret:
+      id: the-one-visible-end
+      name: One Element, Always Correct
+      idiom: "priority_queue<long long, vector<long long>, greater<long long>> pq;"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        A sorted row answers "which is smallest" once, for a row that will never
+        move again. This structure answers it now, for a row you are still
+        adding to — and that is the whole of what it sells you. It shows one
+        element. It will not let you look at the second. It will not find a
+        value, will not erase one, will not tell you where anything came from,
+        and every attempt to make it do so costs O(n) and is a confession that
+        you wanted a different structure. What it gives back is a small
+        constant: a heap is an array with two index computations, where a
+        balanced tree is a graph of pointers chased one cache miss at a time.
+        Two things must be automatic. First, the declaration above, because the
+        default in C++ shows you the LARGEST and half the problems in this
+        region want the smallest. Second, the inversion: to keep the k LARGEST
+        you hold a MIN-heap of size k, because the only element you can ever
+        afford to evict is the weakest one you are currently keeping. That
+        sentence feels backwards for about a week, and then it is the pattern.
+      demonstrations:
+        - expression: "priority_queue<int> q; push 3, 5, 7, 2; q.top()"
+          result: "7"
+          note: "The default shows the LARGEST. Nobody told you that; the sample did not care."
+        - expression: "priority_queue<int, vector<int>, greater<int>> q; same pushes; q.top()"
+          result: "2"
+          note: >-
+            Three template arguments, and the middle one is the container you
+            never think about. Write it wrong and the compiler's message is four
+            hundred characters long.
+        - expression: "stream 5 1 9 3 7 2, k = 3, held in a MIN-heap bounded at 3"
+          result: "{5, 7, 9}, total 21"
+          note: >-
+            Each arrival is pushed and, whenever the size passes 3, the top —
+            the weakest survivor — is discarded. 6 pushes, 3 pops, never more
+            than 4 elements in memory.
+        - expression: "the same stream and k, held in a MAX-heap bounded at 3"
+          result: "{1, 2, 3}, total 6"
+          note: >-
+            Every eviction throws away the best candidate. Correct whenever
+            k = n, which is exactly what the first sample usually is.
+        - expression: "weights 10 1 2 5 joined left to right, each join costing the sum"
+          result: "42"
+          note: "11, then 13, then 18. 11 + 13 + 18 = 42."
+        - expression: "the same weights, always joining the two smallest"
+          result: "29"
+          note: >-
+            1+2 = 3, then 3+5 = 8, then 8+10 = 18, and 3 + 8 + 18 = 29. The
+            joined piece is a new member whose rank did not exist when you
+            sorted — which is why a sort cannot replace the structure here.
+        - expression: "building from a vector of n elements: n pushes versus one construction"
+          result: "O(n log n) versus O(n)"
+          note: >-
+            priority_queue(v.begin(), v.end()) heapifies in linear time. At
+            n = 2*10^5 that is a factor of about 17 on the build, thrown away by
+            anyone who writes the loop out of habit.
+        - expression: "const long long& a = pq.top(); pq.pop(); then read a"
+          result: "some other element"
+          note: >-
+            The reference names a slot the heap has already overwritten. Take a
+            copy — the type is one machine word and the copy is free.
+      watch_out:
+        - warning: "The k largest need a MIN-heap, not a max-heap."
+          why: >-
+            The top of the bounded heap is the element you are willing to lose,
+            so it must be the weakest one you hold. On 5 1 9 3 7 2 with k = 3 the
+            wrong direction finishes holding {1, 2, 3} where {5, 7, 9} was
+            wanted — and finishes holding the right answer whenever k = n.
+        - warning: "top() and pop() on an empty heap are undefined behaviour, not an exception."
+          why: >-
+            You will get a plausible-looking number, and only on the test where
+            the collection empties early. If a step pops twice, the guard is
+            size() >= 2 and not size() >= 1.
+        - warning: "Accumulate in long long."
+          why: >-
+            Joining 2*10^5 pieces of 10^9 reaches roughly 3*10^15, a hundred
+            thousand times past INT_MAX. The total comes back negative on the
+            largest test and nowhere else.
+        - warning: "You cannot reach inside it."
+          why: >-
+            No search, no erase of an interior element, no change of a key. If
+            the statement removes anything other than the current extreme, stop
+            writing and go to the next secret — or carry a cancellation counter
+            and discard stale tops lazily, which is the only patch that keeps
+            the log factor.
+      drills:
+        - id: str-heap-eval-default
+          kind: evaluate
+          prompt: >-
+            priority_queue<int> q; you push 3, 5, 7 and 2. What does q.top()
+            return?
+          options: ["2", "3", "5", "7"]
+          answer: "7"
+          explanation: >-
+            The C++ default is a MAX-heap. Every problem in this region that
+            wants the smallest needs the three-argument declaration with
+            greater<>, and forgetting it compiles perfectly.
+        - id: str-heap-eval-bounded
+          kind: evaluate
+          prompt: >-
+            The stream is 5 1 9 3 7 2 and you keep the 3 largest in a min-heap
+            bounded at size 3. What is the total of the elements it holds at the
+            end?
+          options: ["6", "15", "21", "27"]
+          answer: "21"
+          explanation: >-
+            It finishes holding {5, 7, 9}, totalling 21. A max-heap bounded the
+            same way finishes holding {1, 2, 3}, totalling 6 — the same code,
+            one template argument apart.
+        - id: str-heap-eval-merge
+          kind: evaluate
+          prompt: >-
+            Pieces of weight 10, 1, 2 and 5 are joined one pair at a time, each
+            join costing the sum of the two joined. Always joining the two
+            smallest, what is the total cost?
+          options: ["18", "29", "36", "42"]
+          answer: "29"
+          explanation: >-
+            1+2 = 3, then 3+5 = 8, then 8+10 = 18, and 3 + 8 + 18 = 29. Joining
+            left to right on the same weights costs 42.
+        - id: str-heap-prop-why-not-sort
+          kind: property
+          prompt: >-
+            Which single fact in a merging problem proves that sorting the
+            weights once cannot replace the structure?
+          options:
+            - "a join creates a new weight whose rank no ordering fixed in advance could contain"
+            - "the weights may repeat, and a sort makes repeats adjacent"
+            - "sorting is O(n log n) and the structure is O(n)"
+            - "the weights are too large to sort"
+          answer: "a join creates a new weight whose rank no ordering fixed in advance could contain"
+          explanation: >-
+            The merged piece did not exist when you sorted. That is the whole
+            reason this pattern exists: the collection is still changing when
+            the next question is asked.
+        - id: str-heap-prop-cost
+          kind: property
+          prompt: >-
+            A stream of n = 5*10^6 values arrives and only the k = 1000 largest
+            matter. What does bounding the structure at k buy you?
+          options:
+            - "O(n log k) time and O(k) memory instead of holding all n values"
+            - "O(n) time, because the bound removes the logarithm"
+            - "nothing — sorting is the same complexity"
+            - "O(log n) time per query, at the cost of O(n) memory"
+          answer: "O(n log k) time and O(k) memory instead of holding all n values"
+          explanation: >-
+            The memory is the point. Holding 1000 longs is 8 kilobytes; holding
+            5*10^6 of them is 40 megabytes, which is the whole limit on most
+            judges before your program has done anything.
+        - id: str-heap-trap-dangling
+          kind: trap
+          prompt: >-
+            The code reads `const long long& best = pq.top(); pq.pop(); total +=
+            best;`. What happens?
+          options:
+            - "best names a slot the heap has already overwritten, so some other element is added"
+            - "it fails to compile, because top() returns a const reference"
+            - "it is correct but slower than taking a copy"
+            - "it throws when the heap becomes empty"
+          answer: "best names a slot the heap has already overwritten, so some other element is added"
+          explanation: >-
+            pop() moves the last element into the root and shrinks the vector.
+            The reference survives and the value under it does not. Copy the
+            value — it is one machine word.
+        - id: str-heap-recall-minheap
+          kind: recall
+          prompt: >-
+            Write the declaration of a structure over long long that shows its
+            SMALLEST element.
+          answer: "priority_queue<long long, vector<long long>, greater<long long>> pq;"
+          accepts:
+            - "priority_queue<longlong,vector<longlong>,greater<longlong>>pq;"
+            - "priority_queue<longlong,vector<longlong>,greater<longlong>>q;"
+            - "priority_queue<longlong,vector<longlong>,greater<longlong>>"
+            - "priority_queue<longlong,vector<longlong>,greater<>>pq;"
+          explanation: >-
+            Three template arguments: the type, the container, the comparator.
+            You will write this from memory in a contest or you will not write
+            it at all.
+        - id: str-heap-apply-median
+          kind: apply
+          prompt: >-
+            Two heaps face each other to show the middle of a growing
+            collection: `lo` holds the smaller half, `hi` the larger. Write the
+            condition, in terms of their sizes, under which one element must be
+            moved from `lo` to `hi`.
+          answer: "lo.size() > hi.size() + 1"
+          accepts:
+            - "lo.size()>hi.size()+1"
+            - "lo.size()-hi.size()>1"
+            - "(int)lo.size()-(int)hi.size()>1"
+            - "lo.size()>=hi.size()+2"
+          explanation: >-
+            The invariant is that the two sizes differ by at most one and every
+            member of lo is at most every member of hi. Most students write the
+            rebalance in one direction only, and it is correct until the first
+            input that leans the other way.
+
+  # ---------------------------------------------------------------- stage 1
+  - id: stage-row-you-may-edit
+    order: 1
+    pattern: ordered-set
+    trial_problem_ids: [berth-nearest-free]
+    secret:
+      id: one-copy-not-every-copy
+      name: One Copy, Not Every Copy
+      idiom: "s.erase(s.find(x));"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        This is the sorted row you are allowed to edit. It costs a log factor on
+        every operation and it buys you three things a heap refuses: find an
+        arbitrary value, erase an arbitrary value, and step to the neighbours of
+        a value that may not even be present. That third one is what most
+        statements are really asking for, and it is always the same two
+        candidates — the first element at least x, and the element immediately
+        before it — with two guards, against end() and against begin(). Learn
+        the price list with the operations, because two of the members are not
+        logarithmic and both of them look it. count() on a multiset is
+        O(log n + f), linear in the number of copies, so one call on a million
+        equal values costs a million steps. distance() between two iterators is
+        O(n), because a tree's iterators walk. And std::lower_bound on set
+        iterators compiles, returns the right element and runs in O(n) — the
+        member function descends the tree, the free function does not know how.
+        But the line above is the one that will cost you a contest.
+        erase(x) removes EVERY copy of x. erase(find(x)) removes one. Nothing in
+        the program tells you which you meant, and no input with distinct values
+        will ever show the difference.
+      demonstrations:
+        - expression: "multiset {2, 5, 5, 5, 9}; s.erase(5); the contents"
+          result: "{2, 9}"
+          note: "Three elements gone from one instruction. The size dropped by 3, not by 1."
+        - expression: "multiset {2, 5, 5, 5, 9}; s.erase(s.find(5)); the contents"
+          result: "{2, 5, 5, 9}"
+          note: "One copy. Same container, same value, one function call apart."
+        - expression: "set<int> s; insert 5, insert 5, insert 5; s.size()"
+          result: "1"
+          note: >-
+            A plain set discards the repeats and reports that it did. Every
+            total derived from size() is then short, silently, and only on data
+            that repeats.
+        - expression: "s = {2, 7, 7, 13, 20}; s.lower_bound(8) and the element before it"
+          result: "13 and 7"
+          note: >-
+            The nearest value to 8 is one of exactly two candidates. 13 - 8 = 5
+            and 8 - 7 = 1, so 7 wins. No third candidate is ever possible.
+        - expression: "s = {2, 7, 7, 13, 20}; the largest element at most 7"
+          result: "upper_bound(7) then step back gives 7"
+          note: >-
+            lower_bound(7) returns 7 itself and stepping back from it gives 2 —
+            wrong by exactly the case where the value is present. For
+            at-most queries, upper_bound then --it.
+        - expression: "s.lower_bound(25) on that set, then dereferenced"
+          result: "undefined behaviour"
+          note: >-
+            25 is above everything, so the iterator is end(). Guard it. The
+            mirror case is stepping back from begin(), which is the query below
+            everything.
+        - expression: "std::lower_bound(s.begin(), s.end(), x) versus s.lower_bound(x)"
+          result: "O(n) versus O(log n)"
+          note: >-
+            Both compile, both return the same element. The free function needs
+            random access to halve, and a tree's iterators are bidirectional, so
+            it walks. Perfect on the sample, time limit exceeded at 10^5 queries.
+        - expression: "the same task on a static array at n = 10^6: sort plus binary search versus a set"
+          result: "about 0.2 s versus about 1.5 s"
+          note: >-
+            Identical asymptotics, seven times the wall clock, because a tree is
+            chased pointer by pointer. If nothing is inserted after the first
+            query, you are paying for a promise you never use.
+      watch_out:
+        - warning: "erase(value) on a multiset removes every copy."
+          why: >-
+            On {2, 5, 5, 5, 9} a window that should hold three elements holds
+            one, and the answer is wrong only on inputs containing duplicates —
+            which the sample almost never does. erase(find(x)) is the form you
+            want in nine cases out of ten.
+        - warning: "lower_bound's result must be checked against end(), and prev() against begin()."
+          why: >-
+            The two edge queries — above everything and below everything — are
+            the entire failure surface of a nearest-value loop, and they produce
+            a nonsense answer rather than a crash, so the verdict is wrong
+            answer with no line number.
+        - warning: "Erasing inside a loop invalidates the iterator you were holding."
+          why: >-
+            `it = s.erase(it)` returns the next valid position. `++it` after an
+            erase advances a corpse, which crashes or loops forever as soon as
+            two elements in a row qualify.
+        - warning: "count() and distance() are not logarithmic."
+          why: >-
+            count is O(log n + f) and distance is O(n). Both look like ordinary
+            queries in the source and both turn a loop quadratic with no visible
+            sign that anything happened.
+      drills:
+        - id: str-set-eval-erase-all
+          kind: evaluate
+          prompt: >-
+            multiset<int> s holds {2, 5, 5, 5, 9} and you call s.erase(5). How
+            many elements does it hold afterwards?
+          options: ["1", "2", "3", "4"]
+          answer: "2"
+          explanation: >-
+            Every copy goes: {2, 9}. The form that removes exactly one is
+            s.erase(s.find(5)), which leaves {2, 5, 5, 9}.
+        - id: str-set-eval-bracket
+          kind: evaluate
+          prompt: >-
+            s holds {2, 7, 7, 13, 20}. Which value in s is nearest to 8, ties
+            going to the smaller?
+          options: ["2", "7", "13", "20"]
+          answer: "7"
+          explanation: >-
+            lower_bound(8) points at 13 and the element before it is 7. 13 - 8 is
+            5 and 8 - 7 is 1, so 7 wins. Only those two are ever candidates.
+        - id: str-set-eval-at-most
+          kind: evaluate
+          prompt: >-
+            s holds {2, 7, 7, 13, 20}. You want the largest element at most 7,
+            and you write `auto it = s.lower_bound(7); --it;`. What do you get?
+          options: ["2", "7", "13", "the iterator is end()"]
+          answer: "2"
+          explanation: >-
+            lower_bound(7) lands ON the 7, so stepping back leaves the 2. The
+            correct idiom is upper_bound(7) then --it, which lands past every 7
+            and steps back onto one.
+        - id: str-set-prop-versus-heap
+          kind: property
+          prompt: >-
+            One question decides between a structure showing one end and a
+            searchable ordered one. Which is it?
+          options:
+            - "is anything ever removed that is NOT the current extreme"
+            - "do the values repeat"
+            - "are the values larger than 10^9"
+            - "is n larger than 10^5"
+          answer: "is anything ever removed that is NOT the current extreme"
+          explanation: >-
+            If only the top ever leaves, the heap is smaller, faster and harder
+            to misuse. The moment a named value, an expiring element or a
+            departing window member must go, you need something you can search.
+        - id: str-set-prop-refuses
+          kind: property
+          prompt: >-
+            A statement asks how many values currently held are below x. What
+            does a searchable ordered collection give you?
+          options:
+            - "the element just below x, and no count — ranks are a different structure"
+            - "the count directly, in O(log n)"
+            - "the count in O(log n) via distance(s.begin(), s.lower_bound(x))"
+            - "nothing; the container cannot be searched by value"
+          answer: "the element just below x, and no count — ranks are a different structure"
+          explanation: >-
+            distance() over tree iterators is O(n), which is the trap dressed as
+            the answer. A COUNT belongs on the value axis, which is the next
+            structure the Keeper teaches.
+        - id: str-set-trap-loop-erase
+          kind: trap
+          prompt: >-
+            A loop walks a multiset erasing every element below a threshold, and
+            after each erase it writes `++it`. What is wrong?
+          options:
+            - "the erased iterator is invalid, so ++it advances a corpse; use it = s.erase(it)"
+            - "nothing — erase only invalidates other iterators"
+            - "the loop is O(n log n) where O(n) is possible"
+            - "the threshold comparison should use upper_bound"
+          answer: "the erased iterator is invalid, so ++it advances a corpse; use it = s.erase(it)"
+          explanation: >-
+            It survives every input where no two removable elements are adjacent
+            — which is most small samples — and crashes or hangs on the first
+            input where two are.
+        - id: str-set-recall-erase-one
+          kind: recall
+          prompt: >-
+            Write the statement that removes exactly ONE copy of the value x
+            from a multiset s.
+          answer: "s.erase(s.find(x));"
+          accepts:
+            - "s.erase(s.find(x))"
+            - "s.erase(find(x));"
+            - "auto it = s.find(x); s.erase(it);"
+            - "s.erase(s.lower_bound(x));"
+          explanation: >-
+            Erase the ITERATOR, not the value. This is the single most common
+            silent wrong answer in the whole region, and it is invisible until
+            the data repeats.
+        - id: str-set-apply-guards
+          kind: apply
+          prompt: >-
+            You have `auto it = s.lower_bound(x);` and want to consider the
+            element before it. Write the condition that must hold before you
+            step back and read it.
+          answer: "it != s.begin()"
+          accepts:
+            - "it!=s.begin()"
+            - "if(it!=s.begin())"
+            - "it!=begin()"
+            - "it!=s.begin()&&!s.empty()"
+          explanation: >-
+            And the other guard, before reading the candidate itself, is
+            it != s.end(). Two guards, two candidates: that is a nearest-value
+            query complete.
+
+  # ---------------------------------------------------------------- stage 2
+  - id: stage-two-walks
+    order: 2
+    pattern: fenwick-tree
+    trial_problem_ids: [granary-ledger-audit]
+    secret:
+      id: the-two-walks
+      name: The Two Walks
+      idiom: "for (; i <= n; i += i & -i) tree[i] += v;   /   for (; i >= 1; i -= i & -i) s += tree[i];"
+      memorise: true
+      baseline_drills: 6
+      teaches: >-
+        A table of running totals answers any range in O(1) and dies on the
+        first write, because repairing it costs O(n). This structure is that
+        table made repairable, and the entire idea is one sentence: cell i holds
+        the total of the block of positions ending at i whose length is
+        i & -i, the lowest set bit of i. Two consequences follow, and they are
+        the two loops. Every position belongs to at most log n blocks, so a
+        write climbs by ADDING the lowest set bit and repairs each of them.
+        Every prefix is the union of at most log n blocks, so a read descends by
+        STRIPPING the lowest set bit and totals each of them. Four lines. One
+        array of n + 1 longs — for n = 2*10^5 that is 1.6 megabytes, against the
+        6.4 the general tree would take, and against sixty lines instead of
+        four. That ratio is the reason this structure is worth knowing at all,
+        and it is why you must be able to write both loops from memory, without
+        thinking, at minute fifty of a contest. If you cannot, you do not have
+        this pattern, whatever else you can explain about it. One more thing,
+        and it is not decoration: the array is ONE-indexed. The lowest set bit
+        of 0 is 0, so a write at position 0 adds nothing to its own index and
+        the loop never terminates. The program does not answer wrongly; it hangs.
+      demonstrations:
+        - expression: "the array [1, 3, 4, 8, 6, 1, 4, 2], one-indexed, as a tree"
+          result: "[1, 4, 4, 16, 6, 7, 4, 29]"
+          note: >-
+            The handbook's own worked example. tree[4] = 16 is the total of
+            positions 1 to 4, and tree[6] = 7 is the total of positions 5 to 6
+            — because 6 & -6 is 2, so cell 6 owns a block of length 2.
+        - expression: "i & -i for i = 6, 7, 8"
+          result: "2, 1, 8"
+          note: >-
+            6 is 110 and its lowest set bit is 2; 7 is 111 and its lowest is 1;
+            8 is 1000 and its lowest is 8. That number IS the length of the
+            block the cell owns.
+        - expression: "prefix(7): the cells visited"
+          result: "7, then 6, then 4 — total 4 + 7 + 16 = 27"
+          note: >-
+            7 - 1 = 6, 6 - 2 = 4, 4 - 4 = 0 and the loop stops. Three cells
+            visited to total seven positions, and 1+3+4+8+6+1+4 is indeed 27.
+        - expression: "add(3, x): the cells repaired"
+          result: "3, then 4, then 8"
+          note: >-
+            3 + 1 = 4, 4 + 4 = 8, 8 + 8 = 16 which is past n = 8 and the loop
+            stops. Position 3 lies inside exactly those three blocks.
+        - expression: "sum over positions 3 to 6 as prefix(6) - prefix(2)"
+          result: "23 - 4 = 19"
+          note: >-
+            4 + 8 + 6 + 1 = 19. The range answer is a SUBTRACTION, and the whole
+            structure depends on that subtraction existing.
+        - expression: "a write at position 0, with i += i & -i"
+          result: "the program hangs"
+          note: >-
+            0 & -0 is 0, so i never advances. This is why every rank conversion
+            in this region ends in + 1, and for no other reason.
+        - expression: "building the tree by n calls to add, versus the direct build"
+          result: "O(n log n) versus O(n)"
+          note: >-
+            The direct build sets each cell to its own value and then pushes
+            each cell into its parent at i + (i & -i) once. One pass, no
+            logarithm.
+        - expression: "an update instruction that SETS position i to v"
+          result: "add(i, v - old[i])"
+          note: >-
+            The structure only ever adds. Treating add as an assignment leaves
+            every later total too large by the old value, and it is correct on
+            any test where each position is written once — which is most first
+            samples.
+      watch_out:
+        - warning: "One-indexed, always."
+          why: >-
+            lowbit(0) is 0, so the climbing loop never advances and the program
+            hangs rather than answering wrongly. Every conversion from a 0-based
+            position or a compressed rank needs its + 1 for this reason.
+        - warning: "add(i, v) adds v; it does not set position i to v."
+          why: >-
+            If the statement assigns, you must issue the difference from the
+            value you are replacing, which means keeping the plain array
+            alongside the tree. Forgetting leaves every total inflated by the
+            sum of the overwritten values.
+        - warning: "The cells are long long."
+          why: >-
+            2*10^5 values of 10^9 total 2*10^14, five orders of magnitude past
+            INT_MAX, and the tree's internal cells hold partial totals that are
+            just as large as the answer.
+        - warning: "Do not clear and rebuild the tree inside the query loop."
+          why: >-
+            An O(n) reset inside an O(q) loop is O(nq) and the log factor you
+            paid for buys nothing. Undo only the cells you touched, or stamp
+            each cell with the query number that last wrote it.
+      drills:
+        - id: str-fen-eval-lowbit
+          kind: evaluate
+          prompt: "What is 12 & -12?"
+          options: ["1", "2", "4", "12"]
+          answer: "4"
+          explanation: >-
+            12 is 1100, and its lowest set bit is 4. So cell 12 owns the block
+            of four positions from 9 to 12.
+        - id: str-fen-eval-prefix-cells
+          kind: evaluate
+          prompt: >-
+            Reading a prefix by repeatedly stripping the lowest set bit, which
+            cells does prefix(7) visit?
+          options:
+            - "7, 6, 4"
+            - "7, 3, 1"
+            - "7, 6, 5, 4, 3, 2, 1"
+            - "1, 2, 4"
+          answer: "7, 6, 4"
+          explanation: >-
+            7 - 1 = 6, 6 - 2 = 4, 4 - 4 = 0 and the loop ends. Three cells for
+            seven positions: the count of visited cells is the number of set
+            bits in the index.
+        - id: str-fen-eval-add-cells
+          kind: evaluate
+          prompt: >-
+            With n = 8, a write at position 3 climbs by adding the lowest set
+            bit. Which cells does it repair?
+          options:
+            - "3, 4, 8"
+            - "3, 6, 12"
+            - "3, 2, 1"
+            - "1, 2, 3"
+          answer: "3, 4, 8"
+          explanation: >-
+            3 + 1 = 4, 4 + 4 = 8, 8 + 8 = 16 which is past n. Position 3 lies
+            inside exactly those three blocks, and no others.
+        - id: str-fen-eval-range
+          kind: evaluate
+          prompt: >-
+            For the array [1, 3, 4, 8, 6, 1, 4, 2] one-indexed, what is the total
+            of positions 3 through 6?
+          options: ["13", "19", "23", "27"]
+          answer: "19"
+          explanation: >-
+            4 + 8 + 6 + 1 = 19, obtained as prefix(6) - prefix(2) = 23 - 4. The
+            method is the subtraction; the structure only makes the two prefixes
+            cheap.
+        - id: str-fen-prop-one-indexed
+          kind: property
+          prompt: "Why must this structure be one-indexed?"
+          options:
+            - "the lowest set bit of 0 is 0, so a write at position 0 loops forever"
+            - "cell 0 would be counted twice in every prefix"
+            - "the parent of cell 0 would be negative"
+            - "it need not be; zero-indexing simply reads worse"
+          answer: "the lowest set bit of 0 is 0, so a write at position 0 loops forever"
+          explanation: >-
+            The failure is a hang, not a wrong answer, and it happens on the
+            first input whose smallest value compresses to rank 0. That + 1 on
+            every rank is not a stylistic choice.
+        - id: str-fen-trap-assignment
+          kind: trap
+          prompt: >-
+            The statement says "set bin i to v" and the author writes add(i, v).
+            When does this go wrong?
+          options:
+            - "as soon as any position is written twice; every later total is too large by the old value"
+            - "never — add and set are the same operation on this structure"
+            - "only when v is negative"
+            - "only when the array is not a power of two in length"
+          answer: "as soon as any position is written twice; every later total is too large by the old value"
+          explanation: >-
+            Correct on every test where each position is written once, which is
+            most first samples. Keep the plain array alongside and issue
+            add(i, v - old[i]), then update old[i].
+        - id: str-fen-recall-add
+          kind: recall
+          prompt: >-
+            Write the loop that adds v at position i, over a one-indexed tree of
+            size n.
+          answer: "for (; i <= n; i += i & -i) tree[i] += v;"
+          accepts:
+            - "for(;i<=n;i+=i&-i)tree[i]+=v;"
+            - "while(i<=n){tree[i]+=v;i+=i&-i;}"
+            - "for(inti=pos;i<=n;i+=i&-i)tree[i]+=v;"
+            - "while(i<=n){tree[i]+=v;i+=(i&-i);}"
+          explanation: >-
+            Climb by ADDING the lowest set bit, stop past n. Half the structure;
+            the other half strips the same bit and walks down.
+        - id: str-fen-apply-prefix
+          kind: apply
+          prompt: >-
+            Write the loop that totals the prefix ending at position i.
+          answer: "for (; i >= 1; i -= i & -i) s += tree[i];"
+          accepts:
+            - "for(;i>=1;i-=i&-i)s+=tree[i];"
+            - "while(i>=1){s+=tree[i];i-=i&-i;}"
+            - "while(i>0){s+=tree[i];i-=i&-i;}"
+            - "for(;i>0;i-=i&-i)s+=tree[i];"
+          explanation: >-
+            Descend by STRIPPING the lowest set bit, stop at 0. Any range is
+            then prefix(r) - prefix(l - 1), and the l - 1 is the fencepost that
+            costs people the problem.
+
+  # ---------------------------------------------------------------- stage 3
+  - id: stage-value-axis
+    order: 3
+    pattern: fenwick-tree
+    trial_problem_ids: [scriptorium-disorder]
+    secret:
+      id: the-value-axis
+      name: Put the Values on the Axis
+      idiom: "rank = lower_bound(v.begin(), v.end(), x) - v.begin() + 1;"
+      memorise: true
+      baseline_drills: 6
+      teaches: >-
+        Until now the index of the structure was a POSITION. Change nothing in
+        the code and let the index be a VALUE, and the same four lines answer a
+        different class of question entirely: cell v counts how many values
+        equal to v have been recorded, so a prefix answers "how many of what I
+        have seen so far is smaller than this". That single change is what turns
+        an accounting structure into a counting one, and it is the reason
+        counting pairs that stand in the wrong order — 2*10^10 comparisons done
+        honestly — becomes one walk of 2*10^5 steps. The recipe is fixed. Sort a
+        copy of the values, remove the repeats, erase the tail that remains
+        behind, and replace each value by its 1-based position in what is left.
+        The mapping preserves order, so every comparison still means what it
+        meant, and the axis is now 2*10^5 cells wide instead of 10^9. Two
+        details decide whether it works. The + 1, because rank 0 hangs the
+        climb. And the choice between prefix(rank) and prefix(rank - 1), which
+        is the entire difference between "smaller or equal" and "strictly
+        smaller" — right on every input with distinct values, wrong by exactly
+        the number of equal pairs the moment one value repeats.
+      demonstrations:
+        - expression: "values [5, 1, 4, 2, 8]; sorted and deduplicated"
+          result: "[1, 2, 4, 5, 8]"
+          note: "Five distinct values, so the axis is five cells wide instead of nine."
+        - expression: "the ranks of 5, 1, 4, 2, 8 under that mapping, 1-based"
+          result: "4, 1, 3, 2, 5"
+          note: >-
+            Order is preserved: 1 < 2 < 4 < 5 < 8 becomes 1 < 2 < 3 < 4 < 5. Every
+            comparison in the original data is still the same comparison here.
+        - expression: "pairs standing in the wrong order in [5, 1, 4, 2, 8]"
+          result: "4"
+          note: >-
+            (5,1), (5,4), (5,2) and (4,2). Charged to the RIGHT member of each
+            pair, the walk counts 0, 1, 1, 2, 0 — which totals 4.
+        - expression: "the sequence [2, 2, 2] counted with prefix(rank)"
+          result: "3"
+          note: >-
+            The true answer is 0: no pair is out of order. Counting up to the
+            rank itself counts every equal value as an inversion.
+        - expression: "the same sequence counted with prefix(rank - 1)"
+          result: "0"
+          note: >-
+            Strictly smaller. One character apart from the line above, and the
+            difference appears only when a value repeats.
+        - expression: "std::unique on [1, 1, 2, 2, 4] without the erase"
+          result: "[1, 2, 4, 2, 4]"
+          note: >-
+            unique only moves the survivors to the front and returns where they
+            end; the vector keeps its old size with stale values after them.
+            lower_bound then searches a sorted prefix followed by garbage.
+        - expression: "the count of out-of-order pairs at n = 2*10^5, worst case"
+          result: "about 2*10^10"
+          note: >-
+            n(n-1)/2 for a fully reversed input. Ten times past INT_MAX, so the
+            accumulator is long long and the failure appears on the largest test
+            only.
+        - expression: "a value axis of 10^9 cells versus 2*10^5 after compression"
+          result: "8 gigabytes versus 1.6 megabytes"
+          note: >-
+            That is what the mismatch between the size of the values and their
+            number is telling you. It is never scenery.
+      watch_out:
+        - warning: "sort, then unique, then ERASE."
+          why: >-
+            unique does not shorten the vector. Leaving the tail on gives
+            lower_bound a sorted prefix followed by whatever was there before,
+            and the ranks it returns are nonsense that nothing in the program
+            checks.
+        - warning: "prefix(rank) counts equals; prefix(rank - 1) does not."
+          why: >-
+            Both are correct programs for different questions, and both agree on
+            every input with distinct values. Decide which the statement asked
+            for before you write it, because the test that separates them is
+            never the sample.
+        - warning: "The rank is 1-based."
+          why: >-
+            lower_bound returns a 0-based offset, and a 0 entering the climbing
+            loop hangs the program. The + 1 belongs in the conversion, not
+            scattered through the call sites.
+        - warning: "Count in long long."
+          why: >-
+            The number of out-of-order pairs reaches about 2*10^10 at
+            n = 2*10^5, so an int total wraps negative on a fully reversed input
+            and on nothing smaller.
+      drills:
+        - id: str-axis-eval-ranks
+          kind: evaluate
+          prompt: >-
+            The values are [5, 1, 4, 2, 8]. After sorting and deduplicating, what
+            1-based rank does the value 4 receive?
+          options: ["1", "2", "3", "4"]
+          answer: "3"
+          explanation: >-
+            The distinct values in order are [1, 2, 4, 5, 8], so 4 sits third.
+            The mapping preserves order, which is the only property the counting
+            needs.
+        - id: str-axis-eval-inversions
+          kind: evaluate
+          prompt: >-
+            How many pairs stand in the wrong relative order in the sequence
+            [5, 1, 4, 2, 8]?
+          options: ["3", "4", "5", "6"]
+          answer: "4"
+          explanation: >-
+            (5,1), (5,4), (5,2) and (4,2). Walking left to right and asking how
+            many recorded values are larger gives 0 + 1 + 1 + 2 + 0.
+        - id: str-axis-eval-equal
+          kind: evaluate
+          prompt: >-
+            On the sequence [2, 2, 2], a solution totals prefix(rank) instead of
+            prefix(rank - 1) while counting out-of-order pairs. What does it
+            report?
+          options: ["0", "1", "3", "6"]
+          answer: "3"
+          explanation: >-
+            The truth is 0. Each of the second and third values sees the equal
+            ones already recorded and counts them: 0 + 1 + 2 = 3. Distinct data
+            hides this completely.
+        - id: str-axis-prop-count-vs-element
+          kind: property
+          prompt: >-
+            Which question belongs on the value axis rather than to a searchable
+            ordered collection?
+          options:
+            - "how many recorded values are smaller than x"
+            - "which recorded value is nearest to x"
+            - "which recorded value is the largest at most x"
+            - "whether x has been recorded at all"
+          answer: "how many recorded values are smaller than x"
+          explanation: >-
+            A count is a total over a prefix of the values. The other three
+            name an ELEMENT, which a balanced tree walks to in a log factor and
+            this structure cannot point at.
+        - id: str-axis-prop-compression-cue
+          kind: property
+          prompt: >-
+            A statement gives 2*10^5 values, each up to 10^9. What is that
+            mismatch instructing you to do?
+          options:
+            - "map the values to their 1-based ranks, so the axis is 2*10^5 cells wide"
+            - "use a hash table, since the values are too sparse to index"
+            - "sort the values and answer every query by halving"
+            - "store the values as long long to avoid overflow"
+          answer: "map the values to their 1-based ranks, so the axis is 2*10^5 cells wide"
+          explanation: >-
+            An axis of 10^9 cells is 8 gigabytes. The compression costs one sort
+            and preserves every comparison, which is all the counting needs.
+        - id: str-axis-trap-unique
+          kind: trap
+          prompt: >-
+            The author writes `sort(v.begin(), v.end()); unique(v.begin(),
+            v.end());` and then calls lower_bound on v. What is wrong?
+          options:
+            - "unique does not shrink the vector; without the erase, stale values follow the survivors"
+            - "unique requires the vector to be sorted in decreasing order"
+            - "nothing; the erase is only an optimisation"
+            - "lower_bound must be called on the original unsorted vector"
+          answer: "unique does not shrink the vector; without the erase, stale values follow the survivors"
+          explanation: >-
+            unique returns the new logical end and moves the survivors forward.
+            The correct line is
+            v.erase(unique(v.begin(), v.end()), v.end()).
+        - id: str-axis-recall-rank
+          kind: recall
+          prompt: >-
+            Given a sorted, deduplicated vector v, write the expression for the
+            1-based rank of the value x.
+          answer: "lower_bound(v.begin(), v.end(), x) - v.begin() + 1"
+          accepts:
+            - "lower_bound(v.begin(),v.end(),x)-v.begin()+1"
+            - "(int)(lower_bound(v.begin(),v.end(),x)-v.begin())+1"
+            - "lower_bound(all(v),x)-v.begin()+1"
+            - "1+lower_bound(v.begin(),v.end(),x)-v.begin()"
+          explanation: >-
+            The + 1 is not decoration. A rank of 0 entering the climbing loop
+            hangs the program, because the lowest set bit of 0 is 0.
+        - id: str-axis-apply-strict
+          kind: apply
+          prompt: >-
+            Walking left to right and counting, for each element, how many
+            already-recorded values are STRICTLY smaller than it, write the call
+            that produces that count for an element of rank r.
+          answer: "prefix(r - 1)"
+          accepts:
+            - "prefix(r-1)"
+            - "query(r-1)"
+            - "sum(r-1)"
+            - "prefix(rank-1)"
+          explanation: >-
+            prefix(r) would include the equal values. One character, and it is
+            the whole distinction between "smaller" and "smaller or equal".
+
+  # ---------------------------------------------------------------- stage 4
+  - id: stage-what-cannot-be-subtracted
+    order: 4
+    pattern: segment-tree
+    trial_problem_ids: [watchtower-beacon-height]
+    secret:
+      id: what-cannot-be-subtracted
+      name: What Cannot Be Subtracted
+      idiom: "answer(l, r) == prefix(r) - prefix(l - 1)   // only if the merge has an inverse"
+      memorise: true
+      baseline_drills: 6
+      teaches: >-
+        This is the secret I would keep if I could keep only one. Two structures
+        in this vault answer range questions in the same logarithmic time, and
+        choosing between them is not a matter of taste; it is decided by a
+        single property of the quantity you are asked for, and you can settle it
+        in ten seconds before writing anything. Ask: can the answer be UNDONE.
+        A sum can — remove a number by subtracting it. A count can. An exclusive
+        or can, because it is its own inverse. For those, the answer over any
+        range is prefix(r) - prefix(l - 1), the subtraction IS the method, and
+        four lines and one array of n longs are enough. A minimum cannot be
+        undone. Neither can a maximum, a greatest common divisor, or "the best
+        run inside this stretch". There is no operation that removes positions 1
+        through l-1 from a minimum, so no pair of prefixes can be differenced,
+        and the only structure that serves is one that stores each stretch's own
+        answer and COMBINES the stretches tiling your range — which needs
+        associativity and a neutral element, and asks for no inverse at all.
+        Now the cost, because that is what I actually teach. Four lines against
+        sixty. One array of n + 1 longs against 4n. Ten minutes against forty,
+        and forty at minute fifty of a contest is the whole contest. So: sums,
+        counts and xors with point writes — the cheap structure, always. Minima,
+        maxima, divisors, structs — the general one, and no argument. Range
+        writes with point reads — the cheap structure again, over a difference
+        array. Range writes with range reads — the general one, with deferred
+        tags, and now you are paying for every trap in it. Learn the four rows of
+        that table and you will never again write sixty lines to do the work of
+        four.
+      demonstrations:
+        - expression: "sum over positions 3 to 6 of [1, 3, 4, 8, 6, 1, 4, 2]"
+          result: "prefix(6) - prefix(2) = 23 - 4 = 19"
+          note: "The subtraction exists, so the cheap structure serves."
+        - expression: "xor over positions 2 to 4 of the same array"
+          result: "prefixXor(4) ^ prefixXor(1) = 14 ^ 1 = 15"
+          note: >-
+            3 ^ 4 ^ 8 is 15. Xor is its own inverse, so it belongs on the cheap
+            structure exactly as a sum does — a fact most students never notice.
+        - expression: "minimum over positions 3 to 6, attempted as a difference of prefixes"
+          result: "no such expression exists"
+          note: >-
+            prefix-min(6) is 1 and prefix-min(2) is 1. There is no operation
+            that removes positions 1 and 2 from that answer. The truth, 1, is
+            reachable only by combining stored answers.
+        - expression: "gcd(12, 18) = 6; now remove the 12"
+          result: "impossible from 6 alone"
+          note: >-
+            6 is consistent with (12,18), (6,18), (6,6) and more. A prefix
+            divisor tells you nothing you can subtract, which is why range gcd
+            is the general structure's work.
+        - expression: "memory at n = 2*10^5: n + 1 longs versus 4n longs"
+          result: "1.6 MB versus 6.4 MB"
+          note: >-
+            Four times, and on a 256 MB limit that is rarely fatal. The number
+            that IS fatal is the next one.
+        - expression: "lines of code, written under a clock"
+          result: "about 4 versus about 60"
+          note: >-
+            Two loops you can write from memory against a build, a query, an
+            update, a push-down and an identity you can get subtly wrong in five
+            places.
+        - expression: "range write plus POINT read, on the cheap structure"
+          result: "add x at l, subtract x at r + 1, read a prefix"
+          note: >-
+            The difference array. Two point writes and one prefix total, all
+            logarithmic, and no deferred tags anywhere.
+        - expression: "range write plus RANGE read"
+          result: "the general structure, with deferred tags"
+          note: >-
+            This is the one row of the table where the expensive answer is the
+            correct one. Recognise it early, because it is also the one that
+            takes forty minutes.
+      watch_out:
+        - warning: "\"It has an inverse\" is a question about the OPERATION, not about the data."
+          why: >-
+            Positive values do not make a minimum subtractable and negative ones
+            do not stop a sum from being so. Ask what the merge is and whether
+            anything undoes it; the values are irrelevant to that decision.
+        - warning: "Building the general structure where the cheap one serves is not a wrong answer."
+          why: >-
+            It is a correct answer delivered forty minutes late, with four times
+            the memory and every trap of the heavier structure still live. This
+            is the most expensive mistake in the region and it never shows up as
+            a wrong verdict.
+        - warning: "A static array wants neither of them."
+          why: >-
+            If nothing is ever written, a plain table of running totals answers
+            sums in O(1), and a sparse table answers minima in O(1) after
+            O(n log n) preprocessing. Paying a log factor per query for a
+            promise you never use is buying a lock for a door that never closes.
+        - warning: "Two structures may be cheaper than one clever one."
+          why: >-
+            Range write with range read can be done with two of the cheap
+            structures instead of tags — but only for sums. The moment the
+            quantity has no inverse, that door is shut and the tags are the
+            only way through.
+      drills:
+        - id: str-bound-prop-decide
+          kind: property
+          prompt: >-
+            Which single question decides between the four-line counting
+            structure and the general range structure?
+          options:
+            - "can the quantity be undone — is there an operation that removes an element from it"
+            - "is the array larger than 10^5"
+            - "are the updates more frequent than the queries"
+            - "do the values fit in an int"
+          answer: "can the quantity be undone — is there an operation that removes an element from it"
+          explanation: >-
+            Sums, counts and xors can be undone, so a range is a difference of
+            two prefixes. Minima, maxima and divisors cannot, so a range must be
+            assembled from stored answers.
+        - id: str-bound-eval-xor
+          kind: evaluate
+          prompt: >-
+            For the array [1, 3, 4, 8], the running xors are 1, 2, 6, 14. What is
+            the xor of positions 2 through 4?
+          options: ["6", "13", "14", "15"]
+          answer: "15"
+          explanation: >-
+            14 ^ 1 = 15, and 3 ^ 4 ^ 8 is 15 directly. Xor is its own inverse,
+            so it belongs on the cheap structure exactly as a sum does.
+        - id: str-bound-eval-min
+          kind: evaluate
+          prompt: >-
+            For [1, 3, 4, 8, 6, 1, 4, 2] the smallest value in positions 1 to 6
+            is 1 and in positions 1 to 2 is 1. What does that tell you about the
+            smallest value in positions 3 to 6?
+          options:
+            - "nothing — a minimum cannot be recovered from two prefix minima"
+            - "it is 1, by subtraction"
+            - "it is 0, since the two prefixes are equal"
+            - "it is 3, the larger of the two prefix answers"
+          answer: "nothing — a minimum cannot be recovered from two prefix minima"
+          explanation: >-
+            The true answer is 1, but no arithmetic on the two prefix values
+            produces it. That is the absence of an inverse, stated as a number
+            rather than as a rule.
+        - id: str-bound-prop-table
+          kind: property
+          prompt: >-
+            Range updates with POINT queries, on sums. Which structure, and why?
+          options:
+            - "the four-line counting structure over a difference array — two point writes and one prefix read"
+            - "the general structure with deferred tags, since the writes are ranges"
+            - "a plain table of running totals, rebuilt after each write"
+            - "a searchable ordered collection keyed by position"
+          answer: "the four-line counting structure over a difference array — two point writes and one prefix read"
+          explanation: >-
+            Adding x at l and subtracting it at r + 1 turns a range write into
+            two point writes, and a position's value becomes a prefix total.
+            Deferred tags are needed only when the READ is also a range.
+        - id: str-bound-prop-cost
+          kind: property
+          prompt: >-
+            You build the general structure for a problem the cheap one would
+            have served. What has it actually cost you?
+          options:
+            - "about forty minutes and four times the memory, with no wrong verdict to warn you"
+            - "nothing; the complexities are identical"
+            - "a factor of log n in query time"
+            - "correctness, since the two answer different questions"
+          answer: "about forty minutes and four times the memory, with no wrong verdict to warn you"
+          explanation: >-
+            The Keeper's whole objection. A right answer at minute ninety of a
+            two-hour contest is a problem you did not solve, and nothing in the
+            judge's response will ever tell you why.
+        - id: str-bound-trap-static
+          kind: trap
+          prompt: >-
+            A statement asks 2*10^5 range-minimum questions about an array that
+            is never modified. The author builds the general structure. What has
+            he missed?
+          options:
+            - "a static array needs no updatable structure at all; a sparse table answers each question in O(1)"
+            - "nothing — the general structure is the only one that answers minima"
+            - "the counting structure would have served, since minima subtract"
+            - "the questions should be sorted and answered offline"
+          answer: "a static array needs no updatable structure at all; a sparse table answers each question in O(1)"
+          explanation: >-
+            O(n log n) preprocessing and then a constant per question, with no
+            tree to descend. The updatable structure's whole reason to exist is
+            the update.
+        - id: str-bound-recall-formula
+          kind: recall
+          prompt: >-
+            Write the expression for the answer over the range l to r when the
+            merge HAS an inverse.
+          answer: "prefix(r) - prefix(l - 1)"
+          accepts:
+            - "prefix(r)-prefix(l-1)"
+            - "sum(r)-sum(l-1)"
+            - "query(r)-query(l-1)"
+            - "f(r)-f(l-1)"
+          explanation: >-
+            The l - 1 keeps the left endpoint inside the answer. And the whole
+            line is a claim about the operation: write it for a minimum and you
+            have written something that does not exist.
+        - id: str-bound-apply-classify
+          kind: apply
+          prompt: >-
+            Name one quantity, other than a sum or a count, whose range answer
+            can still be obtained as a difference of two prefixes.
+          answer: "xor"
+          accepts:
+            - "xor"
+            - "exclusive or"
+            - "bitwise xor"
+            - "^"
+            - "product with modular inverse"
+          explanation: >-
+            Xor is its own inverse, so prefixXor(r) ^ prefixXor(l - 1) is exact.
+            A product qualifies too, but only when every factor is invertible —
+            one zero in the array and the trick dies.
+
+  # ---------------------------------------------------------------- stage 5
+  - id: stage-tile-and-identity
+    order: 5
+    pattern: segment-tree
+    trial_problem_ids: [canal-lock-levels]
+    secret:
+      id: the-tile-and-the-identity
+      name: The Tile and the Identity
+      idiom: "tree[k] = merge(tree[2 * k], tree[2 * k + 1]);"
+      memorise: true
+      baseline_drills: 6
+      teaches: >-
+        Having decided that the merge cannot be undone, here is what you build.
+        Every node holds the answer for its own stretch and nothing else, so a
+        node knows its answer without knowing anything about its neighbours. Any
+        range you name is then covered exactly by at most two nodes per level —
+        O(log n) of them — and the answer is those nodes combined, with nothing
+        counted twice and nothing missed. The structure asks two things of your
+        operation and no more: that it is associative, so the order of combining
+        does not matter, and that it has a neutral element, so an empty piece
+        can still return something. That neutral element is where people die. It
+        is not 0. It is 0 for a sum, LLONG_MIN for a maximum, LLONG_MAX for a
+        minimum, 0 for a gcd because gcd(x, 0) is x. Choose 0 for a maximum and
+        every query over an all-negative stretch answers 0 — a value that is not
+        in the array at all — and no test built from positive numbers will ever
+        show it. Two sizes: 2n cells for the iterative form with leaves at n
+        through 2n-1, and 4n for the recursive form, because when n is not a
+        power of two the recursion's deepest index overshoots 2n. Sized at 2n it
+        is correct for n = 8 and corrupt for n = 5. And when whole ranges are
+        written, each of the O(log n) tiling nodes takes a deferred tag: correct
+        that node's own answer AT ONCE, record the debt for its children, and
+        push the debt down only when a later call must descend past it. Do half
+        of that and your answers are right on short ranges and wrong on long
+        ones, which is the hardest kind of wrong to see.
+      demonstrations:
+        - expression: "the array [5, 8, 6, 3, 2, 7, 2, 6] as a sum tree"
+          result: "leaves 5 8 6 3 2 7 2 6; then 13 9 9 8; then 22 17; root 39"
+          note: >-
+            The handbook's own worked tree. Each internal node is the sum of its
+            two children and of nothing else.
+        - expression: "the sum over positions 2 to 7 of that array, by tiling"
+          result: "9 + 17 = 26"
+          note: >-
+            Two nodes, not six leaves: the node covering [2,3] and the node
+            covering [4,7]. 6+3+2+7+2+6 is indeed 26.
+        - expression: "the maximum of [-5, -2, -9], with 0 used as the identity"
+          result: "0"
+          note: >-
+            A value not present in the array. The correct identity is LLONG_MIN,
+            and every test whose values are positive agrees with the wrong one.
+        - expression: "a recursive tree sized 2n, queried at n = 5"
+          result: "out of bounds"
+          note: >-
+            Correct for n = 8 and for every other power of two. The recursion
+            splits at the midpoint and the deepest index overshoots 2n whenever
+            n is not one. Size it 4n and stop thinking about it.
+        - expression: "a range write of +5 over a stretch of length 4, on a sum tree"
+          result: "that node's total rises by 20, and the tag records +5"
+          note: >-
+            The node's own answer is corrected by the amount times the LENGTH of
+            its stretch; the tag carries the per-element debt down to the
+            children later.
+        - expression: "applying the tag to the node's answer but not recording it for the children"
+          result: "right on short ranges, wrong on long ones"
+          note: >-
+            The debt stops one level down, so any query that descends past the
+            node misses it. Reordering the queries changes the answers, which is
+            the tell.
+        - expression: "the bottom-up iterative query on a non-commutative merge"
+          result: "wrong, silently"
+          note: >-
+            The loop combines nodes from both ends in interleaved order —
+            invisible for min, max, sum and gcd, and wrong for matrix products
+            or string concatenation. Accumulate the two sides separately.
+        - expression: "cells needed at n = 2*10^5: iterative versus recursive"
+          result: "4*10^5 versus 8*10^5"
+          note: >-
+            3.2 MB against 6.4 MB of long longs. Choose the iterative form when
+            point writes are all you need; you cannot hang lazy tags on it
+            comfortably.
+      watch_out:
+        - warning: "The identity is not 0."
+          why: >-
+            LLONG_MIN for a maximum, LLONG_MAX for a minimum, 0 for a sum and
+            for a gcd. Get it wrong and a query over an empty piece poisons the
+            merge with a value that beats every real one — and only on data that
+            never crosses zero the right way.
+        - warning: "The recursive form needs 4n cells."
+          why: >-
+            2n is correct for every n that is a power of two, so it passes n = 8
+            and corrupts memory at n = 5. This is the bug that appears as a
+            crash on test 3 and nowhere else.
+        - warning: "A deferred tag has two halves and both must happen."
+          why: >-
+            Correct the node's own answer immediately, and record the debt for
+            its children. Doing only the first makes deeper queries miss the
+            update; doing only the second makes queries that stop at the node
+            read a stale value.
+        - warning: "Push pending tags down before descending."
+          why: >-
+            The first query after a range write is right and the second, which
+            goes deeper, reads pre-update values. If reordering the queries
+            changes the answers, this is what you are looking at.
+      drills:
+        - id: str-seg-eval-tiling
+          kind: evaluate
+          prompt: >-
+            For the sum tree over [5, 8, 6, 3, 2, 7, 2, 6], the node covering
+            positions 2 to 3 holds 9 and the node covering 4 to 7 holds 17. What
+            is the sum over positions 2 to 7?
+          options: ["17", "22", "26", "39"]
+          answer: "26"
+          explanation: >-
+            9 + 17. Two nodes rather than six leaves, which is the tiling: at
+            most two nodes per level are ever needed.
+        - id: str-seg-eval-identity
+          kind: evaluate
+          prompt: >-
+            A maximum structure is built with 0 as its neutral value and queried
+            over the stretch [-5, -2, -9]. What does it answer?
+          options: ["-9", "-5", "-2", "0"]
+          answer: "0"
+          explanation: >-
+            The true answer is -2, and 0 is not in the array at all. Every test
+            whose values are positive agrees with the broken identity, which is
+            why this reaches the judge.
+        - id: str-seg-eval-lazy-apply
+          kind: evaluate
+          prompt: >-
+            On a sum structure, a pending increase of +5 is applied to a node
+            whose stretch covers 4 positions and whose total is 12. What is its
+            total afterwards?
+          options: ["17", "20", "32", "60"]
+          answer: "32"
+          explanation: >-
+            12 + 5*4. The amount is per element, so applying it to a node
+            multiplies by the LENGTH of its stretch — and forgetting the length
+            is right only for stretches of one.
+        - id: str-seg-prop-requires
+          kind: property
+          prompt: >-
+            What exactly does this structure require of the operation you merge
+            with?
+          options:
+            - "associativity and a neutral element — and nothing else, in particular no inverse"
+            - "associativity and commutativity"
+            - "an inverse, so two prefixes can be differenced"
+            - "that the values fit in a long long"
+          answer: "associativity and a neutral element — and nothing else, in particular no inverse"
+          explanation: >-
+            No inverse is asked for, which is the entire reason this structure
+            answers questions the cheap one cannot. Commutativity is needed only
+            by the bottom-up loop, not by the structure.
+        - id: str-seg-prop-sizing
+          kind: property
+          prompt: "Why does the recursive form need 4n cells rather than 2n?"
+          options:
+            - "the recursion splits at the midpoint, and for an n that is not a power of two the deepest index overshoots 2n"
+            - "every node stores both its answer and its tag"
+            - "the leaves are duplicated to make the tree complete"
+            - "it does not; 2n is always sufficient"
+          answer: "the recursion splits at the midpoint, and for an n that is not a power of two the deepest index overshoots 2n"
+          explanation: >-
+            Which is why it passes n = 8 and corrupts memory at n = 5. Size it
+            4n and the question never arises again.
+        - id: str-seg-trap-half-lazy
+          kind: trap
+          prompt: >-
+            A range-update structure corrects each tiled node's own answer but
+            never records the debt for that node's children. What is the
+            symptom?
+          options:
+            - "answers are right on ranges that stop at those nodes and wrong on any query that descends past them"
+            - "the program crashes on the first update"
+            - "every answer is too large by the update amount"
+            - "nothing is wrong; children are recomputed on the way up"
+          answer: "answers are right on ranges that stop at those nodes and wrong on any query that descends past them"
+          explanation: >-
+            The debt stops one level down. The tell is that reordering the
+            queries changes the answers, which no correct structure ever does.
+        - id: str-seg-recall-merge
+          kind: recall
+          prompt: >-
+            Write the line that rebuilds an internal node k from its two
+            children, in the array layout where the children of k are 2k and
+            2k+1.
+          answer: "tree[k] = merge(tree[2 * k], tree[2 * k + 1]);"
+          accepts:
+            - "tree[k]=merge(tree[2*k],tree[2*k+1]);"
+            - "tree[k]=tree[2*k]+tree[2*k+1];"
+            - "t[k]=merge(t[2*k],t[2*k+1]);"
+            - "tree[k]=min(tree[2*k],tree[2*k+1]);"
+          explanation: >-
+            Every node is the merge of its children and of nothing else. That
+            one invariant is what makes any range a combination of O(log n)
+            whole nodes.
+        - id: str-seg-apply-identity-max
+          kind: apply
+          prompt: >-
+            Write the neutral value a MAXIMUM structure over long long must
+            return for an empty piece.
+          answer: "LLONG_MIN"
+          accepts:
+            - "llong_min"
+            - "numeric_limits<longlong>::min()"
+            - "std::numeric_limits<longlong>::min()"
+            - "-9e18"
+            - "-4e18"
+          explanation: >-
+            It must lose every comparison. 0 loses none of them against negative
+            data, which is how a maximum comes back as a number that is not in
+            the array.
+
+  # ---------------------------------------------------------------- stage 6
+  - id: stage-count-do-not-walk
+    order: 6
+    pattern: range-counting
+    trial_problem_ids: [lantern-festival-nights]
+    secret:
+      id: count-from-the-beginning-twice
+      name: Count From the Beginning, Twice
+      idiom: "count(l, r) = F(r) - F(l - 1)"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        The last secret is the one that stops you building anything. Everything
+        else in this vault stores data and answers questions about it. Here
+        there is no data: the members of the interval were never given to you,
+        there may be 10^18 of them, and the count is produced from the endpoints
+        alone by arithmetic. So before you build, check what the huge bound is
+        attached to. A bound of 10^18 on the SIZE of the input means the input
+        cannot be read at all and the problem is impossible as stated; a bound
+        of 10^18 on an INTERVAL to be counted means the interval is never
+        visited and one division answers it. The shape is always the same:
+        define F(x) as the count over everything up to and including x, and the
+        answer is F(r) - F(l - 1). The l - 1, not l, or the left endpoint
+        silently falls out — an answer too small by exactly one on every test
+        where l itself has the property, and exactly right on every test where
+        it does not. Three facts are worth holding exactly. The number of
+        integers in [l, r] is r - l + 1, which is 1 when l equals r. The
+        multiples of k up to a non-negative n number exactly n / k. And C++
+        division truncates towards ZERO, not downwards, so every formula written
+        for positive endpoints is off by one somewhere below zero: -7 / 2 is -3
+        where the floor is -4. Write the floor division once, call it
+        everywhere, and that whole class of bug disappears.
+      demonstrations:
+        - expression: "the multiples of 3 in [1, 10]"
+          result: "3"
+          note: "10 / 3 = 3. Namely 3, 6 and 9, counted without looking at any of them."
+        - expression: "the multiples of 3 in [4, 10]"
+          result: "10 / 3 - 3 / 3 = 3 - 1 = 2"
+          note: "6 and 9. The l - 1 is 3, and writing l instead would drop nothing here — try l = 3."
+        - expression: "the multiples of 3 in [3, 10], written with l instead of l - 1"
+          result: "10 / 3 - 3 / 3 = 2, where the truth is 3"
+          note: >-
+            The 3 itself is lost. Exactly one too few, on exactly the inputs
+            whose left endpoint has the property, and right on all the others.
+        - expression: "the number of integers in [7, 7]"
+          result: "1"
+          note: "r - l + 1. Writing r - l reports 0 for every single-point interval."
+        - expression: "-7 / 2 in C++, and the floor of -7/2"
+          result: "-3 and -4"
+          note: >-
+            They agree above zero and differ below it. Every counting formula
+            written from positive samples is therefore wrong on the first
+            interval that crosses zero.
+        - expression: "the integers in [1, 12] divisible by 2 or by 3"
+          result: "6 + 4 - 2 = 8"
+          note: >-
+            Add both counts and subtract the overlap once; the overlap is
+            divisibility by 6, which is their least common multiple.
+        - expression: "the mules needed to carry 10 casks at 3 per mule"
+          result: "(10 + 3 - 1) / 3 = 4"
+          note: >-
+            Ceiling division. Three full mules and one carrying the remaining
+            cask, and the last mule counts.
+        - expression: "the least common multiple of two numbers near 10^9, formed as a * b / gcd"
+          result: "overflow"
+          note: >-
+            10^18 is inside a signed 64-bit type and a * b before the division is
+            not. Write a / gcd(a, b) * b, and the same value arrives intact.
+      watch_out:
+        - warning: "F(r) - F(l - 1), never F(r) - F(l)."
+          why: >-
+            The second form excludes the left endpoint. It is too small by
+            exactly one on every test where l has the property and exactly right
+            everywhere else, so a sample decides the matter at random.
+        - warning: "The number of integers in [l, r] is r - l + 1."
+          why: >-
+            r - l reports 0 for l = r, where the answer is 1. Any test with a
+            single-point interval catches it instantly, and no sample ever
+            contains one.
+        - warning: "C++ division truncates towards zero."
+          why: >-
+            -7 / 2 is -3 where the floor is -4, so every interval that touches
+            or crosses zero is off by one. Write one floor-division helper and
+            route every count through it.
+        - warning: "Check which bound the 10^18 is attached to."
+          why: >-
+            10^18 candidate integers can be counted without being read; 10^18
+            inputs cannot be read at all. The first is this pattern and the
+            second is a misreading, and the difference is one sentence in the
+            constraints.
+      drills:
+        - id: str-count-eval-multiples
+          kind: evaluate
+          prompt: "How many multiples of 3 lie in the inclusive interval [4, 10]?"
+          options: ["1", "2", "3", "4"]
+          answer: "2"
+          explanation: >-
+            10 / 3 - 3 / 3 = 3 - 1 = 2, namely 6 and 9. One division per
+            endpoint, and the interval is never walked.
+        - id: str-count-eval-size
+          kind: evaluate
+          prompt: "How many integers lie in the inclusive interval [7, 7]?"
+          options: ["0", "1", "2", "7"]
+          answer: "1"
+          explanation: >-
+            r - l + 1. The form without the + 1 answers 0 here, which is the
+            fencepost that costs the problem and never appears in a sample.
+        - id: str-count-eval-union
+          kind: evaluate
+          prompt: >-
+            How many integers in [1, 12] are divisible by 2 or by 3?
+          options: ["6", "8", "10", "12"]
+          answer: "8"
+          explanation: >-
+            6 + 4 - 2. The overlap is divisibility by 6, their least common
+            multiple, and it must be subtracted exactly once.
+        - id: str-count-eval-negative
+          kind: evaluate
+          prompt: "What does C++ evaluate -7 / 2 to, and what is the true floor?"
+          options:
+            - "-3, where the floor is -4"
+            - "-4, where the floor is -3"
+            - "-3, and the floor is also -3"
+            - "-4, and the floor is also -4"
+          answer: "-3, where the floor is -4"
+          explanation: >-
+            Truncation towards zero. Above zero the two agree, which is why a
+            counting formula tested only on positive intervals looks correct.
+        - id: str-count-prop-which-bound
+          kind: property
+          prompt: >-
+            A statement says the endpoints reach 10^18. What has that told you?
+          options:
+            - "the members of the interval must be counted by arithmetic, never visited"
+            - "the input is too large to read, so the problem cannot be solved"
+            - "the values must be compressed onto an axis of ranks"
+            - "a table of running totals must be built over the interval"
+          answer: "the members of the interval must be counted by arithmetic, never visited"
+          explanation: >-
+            The bound is on the interval, not on the input. If it were on the
+            number of items to be READ, no algorithm would help; here nothing is
+            read at all.
+        - id: str-count-trap-loop
+          kind: trap
+          prompt: >-
+            The author loops from l to r counting the members with the property.
+            It is instant on every sample. What happens on the real input?
+          options:
+            - "time limit exceeded — the bound that mattered was on the endpoints, not on the number of queries"
+            - "wrong answer, because the loop misses the right endpoint"
+            - "memory limit exceeded, because the interval is stored"
+            - "nothing; the loop is the intended solution"
+          answer: "time limit exceeded — the bound that mattered was on the endpoints, not on the number of queries"
+          explanation: >-
+            The samples are small because they illustrate the statement, not
+            because they test it. Read the constraints on l and r before writing
+            any loop over them.
+        - id: str-count-recall-formula
+          kind: recall
+          prompt: >-
+            Write the general recipe for counting the members of the inclusive
+            interval l to r that have some property, where F counts from the
+            beginning.
+          answer: "F(r) - F(l - 1)"
+          accepts:
+            - "f(r)-f(l-1)"
+            - "count(r)-count(l-1)"
+            - "f(r)-f(l1)"
+            - "solve(r)-solve(l-1)"
+          explanation: >-
+            Two counts from the beginning, subtracted. The l - 1 keeps the left
+            endpoint inside the answer, and it is the single most common bug in
+            this family.
+        - id: str-count-apply-lcm
+          kind: apply
+          prompt: >-
+            Two divisors a and b are each up to 10^9 and their least common
+            multiple is needed in a long long. Write the expression that does
+            not overflow.
+          answer: "a / gcd(a, b) * b"
+          accepts:
+            - "a/gcd(a,b)*b"
+            - "a/__gcd(a,b)*b"
+            - "b/gcd(a,b)*a"
+            - "lcm(a,b)"
+          explanation: >-
+            Divide first, then multiply. a * b before the division reaches
+            10^18 for values near 10^9 and passes the type on the way, and the
+            correct value would have fitted.
+
+final_test_problem_ids:
+  - physicians-round
+  - kennel-window-spread
+  - caravan-arrival-rank
+  - quartermasters-pairs
+  - market-day-best-run
+  - mint-double-struck-coins

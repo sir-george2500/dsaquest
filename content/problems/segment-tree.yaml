@@ -1,0 +1,287 @@
+# Problems that are really Any Merge, Any Range.
+#
+# None may name the pattern, and none may say "tree", "node" or "lazy" as an
+# instruction. The recognition being trained is the one boundary this region
+# turns on: whether the quantity asked for can be UNDONE. Every statement below
+# asks for something that cannot — a minimum, a maximum, a gcd, a best stretch,
+# a first position — or updates whole ranges rather than single positions.
+# `decoy_signals` records how each one is dressed as the cheaper structure.
+
+- id: watchtower-beacon-height
+  pattern: segment-tree
+  title: Watchtower Beacons
+  difficulty: easy
+  statement: >-
+    A frontier has n watchtowers standing in a line, each with a beacon of a
+    known height. Through the campaign, q orders arrive: an order either rebuilds
+    one named tower's beacon to a new height, or asks for the tallest beacon
+    among towers l through r inclusive. Report the answer to every asking order.
+  constraints: |
+    1 <= n <= 200000
+    1 <= q <= 200000
+    -10^9 <= height <= 10^9, and heights may be negative after storm damage
+    the towers are numbered in the order they stand
+  signals_present:
+    - the maximum of a range, with the values changing between queries
+    - the quantity asked for has no inverse, so two totals cannot be subtracted
+    - the answer for a stretch is the better of the answers for its two halves
+    - n and q both 2*10^5, so scanning each queried range is 4*10^10 steps
+  decoy_signals:
+    - "\"a value per position, updates and range questions\" is the exact shape the four-line counting structure serves"
+    - a static array of towers invites a table built once in O(n log n) and read in O(1)
+    - "\"the tallest\" invites a structure that shows one end of a changing collection"
+  expected_complexity: O((n + q) log n)
+  hints:
+    - text: >-
+        Range totals are the difference of two totals taken from the start.
+        Write down the corresponding expression for a maximum and see what
+        operation it would need.
+    - text: >-
+        There is no operation that removes towers 1 through l-1 from a maximum,
+        so nothing can be subtracted. The answer for a range has to be BUILT out
+        of answers for pieces of it.
+    - text: >-
+        Store, for every stretch of a fixed decomposition, the tallest beacon
+        inside it; then any query range is covered by O(log n) whole stretches,
+        combined.
+      reveals_pattern: true
+  why: >-
+    A maximum has no inverse, and that single fact is the whole decision. The
+    heights being possibly negative is the second trap: the value returned for
+    an empty piece must be neutral for the merge, and 0 is not neutral for a
+    maximum — a query over [-5, -2, -9] with a zero identity answers 0, which is
+    not in the array at all.
+  classic_ref: CPH 9.3; CSES Dynamic Range Minimum Queries
+
+- id: forge-alloy-measure
+  pattern: segment-tree
+  title: The Alloy Measure
+  difficulty: medium
+  statement: >-
+    A forge keeps n crucibles in a row, each holding a whole number of measures
+    of alloy. The smith may recast one crucible to a new amount, or ask for the
+    largest whole measure that divides every amount from crucible l to crucible
+    r inclusive. The two kinds of instruction are interleaved. Report the answer
+    to every asking instruction.
+  constraints: |
+    1 <= n <= 200000
+    1 <= q <= 200000
+    1 <= amount <= 10^18
+    the amounts may repeat
+  signals_present:
+    - the greatest common divisor of a range, with the values changing between queries
+    - the quantity has no inverse, so no pair of totals from the start can be subtracted
+    - the combining rule is associative, which is all this structure asks
+    - amounts up to 10^18, so the merge itself must be cheap and exact
+  decoy_signals:
+    - "\"divides every amount\" invites factorising the amounts, which is hopeless at 10^18"
+    - interleaved point writes and range questions is the shape the four-line counting structure serves
+    - "\"the largest measure dividing all of them\" reads like a whole-array computation done once"
+  expected_complexity: O((n + q) log n log A)
+  hints:
+    - text: >-
+        The greatest common divisor of a range is the greatest common divisor of
+        its two halves' answers. What property of the operation makes that
+        sentence true, and which structures need it?
+    - text: >-
+        Associativity plus a neutral element is all that is required to combine
+        pieces. Undoing is a different property entirely, and this operation does
+        not have it — you cannot remove one number from a gcd.
+    - text: >-
+        Store the divisor for every stretch of a fixed decomposition and combine
+        the O(log n) stretches that tile the query, using 0 as the neutral value.
+      reveals_pattern: true
+  why: >-
+    The operation is associative and has a neutral element — 0, since gcd(x, 0)
+    is x — and that is exactly the contract this structure requires. It is also
+    not invertible, which rules out the cheaper counting structure: no
+    arithmetic removes crucible 1 from the divisor of crucibles 1 through r.
+  classic_ref: CPH 9.3 "other queries"; range gcd with point updates
+
+- id: canal-lock-levels
+  pattern: segment-tree
+  title: Canal Locks
+  difficulty: hard
+  statement: >-
+    A canal has n locks in a line, each at a known water level. Through the
+    season q orders arrive: an order either raises the level of every lock from
+    l to r inclusive by a given amount, or asks for the total of the levels from
+    l to r inclusive. Report the answer to every asking order.
+  constraints: |
+    1 <= n <= 200000
+    1 <= q <= 200000
+    -10^9 <= starting level, raise <= 10^9
+    the totals may exceed 2^31 in magnitude
+  signals_present:
+    - a whole range is updated at once, and ranges are also queried
+    - both operations are ranges, which no point-update structure serves directly
+    - the number of positions inside a stretch is needed to apply a pending raise
+    - n and q both 2*10^5, so touching every lock in a range is 4*10^10 steps
+  decoy_signals:
+    - "\"raise a range, read a range\" looks like the difference-array trick, which only survives POINT reads"
+    - the answer being a sum invites the four-line counting structure, which cannot absorb a range write
+    - a range write with an amount reads like an offset that could be tracked in one accumulator
+  expected_complexity: O((n + q) log n)
+  hints:
+    - text: >-
+        The difference-array trick turns a range write into two point writes —
+        and then a read has to total the differences. Check what that costs when
+        the READ is also a range.
+    - text: >-
+        Both operations touch ranges, so the structure must be able to record a
+        raise against a whole stretch without descending into it, and to carry
+        that debt downwards only when something needs to go deeper.
+    - text: >-
+        Give every stretch a pending amount beside its answer; applying a
+        pending raise to a stretch of length L adds L times the amount to its
+        total, and the debt is pushed to the children only when a call descends.
+      reveals_pattern: true
+  why: >-
+    Range update plus range query is the case that forces deferred tags. The
+    O(log n) stretches tiling the range each take a tag, and the tag is pushed
+    down only when a later call must go past it. The two halves of applying a
+    tag — correcting the stretch's own answer AND recording the debt for its
+    children — must both happen, and doing only one of them produces answers
+    that are right on short ranges and wrong on long ones.
+  classic_ref: CPH 28.1 (lazy propagation); CSES Range Updates and Sums
+
+- id: market-day-best-run
+  pattern: segment-tree
+  title: The Best Run
+  difficulty: hard
+  statement: >-
+    A market clerk records the daily profit or loss of a stall for n days in a
+    row. A run is any block of consecutive days, possibly empty, and its worth
+    is the total over those days; the empty run is worth nothing. Between
+    questions the clerk may correct one day's figure. Each question names a
+    block of days l to r and asks for the worth of the best run lying inside it.
+    Report the answer to every question.
+  constraints: |
+    1 <= n <= 200000
+    1 <= q <= 200000
+    -10^9 <= a day's figure <= 10^9
+    the answer may exceed 2^31 in magnitude
+  signals_present:
+    - the merged quantity is a small struct rather than one number
+    - the answer for a block is built from the answers for its two halves plus what crosses the join
+    - the figures change between questions, so nothing may be precomputed once
+    - n and q both 2*10^5, so re-sweeping each queried block is 4*10^10 steps
+  decoy_signals:
+    - "\"the best consecutive block\" is the standard advertisement for a single linear sweep of the array"
+    - a total over consecutive days invites a table of running totals, which cannot survive the corrections
+    - the corrections being single days invites the four-line counting structure, which has nowhere to put four numbers
+  expected_complexity: O((n + q) log n)
+  hints:
+    - text: >-
+        The linear sweep answers the whole array once. Here the block moves and
+        the figures change, so the answer for a block must be assembled from
+        answers already stored for smaller blocks.
+    - text: >-
+        A best run inside a stretch either lies wholly in the left half, wholly
+        in the right half, or crosses the join. To settle the crossing case you
+        need the best run ending at the left half's right edge and the best run
+        starting at the right half's left edge.
+    - text: >-
+        Store four numbers for every stretch — total, best run, best run touching
+        its left edge, best run touching its right edge — and combine two
+        stretches by the rule that follows from those three cases.
+      reveals_pattern: true
+  why: >-
+    The merged quantity is a struct, and that is the cue no cheaper structure
+    can serve: there is nowhere in a four-line counting array to put four
+    numbers that must be combined by a rule. The merge is associative but not
+    commutative, so the two sides of a query must be accumulated separately —
+    the bottom-up loop that interleaves them is right for a sum and wrong here.
+  classic_ref: CPH 28 "more complex nodes"; GSS-family maximum subarray queries
+
+- id: pasture-first-fit-gate
+  pattern: segment-tree
+  title: First Gate Wide Enough
+  difficulty: medium
+  statement: >-
+    A drover moves herds through n gates standing in a line, gate i admitting
+    herds of size up to w[i]. Instructions arrive in a stream: either a gate is
+    rebuilt to a new width, or a herd of size s arrives at gate p and must be
+    sent to the first gate at or after p that admits it, or told that no such
+    gate exists. Report the gate chosen for every arriving herd.
+  constraints: |
+    1 <= n <= 200000
+    1 <= q <= 200000
+    1 <= w[i], s <= 10^9
+    p is a gate number
+  signals_present:
+    - find the first position at or after l where a condition holds, under updates
+    - the widths change between arrivals, so nothing may be precomputed once
+    - the condition is a comparison against a maximum, which has no inverse
+    - n and q both 2*10^5, so walking forward from p is 4*10^10 steps in the worst case
+  decoy_signals:
+    - "\"the first gate at or after p\" invites walking forward, which is instant on every small sample"
+    - a value per position with updates is the shape the four-line counting structure serves
+    - a threshold to be met invites halving over the gate numbers, which needs an ordering the widths do not have
+  expected_complexity: O((n + q) log n)
+  hints:
+    - text: >-
+        Walking forward from p is fine until a long run of narrow gates. Build
+        the input where every herd walks nearly to the end.
+    - text: >-
+        If you could ask for the WIDEST gate in any stretch, you could tell
+        instantly whether a stretch contains an admitting gate at all — and then
+        skip whole stretches that do not.
+    - text: >-
+        Store the widest gate for every stretch of a fixed decomposition, and
+        descend: at each stretch ask whether its left part can contain the
+        answer, and go there if it can.
+      reveals_pattern: true
+  why: >-
+    A maximum over a stretch is enough to decide whether the answer lies inside
+    it, so the search descends instead of querying repeatedly — O(log n) rather
+    than O(log^2 n). The updates rule out any static preprocessing, and the
+    maximum's lack of an inverse rules out the cheaper structure.
+  classic_ref: descend-the-structure search; CSES Hotel Queries
+
+- id: forest-canopy-shade
+  pattern: segment-tree
+  title: Canopy Shade
+  difficulty: medium
+  statement: >-
+    A forestry road passes n stands of trees in a line, each stand having a
+    known canopy height. A surveyor works through q instructions: either one
+    stand is felled and replanted to a new height, or he asks for the lowest
+    canopy among the stands from l to r inclusive. Heights repeat freely.
+    Report the answer to every asking instruction.
+  constraints: |
+    1 <= n <= 200000
+    1 <= q <= 200000
+    0 <= height <= 10^9
+    roughly half the instructions are replantings
+  signals_present:
+    - the minimum of a range, with the values changing between queries
+    - the quantity has no inverse, so no subtraction of two totals from the start applies
+    - the merge is associative with a neutral value that must be larger than any height
+    - n and q both 2*10^5, with writes and reads interleaved
+  decoy_signals:
+    - a static array of heights invites a table built once in O(n log n) that answers minima in O(1)
+    - "\"one value per position with updates\" is the shape the four-line counting structure serves"
+    - "\"the lowest canopy\" invites a structure that shows one end of a changing collection"
+  expected_complexity: O((n + q) log n)
+  hints:
+    - text: >-
+        The O(1) table for minima over a fixed array is real and it is the right
+        answer — until an instruction changes a height. Count how many cells of
+        that table one replanting invalidates.
+    - text: >-
+        A minimum cannot be undone, so the answer for a range must be assembled
+        out of stored answers for pieces of it rather than differenced from two
+        totals.
+    - text: >-
+        Store the lowest canopy for every stretch of a fixed decomposition, and
+        combine the O(log n) stretches that tile the query, with a neutral value
+        above every possible height.
+      reveals_pattern: true
+  why: >-
+    Two structures are ruled out by one sentence each: the O(1) static table by
+    the replantings, and the cheaper counting structure by the absence of an
+    inverse for a minimum. What remains is the general one, and its neutral
+    value must be larger than any height — a zero identity would answer 0 for
+    every query, which is wrong the moment no stand is that short.
+  classic_ref: CPH 9.3; CSES Dynamic Range Minimum Queries

@@ -1,0 +1,181 @@
+{
+  "id": "master_dp",
+  "name": "MASTER OF DYNAMIC PROGRAMMING",
+  "title": "Archivist Nym Solvane, the State",
+  "region": "the-forbidden-art",
+  "patterns": [
+    "linear-dp",
+    "knapsack-dp",
+    "two-sequence-dp",
+    "lis-tails"
+  ],
+  "personality": {
+    "warmth": 0.08,
+    "verbosity": 0.55,
+    "praise_threshold": 0.95
+  },
+  "gate": {
+    "recognition": 0.8,
+    "understanding": 0.9,
+    "implementation": 0.75,
+    "retention": 0.8
+  },
+  "placeholders": {
+    "days": "whole days since the relevant event — the student's last visit, a past failure on this problem, or the length of the current unbroken practice streak",
+    "streak": "number of consecutive correct drills in the current run",
+    "attempts": "how many attempts the student previously needed on this problem",
+    "secret": "the name of the secret currently being taught or tested",
+    "idiom": "the C++ expression at the heart of the current secret",
+    "requirement": "name of the gate dimension that is short: recognition, understanding, implementation, or retention",
+    "shortfall": "how far the short gate dimension sits below its threshold, as a percentage",
+    "score": "how many final-test problems were answered correctly",
+    "total": "number of problems in the final test",
+    "required": "how many must be answered correctly to pass"
+  },
+  "dialogue": {
+    "greeting_first": [
+      "Sit. Before you write anything here, you will finish this sentence: dp[i] is the ___. If you cannot, we have nothing to discuss yet.",
+      "You have come from the ridge, where you learned that some problems have no safe local choice. This is where those problems are answered. It is slower than you expect and more exact.",
+      "Most people who say they know this subject know a shape of loop. I am not interested in the loop. I am interested in what one cell of your array is supposed to hold.",
+      "The archive is not a place where things are discovered. It is a place where things are written down precisely enough to be used again. That is the whole technique."
+    ],
+    "greeting_returning": [
+      "Again. Define the state.",
+      "Sit. What does dp[i] mean today?",
+      "You came back. Good. That is not praise; it is a record.",
+      "Continue. The definition first, as always, and then the loop that it forces."
+    ],
+    "greeting_after_gap": [
+      "{days} days. The recurrences did not move. Neither did the definitions you had not written down.",
+      "Gone {days} days. What you lose first is not the code — it is the sentence the code was standing on. We begin there.",
+      "{days} days away. Coins one, three and four; the amount six. What does the greedy answer, and what is the truth?",
+      "{days} days. Long enough to keep the loop and lose the meaning, which is the worst condition to arrive in."
+    ],
+    "lesson_intro": [
+      "{secret}. Watch the definition, not the code. The code has never been the difficulty.",
+      "One sentence, then one loop. If I catch you writing them in the other order we go back to the beginning.",
+      "This looks like the last one. It is the last one, in a harder room. That is the design.",
+      "I will show you a table filled by hand. Every cell in it is a fact you can check. That is what a state is for."
+    ],
+    "lesson_memorise": [
+      "Keep this. `{idiom}` is not a trick; it is the shape a definition takes once it is precise.",
+      "Commit it. Not because you will be asked to recite it, but because you will not rederive it with a clock running.",
+      "Learn the pairing, not the letters. The letters change with every problem and the pairing never does.",
+      "Write it in the margin. Then write what it MEANS beside it, or in a month you will have the line and not the reason."
+    ],
+    "drill_correct": [
+      "Correct.",
+      "Yes. Next.",
+      "Recorded.",
+      "Accepted. Continue."
+    ],
+    "drill_wrong": [
+      "No. You read the last cell. Your own definition fixed the ending position, so the answer is the largest cell anywhere.",
+      "Wrong. That sentence cannot be turned into a transition. Say what is fixed at i.",
+      "No. You swept the capacity upwards, so the item was taken twice. That is a different question with a different answer.",
+      "Wrong. The border. Turning six characters into nothing costs six deletions, and you left the row at zero.",
+      "No. lower_bound overwrites the equal entry. You wanted the reading where equals may follow one another.",
+      "Wrong. A count of ways starts at one, because there is exactly one way to do nothing.",
+      "No. INT_MAX plus one is not a large number. It is a very negative one, and it has now won every comparison in your table."
+    ],
+    "drill_streak": [
+      "{streak} in a row. The hand is fluent. I am still waiting to hear the sentence.",
+      "Steady. Hold it.",
+      "{streak} straight. Fluency is not understanding, but it is not nothing.",
+      "Noted. Continue at that rate."
+    ],
+    "trial_intro": [
+      "Nothing named. Read it, define the state out loud, and only then reach for the keyboard.",
+      "The label is off. The definition is still your job, and it always was.",
+      "One problem. If you cannot say what a cell holds, do not write the loop — you will not be able to debug what you cannot describe.",
+      "Decide what is fixed and what is free. Everything after that is arithmetic."
+    ],
+    "fail_wrong_pattern": [
+      "No. Nothing there was spent from a shared budget. One index was sufficient and you built a second axis to store nothing.",
+      "Wrong tool. That statement handed you two sequences to align. You walked one of them and invented a rule for the other.",
+      "No. That row could be reordered freely and one ranking key decided everything. You wrote ten million cells to compute a sort.",
+      "That was a monotone condition on one fixed row. You built a table where a single sorted array would have done, and the bound would not have allowed the table anyway.",
+      "No. You reached for the technique you drilled last rather than the one the statement described. Read it again, with me."
+    ],
+    "fail_timeout": [
+      "Time. You had the definition in the first two minutes and then spent the rest translating it badly.",
+      "Time ran out. Nothing you knew was wrong. It was slow, and slow is a fluency problem that drills fix. Nothing is lost.",
+      "Time. You wrote the loop before the sentence and then debugged the sentence through the loop, which is the long way round.",
+      "Time. You were looking for something more complicated than the recurrence. There rarely is one."
+    ],
+    "fail_wrong_answer": [
+      "The recurrence was right and the final line was not. You fixed the ending position in your definition and then printed the last cell.",
+      "Correct state, wrong loop direction. The capacity swept upwards and each item was taken as many times as it fitted.",
+      "Right approach. The border was never filled, so every distance came back short by the length of the shorter prefix.",
+      "You had it. The sentinel was INT_MAX and the transition added one to it, and everything downstream drowned.",
+      "The table was correct and the answer was read from the wrong cell. Your sentence says where it lives. Reread the sentence.",
+      "Correct method, wrong strictness. lower_bound and upper_bound differ on equal values, and this test had them."
+    ],
+    "success": [
+      "That is correct. Continue.",
+      "It holds. Next.",
+      "Recorded. Move on.",
+      "Done. The next statement gives away less."
+    ],
+    "success_fast": [
+      "You defined the state before you typed. That is the correct order of operations and almost nobody uses it.",
+      "Quick, and the definition came first. I noticed which.",
+      "No wasted axis, no invented dimension. Continue.",
+      "One sentence, one loop, one answer. That is the whole discipline of this region."
+    ],
+    "praise_exceptional": [
+      "That was well done. You said what the cell meant and the recurrence followed without a struggle.",
+      "You chose the harder definition deliberately and then read the answer from the right place. Few students do the second part.",
+      "You found the boundary before you met it — you saw that no ranking could work, and you did not spend an hour proving it to yourself first.",
+      "That is the best work you have done here. You did not pattern-match a loop. You defined a state."
+    ],
+    "praise_major": [
+      "I have watched a great many students write a correct table they could not describe, and lose it entirely within a month. You can describe yours. You have earned my respect.",
+      "You arrived able to recognise a recurrence. You leave able to construct one from a sentence you wrote yourself, which is a different skill and a much rarer one. You have earned my respect.",
+      "I do not say this often and I will not repeat it. You can define a state, derive its transition, and say where its answer lives. That is the discipline entire. You have earned my respect."
+    ],
+    "memorisation_detected": [
+      "You remember this table. You cannot say what one cell of it holds. Those are different, and the difference is the whole region. A different problem.",
+      "You pass the problems you have seen and fail their variants. That is recall of a shape, not a method. We go back one step.",
+      "Change the objective from a maximum to a count and you are lost, which tells me you learned a loop and never learned a definition. Try this one.",
+      "Move the same recurrence onto two sequences and it stops working for you. The technique did not change. Your understanding of it was narrower than you thought."
+    ],
+    "improvement_noticed": [
+      "You failed this {days} days ago. Today you defined the state first and it came out. That is improvement. Continue.",
+      "You needed {attempts} attempts on this once. Today, one. It is in the record.",
+      "This is the problem where you swept the capacity the wrong way for an hour. You did not, today.",
+      "Straighter than last time. You asked what the cell meant before you asked what the loop should look like."
+    ],
+    "commitment_noticed": [
+      "{days} days unbroken. Precision comes to the persistent more reliably than to the quick.",
+      "Many students reach this region. Most want the recurrence and not the definition, and most leave when I ask for the definition. You did not.",
+      "You have returned after every failure so far. I keep records; that is what an archivist is for. Keep going.",
+      "Talent arrives here regularly and departs with a loop it cannot explain. Attendance is the part I cannot teach, and you brought your own."
+    ],
+    "gate_locked": [
+      "Not yet. {requirement} is short by {shortfall} percent. Return when it is not.",
+      "The gate holds. Understanding is short — you can produce the recurrence and not the sentence beneath it, and here that is half a solution and the wrong half.",
+      "No. Recognition is short. You hold four techniques and cannot yet tell which one a statement is describing.",
+      "Implementation is short. The state is right and the loop direction is not. Drill, then return.",
+      "Retention is short. What you defined last week you have already dropped. Review, then the gate."
+    ],
+    "gate_open": [
+      "The gate is open. Come when you are ready, not when you are impatient.",
+      "Nothing is short any more. The final test is waiting.",
+      "Enough. You may attempt it.",
+      "You meet the requirements. The decision from here is yours, and so is the result."
+    ],
+    "final_test_intro": [
+      "I will name nothing. Every drill before this existed so that I would not have to.",
+      "{total} problems, and {required} must be right. Read each twice. Define the state before you type.",
+      "No help. Only the statements, and whatever definitions you can still write.",
+      "Some of these have no second axis and some need one. Knowing which is the test."
+    ],
+    "victory": [
+      "It is done. The record is closed and it reads well.",
+      "You passed. Remember the definitions, not the loops — the loops you can always rebuild.",
+      "Finished. Everything after this assumes you can say what a cell holds. You can.",
+      "That is mastery of the defined state. Nothing you meet later will be more exact than this. Go."
+    ]
+  }
+}

@@ -1,0 +1,286 @@
+# Problems that are really Cross Out Each Multiple Once.
+#
+# Two halves, kept deliberately apart: the ones where a whole RANGE must be
+# decided, which is where crossing out beats testing, and the ones where a
+# single enormous number must be opened, where no table fits and the square
+# root is the bound. Each half has its own overflow, and neither is mentioned
+# in any statement.
+
+- id: census-of-untouchables
+  pattern: sieve-factorisation
+  title: The Census of the Untouchable
+  difficulty: easy
+  statement: >-
+    A monastery calls a number untouchable when nothing divides it except 1 and
+    itself, and counts 1 as touchable. The abbot wants the census: how many
+    untouchable numbers are there from 2 up to n inclusive? He also wants the
+    largest of them, because it is carved above the gate.
+  constraints: |
+    2 <= n <= 10^7
+    the answer for n = 10^7 is 664579
+    the memory limit is 256 MB
+    the time limit is 2 seconds
+  signals_present:
+    - a property must be decided for every number in a range up to 10^7
+    - the range bound is exactly the size at which per-number testing stops finishing
+    - the answer is a count over the whole range rather than about one value
+  decoy_signals:
+    - "\"nothing divides it except 1 and itself\" invites testing each number to its square root"
+    - "\"the largest of them\" invites scanning downwards from n and stopping early"
+    - a count over a range invites a running total table
+  hints:
+    - text: >-
+        Testing one number costs about sqrt(n) divisions. Multiply that by
+        10^7 and compare the result with what two seconds buys you.
+    - text: >-
+        Three times 10^10 operations will not finish. Turn the question around:
+        instead of asking each number who divides it, walk each small number
+        and strike out everything it divides.
+    - text: >-
+        Allocate one flag per number, and for each i from 2 upwards that is
+        still unstruck, strike i*i, i*i+i, i*i+2i and so on. Everything left
+        unstruck is untouchable. Use vector<bool> so 10^7 flags cost about a
+        megabyte rather than ten.
+      reveals_pattern: true
+  expected_complexity: O(n log log n)
+  why: >-
+    The bound is the whole cue. One primality test is O(sqrt(n)) and perfectly
+    reasonable; ten million of them are 3 * 10^10 operations and are not. The
+    inversion — walk the divisors, mark the multiples — costs n log log n
+    because the inner loop only runs for numbers that survived, and the sum of
+    the reciprocals of those is log log n rather than log n.
+  classic_ref: CPH 21.1 (sieve of Eratosthenes; density of primes)
+
+- id: granary-divisor-count
+  pattern: sieve-factorisation
+  title: The Granary's Even Shares
+  difficulty: medium
+  statement: >-
+    A granary holds sacks in numbered bays. For bay x, the steward wants to
+    know how many different ways a pile of exactly x sacks can be laid out in
+    equal rows, where a layout is decided by the number of rows alone and both
+    one row of x and x rows of one are counted. There are q bays to report on,
+    each given by its number.
+  constraints: |
+    1 <= q <= 200000
+    1 <= x <= 10^6
+    the answer for x = 720 is 30
+    the answer for x = 1 is 1
+  signals_present:
+    - the answer depends on how many numbers divide x exactly
+    - up to 2 * 10^5 queries share one bound of 10^6, so preprocessing pays for itself
+    - the bound of 10^6 is exactly the size a table of every value fits in
+  decoy_signals:
+    - "\"equal rows\" invites trial-dividing each x independently, which is fast enough only just"
+    - many queries against a fixed bound invites caching answers rather than deriving them
+    - "\"both one row of x and x rows of one\" invites an off-by-one on the endpoints"
+  hints:
+    - text: >-
+        A layout is a number of rows that divides x exactly, so the answer is
+        the count of divisors of x. Now ask how to get that without trying
+        every candidate for every query.
+    - text: >-
+        Write x as a product of powers of the numbers that cannot be broken
+        further. A divisor picks how many copies of each to include, and the
+        choices are independent.
+    - text: >-
+        So the answer is the product of (exponent + 1) over the factorisation:
+        720 = 2^4 * 3^2 * 5 gives 5 * 3 * 2 = 30. Precompute, for every value
+        up to 10^6, the smallest number above 1 that divides it, then peel
+        factors off each query in about twenty steps.
+      reveals_pattern: true
+  expected_complexity: O(n log log n + q log x)
+  why: >-
+    The count of divisors is a product over the exponents in the prime
+    factorisation — a divisor chooses independently how many copies of each
+    prime to take, giving exponent + 1 choices per prime. 84 = 2^2 * 3 * 7 has
+    3 * 2 * 2 = 12 divisors. Getting the factorisation cheaply is the second
+    half: one pass that records the smallest prime factor of every value turns
+    each query into a short peeling loop with no division search at all.
+  classic_ref: CPH 21.1 (number of factors, tau(n))
+
+- id: tithe-of-great-numbers
+  pattern: sieve-factorisation
+  title: The Tithe of the Great Number
+  difficulty: medium
+  statement: >-
+    A tax is levied on a single enormous holding of size n. The rule is that
+    the levy equals the largest number greater than 1 that divides n and is
+    itself divisible by nothing but 1 and itself. If n is 1 there is no levy
+    and you should report 1. Report the levy for one holding.
+  constraints: |
+    1 <= n <= 10^12
+    exactly one holding per test
+    the time limit is 1 second
+    one test has n = 1999999874
+  signals_present:
+    - one very large number must be broken into the pieces that divide it
+    - the bound of 10^12 is far past what any table of every value could hold
+    - only the largest such piece is wanted, which is the one most easily lost
+  decoy_signals:
+    - "\"largest divisor with no divisors of its own\" invites scanning downwards from n"
+    - the single input invites a table over a range that cannot be built
+    - "\"divisible by nothing but 1 and itself\" invites a primality test on every divisor"
+  hints:
+    - text: >-
+        You cannot build a table to 10^12. But you can divide n by candidates,
+        and if you divide as you go, n shrinks. Work out how far the candidates
+        need to go.
+    - text: >-
+        If n has two factors both larger than its square root, their product
+        already exceeds n. So every factor but at most one is at most sqrt(n),
+        which is 10^6 here.
+    - text: >-
+        Divide out every candidate d from 2 while d*d <= n, shrinking n each
+        time. Whatever value of n survives the loop is either 1 or the one
+        remaining factor, and if it is above 1 it is the answer.
+      reveals_pattern: true
+  expected_complexity: O(sqrt(n))
+  why: >-
+    The bound forbids any table and permits 10^6 divisions, which is exactly
+    the square root. The fact that makes it work is worth stating on its own:
+    after removing every factor at most sqrt(n), what remains cannot be
+    composite, because two factors above the root would multiply past n. So the
+    final leftover is the largest factor, and dropping it is the classic wrong
+    answer — 1999999874 is 2 times 999999937, and a loop without the leftover
+    check reports 2.
+  classic_ref: CPH 21.1 (factorisation in O(sqrt n); the last factor)
+
+- id: orchard-coprime-tally
+  pattern: sieve-factorisation
+  title: The Orchard's Unshared Rows
+  difficulty: medium
+  statement: >-
+    An orchard is laid out as n rows, numbered 1 to n. A row is called
+    independent if it shares no common planting interval with the orchard as a
+    whole — that is, if the only whole number dividing both the row's number
+    and n is 1. Count the independent rows. Report the count for one orchard.
+  constraints: |
+    1 <= n <= 10^12
+    exactly one orchard per test
+    for n = 12 the answer is 4
+    for n = 36 the answer is 12
+  signals_present:
+    - the answer counts values sharing no factor with n
+    - n reaches 10^12, so the rows cannot be walked one at a time
+    - the answer depends on which numbers divide n, not on their multiplicity
+  decoy_signals:
+    - "\"count the rows where the only common divisor is 1\" invites computing a divisor per row"
+    - the bound invites a table over 1 to n, which cannot be allocated
+    - the two worked values invite guessing a formula from two data points
+  hints:
+    - text: >-
+        Walking the rows means 10^12 divisor computations. Instead ask which
+        rows are NOT independent: those divisible by something that also
+        divides n.
+    - text: >-
+        Only the distinct pieces of n that cannot be broken further matter —
+        multiplicity does not. For each such piece p, one row in every p is
+        excluded, and the exclusions combine multiplicatively.
+    - text: >-
+        Open n up by trial division to its square root. Start the answer at n
+        and, for each distinct piece p found, subtract answer/p. Remember the
+        piece left over above the square root.
+      reveals_pattern: true
+  expected_complexity: O(sqrt(n))
+  why: >-
+    Counting values coprime to n is Euler's totient, and it is a product over
+    the DISTINCT primes dividing n — which is why the whole problem reduces to
+    opening n up. The bound of 10^12 rules out a table and admits trial
+    division to 10^6. The leftover above the square root is a distinct prime
+    like any other and must be applied; forgetting it makes the answer too
+    large by exactly a factor of p/(p-1), which no small test reveals.
+  classic_ref: CPH 21.1 (Euler's totient function)
+
+- id: quarry-distinct-veins
+  pattern: sieve-factorisation
+  title: The Quarry's Distinct Veins
+  difficulty: easy
+  statement: >-
+    Each block pulled from a quarry is stamped with a number. A vein is a
+    number greater than 1 that divides the stamp and has no divisors of its own
+    besides 1 and itself; a vein running through the block twice still counts
+    once. For each of q blocks, report how many distinct veins run through it.
+    A block stamped 1 has none.
+  constraints: |
+    1 <= q <= 200000
+    1 <= stamp <= 10^6
+    the block stamped 12 has 2 distinct veins
+    the block stamped 1 has 0
+  signals_present:
+    - the answer counts distinct indivisible pieces of each value
+    - up to 2 * 10^5 queries all lie below one bound of 10^6
+    - repeated pieces are explicitly collapsed, so exponents are irrelevant
+  decoy_signals:
+    - "\"a vein running twice counts once\" invites a set per query"
+    - the query count invites answering each one independently
+    - "\"has no divisors of its own\" invites a primality test inside the peeling loop"
+  hints:
+    - text: >-
+        Every stamp is below 10^6 and there are 2 * 10^5 of them. That is
+        exactly the shape where one pass over the whole range is cheaper than
+        one pass per query.
+    - text: >-
+        Build, once, a table saying for each value which is the smallest number
+        above 1 dividing it. Then a stamp can be taken apart by repeatedly
+        dividing by that entry, without searching for divisors at all.
+    - text: >-
+        Peel with `while (x > 1) { p = spf[x]; ++answer; while (x % p == 0) x /= p; }`.
+        The inner loop is what collapses a repeated vein to one.
+      reveals_pattern: true
+  expected_complexity: O(n log log n + q log x)
+  why: >-
+    Both bounds point the same way: a shared ceiling of 10^6 with many queries
+    beneath it is the signature of preprocessing the whole range once. Storing
+    the smallest prime factor rather than a boolean costs the same pass and
+    makes each query a peeling loop of at most twenty steps, with the inner
+    division loop doing the "counts once" part for free.
+  classic_ref: CPH 21.1 (sieve storing a prime factor rather than a flag)
+
+- id: cartwright-square-remnant
+  pattern: sieve-factorisation
+  title: The Square Remnant
+  difficulty: hard
+  statement: >-
+    A mason is given a slab of area n and must lay the largest possible square
+    of whole tiles whose area divides n exactly. In other words, report the
+    largest d such that d*d divides n. For a slab of area 1 the answer is 1.
+    There is one slab per test.
+  constraints: |
+    1 <= n <= 10^12
+    exactly one slab per test
+    for n = 720 the answer is 12
+    for n = 999999999999 the answer is 3
+  signals_present:
+    - the answer depends on the exponents in the decomposition of n, not merely on its divisors
+    - n reaches 10^12, so no table over the range exists
+    - the square condition halves each exponent, which is only visible once n is opened up
+  decoy_signals:
+    - "\"largest d such that d*d divides n\" invites searching d downwards from sqrt(n)"
+    - the square shape invites a monotone feasibility test over d
+    - the worked value 720 invites reading a pattern out of one example
+  hints:
+    - text: >-
+        Searching d downwards from 10^6 and testing divisibility is 10^6 steps
+        — acceptable — but it tells you nothing about why the answer is what it
+        is, and it does not generalise. Open n up instead.
+    - text: >-
+        Write n as a product of powers of indivisible pieces. For d*d to divide
+        n, the exponent of each piece in d must be at most half its exponent in
+        n, rounded down.
+    - text: >-
+        Trial-divide to the square root, and for each piece p with exponent e
+        multiply the answer by p raised to e/2. 720 = 2^4 * 3^2 * 5 gives
+        2^2 * 3^1 * 5^0 = 12. Do not forget the leftover piece above the root —
+        its exponent is 1, so it contributes nothing.
+      reveals_pattern: true
+  expected_complexity: O(sqrt(n))
+  why: >-
+    The condition is about exponents, and exponents are invisible until the
+    number is decomposed. Each prime contributes floor(e/2) copies to d, so
+    720 = 2^4 * 3^2 * 5 gives 2^2 * 3 = 12 and 999999999999 = 3^3 * 7 * 11 * 13
+    * 37 * 101 * 9901 gives 3^1 = 3. The leftover above the square root always
+    has exponent 1 and therefore contributes nothing — which is a satisfying
+    check on whether you understood why the leftover is prime in the first
+    place.
+  classic_ref: CPH 21.1 (prime factorisation; exponents)

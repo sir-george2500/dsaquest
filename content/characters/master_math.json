@@ -1,0 +1,180 @@
+{
+  "id": "master_math",
+  "name": "MASTER OF MATHEMATICS",
+  "title": "Oracle Cassiun, the Remainder",
+  "region": "temple-of-numbers",
+  "patterns": [
+    "modular-arithmetic",
+    "fast-exponentiation",
+    "euclidean-gcd",
+    "sieve-factorisation"
+  ],
+  "personality": {
+    "warmth": 0.35,
+    "verbosity": 0.6,
+    "praise_threshold": 0.92
+  },
+  "gate": {
+    "recognition": 0.7,
+    "understanding": 0.85,
+    "implementation": 0.8,
+    "retention": 0.75
+  },
+  "placeholders": {
+    "days": "whole days since the relevant event — the student's last visit, a past failure on this problem, or the length of the current unbroken practice streak",
+    "streak": "number of consecutive correct drills in the current run",
+    "attempts": "how many attempts the student previously needed on this problem",
+    "secret": "the name of the secret currently being taught or tested",
+    "idiom": "the C++ expression at the heart of the current secret",
+    "requirement": "name of the gate dimension that is short: recognition, understanding, implementation, or retention",
+    "shortfall": "how far the short gate dimension sits below its threshold, as a percentage",
+    "score": "how many final-test problems were answered correctly",
+    "total": "number of problems in the final test",
+    "required": "how many must be answered correctly to pass"
+  },
+  "dialogue": {
+    "greeting_first": [
+      "Two thousand one hundred and forty-seven million, four hundred and eighty-three thousand, six hundred and forty-seven. — Sit down. That is where your machine stops counting, and everything I teach you here is about what it does afterwards.",
+      "Another one. — They arrive able to write a modulus and unable to say which of the four operations it survives. Sit. We will find out which kind you are.",
+      "You will find the algorithms in this temple very short and the corrections very long. That ratio is not an accident and it is not my fault.",
+      "I talk to the room. Do not take it personally; the room has been here longer than either of us and it has heard the wrong answers before."
+    ],
+    "greeting_returning": [
+      "Again. — Recite the boundary of a signed 64-bit integer before we start.",
+      "Sit. The remainder is where you left it.",
+      "You came back. — Most of them come back until the first overflow, which they never see, and then they stop coming back for reasons they cannot name.",
+      "Continue. Nothing here has moved."
+    ],
+    "greeting_after_gap": [
+      "{days} days. — The primes were not lonely. Sit.",
+      "Gone {days} days. What decays first is not the loop. It is the arithmetic underneath it, which you were never watching in the first place.",
+      "{days} days away. Very well: minus three, modulo seven. Say it before you sit.",
+      "{days} days. — I have had students return after a year and remember the descent perfectly and still type `int`. We start with the types."
+    ],
+    "lesson_intro": [
+      "{secret}. Four lines. Read the arithmetic under them and not the lines.",
+      "I will give you the numbers. — I always give them the numbers. They write them in the margin and then they write `int` anyway, and then they come back and tell me the judge is broken.",
+      "This one is short enough to memorise and subtle enough to get wrong for a year. Both of those are true at once and that is the difficulty.",
+      "Watch what is FORMED before you watch what is computed. That distinction is the whole temple."
+    ],
+    "lesson_memorise": [
+      "Take `{idiom}` whole. Do not reconstruct it under a clock — reconstruction is where the outer reduction goes missing.",
+      "Memorise this one as a single token. — It is not an expression. It is a word.",
+      "Keep it. You will write it in nearly every problem in this region and in half the problems outside it.",
+      "This goes in the hand. What it protects you from goes somewhere you will have to keep looking at."
+    ],
+    "drill_correct": [
+      "Correct.",
+      "Yes.",
+      "That is the number.",
+      "Accepted. Continue.",
+      "Good. — They always get that one."
+    ],
+    "drill_wrong": [
+      "No. The product is formed before the remainder arrives. Read the precedence again.",
+      "Wrong. Minus three modulo seven is minus three in this language. You are thinking in a different one.",
+      "No. That is a sum of residues in an int, and two of them fit and three of them do not, which is why you believed it.",
+      "Wrong. You reduced the exponent by the modulus. The exponent lives in a group of order m minus one.",
+      "No. Fermat wants a prime. You gave it a composite and it answered you politely.",
+      "Wrong. That multiplication happened before the division, and the answer was never the problem — the product was.",
+      "No. — And that is the one I warn about in the opening speech, every intake, without exception."
+    ],
+    "drill_streak": [
+      "{streak} in a row. The hand is quick. I am still watching the types.",
+      "Steady. — Speed here means nothing; there is no shape to see, only arithmetic to respect.",
+      "{streak} straight. Good.",
+      "Hold that rhythm."
+    ],
+    "trial_intro": [
+      "Nothing named. Read the CONSTRAINTS before the statement — that is where I hid the answer and where the setter hid theirs.",
+      "One problem. The bounds are the whole message.",
+      "The label comes off. The arithmetic does not.",
+      "Decide what cannot be formed, and then decide what to do instead. In that order."
+    ],
+    "fail_wrong_pattern": [
+      "Wrong tool. Nothing there needed factorising — a common divisor was wanted and the descent gives it in ninety steps where you asked for a billion.",
+      "No. That exponent was given, not discovered. You went looking for primes in a statement that had already told you the power.",
+      "You reduced when you should have descended. The modulus was not given to you; it was the thing being asked for.",
+      "No. — They see a large number and reach for the sieve. There is no sieve to 10^12. There never was."
+    ],
+    "fail_timeout": [
+      "Time. — Nothing you had was wrong. You were checking the arithmetic by hand, which is the right instinct and the slow one. Drills fix that.",
+      "Time ran out. You knew it. Knowing it slowly is fluency, and fluency is repetition. Nothing is lost.",
+      "Time. You spent it deriving the inverse formula. Memorise it and spend the time on the constraints instead.",
+      "Time. Again, and sooner."
+    ],
+    "fail_wrong_answer": [
+      "The method was right and the type was not. Test seven is where two billion lives.",
+      "Correct approach. You subtracted and printed a negative number where a residue was demanded. One expression, three operations, and you wrote two of them.",
+      "You had it. The accumulator wrapped — every term fitted and the sum did not, which is the quiet version and the one nobody catches by rereading.",
+      "Right idea, wrong exponent. p minus one gives you the number one. It is a very believable number.",
+      "The reduction was missing between the two multiplications, so the expression formed a product of three residues. Ten to the twenty-seven. — Nobody has that type.",
+      "You divided before you multiplied. Or rather you multiplied before you divided, which is the same sentence read from the correct end."
+    ],
+    "success": [
+      "That is correct.",
+      "It holds. Next.",
+      "Accepted.",
+      "Done. — The next one gives less away in the constraints."
+    ],
+    "success_fast": [
+      "Fast, and you checked the bound before you typed. That is the right order.",
+      "You saw the modulus and reached for the wider type without being told. Good.",
+      "No hesitation and no overflow. Those two together are rarer than you think.",
+      "Quick. — And correct, which is the half that matters."
+    ],
+    "praise_exceptional": [
+      "That was well done. You found the boundary before you crossed it.",
+      "You checked the types against the constraints unprompted. — Most of them never do that once.",
+      "Clean, and safe at the edges. I noticed the order in which you decided those.",
+      "That is the best work you have done here. You reasoned about what could be FORMED, not merely about what was computed."
+    ],
+    "praise_major": [
+      "I have taught a great many students to write a modulus and perhaps four of them to respect it. You are one of the four. You have earned my respect.",
+      "You arrived able to reduce a number. You leave able to say exactly which multiplication in your program is the one that will kill it. That is the rarer skill by a long way. You have earned my respect.",
+      "I do not say this often and I will not repeat it: you now check the arithmetic before the algorithm. Everything after this temple is safer because of it. You have earned my respect."
+    ],
+    "memorisation_detected": [
+      "You remember which expression this problem wanted. You cannot say what it protects against. — Those are different things, and the difference is the entire temple. A different problem.",
+      "You pass the ones you have seen and fail their variants. Change the modulus from 10^9 to 10^18 and you are lost, which means you learned a line and not a bound.",
+      "You wrote the repair without the second reduction, on a problem where it did not matter. It will matter. Back one step."
+    ],
+    "improvement_noticed": [
+      "You failed this {days} days ago on an overflow. Today the types were right before the algorithm was. That is improvement.",
+      "You needed {attempts} attempts on this once. Today, one. — I keep a record. It is the only thing in this temple that is not arithmetic.",
+      "This is the problem where you printed a negative residue for an hour. You did not, today.",
+      "Straighter than last time. You read the constraints first, which is a habit and not a talent, which is why I can take some credit for it."
+    ],
+    "commitment_noticed": [
+      "{days} days unbroken. — Arithmetic rewards the patient more reliably than the quick. It is one of the few honest things about it.",
+      "Many arrive at this temple. Most of them want the four lines and not the boundary, and most of them leave when I ask for the boundary. You have not.",
+      "You have returned after every failure so far. Noted.",
+      "Talent walks in here weekly and walks out with an int accumulator. Attendance is the part I cannot teach; you brought your own."
+    ],
+    "gate_locked": [
+      "Not yet. {requirement} is short by {shortfall} percent. Return when it is not.",
+      "The gate holds. Understanding is short — you produce the expression and cannot say which of its three operations you would lose first.",
+      "No. Recognition is short. You know four techniques and cannot yet tell from a statement which one it is describing, and the constraints are telling you plainly.",
+      "Implementation is short. The reasoning is sound and the types are not, which in this region is the same as being wrong.",
+      "Retention is short. — Of everything I teach, the sign of the remainder is what goes first. It always is. Review, then the gate."
+    ],
+    "gate_open": [
+      "The gate is open. Come when you are ready and not when you are impatient.",
+      "Nothing is short any more. The final test waits.",
+      "Enough. You may attempt it.",
+      "You meet the requirements. — The decision from here is yours; I am only the arithmetic."
+    ],
+    "final_test_intro": [
+      "I will name nothing. Every drill before this existed so that I would not have to.",
+      "{total} problems, and {required} of them must be right. Read the constraints twice. That is not encouragement; it is the method.",
+      "No help. Only the statements, and whatever bound you can still compute in your head.",
+      "One of these has a modulus past three thousand and thirty-seven million. — I am not going to tell you which."
+    ],
+    "victory": [
+      "It is done. The temple is behind you.",
+      "You passed. — Remember the boundaries, not only the four lines. The lines are in every editorial; the boundaries are in none of them.",
+      "Finished. Everything after this assumes you can look at a multiplication and say whether it fits. You can.",
+      "That is mastery of the leftover. Nothing you meet later will be shorter, and nothing will be quieter when it goes wrong. Go."
+    ]
+  }
+}

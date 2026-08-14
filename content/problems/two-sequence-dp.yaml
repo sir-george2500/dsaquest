@@ -1,0 +1,255 @@
+# Problems that are really Two Prefixes, One Table.
+#
+# The recognition being trained is counting the inputs: two rows being aligned
+# against each other need two indices, and every cell is one of three moves.
+# No statement below may say "align", "table" or "distance between prefixes" —
+# those are the master's words. `decoy_signals` records the one-index reading a
+# reader will try first, which is what the post-answer feedback quotes back.
+
+- id: scribe-copy-errors
+  pattern: two-sequence-dp
+  title: The Scribe's Errors
+  difficulty: medium
+  statement: >-
+    The archive keeps an original charter of n characters and a copy of m
+    characters made by a novice. To grade the novice, the archivist counts the
+    fewest corrections that would turn the copy back into the original. One
+    correction is any single one of these — strike out a character, write a new
+    character in at any position, or overwrite one character with another. Two
+    copies with the same number of wrong characters may still need different
+    numbers of corrections, because a missing character shifts everything after
+    it. Report the fewest corrections needed.
+  constraints: |
+    1 <= n, m <= 3000
+    both texts are lowercase letters
+    the product n * m is at most 9 * 10^6
+  signals_present:
+    - two texts are given and the answer measures how far apart they are
+    - the three allowed corrections are named explicitly, and there are exactly three
+    - a missing character shifting everything after it is stated, which rules out comparing position by position
+    - the product of the lengths is bounded, not the sum
+  decoy_signals:
+    - "\"count the characters that differ\" is a one-pass comparison that reads correct and is wrong the moment a character is missing"
+    - the two texts invite hashing one and looking the other up
+    - lowercase letters only suggests counting frequencies of each letter
+  expected_complexity: O(n * m)
+  hints:
+    - text: >-
+        Compare abcde and bcde position by position: every column mismatches
+        and one character is left over, so that reading charges five. The true
+        answer is one — strike the leading a. A single missing character
+        shifted everything, and position-wise comparison cannot see it.
+    - text: >-
+        Ask a smaller question. Not "how far apart are these two texts" but
+        "how far apart are the first i characters of one and the first j of the
+        other". Answer that for every pair and the last one is what you want.
+    - text: >-
+        For each pair (i, j) the last correction was one of exactly three
+        things: strike the i-th character, write in the j-th, or line them up
+        and pay one only if they differ. Take the cheapest. The borders are
+        forced — turning i characters into nothing costs i strikes.
+      reveals_pattern: true
+  why: >-
+    Two texts are being matched against each other with gaps allowed on either
+    side, and gaps on both sides is exactly what two independent indices buy.
+    The statement even lists the three operations, which are the three cells the
+    recurrence reads: from above, from the left, and from the diagonal. The
+    bound on the PRODUCT rather than the sum is the setter sizing a table.
+  classic_ref: CPH 7, edit distance; Levenshtein
+
+- id: twin-ledger-agreement
+  pattern: two-sequence-dp
+  title: The Twin Ledgers
+  difficulty: medium
+  statement: >-
+    Two clerks kept ledgers of the same season's shipments, each writing one
+    letter per shipment in the order the shipments arrived. Both were careless
+    and each missed some shipments entirely, but neither ever invented one or
+    wrote them out of order. The auditor wants the longest run of shipments
+    that appears in both ledgers in the same relative order — the entries need
+    not be next to each other in either ledger, only in the same order. Report
+    its length.
+  constraints: |
+    1 <= n, m <= 3000
+    both ledgers are uppercase letters
+    entries kept in both ledgers appear in the same relative order in each
+  signals_present:
+    - two sequences are given and something common to both is wanted
+    - the common run explicitly need not be contiguous in either input
+    - neither clerk reordered anything, so the two orders may be trusted and must be respected
+    - the lengths are a few thousand each, so a table over both is affordable
+  decoy_signals:
+    - "\"longest run appearing in both\" reads like a search for a shared contiguous stretch"
+    - both ledgers being letters invites counting how many of each letter they share, which ignores order entirely
+    - "\"in the same relative order\" sounds like a monotone condition on one sequence"
+  expected_complexity: O(n * m)
+  hints:
+    - text: >-
+        Take the ledgers ABCD and DCBA. Every letter appears in both, so a
+        count that ignores order says four; but read in order, the longest
+        shared run is a single letter. Order is not a detail here, it is the
+        question. Now do AGGTAB against GXTXAYB by hand — the answer is four.
+    - text: >-
+        Ask about prefixes. How long is the answer for the first i entries of
+        one ledger against the first j of the other? Now look at the pair of
+        entries those two indices just consumed.
+    - text: >-
+        If the two just-consumed entries agree, pairing them is always safe, so
+        the cell is one more than the cell diagonally back. If they differ, one
+        of the two entries is not in the answer, so take the better of dropping
+        either. The borders are all zero.
+      reveals_pattern: true
+  why: >-
+    Two inputs, freedom to skip in either, and order that must be respected in
+    both — that combination is what forces two independent indices. A frequency
+    count throws the order away and overcounts; a contiguous search throws the
+    skipping away and undercounts. The tell that a match is not a choice is
+    worth keeping: when the two entries agree, pairing them can never cost you
+    anything.
+  classic_ref: CPH 7 family; longest common subsequence
+
+- id: caravan-manifest-diff
+  pattern: two-sequence-dp
+  title: The Disputed Manifest
+  difficulty: medium
+  statement: >-
+    A caravan master and a customs officer each hold a manifest of the same
+    cargo, written as a row of letters in loading order. They disagree. To
+    settle it, both parties may strike entries from their own manifest — and
+    only strike, never add and never reorder — until the two documents read
+    identically, possibly ending up empty. Each strike costs one mark, and both
+    parties pay. Report the fewest marks that will settle the dispute.
+  constraints: |
+    1 <= n, m <= 3000
+    both manifests are lowercase letters
+    entries may only be struck out; nothing may be added or moved
+  signals_present:
+    - two sequences are given and both may be reduced until they agree
+    - only deletion is permitted, which is a narrower operation set than the general case
+    - what survives in both is a run appearing in each in the same order
+    - the empty result is explicitly allowed, so the answer can be the full length of both
+  decoy_signals:
+    - "\"make the two agree\" is the vocabulary of the scribe's corrections, where three operations are allowed rather than one"
+    - striking from both sides invites walking two indices greedily and dropping whichever letter is smaller
+    - the letters invite a frequency comparison, which ignores order
+  expected_complexity: O(n * m)
+  hints:
+    - text: >-
+        Take sea and eat. Strike from each until they agree and count the
+        marks — it is two. Now count the letters they have in common in order.
+        The two numbers are related, and the relation is the whole problem.
+    - text: >-
+        Everything not kept is struck. So the marks paid are the two lengths
+        minus everything that survives, and what survives is the same run
+        surviving in both, in order.
+    - text: >-
+        Find the longest run appearing in both manifests in order, of length L.
+        The answer is n + m - 2 * L, because each party strikes everything
+        outside that run.
+      reveals_pattern: true
+  why: >-
+    This is the twin ledgers wearing a different coat: the surviving text is the
+    longest run common to both in order, and everything else is struck from one
+    side or the other. Restricting the operations to deletion alone is what
+    makes the identity n + m - 2L exact. Recognising the disguise is worth more
+    than the formula, because the disguise is what a contest actually hands you.
+  classic_ref: CPH 7 family; minimum deletions to equality, via longest common subsequence
+
+- id: dye-lot-merge
+  pattern: two-sequence-dp
+  title: The Merged Dye Lot
+  difficulty: medium
+  statement: >-
+    A weaver has two pattern cards, each a row of colour letters to be applied
+    in the order written. She wants to weave a single bolt whose colour
+    sequence contains both cards in order — that is, each card can be read off
+    the bolt by skipping some of the bolt's threads, without ever going
+    backwards. Thread is expensive, so the bolt must be as short as possible.
+    Report the length of the shortest such bolt.
+  constraints: |
+    1 <= n, m <= 3000
+    both cards are lowercase letters
+    each card must be readable off the bolt in order, skipping threads as needed
+  signals_present:
+    - two sequences are given and one output must contain both in order
+    - skipping is explicitly permitted when reading a card off the bolt
+    - the objective is a length to be minimised, over an output neither input fixes
+    - the lengths are a few thousand each
+  decoy_signals:
+    - "\"contains both\" reads like a containment or substring question"
+    - concatenating the two cards is an obvious answer that is legal and rarely shortest
+    - "\"as short as possible\" invites searching over candidate lengths"
+  expected_complexity: O(n * m)
+  hints:
+    - text: >-
+        Take abac and cab. Concatenating them gives seven threads. Now build a
+        bolt by hand that both can be read off — five threads suffice. What did
+        the shorter bolt do that the concatenation did not?
+    - text: >-
+        Every thread of the bolt serves one card, the other, or both at once.
+        Threads serving both are pure saving, so the bolt is as short as the
+        sharing is large.
+    - text: >-
+        The shared threads form a run appearing in both cards in the same
+        order. If the longest such run has length L, the bolt is n + m - L,
+        because everything outside it must be woven separately.
+      reveals_pattern: true
+  why: >-
+    Sharing is only possible where the two cards agree in order, so the largest
+    possible saving is the longest run common to both in order — the same table
+    as the twin ledgers, read as a saving rather than as a length. Note the
+    coefficient: here it is n + m - L because a shared thread is woven once,
+    where the disputed manifest pays n + m - 2L because a struck entry is paid
+    for by both parties.
+  classic_ref: CPH 7 family; shortest common supersequence, via longest common subsequence
+
+- id: charter-restoration
+  pattern: two-sequence-dp
+  title: The Restored Charter
+  difficulty: hard
+  statement: >-
+    A restorer must bring a damaged charter of n characters back to the
+    surviving reference text of m characters. The guild prices the three trades
+    separately, because they are separate crafts: erasing a character from the
+    charter costs D marks, inserting a character costs I marks, and burnishing
+    one character into another costs S marks. The prices need not be equal, and
+    in some commissions erasing is far dearer than inserting. Report the
+    cheapest total cost of the restoration.
+  constraints: |
+    1 <= n, m <= 2000
+    1 <= D, I, S <= 10^9
+    both texts are lowercase letters
+    a character that already matches costs nothing to leave alone
+  signals_present:
+    - two texts are given and one must be turned into the other
+    - the three operations are named and priced separately, so no two can be treated as interchangeable
+    - the costs reaching 10^9 with n * m cells means the total needs a 64-bit accumulator
+    - the product of the lengths is bounded at 4 * 10^6
+  decoy_signals:
+    - unequal prices invite ranking the operations and applying the cheapest one greedily
+    - "\"cheapest total cost\" with a price list reads like a selection against a budget"
+    - "the special case S >= D + I invites hard-coding a rule instead of letting the recurrence discover it"
+  expected_complexity: O(n * m)
+  hints:
+    - text: >-
+        With erasing at 1, inserting at 1 and burnishing at 1 this is the
+        scribe's problem and LOVE to MOVIE costs 2. Now set burnishing to 5 and
+        redo that same pair by hand. The cheapest route changes, and no fixed
+        preference between the operations survives both settings.
+    - text: >-
+        The three moves are unchanged; only what each one costs has changed.
+        Write the recurrence with the prices in it rather than with ones, and
+        the special cases take care of themselves.
+    - text: >-
+        dp[i][j] = min of dp[i-1][j] + D, dp[i][j-1] + I, and dp[i-1][j-1] plus
+        either nothing or S. The borders are i * D and j * I. Accumulate in a
+        64-bit type, because 2000 operations at 10^9 each is 2 * 10^12.
+      reveals_pattern: true
+  why: >-
+    Pricing the operations separately changes nothing structural — the three
+    moves are still delete, insert and match-or-substitute — but it destroys
+    every shortcut a reader might have memorised, which is exactly why it is
+    worth meeting. When burnishing is dearer than an erase plus an insert the
+    recurrence quietly stops using it, and it does so without any special case
+    being written.
+  classic_ref: CPH 7, edit distance, with weighted operations

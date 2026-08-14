@@ -1,0 +1,122 @@
+id: the-branching
+name: THE BRANCHING
+title: That Which Doubles at Every Fork
+tier: 4
+master_id: master_dp
+patterns:
+  - linear-dp
+  - knapsack-dp
+  - two-sequence-dp
+  - lis-tails
+
+boss_hp: 100
+player_hp: 100
+damage_taken: 30
+enrage_after: 2
+
+# Higher than the beast in the straight line, and deliberately so. This is an
+# Elite Warrior: it gates the legendary path, and understanding is weighted
+# hardest because in this region a learner can produce a correct table and be
+# entirely unable to say what one cell of it holds. Nym Solvane's final test
+# proves the definitions were held; retention proves they are held still.
+gate:
+  recognition: 0.70
+  understanding: 0.80
+  implementation: 0.70
+  retention: 0.65
+  master_final_test: true
+
+# Five phases, 100 damage, one health bar. Clearing everything is exactly
+# enough, so no phase is decorative. Two SURVIVE phases rather than one,
+# because a tier-four fight must compose patterns and not merely repeat one:
+# the thing changes shape twice.
+phases:
+  - kind: recognise
+    damage: 10
+    title: Name the state it is hiding
+
+  - kind: explain
+    damage: 15
+    title: Say what one cell holds
+
+  - kind: implement
+    damage: 30
+    title: Fill the table
+
+  - kind: survive
+    damage: 25
+    title: It grows an axis
+
+  - kind: survive
+    damage: 20
+    title: It splits into two rows
+
+dialogue:
+  intro:
+    - >-
+      It does not attack. It offers you a choice, and then it offers you the
+      same choice again inside the one you just made, and again inside that.
+      Nothing is named. Everything recurs.
+    - >-
+      Archivist Solvane taught you to write a sentence before a loop. This
+      thing is what happens to people who wrote the loop first: it has been
+      recomputing the same answer since before you arrived.
+    - >-
+      Every fork doubles it. There is exactly one way to fight something that
+      doubles, and you have spent six secrets learning it. Remember.
+
+  phase_won:
+    - It stops branching there. That subtree is closed.
+    - Correct. It has fewer places left to hide.
+    - You named the state. It cannot use that one again.
+    - That one was cheap. The next one has two indices.
+
+  phase_lost:
+    - It was not that. It forks again.
+    - You reached for the axis it wanted you to reach for.
+    - Wrong. It costs you, and it remembers what you tried.
+    - You wrote the loop before the sentence. It has seen that before.
+
+  enrage:
+    - >-
+      It has your measure now. No more hints. Whatever definitions you can
+      still state, those are your weapons.
+    - >-
+      Twice. It will not leave the same opening a third time, and it is no
+      longer pretending the pattern is one you have met.
+
+  victory:
+    - It collapses into a single number. That is all a thing like this ever was.
+    - >-
+      Down. Every subproblem it had, you had already solved once and refused
+      to solve again. That is the whole art.
+    - The Forbidden Art is yours to use. Go on.
+
+  perfect:
+    - >-
+      Not one fork given. Archivist Solvane will read the record, and he will
+      say "recorded", and that is as close as he comes.
+    - >-
+      Five shapes, no mistakes, no help. It had nothing left that you had not
+      already defined.
+
+  defeat:
+    - >-
+      It stands, still branching. Go back to the archive and write the
+      sentences down — the states were in the constraints all along.
+    - >-
+      Not today. Nothing you learned is lost; you have simply not made enough
+      of it precise yet. Return.
+    - >-
+      You knew four techniques and could not say which state each one carries.
+      That is the whole gap, and it closes with definitions, not with retries.
+
+  rematch:
+    - Again, then. It has not forgotten the shape you came in with last time.
+    - You have beaten it before. It does not branch the same way twice.
+
+  gate_locked:
+    - >-
+      It does not fight students. Finish with Archivist Solvane, then hold
+      what he taught you long enough that it is still there when you return.
+    - Not yet. {blockers}

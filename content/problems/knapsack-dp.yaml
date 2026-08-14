@@ -1,0 +1,261 @@
+# Problems that are really The Second Axis.
+#
+# The recognition being trained is that one index is not enough: that the
+# legality of a choice depends on how much of a shared budget has already been
+# spent, and that the remainder therefore belongs in the state. Every statement
+# below has a plausible ranking rule that a reader will reach for first, and
+# `decoy_signals` records it, because the post-answer feedback quotes it back.
+
+- id: quarry-cart-load
+  pattern: knapsack-dp
+  title: The Quarry Cart
+  difficulty: medium
+  statement: >-
+    A quarry sends one cart to market each morning. It can bear at most C
+    stones of weight in total. The yard holds n cut blocks; the i-th weighs
+    w[i] stones and fetches v[i] marks at market. A block is loaded whole or
+    left behind — the masons will not split a finished block, and half a block
+    is worth nothing. Every block is distinct and there is exactly one of each.
+    Report the largest total value the cart can carry to market.
+  constraints: |
+    1 <= n <= 100
+    1 <= C <= 100000
+    1 <= w[i] <= C
+    1 <= v[i] <= 10^9
+    there is exactly one of each block, and blocks may not be cut
+  signals_present:
+    - each block is taken whole or not at all, against one shared capacity
+    - the objective is total VALUE rather than a count of blocks
+    - the sentence forbidding a block to be cut is stated deliberately and at length
+    - n times C is 10^7, which the constraints have plainly been sized for
+  decoy_signals:
+    - a capacity and a maximisation is exactly the vocabulary of the market stall, which is answered by sorting
+    - "\"most marks per stone of weight\" is a ranking key a reader will invent within seconds and it is wrong"
+    - n is only 100, which invites enumerating subsets until you notice 2^100
+  expected_complexity: O(n * C)
+  hints:
+    - text: >-
+        Rank the blocks by marks per stone and load greedily, on a cart of
+        capacity 50 with blocks worth 60 at weight 10, 100 at weight 20 and 120
+        at weight 30. Then find the best load by hand. Three blocks are enough
+        to break the rule.
+    - text: >-
+        Loading a block does not merely cost you its weight — it costs you the
+        chance to use that weight on some other combination. So what you must
+        remember when you reach block i is not only where you are, but how much
+        room is left.
+    - text: >-
+        Let dp[c] be the best value achievable within c stones of room, and
+        fold the blocks in one at a time. For each block, dp[c] becomes the
+        larger of leaving it (dp[c] unchanged) and taking it
+        (dp[c - w] + v). Sweep c downwards so no block is loaded twice.
+      reveals_pattern: true
+  why: >-
+    The refusal to cut a block is the whole problem. With division allowed, the
+    marks-per-stone order is provably optimal and the answer is a sort; without
+    it, taking a better rate consumes room that a worse-rated pair needed — 60
+    and 100 fill 30 of the 50 and strand the rest, where 100 and 120 fill it
+    exactly for 220. No ranking recovers that, so the remaining room must be
+    carried in the state.
+  classic_ref: CPH 7, knapsack problems; the 0/1 case, and the exact boundary against CPH 6
+
+- id: tribute-exact-weight
+  pattern: knapsack-dp
+  title: The Exact Tribute
+  difficulty: medium
+  statement: >-
+    A vassal must send tribute weighing exactly T ingots — the treaty names the
+    figure and the clerks weigh the chest on arrival, so a lighter chest is
+    refused and a heavier one is refused just as firmly. The vault holds n
+    bars, the i-th weighing w[i] ingots. Bars are never cut or melted. Report
+    whether some collection of bars weighs exactly T, and if none does, say so.
+  constraints: |
+    1 <= n <= 200
+    1 <= T <= 100000
+    1 <= w[i] <= 1000
+    each bar may be used at most once and may not be divided
+  signals_present:
+    - the question is whether an exact total can be assembled, not how much can be
+    - each bar is used at most once, so nothing may be repeated
+    - impossibility is an expected outcome the answer must be able to report
+    - T is bounded at 10^5, which is small enough to index an array of totals
+  decoy_signals:
+    - "\"weighing exactly T\" invites searching for the answer, but there is nothing monotone to search over"
+    - n at 200 makes trying every collection look nearly reachable until 2^200 is written down
+    - the bars being interchangeable in weight suggests counting how many of each value there are
+  expected_complexity: O(n * T)
+  hints:
+    - text: >-
+        Take the bars 1, 3, 3 and 5. Which totals between 0 and 12 can be made?
+        Write them all out. Two of them cannot, and noticing WHICH two is more
+        useful than the list.
+    - text: >-
+        A cell need not hold a number. Let the cell hold a yes or a no: is this
+        exact total reachable using the bars considered so far? Before any bar
+        is considered, exactly one total is reachable.
+    - text: >-
+        reach[0] starts true and everything else false — from no bars, only
+        zero can be made. For each bar w, sweep s downwards from T and set
+        reach[s] whenever reach[s - w] is already set. The answer is reach[T].
+      reveals_pattern: true
+  why: >-
+    Nothing is being maximised, so no ranking key has anything to rank. The
+    question is reachability of one exact figure, and reachability of totals is
+    precisely what the second axis stores. The border is the tell that separates
+    this from the "at most" form: only the total zero starts legal, because from
+    no bars at all nothing else can be assembled.
+  classic_ref: CPH 7, knapsack problems; the subset-sum reachability table
+
+- id: armoury-halving
+  pattern: knapsack-dp
+  title: The Armoury Halving
+  difficulty: medium
+  statement: >-
+    An armoury must be split between two watchtowers before nightfall. There
+    are n crates, the i-th weighing w[i]. Every crate goes to one tower or the
+    other; none may be left behind and none may be opened. The quartermaster
+    wants the two towers to end up carrying loads as nearly equal as possible.
+    Report the smallest achievable difference between the two totals.
+  constraints: |
+    1 <= n <= 200
+    1 <= w[i] <= 1000
+    the total of all weights is at most 200000
+    every crate must be assigned, and crates may not be opened
+  signals_present:
+    - every item is assigned, and the only question is which of two groups it joins
+    - the objective is a difference, which is decided entirely by what one group totals
+    - the crates may not be opened, so no weight can be divided
+    - the total is bounded at 2 * 10^5, which is small enough to index by
+  decoy_signals:
+    - "\"as nearly equal as possible\" reads like the middle-value question, where the answer is a single point"
+    - dealing crates alternately from the heaviest downwards is a rule that survives most small examples
+    - "\"every item is used and only the assignment matters\" sounds like an arrangement to be derived by a swap"
+  expected_complexity: O(n * total)
+  hints:
+    - text: >-
+        Deal the crates from the heaviest down, always onto whichever tower is
+        currently lighter. On 1, 5, 11, 5 that gives 11 against 11 and is
+        perfect. Now try 2, 2, 2, 3, 3: the rule produces 7 against 5, a
+        difference of 2, while 2+2+2 against 3+3 is a difference of 0.
+    - text: >-
+        If one tower ends up carrying a total of p, the other carries
+        total - p, and the difference is total - 2p. So there is only one thing
+        to find: the largest p not exceeding half the total that some
+        collection of crates can actually reach.
+    - text: >-
+        Mark every total reachable by some collection of crates, up to half the
+        overall sum. Take the largest marked value p; the answer is
+        total - 2 * p.
+      reveals_pattern: true
+  why: >-
+    The difference is a function of one number — what a single side totals — so
+    the whole problem collapses to which totals are reachable at all, which is
+    the second axis storing reachability. Dealing from the heaviest downwards is
+    the reflex, and it is right often enough to be believed — on 1, 5, 11, 5 it
+    is perfect. On 2, 2, 2, 3, 3 it commits the first 3 and the first two 2s to
+    one tower and lands on a difference of 2 where 0 was available, because a
+    rule that places one crate at a time cannot see the combination it has
+    already broken up.
+  classic_ref: CPH 7, knapsack problems; partition as subset sum against half the total
+
+- id: spice-vault-refill
+  pattern: knapsack-dp
+  title: The Spice Vault
+  difficulty: medium
+  statement: >-
+    A merchant has a strongbox holding C measures and a standing order with the
+    spice guild. The guild sells k kinds of spice; one jar of the i-th kind
+    occupies w[i] measures and sells on for v[i] marks. The guild's supply is
+    effectively endless, so he may buy as many jars of any kind as he likes, in
+    any combination. Jars are sealed and cannot be decanted. Report the largest
+    total value of spice he can carry away in the strongbox.
+  constraints: |
+    1 <= k <= 100
+    1 <= C <= 100000
+    1 <= w[i] <= C
+    1 <= v[i] <= 10^9
+    the supply of every kind is unlimited; jars may not be opened
+  signals_present:
+    - an unlimited supply of each kind, so one kind may be taken many times
+    - a single shared capacity that every purchase draws from
+    - the jars are sealed, so nothing may be divided
+    - k times C is 10^7, which the constraints have been sized for
+  decoy_signals:
+    - "\"unlimited supply and best value per measure\" is the ratio rule, which is only correct when jars can be opened"
+    - "\"buy as many as you like\" invites filling the box with the single best kind, which need not fit exactly"
+    - the endless supply reads like a coin system to be paid largest-first
+  expected_complexity: O(k * C)
+  hints:
+    - text: >-
+        Fill the box with as many of the best-rated kind as fit, then move to
+        the next. On a box of 4 measures with jars worth 4 at size 2 and 5 at
+        size 3, ask what that rule gives and what the best answer is.
+    - text: >-
+        This is the same table as the one where each item exists once, and the
+        difference is one loop direction. Ask what it means for a cell to be
+        allowed to read a cell that has ALREADY been updated with the same kind.
+    - text: >-
+        dp[c] is the best value within c measures. For each kind, sweep c
+        upwards from w[i] to C and take the larger of dp[c] and
+        dp[c - w[i]] + v[i]. Upwards is what permits a kind to be taken again.
+      reveals_pattern: true
+  why: >-
+    Repetition being allowed does not restore the ranking rule — the jars are
+    still sealed, so a better rate can still consume room that a worse-rated
+    combination would have filled exactly. It changes exactly one thing: a cell
+    may now read a cell already updated with the same kind, which is the
+    ascending sweep. On four measures with jars of size 2 and 3, taking one of
+    each gives 9 while two of the better-rated kind gives 8.
+  classic_ref: CPH 7, knapsack problems; the unbounded form, and its one-character difference from 0/1
+
+- id: siege-ration-count
+  pattern: knapsack-dp
+  title: The Siege Rations
+  difficulty: hard
+  statement: >-
+    A castellan preparing for a siege must set aside sacks totalling exactly S
+    pounds of grain for the garrison. The storehouse holds n sacks, the i-th
+    weighing w[i] pounds; sacks are sealed and each may be set aside or left in
+    store, but never split. Two selections count as different if some sack is
+    set aside in one and left in the other, even when the two weigh the same.
+    Report the number of distinct selections totalling exactly S, modulo
+    1000000007.
+  constraints: |
+    1 <= n <= 500
+    1 <= S <= 100000
+    1 <= w[i] <= 1000
+    two sacks of equal weight are still distinct sacks
+    the answer is to be given modulo 1000000007
+  signals_present:
+    - the objective counts selections rather than optimising anything
+    - each sack is used at most once, and an exact total is demanded
+    - a modulus is supplied, which concedes the count is astronomically large
+    - sacks of equal weight are declared distinct, which rules out counting by value
+  decoy_signals:
+    - "\"how many selections\" invites enumerating subsets, and 2^500 ends that idea"
+    - the equal-weight sacks being distinct suggests a combinatorial formula with factorials
+    - "\"exactly S\" reads like a feasibility question with a yes or no answer"
+  expected_complexity: O(n * S)
+  hints:
+    - text: >-
+        Take the sacks 1, 1 and 2 with S set to 2. List every selection that
+        works. There are two of them, and one of the two would be lost by any
+        method that treats the equal sacks as interchangeable.
+    - text: >-
+        This is the reachability table with the cell holding a count instead of
+        a yes or no. Where reachability took an OR of the two cases, a count
+        takes a sum — and the two cases are still "this sack is in" and "this
+        sack is out".
+    - text: >-
+        ways[0] = 1 and every other cell 0. For each sack w, sweep s downwards
+        from S and add ways[s - w] into ways[s], reducing modulo 1000000007.
+        The answer is ways[S].
+      reveals_pattern: true
+  why: >-
+    Counting and maximising sit in the same table over the same two axes; only
+    the operation in the cell changes, from a maximum to a sum. The downward
+    sweep is doing exactly what it does in the maximisation — keeping each sack
+    from contributing to one selection twice — and running it upwards would
+    count multisets of an unlimited supply instead, which is a different
+    question with a different answer.
+  classic_ref: CPH 7, knapsack problems, with the counting variant of CPH 7's coin problem

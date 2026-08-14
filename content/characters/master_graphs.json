@@ -1,0 +1,180 @@
+{
+  "id": "master_graphs",
+  "name": "MASTER OF GRAPHS",
+  "title": "Warlord Thessaly Grune, the Unbridged",
+  "region": "sea-of-graphs",
+  "patterns": [
+    "graph-traversal",
+    "bfs-shortest-path",
+    "dijkstra-weighted",
+    "topological-order"
+  ],
+  "personality": {
+    "warmth": 0.15,
+    "verbosity": 0.5,
+    "praise_threshold": 0.92
+  },
+  "gate": {
+    "recognition": 0.8,
+    "understanding": 0.8,
+    "implementation": 0.75,
+    "retention": 0.75
+  },
+  "placeholders": {
+    "days": "whole days since the relevant event — the student's last visit, a past failure on this problem, or the length of the current unbroken practice streak",
+    "streak": "number of consecutive correct drills in the current run",
+    "attempts": "how many attempts the student previously needed on this problem",
+    "secret": "the name of the secret currently being taught or tested",
+    "idiom": "the C++ expression at the heart of the current secret",
+    "requirement": "name of the gate dimension that is short: recognition, understanding, implementation, or retention",
+    "shortfall": "how far the short gate dimension sits below its threshold, as a percentage",
+    "score": "how many final-test problems were answered correctly",
+    "total": "number of problems in the final test",
+    "required": "how many must be answered correctly to pass"
+  },
+  "dialogue": {
+    "greeting_first": [
+      "You know BFS. Everyone who reaches this shore knows BFS. Do you know when it is wrong?",
+      "Stand. The others taught you to build things. I teach you to know which of your weapons is the wrong one.",
+      "Every algorithm here fails silently. None of them crash. That is what you are here to survive.",
+      "I am called the Unbridged because nothing crossed me twice. Learn why the first crossing failed and you will not need a second."
+    ],
+    "greeting_returning": [
+      "Back. Same question. When is BFS wrong?",
+      "Stand. Begin.",
+      "Good. The sea has not moved. Neither have your gaps.",
+      "Again. This time say the hypothesis before you say the algorithm."
+    ],
+    "greeting_after_gap": [
+      "{days} days. The weights on those edges did not become equal while you were gone.",
+      "Gone {days} days. What you lose first is not the loop — it is the condition under which the loop was allowed. We start there.",
+      "{days} days. Four edges, three of cost one in a line, one of cost five across. What does a queue answer? Say it now.",
+      "{days} days away. You will still be able to write the sweep. That was never the part I was worried about."
+    ],
+    "lesson_intro": [
+      "{secret}. Watch the boundary, not the code. The code is nine lines and you already know eight of them.",
+      "I will show you a technique and then the graph on which it lies to you. Learn the second one.",
+      "This is short. Everything in this region is short. That is the trap, not the mercy.",
+      "Name the hypothesis before you name the algorithm. Every time. Begin."
+    ],
+    "lesson_memorise": [
+      "Take `{idiom}` whole. You will not rebuild it under a clock and you should not have to.",
+      "Into the hand. The reason it is allowed goes somewhere deeper, and I will ask for that separately.",
+      "Learn it until it arrives with its condition attached. A technique without its condition is a liability you carry.",
+      "Keep this. It is one line, and it is the line the judge will decide on."
+    ],
+    "drill_correct": [
+      "Correct.",
+      "Yes. Next.",
+      "Good. Continue.",
+      "Accepted. Again."
+    ],
+    "drill_wrong": [
+      "No. You counted edges. Nobody asked for edges — read what the objective charges.",
+      "Wrong. You marked it visited on the pop. The answer survives and the memory does not.",
+      "No. One negative edge and the claim you just used has been withdrawn. Find the sentence that withdrew it.",
+      "Wrong. That is a reachability answer to an ordering question. The pair means before, not toward.",
+      "No. You compared vertex numbers where you needed representatives.",
+      "Wrong. You dropped the stale test. The answer is still right and the bound is gone.",
+      "No. Free edges are edges. Two distinct weights are already unequal weights."
+    ],
+    "drill_streak": [
+      "{streak} in a row. The hand is fast. I am still listening for the condition.",
+      "Steady. Hold the line.",
+      "{streak} straight. Speed is not the thing I am measuring.",
+      "Good rhythm. Do not let it become a habit that stops thinking."
+    ],
+    "trial_intro": [
+      "Nothing named. Read it twice and find the sentence that prices a move.",
+      "The label comes off. The weights did not.",
+      "One problem. It will not tell you which container to use. It never does.",
+      "Decide. Then be ready to say what made the decision legal."
+    ],
+    "fail_wrong_pattern": [
+      "Wrong tool. Every move in that statement cost the same, and you paid for a heap you did not need.",
+      "No. The costs differed and you counted edges. You found a real path. It was not the cheapest one and nothing told you.",
+      "That pair meant \"before\", not \"toward\". You walked a graph that wanted to be ordered.",
+      "No. Nothing there was measured at all — no length, no price. You built a frontier to answer a yes.",
+      "Wrong. The edges arrived one at a time and you started a fresh sweep for every question. Merge, do not walk."
+    ],
+    "fail_timeout": [
+      "Time. You knew the pattern in the first minute and spent the rest doubting it.",
+      "Time ran out. Slow is a fluency problem and drills fix fluency. Nothing is lost here.",
+      "Time. What you had was correct and late. Again.",
+      "Time. You were looking for something elaborate. On this sea the answer is nine lines and one condition."
+    ],
+    "fail_wrong_answer": [
+      "Right pattern. Wrong container. Say out loud what a move costs, then choose again.",
+      "You marked visited on the pop. Correct output, and the frontier held one entry per edge.",
+      "You believed the distance at settle time and there was a negative edge in the graph. It reported 5. It was 1.",
+      "The sweep was right and the accumulator was an int. Two hundred thousand edges at a billion each.",
+      "You never compared the emitted count with n. The input was circular and you printed a short list that looked fine.",
+      "The relaxation improved instead of claiming. Right answers, and a vertex re-pushed every time a longer route found it."
+    ],
+    "success": [
+      "Correct. Continue.",
+      "It holds. Next.",
+      "Accepted. Move.",
+      "Done. The next one hides the weights better."
+    ],
+    "success_fast": [
+      "Fast, and you named the condition before you named the algorithm. That is the correct order.",
+      "You found the sentence that priced a move in the first read. Good.",
+      "No wasted structure. No heap you did not need. Continue.",
+      "One sweep, one condition, one answer. That is the discipline."
+    ],
+    "praise_exceptional": [
+      "Well done. You saw the weights before you saw the graph.",
+      "You refused the queue and said why. Most students only ever manage the first half.",
+      "You found the boundary before it found you. I noticed which came first.",
+      "That is the best work you have done on this sea. You did not write and then justify. You justified and then wrote."
+    ],
+    "praise_major": [
+      "I have watched a great many warriors write a perfect sweep for a question nobody asked. You stopped and asked what a move cost. You have earned my respect.",
+      "You arrived able to walk a graph. You leave able to say when walking it answers the wrong question, which is the rarer thing by an order of magnitude. You have earned my respect.",
+      "I do not say this twice, so hear it once: you can name the hypothesis under every algorithm in this region, and you can find the graph that breaks it. You have earned my respect."
+    ],
+    "memorisation_detected": [
+      "You remember which container this problem wanted. You cannot say what made it legal. Those are different, and the difference is the whole sea. A different problem.",
+      "You pass what you have seen and fail its variants. That is recall, not recognition. Back one step.",
+      "Change one edge weight and you are lost, which tells me you learned a shape and not a condition. Try this one."
+    ],
+    "improvement_noticed": [
+      "You failed this {days} days ago. Today you solved it and you named the hypothesis. That is improvement. Continue.",
+      "You needed {attempts} attempts on this once. Today, one. I keep the count.",
+      "This is the problem you debugged the traversal on for an hour. The traversal was never wrong. Today you did not touch it.",
+      "Cleaner than last time. You asked what a move cost before you asked what to push."
+    ],
+    "commitment_noticed": [
+      "{days} days unbroken. Boundaries are found by the persistent, not the quick.",
+      "Many reach this shore. Most want the sweep and not the condition, and most leave when I ask for the condition. You did not.",
+      "You have come back after every failure so far. I keep a record of that too. Continue.",
+      "Talent arrives here every week and drowns holding a correct answer to the wrong question. Attendance is the part I cannot teach. You brought your own."
+    ],
+    "gate_locked": [
+      "Not yet. {requirement} is short by {shortfall} percent. Come back when it is not.",
+      "The gate holds. Understanding is short — you can write the sweep and not say what licenses it, and here that is half a warrior.",
+      "No. Recognition is short. You hold four techniques and cannot yet tell which one a statement is describing.",
+      "Implementation is short. The choice is right and the code is not. Drill, then return.",
+      "Retention is short. What you proved last week has already gone. Review first."
+    ],
+    "gate_open": [
+      "The gate is open. Come when you are ready, not when you are impatient.",
+      "Nothing is short. The final test is waiting.",
+      "Enough. You may attempt it.",
+      "You meet the requirements. From here the decision is yours."
+    ],
+    "final_test_intro": [
+      "I name nothing. Every drill before this existed so that I would not have to.",
+      "{total} problems, {required} of them right. Read each twice and find the sentence that prices a move.",
+      "No help. Only the statements, and whatever conditions you can still recite.",
+      "Some of these are answered by a queue and some are not, and they are written to look alike. That is the test."
+    ],
+    "victory": [
+      "It is done. The sea is behind you.",
+      "You passed. Remember the graphs that broke each rule, not only the rules. Go.",
+      "Finished. Everything after this assumes you can tell a technique from its hypothesis. You can.",
+      "That is mastery of the frontier and of its boundary. Nothing ahead of you is shorter. Go."
+    ]
+  }
+}

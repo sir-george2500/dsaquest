@@ -1,0 +1,80 @@
+# Sample inputs for Oracle Cassiun's four templates.
+#
+# No expected outputs: the intact template is the oracle, so the answer key is
+# derived from the code it is checking and cannot drift out of agreement with
+# it.
+#
+# What these inputs have to be is DISCRIMINATING, and in this region that means
+# one thing above all: at least one case per template where a plausible wrong
+# implementation overflows or loses a sign. An input set of small friendly
+# numbers cannot tell a correct reduction from a missing one, because every
+# intermediate value fits either way. So each block below carries a case at the
+# edge of the type as well as a degenerate one.
+
+modular-arithmetic.cpp:
+  # n m / n values / x m2 / digits m3 / p q m4
+  # 1: 7*11*13*17 mod 100 walks through 1 mid-way, so an unreduced product is
+  #    visibly different; -3 mod 7 needs the sign repair; 1234 mod 7 = 2.
+  - "4 100\n7 11 13 17\n-3 7\n1234 7\n1000000006 1000000006 1000000007\n"
+  # 2: m = 1, where every residue is 0 and a bare `1` accumulator is wrong;
+  #    -7 mod 7 is the case that needs the SECOND reduction, not just the +m.
+  - "1 1\n5\n-7 7\n0 13\n999999999999999989 999999999999999989 999999999999999999\n"
+  # 3: factors just below 10^9, so every product is ~10^18 — an int accumulator
+  #    dies here and nowhere else; a thirty-digit chronicle line; a modulus past
+  #    3037000499 in the last line, which needs the 128-bit multiply.
+  - "3 1000000007\n1000000000 1000000006 999999999\n-1000000000 1000000007\n999999999999999999999999999999 1000000007\n3037000499 3037000499 1000000007\n"
+  # 4: a zero factor, which must make the whole product 0 rather than be skipped;
+  #    x already in range, so the repair must not move it.
+  - "5 1000000007\n0 999999999 1 2 1000000006\n5 1000000007\n1000000007 1000000007\n0 12345 1000000007\n"
+
+fast-exponentiation.cpp:
+  # b e m / a p / n q / q pairs "upper lower"
+  # 1: 3^13 mod 1000 = 323, the worked trace; inverse of 3 mod 7 = 5;
+  #    C(200000,100000) mod 1e9+7 = 879467333 exercises the whole table.
+  - "3 13 1000\n3 7\n200000 3\n200000 100000\n10 3\n0 0\n"
+  # 2: exponent 0, where the loop must not run and the answer is 1 % m;
+  #    inverse of 2 mod 1e9+7 = 500000004; k above n must give 0, not a crash.
+  - "2 0 1000000007\n2 1000000007\n1 2\n1 0\n0 1\n"
+  # 3: an exponent of 10^18 — sixty iterations, and a squaring that overflows
+  #    an int on the very first step; C(5,5) and C(5,6) are the two endpoints.
+  - "2 1000000000000000000 1000000007\n3 1000000007\n5 3\n5 5\n5 6\n3 1\n"
+  # 4: base larger than the modulus, so the initial reduction is load-bearing;
+  #    n = 0, where the factorial table is a single entry and the backward walk
+  #    must not run at all.
+  - "1000000006 1000000006 1000000007\n999999999 1000000007\n0 1\n0 0\n"
+
+euclidean-gcd.cpp:
+  # n / n values / a b
+  # 1: the worked descent 1071 -> 462 -> 147 -> 21, and its Bezout pair (-3, 7).
+  - "3\n1071 462 21\n1071 462\n"
+  # 2: 3e9 and 4e9 — the answer is 1.2e10 and the product is 1.2e19, so the
+  #    order of the division and the multiplication decides correctness here.
+  - "2\n3000000000 4000000000\n3000000000 4000000000\n"
+  # 3: a coprime chain, so the running multiple grows the whole way and the
+  #    running divisor collapses to 1.
+  - "4\n4 6 10 15\n1071 462\n"
+  # 4: zeros in the row, where gcd(0, x) = x is what makes the fold's seed
+  #    correct and the multiple must stay 0.
+  - "3\n0 5 0\n0 5\n"
+  # 5: a single value equal to itself, the smallest input that still has a
+  #    Bezout pair to report.
+  - "1\n7\n7 7\n"
+
+sieve-factorisation.cpp:
+  # n / q / q values, each at most n / big
+  # 1: 168 primes to 1000; 720 has 30 divisors, 97 has 2, 1 has 1;
+  #    999999999999 = 3^3 * 7 * 11 * 13 * 37 * 101 * 9901 — seven factors, the
+  #    last of them above the square root of what remains.
+  - "1000\n3\n720 97 1\n999999999999\n"
+  # 2: the leftover rule alone. 1999999874 = 2 * 999999937, so a loop without
+  #    the final `if (n > 1)` reports 2 and stops.
+  - "2\n1\n2\n1999999874\n"
+  # 3: a power of two and a prime among the queries, and a large prime as the
+  #    single value — the case where the trial-division loop runs to the root
+  #    and finds nothing at all.
+  - "1000\n4\n999 512 997 360\n1000000007\n"
+  # 4: n = 1, where the sieve loop never executes and the prime count is 0.
+  - "1\n1\n1\n4\n"
+  # 5: exactly 25 primes to 100, the classic count, with a perfect square and a
+  #    highly composite value among the queries.
+  - "100\n3\n64 96 100\n1000000000000\n"

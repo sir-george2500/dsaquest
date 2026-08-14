@@ -564,6 +564,7 @@ stages:
       id: bfs-layers
       name: The First Time You See It Is the Cheapest
       idiom: "if (dist[v] == -1) { dist[v] = dist[u] + 1; q.push(v); }"
+      animation: bfs-layers
       memorise: true
       baseline_drills: 5
       teaches: >-
@@ -829,6 +830,7 @@ stages:
       id: weights-break-bfs
       name: Where the Queue Stops Being Sorted
       idiom: "if (d > dist[u]) continue;"
+      animation: weights-break-bfs
       memorise: true
       baseline_drills: 6
       teaches: >-

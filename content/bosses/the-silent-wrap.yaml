@@ -1,0 +1,141 @@
+id: the-silent-wrap
+name: THE SILENT WRAP
+title: What Waits at Two Thousand One Hundred and Forty-Seven Million
+tier: 4
+master_id: master_math
+patterns:
+  - modular-arithmetic
+  - fast-exponentiation
+  - euclidean-gcd
+  - sieve-factorisation
+
+boss_hp: 100
+player_hp: 100
+damage_taken: 25
+enrage_after: 2
+
+# Tier four, so the gate is stiff — and understanding is the highest of the
+# four on purpose. This thing cannot be beaten by pattern recognition. Every
+# phase it wins, it wins on a bound the learner did not check, and checking a
+# bound is understanding rather than recall.
+gate:
+  recognition: 0.72
+  understanding: 0.78
+  implementation: 0.72
+  retention: 0.62
+  master_final_test: true
+
+# Five phases, 100 damage, no slack. Two implement phases because this is the
+# region where the algorithm is four lines and the arithmetic under it is the
+# whole fight — one correct method can still be typed two different ways, and
+# only one of them survives.
+phases:
+  - kind: recognise
+    damage: 10
+    pattern: modular-arithmetic
+    title: Name what cannot be formed
+
+  - kind: explain
+    damage: 15
+    pattern: euclidean-gcd
+    title: Say why the answer does not change
+
+  - kind: implement
+    damage: 30
+    pattern: fast-exponentiation
+    title: Halve it, and reduce between every multiplication
+
+  - kind: implement
+    damage: 20
+    pattern: sieve-factorisation
+    title: Cross out, and remember what survives the root
+
+  - kind: survive
+    damage: 25
+    title: It changes the modulus
+
+dialogue:
+  intro:
+    - >-
+      It does not roar. It has never roared. It agrees with your sample input,
+      it agrees with your second sample, and on the fourteenth hidden test it
+      returns a number that is off by four thousand million and looks exactly
+      like an answer.
+    - >-
+      Oracle Cassiun told you the boundary. He tells everyone the boundary.
+      This is the thing that lives on the far side of it, and it has never once
+      had to announce itself.
+    - >-
+      Four techniques, nothing named, and a constraint block you will want to
+      read twice. It does not punish the wrong algorithm. It punishes the right
+      algorithm typed in the wrong type.
+    - >-
+      Two thousand one hundred and forty-seven million, four hundred and
+      eighty-three thousand, six hundred and forty-seven. Everything past that
+      belongs to it.
+
+  phase_won:
+    - It gives ground. It does not look surprised.
+    - Correct — and you checked the width before you typed. That is why.
+    - You read the constraints. It has nothing to do until you stop.
+    - Accepted. The next bound is larger and worse hidden.
+
+  phase_lost:
+    - It takes the difference between what you meant and what the type held.
+    - >-
+      Wrong, and quietly. Nothing crashed. Nothing warned you. That is its
+      entire method.
+    - You reduced afterwards. It formed the product first.
+    - >-
+      The reasoning was sound. The arithmetic underneath it was not, and only
+      one of those two was being tested.
+
+  enrage:
+    - >-
+      No more hints. It has seen how you type and it will choose the modulus
+      accordingly.
+    - >-
+      Twice now. It stops being polite about which side of three thousand and
+      thirty-seven million the next one falls on.
+
+  victory:
+    - It stops. Numbers do not resent being handled correctly.
+    - >-
+      Down. You will meet it again in every region after this one, wearing
+      somebody else's algorithm, and you will recognise it.
+    - >-
+      Beaten. Not by a technique — by a habit of looking at the bound before
+      the loop. Keep the habit.
+
+  perfect:
+    - >-
+      Not one wrap. Not one negative residue. Cassiun will be told, and he will
+      say "correct", and from him that is a great deal.
+    - >-
+      Five phases, no help, and every type chosen before it was needed. There
+      is nothing left in it for you here.
+
+  defeat:
+    - >-
+      It stands. Go back and read your own constraints as if a rival had
+      written them to break you — because one did.
+    - >-
+      Not today. Nothing you know is gone; one multiplication was wider than
+      the thing you put it in. Find it, and return.
+    - >-
+      You knew all four techniques. You lost to a type. That is the most
+      fixable defeat in the game and the most humiliating, and both of those
+      are on purpose.
+
+  rematch:
+    - Again. It has kept your bounds.
+    - >-
+      You have beaten it once. It does not repeat a modulus it has already lost
+      with.
+
+  gate_locked:
+    - >-
+      It does not fight students. Finish with Oracle Cassiun, and then hold
+      what he taught you long enough that the sign of a remainder is still
+      there when you come back.
+    - Not yet. {blockers}

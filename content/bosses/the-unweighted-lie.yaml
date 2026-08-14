@@ -1,0 +1,132 @@
+# The boss guarding the Sea of Graphs.
+#
+# Tier 4: multi-pattern, traps, nothing named. It draws on all four of
+# Thessaly Grune's patterns because the fight IS the region's question — every
+# phase hands you a statement that a queue would answer, and one of them is
+# lying about it.
+#
+# Fairness, checked by the loader: the five phases deal 100 against 100 HP, so
+# clearing everything is exactly enough and no phase is decorative; the player
+# has 120 HP against 30 per failure, so three mistakes still leave a fight.
+
+id: the-unweighted-lie
+name: THE UNWEIGHTED LIE
+title: The Path That Was Always There
+tier: 4
+master_id: master_graphs
+patterns:
+  - graph-traversal
+  - bfs-shortest-path
+  - dijkstra-weighted
+  - topological-order
+
+boss_hp: 100
+player_hp: 120
+damage_taken: 30
+enrage_after: 2
+
+# Grune's final test proves the four techniques are held. This gate proves the
+# BOUNDARIES are held — understanding is the highest requirement here on
+# purpose, because every failure this thing inflicts is a correct algorithm
+# answering a question nobody asked.
+gate:
+  recognition: 0.7
+  understanding: 0.75
+  implementation: 0.65
+  retention: 0.6
+  master_final_test: true
+
+# Five phases, 100 damage, one bar. Two of them ask the learner to recognise
+# something, which is the only defence against this boss that exists.
+phases:
+  - kind: recognise
+    damage: 10
+    title: Read what a move costs
+
+  - kind: explain
+    damage: 20
+    title: Name the hypothesis you are standing on
+    pattern: bfs-shortest-path
+
+  - kind: implement
+    damage: 25
+    title: Order the frontier
+    pattern: dijkstra-weighted
+
+  - kind: survive
+    damage: 25
+    title: It is not a distance at all
+    pattern: topological-order
+
+  - kind: survive
+    damage: 20
+    title: Nothing was ever being measured
+    pattern: graph-traversal
+
+dialogue:
+  intro:
+    - >-
+      It does not hide. It has never hidden. It hands you a path, from where
+      you started to where you were going, along edges that all exist — and it
+      waits to see whether you check the price.
+    - >-
+      Warlord Grune taught you four techniques and four boundaries. This thing
+      only cares about the boundaries. Nothing will be named.
+    - >-
+      Every wrong answer it takes from you will look like a right one. There
+      will be no crash and no timeout. Read the statements.
+
+  phase_won:
+    - It gives ground.
+    - Correct. It has another face and the same trick.
+    - You priced the move before you chose the container. Continue.
+    - That one showed its weights. The next will not.
+
+  phase_lost:
+    - You counted edges.
+    - It handed you a real path and you took it.
+    - Wrong. You did not ask what a move cost.
+    - You reached for the sweep you had just drilled instead of the one the statement described.
+
+  enrage:
+    - >-
+      It has your measure. No more hints. Whatever conditions you can still
+      recite, recite them now.
+    - >-
+      Twice. It will not leave the weights in plain sight a third time.
+
+  victory:
+    - It stops. A thing that only ever lied by omission has nothing left to omit.
+    - >-
+      Down. You will meet weighted edges again in worse disguises, and you will
+      check them.
+    - The sea is open. Cross it.
+
+  perfect:
+    - >-
+      Not one path taken on trust. Grune will hear of it, and she will say
+      "adequate", and she will mean something considerably larger.
+    - >-
+      Five faces, no mistakes, no help. It never once got you to confuse an
+      edge with a cost.
+
+  defeat:
+    - >-
+      It stands. Go back and read the statements again — the sentence that
+      priced a move was in every one of them.
+    - >-
+      Not today. Nothing you learned is gone; you have simply not yet learned
+      to distrust a correct-looking answer. Return.
+    - >-
+      You knew all four techniques. You could not say which hypothesis each one
+      needed. That is the whole gap, and drills close it, not retries.
+
+  rematch:
+    - Again. It remembers which container you reach for first.
+    - You have beaten it before. It does not wear the same face twice.
+
+  gate_locked:
+    - >-
+      It does not fight students. Finish with Warlord Grune, then hold what she
+      taught long enough that it is still there when you come back.
+    - Not yet. {blockers}

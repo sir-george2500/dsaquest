@@ -1,0 +1,124 @@
+id: the-unread-line
+name: THE UNREAD LINE
+title: The Thing That Has Been Written Down Already
+tier: 3
+master_id: master_strings
+patterns:
+  - prefix-function
+  - string-hashing
+  - trie
+  - palindrome-centres
+
+boss_hp: 110
+player_hp: 100
+damage_taken: 25
+enrage_after: 2
+
+# Scribe Halvern Ash's final test proves the secrets were held once. This gate
+# proves they have stayed held. Recognition sits high because all four of these
+# look alike in prose — every one of them is "find the repeated thing" until
+# you ask what kind of repetition.
+gate:
+  recognition: 0.60
+  understanding: 0.50
+  implementation: 0.50
+  retention: 0.40
+  master_final_test: true
+
+# Four phases, 110 damage, one health bar. Each phase is a different kind of
+# sameness — a border, a fingerprint, a shared beginning, a mirror — and the
+# fight is entirely about telling them apart.
+phases:
+  - kind: recognise
+    damage: 15
+    pattern: prefix-function
+    title: Which kind of sameness
+
+  - kind: explain
+    damage: 25
+    pattern: string-hashing
+    title: Say what could go wrong and how often
+
+  - kind: implement
+    damage: 30
+    pattern: trie
+    title: Store the beginnings
+
+  - kind: survive
+    damage: 40
+    pattern: palindrome-centres
+    title: It reads the same backwards
+
+dialogue:
+  intro:
+    - >-
+      Scribe Ash found your mistakes funny. I do not. I have every string you
+      have ever written and I have indexed all of them.
+    - >-
+      Four kinds of repetition. A prefix that is also a suffix. A fingerprint.
+      A shared beginning. A mirror. In a sentence they are one word: same.
+    - >-
+      You will be told nothing about which. The statement will say "repeated"
+      and it will mean one of four things.
+
+  phase_won:
+    - It concedes the line.
+    - Right. And you can say which kind, which is the whole of it.
+    - It gives ground. Three left.
+    - You did not reach for the hash. Good.
+
+  phase_lost:
+    - >-
+      A border is not a palindrome. One compares two pieces of the same
+      orientation; the other equals its own reverse.
+    - >-
+      You hashed it and compared. On this input two different strings agreed,
+      and you had one modulus and no second opinion.
+    - >-
+      A map cannot answer a question about prefixes. It only knows the keys it
+      was handed, whole.
+    - >-
+      You grew the palindrome from its ends. They are found from the middle.
+
+  enrage:
+    - >-
+      No more short strings. From here everything is 200000 characters of the
+      same letter, and every quadratic idea you have will time out rather than
+      fail.
+    - >-
+      Twice. It will start choosing inputs designed against a single modulus.
+
+  victory:
+    - It closes. There is nothing further written here.
+    - >-
+      Down. You will still see "repeated" in a statement, and now you will ask
+      which kind before you write anything.
+    - The library is yours. Go on.
+
+  perfect:
+    - >-
+      Four kinds of sameness, told apart on sight. Scribe Ash will find that
+      quietly funny, and he will mean it well.
+    - >-
+      Not one confusion, no help. There is nothing left in it for you here.
+
+  defeat:
+    - >-
+      It stands. You know four techniques for repetition and cannot yet tell
+      which repetition you are looking at.
+    - >-
+      Not today. Take the four statements you lost and write, in one line each,
+      what kind of sameness was being asked for. That is the whole exercise.
+    - >-
+      You reached for the fingerprint every time. It is the most general and it
+      is almost never the one that was wanted.
+
+  rematch:
+    - Again. It has chosen different strings.
+    - You have beaten it before. It does not repeat an input.
+
+  gate_locked:
+    - >-
+      It does not fight students. Finish with Scribe Ash, then hold what he
+      taught you long enough that it is still there when you return.
+    - Not yet. {blockers}

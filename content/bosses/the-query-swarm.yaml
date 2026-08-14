@@ -1,0 +1,124 @@
+id: the-query-swarm
+name: THE QUERY SWARM
+title: The Thing That Asks Two Hundred Thousand Times
+tier: 3
+master_id: master_structures
+patterns:
+  - heap-extraction
+  - ordered-set
+  - fenwick-tree
+  - segment-tree
+  - range-counting
+
+boss_hp: 120
+player_hp: 100
+damage_taken: 25
+enrage_after: 2
+
+# Keeper Vore's final test proves the five structures are held. This gate
+# proves they are still held, and that the learner can tell them apart without
+# being told which — recognition and retention are weighted highest on purpose,
+# because the swarm's whole method is to ask the same question in five shapes.
+gate:
+  recognition: 0.65
+  understanding: 0.55
+  implementation: 0.55
+  retention: 0.50
+  master_final_test: true
+
+# Five phases, 120 damage, one health bar. Clearing everything is exactly
+# enough. Two recognition phases, because telling these five apart IS the
+# skill this region teaches, and one of them comes after the swarm has already
+# taken a bite out of you.
+phases:
+  - kind: recognise
+    damage: 15
+    title: Name what it is asking for
+
+  - kind: explain
+    damage: 20
+    title: Say what one query costs
+
+  - kind: implement
+    damage: 35
+    title: Build the record
+
+  - kind: recognise
+    damage: 25
+    title: It asks again, differently
+
+  - kind: survive
+    damage: 25
+    title: It never stops asking
+
+dialogue:
+  intro:
+    - >-
+      It does not attack. It asks. One question, then another, then two hundred
+      thousand more, and every one of them must be answered in the same breath
+      as the first.
+    - >-
+      Keeper Vore taught you what each structure costs. The swarm exists to
+      collect. Nothing will be named — not the quantity, not the axis, not
+      whether anything can be undone.
+    - >-
+      You have counted, ranked, tiled and merged. Now do it while something is
+      writing to the array between your questions.
+    - >-
+      It has asked stronger students than you. They built the general tree for
+      a running total and it simply waited for the clock.
+
+  phase_won:
+    - It falls back. The record holds.
+    - Answered. It has more.
+    - Correct, and cheaply. That second part is why you are still standing.
+    - That one it gave you. The next it will not.
+
+  phase_lost:
+    - Wrong structure. It noticed, and it will ask that way again.
+    - You subtracted two prefixes of something that cannot be undone.
+    - You built sixty lines where four would have answered. It took the minutes.
+    - It asked how many, and you handed it which one.
+
+  enrage:
+    - >-
+      It has your measure. No more hints, and the questions come interleaved
+      now — a write between every read, exactly as the statements promised.
+    - >-
+      Twice. It has stopped offering you the easy shapes.
+
+  victory:
+    - It stops asking. That is all a thing like this does when it is beaten.
+    - >-
+      Down. Every answer you gave cost a logarithm and not one of them cost a
+      sweep. That is the whole of it.
+    - The vault is yours to keep records in. Go.
+
+  perfect:
+    - >-
+      Not one wrong structure. Keeper Vore will read the record, and he will
+      say "recorded", and you will know what he means by it.
+    - >-
+      Five shapes, five correct refusals of the heavier answer, no help. There
+      is nothing left in it for you here.
+
+  defeat:
+    - >-
+      It stands. You do not. It asked what one query costs and you answered
+      with what one query does.
+    - >-
+      Not today. Nothing you learned is gone; the record keeps it. You have
+      simply not yet held enough of it at once.
+    - >-
+      You knew all five. You could not tell which one the statement wanted
+      while it was still writing to the array. That gap closes with drilling.
+
+  rematch:
+    - Again. It remembers every question it has already asked you.
+    - You have beaten it before. It does not ask the same way twice.
+
+  gate_locked:
+    - >-
+      It does not fight students. Finish with Keeper Vore, then hold what he
+      taught you long enough that it is still there when you come back.
+    - Not yet. {blockers}

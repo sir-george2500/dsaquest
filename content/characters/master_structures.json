@@ -1,0 +1,180 @@
+{
+  "id": "master_structures",
+  "name": "MASTER OF STRUCTURES",
+  "title": "Keeper Maelin Vore, the Ledger",
+  "region": "vault-of-structures",
+  "patterns": [
+    "heap-extraction",
+    "ordered-set",
+    "fenwick-tree",
+    "segment-tree",
+    "range-counting"
+  ],
+  "personality": {
+    "warmth": 0.1,
+    "verbosity": 0.4,
+    "praise_threshold": 0.92
+  },
+  "gate": {
+    "recognition": 0.8,
+    "understanding": 0.85,
+    "implementation": 0.8,
+    "retention": 0.8
+  },
+  "placeholders": {
+    "days": "whole days since the relevant event — the student's last visit, a past failure on this problem, or the length of the current unbroken practice streak",
+    "streak": "number of consecutive correct drills in the current run",
+    "attempts": "how many attempts the student previously needed on this problem",
+    "secret": "the name of the secret currently being taught or tested",
+    "idiom": "the C++ expression at the heart of the current secret",
+    "requirement": "name of the gate dimension that is short: recognition, understanding, implementation, or retention",
+    "shortfall": "how far the short gate dimension sits below its threshold, as a percentage",
+    "score": "how many final-test problems were answered correctly",
+    "total": "number of problems in the final test",
+    "required": "how many must be answered correctly to pass"
+  },
+  "dialogue": {
+    "greeting_first": [
+      "Stand there. I keep a record of everyone who comes through that door and of what they cost me. You are now in it.",
+      "You have written programs that read their input once and forgot it. Nothing here forgets. That is the difference, and it is the whole of my region.",
+      "I will not ask whether your code works. I will ask what one query costs, and what one update costs, and how many of each the statement intends. Have both numbers ready.",
+      "Other masters teach you to find an answer. I teach you to keep one, correct, through two hundred thousand changes. Sit."
+    ],
+    "greeting_returning": [
+      "Back. The ledger says where we stopped. Continue from there.",
+      "Sit. Cost of a query, cost of an update. Begin.",
+      "Again. Nothing has been forgiven since yesterday and nothing has been lost.",
+      "You return. Good. Recite the four rows of the table before we start."
+    ],
+    "greeting_after_gap": [
+      "{days} days. The record kept itself while you were away; that is what a record is for. You did not.",
+      "Gone {days} days. What decays first is not the loops — it is which structure the statement was asking for. We begin there.",
+      "{days} days. Answer me now: the smallest value in a range, with the values changing. Which structure, and why not the other one?",
+      "{days} days away. I do not ask where you were. I ask what `i & -i` gives you and why the array is one-indexed."
+    ],
+    "lesson_intro": [
+      "{secret}. Watch what it costs, not what it does. Everyone remembers what it does.",
+      "One structure. Two operations. Learn the price of each before you learn the syntax of either.",
+      "This is small. Every structure in this vault is small. The expensive part is choosing the wrong one and finding out at minute fifty.",
+      "I name it now, and I will hold you to the cost of it for the rest of your time here."
+    ],
+    "lesson_memorise": [
+      "Keep `{idiom}`. Not the idea of it — the characters of it, in order, from memory.",
+      "This one you will write under a clock or not at all. There is no time to derive it and there never has been.",
+      "Commit it. A structure you can explain and cannot type is a structure you do not have.",
+      "Into the hand. The reason goes into the ledger, where I can ask for it later."
+    ],
+    "drill_correct": [
+      "Recorded.",
+      "Correct. Next.",
+      "Yes.",
+      "Accepted. Continue."
+    ],
+    "drill_wrong": [
+      "No. That erases every copy. The container did exactly what you asked and you asked for the wrong thing.",
+      "Wrong. The default shows the largest. To keep the k largest you hold the smallest of them at the top.",
+      "No. Zero is not neutral for a maximum. Your query over negative data answers a number that is not in the array.",
+      "Wrong. The lowest set bit of zero is zero, so that loop does not advance. It does not answer badly — it does not stop.",
+      "No. A minimum cannot be undone, so there is no pair of prefixes to subtract. You have written an expression that does not exist.",
+      "Wrong. You totalled up to the rank itself, so every equal value became a pair out of order. Right on distinct data, and only on distinct data."
+    ],
+    "drill_streak": [
+      "{streak} in a row. Speed is cheap. I am still counting the cost per query.",
+      "Steady. The record shows {streak}.",
+      "{streak} straight. Do not let fluency become the reason you stop asking what it costs.",
+      "Consistent. Noted."
+    ],
+    "trial_intro": [
+      "Nothing is named. The constraints already told you which structure; read them before the story.",
+      "One statement. Decide what one query costs and what one update costs, and the choice makes itself.",
+      "The label is off. The bounds are not.",
+      "Read it twice. The second reading is for the sentence that says the data changes."
+    ],
+    "fail_wrong_pattern": [
+      "Wrong structure. Nothing in that statement was ever written to. A row that never changes wants a table built once, not a promise you never collect on.",
+      "No. That question asked HOW MANY lie below the value, not WHICH one. A balanced tree hands you an element and refuses to count.",
+      "That quantity has no inverse. You reached for four lines where the answer had to be assembled out of stored pieces, and no subtraction will save it.",
+      "No. There were no positions in that statement at all — nothing said where a value sat. You cannot query a range of a bag.",
+      "Wrong. The bound of 10^18 was on the interval, not on the input. You built a structure over something nobody asked you to store."
+    ],
+    "fail_timeout": [
+      "Time. You knew the structure in the first minute and spent thirty more deciding you were allowed to use it.",
+      "Time ran out. That is a fluency debt, and drills are how it is paid. Nothing is lost from the record.",
+      "Time. You wrote sixty lines where four would have done, and the four were the ones you knew by heart.",
+      "Time. You were deriving the walk. That walk is memorised, or it is not available."
+    ],
+    "fail_wrong_answer": [
+      "Right structure. Wrong copy count — erase by value took all three, and no sample with distinct data would ever have shown you.",
+      "The walk was correct and the index was zero-based. It did not answer wrongly; it stopped answering.",
+      "Correct approach, wrong identity. Zero for a maximum, on data that never went positive.",
+      "You had it. prefix(rank) where prefix(rank - 1) was meant — every equal pair counted, and only the test with repeats disagreed.",
+      "The tiling was right and the accumulator was an int. Two times ten to the tenth does not fit and the count came back negative.",
+      "The structure held. The left endpoint did not: F(r) - F(l) drops it, and only on the inputs where l itself qualifies."
+    ],
+    "success": [
+      "Correct. Recorded.",
+      "It holds. Next.",
+      "Accepted. The next statement gives less away.",
+      "Done. The cost was right as well as the answer."
+    ],
+    "success_fast": [
+      "Fast, and you named the cost before you named the structure. That is the correct order.",
+      "You read the constraints first. That is why it was fast.",
+      "No wasted structure and no wasted minutes. Continue.",
+      "You refused the heavier tree without arguing with yourself about it. Good."
+    ],
+    "praise_exceptional": [
+      "That was well done. You proved the quantity had no inverse before you wrote a line, and everything after that was bookkeeping.",
+      "You chose four lines over sixty and could say why. Most students here can only do the second part afterwards.",
+      "Clean. You compressed because the mismatch told you to, not because you had seen it done.",
+      "The best you have done in this vault. You costed both operations and then wrote the smaller thing."
+    ],
+    "praise_major": [
+      "I have watched students build a general tree for a running total and call it thoroughness. You did not. You have earned my respect.",
+      "You can now tell in ten seconds which of these structures a statement is describing, and defend the answer. That is rarer than any of the code. You have earned my respect.",
+      "I say this once and it goes in the record: you understand what each of these costs, every single query. You have earned my respect."
+    ],
+    "memorisation_detected": [
+      "You remember which structure this problem wanted. You cannot say what it would cost on a different one. Those are not the same knowledge. Another problem.",
+      "You pass the statements you have seen and fail their variants. That is recall, not judgement. Back one step.",
+      "Change the quantity from a sum to a minimum and you are lost, which tells me you learned a shape and not a boundary. Try this."
+    ],
+    "improvement_noticed": [
+      "You failed this {days} days ago and solved it today, with the cheaper structure. The record shows both. Continue.",
+      "{attempts} attempts on this once. One today. Noted.",
+      "This is the problem where you built the general tree for a running total. You did not build it today.",
+      "Straighter than last time. You asked whether it could be undone before you asked how to store it."
+    ],
+    "commitment_noticed": [
+      "{days} days unbroken. A structure that is correct on the ten-thousandth query is built by someone who returns on the ten-thousandth day.",
+      "Many arrive at this vault. Most want the code and not the cost, and most leave when I ask for the cost. You have not.",
+      "You have come back after every failure recorded against you. I keep the record precisely so that this can be seen. Keep going.",
+      "Quickness arrives here often and forgets the price list by the following week. Attendance I cannot teach, and you brought your own."
+    ],
+    "gate_locked": [
+      "Not yet. {requirement} is short by {shortfall} percent. The record does not round in your favour.",
+      "The gate holds. Understanding is short — you can build these and not yet say which one a statement is asking for.",
+      "No. Recognition is short. Five structures, and you are still deciding by which one you drilled last.",
+      "Implementation is short. The choice is right and the walk is written from reasoning rather than from memory. Drill it.",
+      "Retention is short. What you held last week has fallen out, and a structure you cannot rebuild in a contest is a structure you never had."
+    ],
+    "gate_open": [
+      "The gate is open. Come when the walks are automatic, not when you are impatient.",
+      "Nothing is short. The final test is waiting and it names nothing.",
+      "Enough. You may attempt it.",
+      "You meet every requirement in the record. The decision from here is yours."
+    ],
+    "final_test_intro": [
+      "I name nothing. Every drill before this existed so that I would not have to.",
+      "{total} statements, {required} of them right. For each one, decide what a query costs and what an update costs. Then write the smaller thing.",
+      "No help. Only the constraints, and whatever price list you still carry.",
+      "One of these needs no structure at all. Recognising that is also an answer."
+    ],
+    "victory": [
+      "{score} of {total}. It is done, and it is written down.",
+      "You passed. What you take from this vault is not five structures — it is the habit of costing both operations before you type. Go.",
+      "Finished. Everything after this assumes you can tell a subtraction from a merge. You can.",
+      "That is mastery of the standing record. Nothing you meet later will be cheaper than what you now know how to refuse. Go."
+    ]
+  }
+}

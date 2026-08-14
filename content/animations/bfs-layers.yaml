@@ -1,5 +1,6 @@
 id: bfs-layers
 title: BFS settles in layers
+secret: bfs-layers
 pattern: bfs-shortest-path
 summary: >-
   Six nodes in a line-and-branch. Watch the distances get fixed one ring at a

@@ -1,0 +1,121 @@
+id: the-rootless
+name: THE ROOTLESS
+title: The Thing That Will Not Say Where It Begins
+tier: 3
+master_id: master_trees
+patterns:
+  - subtree-aggregation
+  - tree-diameter
+  - tree-dp
+  - binary-lifting
+
+boss_hp: 110
+player_hp: 100
+damage_taken: 25
+enrage_after: 2
+
+# Sage Orenna Thal's final test proves the secrets were held once. This gate
+# proves they have stayed held. Implementation sits high because every one of
+# these patterns is a recursion that is easy to describe and easy to write
+# one level wrong.
+gate:
+  recognition: 0.55
+  understanding: 0.50
+  implementation: 0.55
+  retention: 0.40
+  master_final_test: true
+
+# Four phases, 110 damage, one health bar. Rooting is the whole fight: three
+# of these four change completely depending on where you decide the top is,
+# and the last one refuses to let you decide.
+phases:
+  - kind: recognise
+    damage: 15
+    pattern: subtree-aggregation
+    title: What every node owes its parent
+
+  - kind: explain
+    damage: 25
+    pattern: tree-diameter
+    title: Say why two walks are enough
+
+  - kind: implement
+    damage: 30
+    pattern: tree-dp
+    title: Fold it upwards
+
+  - kind: survive
+    damage: 40
+    pattern: binary-lifting
+    title: Answer without walking
+
+dialogue:
+  intro:
+    - >-
+      Sage Thal asked you questions until you answered them yourself. I will
+      ask you nothing. I will hand you a graph with no cycles and no root and
+      wait to see where you put the top.
+    - >-
+      Every one of these techniques begins by choosing a beginning. Choose
+      badly and the recursion still runs, still terminates, and still lies.
+    - >-
+      One pass down. One pass up. You have been taught which is which. Now do
+      it with nothing labelled.
+
+  phase_won:
+    - It gives ground. You rooted it correctly.
+    - Right, and one level deep rather than two. That is the part people miss.
+    - It moves back. Continue.
+    - You went up before you went down. Good.
+
+  phase_lost:
+    - You aggregated the parent into the child. Everything after that is noise.
+    - >-
+      You walked once and believed the answer. Once is enough only if you
+      started at an end.
+    - Off by one level. The whole subtree is wrong and the root looks fine.
+    - You recursed without a visited mark and the tree ate itself.
+
+  enrage:
+    - >-
+      It stops handing you a shape you recognise. What comes now is a chain,
+      and a chain is where recursion depth stops being theoretical.
+    - >-
+      Twice. It will give you a star next, and then a caterpillar, and neither
+      will look like the picture you were taught with.
+
+  victory:
+    - It settles. A tree that has been rooted properly stops arguing.
+    - >-
+      Down. You will meet these four again inside harder problems, and you
+      will not have to think about the rooting.
+    - The wood is yours to walk. Go on.
+
+  perfect:
+    - >-
+      Four folds, no mistakes, no help. Sage Thal will ask you what you would
+      have done differently, and she will mean it as praise.
+    - >-
+      Nothing rooted wrong and nothing walked twice. There is nothing left in
+      it for you here.
+
+  defeat:
+    - >-
+      It stands. You know what a subtree is. You do not yet know it well
+      enough to write one under a clock.
+    - >-
+      Not today. Draw the tree on paper and mark, for one node, exactly what it
+      owes its parent. The code follows from that sentence.
+    - >-
+      You had the recursion and not the base case. That is the whole gap, and
+      it closes by writing three more of them.
+
+  rematch:
+    - Again. It has re-rooted itself since you last saw it.
+    - You have beaten it before. It will not give you the same shape twice.
+
+  gate_locked:
+    - >-
+      It does not fight students. Finish with Sage Thal, then hold what she
+      taught you long enough that it is still there when you return.
+    - Not yet. {blockers}

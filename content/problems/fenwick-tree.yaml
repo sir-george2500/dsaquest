@@ -1,0 +1,280 @@
+# Problems that are really Prefix Sums That Survive Updates.
+#
+# None may name the pattern, and none may say "prefix sum" or "index tree" as
+# an instruction. Two recognitions are being trained and they are different:
+# that a static prefix table has been killed by an interleaved WRITE, and that
+# a counting question ("how many below") is answered on the VALUE axis rather
+# than the position axis. `decoy_signals` records which of the neighbouring
+# structures each statement is dressed as.
+
+- id: granary-ledger-audit
+  pattern: fenwick-tree
+  title: The Granary Ledger
+  difficulty: easy
+  statement: >-
+    A granary has n bins, bin i holding a certain number of sacks. Through the
+    season the steward issues q instructions, each either changing the number of
+    sacks in one bin to a new figure, or asking for the total held in bins l
+    through r inclusive. Report the answer to every asking instruction, in
+    order.
+  constraints: |
+    1 <= n <= 200000
+    1 <= q <= 200000
+    0 <= sacks in a bin <= 10^9
+    the totals may exceed 2^31
+  signals_present:
+    - values are updated and range totals are asked for, interleaved, both many times
+    - the quantity asked for is a sum, which can be undone by subtraction
+    - only single positions are ever written
+    - n and q both 2*10^5, so rebuilding a table per write is 4*10^10 steps
+  decoy_signals:
+    - "\"the total in bins l through r\" is the exact advertisement for a table built once and read in O(1)"
+    - a structure supporting both updates and range questions invites the heavier general tree
+    - "\"changing a bin to a new figure\" reads like an assignment, not an increment"
+  expected_complexity: O((n + q) log n)
+  hints:
+    - text: >-
+        A table of running totals answers every asking instruction in O(1). Work
+        out what one changing instruction costs you, and multiply by 2*10^5.
+    - text: >-
+        Both operations have to be cheap, not one of them. A sum has an inverse,
+        so any range is still the difference of two totals taken from the start
+        — the only question is how to repair those totals after a write.
+    - text: >-
+        Keep the totals in a one-indexed array where each cell owns a block of
+        positions, so a write repairs O(log n) cells and a total reads O(log n)
+        of them.
+      reveals_pattern: true
+  why: >-
+    The interleaving is the whole cue. Reads alone want a static table; writes
+    alone want nothing at all; the two together are exactly what this structure
+    exists for. Note that the instruction SETS a bin rather than adding to it —
+    the update must be issued as the difference from the old value, which is the
+    quiet half of this problem.
+  classic_ref: CPH 9.2; CSES Dynamic Range Sum Queries
+
+- id: scriptorium-disorder
+  pattern: fenwick-tree
+  title: The Scriptorium's Disorder
+  difficulty: medium
+  statement: >-
+    A scriptorium's shelf holds n manuscripts, each with a catalogue number, and
+    the numbers are all different. The librarian measures the shelf's disorder
+    as the number of pairs of manuscripts standing in the wrong relative order —
+    that is, pairs where the one standing further left has the larger catalogue
+    number. Report the disorder of the shelf as it stands.
+  constraints: |
+    1 <= n <= 200000
+    1 <= catalogue number <= 10^9, all different
+    the answer may exceed 2^31
+  signals_present:
+    - count the pairs that are out of order
+    - the numbers reach 10^9 but there are only 2*10^5 of them
+    - the question is how MANY, not which one
+    - n up to 2*10^5, so examining every pair is 2*10^10 steps
+  decoy_signals:
+    - counting pairs invites walking two indices, which is the quadratic loop the constraints forbid
+    - "\"the wrong relative order\" reads like a comparison question settled by sorting once"
+    - large catalogue numbers with few manuscripts invites hashing them into a table of occurrences
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        Every offending pair has a left member and a right member. Charge each
+        pair to exactly one of the two, so that a single walk counts every pair
+        once.
+    - text: >-
+        Walk left to right and charge the pair to its RIGHT member: for each
+        manuscript, how many of those already passed carry a LARGER number?
+        That is a counting question about everything recorded so far.
+    - text: >-
+        Replace the catalogue numbers by their ranks, keep a one-indexed array
+        of counts over those ranks, and for each manuscript total the counts
+        below it before recording it.
+      reveals_pattern: true
+  why: >-
+    The counting question is the tell, and the axis changes: the cells are
+    indexed by VALUE, not by shelf position, and cell v counts how many values
+    equal to v have been recorded. A running total over that axis answers "how
+    many already seen are smaller" in a log factor, and every offending pair is
+    counted exactly once, by its right-hand member.
+  classic_ref: counting inversions; CSES Distinct Values Queries kin
+
+- id: caravan-arrival-rank
+  pattern: fenwick-tree
+  title: Caravan Ranks
+  difficulty: medium
+  statement: >-
+    Caravans reach a trading post one at a time, each declaring the weight of
+    its load. Immediately on arrival, a caravan is told how many of the caravans
+    already at the post carry a strictly lighter load. Loads repeat freely, and
+    the post never empties. Report the number told to each caravan in arrival
+    order.
+  constraints: |
+    1 <= n <= 200000
+    1 <= load <= 10^9
+    loads repeat freely
+  signals_present:
+    - how many of the elements seen so far are smaller than this one
+    - the values reach 1e9 but there are only 2e5 of them
+    - the answer must be produced on arrival, before later caravans are known
+    - the question is a count of elements, not the identity of one
+  decoy_signals:
+    - "\"how many already present are lighter\" reads like walking to a neighbour in a searchable ordered collection"
+    - loads up to 10^9 with repeats invites a table of occurrences keyed by load
+    - "\"strictly lighter\" and an answer per arrival invites halving a sorted row of everything, which is not yet known"
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        A searchable ordered collection will hand you the element just below
+        this load and refuse to tell you how many lie under it. The question is
+        a COUNT.
+    - text: >-
+        Put the loads themselves on the axis rather than the arrival positions.
+        Then "how many are lighter" is a total over everything to the left of
+        this load's cell.
+    - text: >-
+        Sort the loads, remove the repeats, and use each load's 1-based position
+        as an index; total the cells strictly below the load's own index, then
+        add one at that index.
+      reveals_pattern: true
+  why: >-
+    A count, not an element — which rules out a balanced tree, whose iterators
+    cannot be subtracted in logarithmic time. The values reaching 10^9 with only
+    2*10^5 of them is the instruction to compress, and "strictly lighter" is the
+    difference between totalling up to the rank and up to the rank minus one:
+    with loads repeating, that off-by-one is the whole problem.
+  classic_ref: rank queries on a value axis; the counting half of CPH 9.2
+
+- id: hillfort-banner-lift
+  pattern: fenwick-tree
+  title: Hillfort Banners
+  difficulty: medium
+  statement: >-
+    A hillfort's wall has n stations, each flying banners. Through the siege the
+    captain issues q orders, each either raising the banner count at every
+    station from l to r inclusive by a given number, or asking how many banners
+    fly at one named station. Report the answer to every asking order.
+  constraints: |
+    1 <= n <= 200000
+    1 <= q <= 200000
+    -10^9 <= the raise <= 10^9, and it may be negative
+    the counts may exceed 2^31 in magnitude
+  signals_present:
+    - add a constant to a whole range, then read single positions
+    - the writes are ranges and the reads are points, which is the mirror of the usual arrangement
+    - the quantity has an inverse, so totals from the start may be subtracted
+    - n and q both 2*10^5, so touching every station per order is 4*10^10 steps
+  decoy_signals:
+    - "\"raise every station in l..r\" is the exact advertisement for a deferred tag on a heavier general tree"
+    - a point read after range writes reads like a table of running totals built once
+    - a range write with a negative amount invites simulating the siege station by station
+  expected_complexity: O((n + q) log n)
+  hints:
+    - text: >-
+        Writing to every station in the range is O(n) per order. What array
+        would you have to change in only TWO places to raise a whole stretch of
+        this one?
+    - text: >-
+        Store the differences between consecutive stations. Raising [l, r] by x
+        adds x at l and subtracts x at r + 1 — two point writes — and a
+        station's own count is the total of the differences up to it.
+    - text: >-
+        Keep the difference array in a one-indexed structure with logarithmic
+        point updates and logarithmic totals from the start, and answer each
+        read as the total up to that station.
+      reveals_pattern: true
+  why: >-
+    The usual arrangement is inverted, and the difference array inverts it back:
+    a range write becomes two point writes and a point read becomes a total from
+    the start. Both are then logarithmic in the same structure, with no deferred
+    tags and no second tree — which is why the heavier general tree here is a
+    correct answer delivered forty minutes late.
+  classic_ref: CPH 9.4 (range update, point query); CSES Range Update Queries
+
+- id: quartermasters-pairs
+  pattern: fenwick-tree
+  title: The Quartermaster's Pairs
+  difficulty: hard
+  statement: >-
+    A quartermaster inspects n crates. Crate i has a height h[i] and a mass
+    m[i], all heights different and all masses different. He calls a pair of
+    crates awkward when one crate is both taller and heavier than the other.
+    Report the number of awkward pairs among the crates.
+  constraints: |
+    1 <= n <= 200000
+    1 <= h[i], m[i] <= 10^9, all heights distinct and all masses distinct
+    the answer may exceed 2^31
+  signals_present:
+    - count the pairs where one element dominates the other
+    - the values reach 1e9 but there are only 2e5 of them
+    - the question is a count over pairs, which no single sort answers on its own
+    - n up to 2*10^5, so examining every pair is 2*10^10 steps
+  decoy_signals:
+    - two numbers per crate and a pairwise condition reads like ranking by one key and sweeping once
+    - "\"taller and heavier\" invites two pointers converging over the sorted crates"
+    - distinct values on both axes invites hashing each crate by one of them
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        Ranking the crates by height alone settles half the condition for every
+        pair at once. Write down what is left of the question after that sort.
+    - text: >-
+        Walk the crates in increasing height. Every crate already processed is
+        shorter, so a pair is awkward exactly when the processed crate is also
+        lighter — a counting question over the masses seen so far.
+    - text: >-
+        Compress the masses to ranks, walk in height order, and for each crate
+        total the recorded masses below its own rank before recording it.
+      reveals_pattern: true
+  why: >-
+    A sort removes one dimension and the structure counts the other, which is
+    the standard two-step this pattern is used for. Once the crates are walked
+    in height order the question collapses to "how many recorded masses are
+    smaller", which is a total over the value axis — the same machinery as
+    counting out-of-order pairs, wearing a second dimension.
+  classic_ref: 2D dominance counting; the sort-then-count composition
+
+- id: tollhouse-day-book
+  pattern: fenwick-tree
+  title: The Tollhouse Day Book
+  difficulty: easy
+  statement: >-
+    A tollhouse records what it takes each day of a long season, starting from
+    nothing on every day. Through the audit, q entries arrive: an entry either
+    adds a sum to a named day's takings, or asks for the total taken from day l
+    to day r inclusive. Report the answer to every asking entry.
+  constraints: |
+    1 <= number of days <= 200000
+    1 <= q <= 200000
+    the added sums may be negative, and each has magnitude at most 10^9
+    the totals may exceed 2^31 in magnitude
+  signals_present:
+    - values are updated and range totals are asked for, interleaved, both many times
+    - the update is an increment rather than an assignment
+    - the answer is a running total, which subtracts cleanly
+    - q up to 2*10^5 with days up to 2*10^5
+  decoy_signals:
+    - "\"the total from day l to day r\" is the standard advertisement for a table built once and read in O(1)"
+    - takings that may be negative invite tracking a minimum or a best stretch, which would need the heavier tree
+    - the days starting empty makes rebuilding the table after each entry look cheap
+  expected_complexity: O((days + q) log days)
+  hints:
+    - text: >-
+        Rebuilding the running totals after each addition is O(n), and there are
+        2*10^5 additions. Which of the two operations is the one a static table
+        cannot afford?
+    - text: >-
+        Every range answer here is still the difference of two totals taken from
+        the start, because addition can be undone. What has to change is only
+        how those totals are repaired after a write.
+    - text: >-
+        Give each cell of a one-indexed array a block of days to own, so a write
+        touches O(log n) cells and a total from the start reads O(log n) of them.
+      reveals_pattern: true
+  why: >-
+    The plainest form of the pattern: point increments, range totals, both many
+    times. The negative sums are a decoy for the heavier tree — they change
+    nothing here, since subtraction of two totals from the start remains valid
+    whatever the signs, while a minimum over a range would have no such
+    subtraction at all.
+  classic_ref: CPH 9.2; the canonical dynamic prefix-sum drill

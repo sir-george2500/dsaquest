@@ -452,7 +452,13 @@ def test_every_shipped_template_opens_with_its_hole_hidden(context, pattern_id):
             # The marker syntax is an authoring detail. The player is shown a
             # program with a TODO in it, and never the machinery.
             for panel_id, text in _everything_rendered(screen):
-                assert "HOLE" not in text, f"{panel_id} leaked the marker syntax: {text[:200]!r}"
+                # `HOLE id=` and not a bare `HOLE`: the word WHOLE contains it,
+                # and a template whose prose reads "the remainder is the whole
+                # method" is not leaking anything. Same trap as the bare `>>>`
+                # below, which C++ produces on its own whenever templates nest.
+                assert "HOLE id=" not in text, (
+                    f"{panel_id} leaked the marker syntax: {text[:200]!r}"
+                )
                 # The marker is `>>> HOLE` / `<<< HOLE`, not a bare arrow run.
                 # C++ produces `>>>` all by itself the moment templates nest:
                 # `priority_queue<..., greater<pair<long long, int>>>` ends in

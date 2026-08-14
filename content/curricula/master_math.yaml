@@ -1,0 +1,1646 @@
+# Oracle Cassiun's teaching plan — the Remainder, Master of Mathematics.
+#
+# Seven secrets across four patterns. Every number in every demonstration was
+# recomputed by brute force before it was written down; in this region a
+# remembered identity is the most dangerous thing an author can carry, because
+# it will be subtly wrong and read as authoritative.
+#
+# The second secret is the one the Oracle actually came here for. `a * b % m`
+# forms the product BEFORE it reduces, and in a 32-bit int that product is
+# undefined behaviour rather than a wrong number. It has its own stage because
+# it is not a footnote to modular arithmetic — it is the failure mode of every
+# other secret in the curriculum, and it never announces itself.
+#
+# The final test names nothing.
+
+master_id: master_math
+patterns:
+  - modular-arithmetic
+  - fast-exponentiation
+  - euclidean-gcd
+  - sieve-factorisation
+title: Oracle Cassiun, the Remainder — Seven Secrets of the Leftover
+
+opening: >-
+  Sit where you like. I am not going to look at you much. — The others teach
+  you to see a shape in a statement. I do not teach seeing. I teach a smaller
+  and more humiliating thing: that the machine you are writing for cannot
+  count. It stops at two thousand million and then it lies to you, quietly, in
+  a way that compiles and runs and passes the sample. Every technique in this
+  temple is four lines long. Every one of them can be destroyed by a single
+  multiplication you did not look at. — Seven secrets. Three of them are about
+  a remainder, and one of those three is only about a product that is formed
+  before the remainder arrives. One is about halving an exponent, one about the
+  fact that you may not divide here at all, one about a descent that is older
+  than every other algorithm you know, and one about crossing things out. — I
+  will tell you the numbers. I always tell people the numbers. They write them
+  down and then they write `int` anyway.
+
+stages:
+  # ---------------------------------------------------------------- stage 0
+  - id: stage-reduce-as-you-go
+    order: 0
+    pattern: modular-arithmetic
+    trial_problem_ids: [mint-stamp-product]
+    secret:
+      id: reduce-as-you-go
+      name: The Remainder Survives
+      idiom: "acc = acc * (x % m) % m;"
+      memorise: true
+      baseline_drills: 4
+      teaches: >-
+        Three operations pass through a remainder unharmed. Addition,
+        subtraction, multiplication. Take any two numbers, reduce them first,
+        do the operation, reduce again — you get the same answer as if you had
+        done the whole thing exactly and reduced at the end. That is not a
+        convenience. It is the only reason any of this is computable, because
+        the exact answer usually does not exist in any type you have. A product
+        of two hundred thousand factors near a billion has about one million
+        eight hundred thousand decimal digits. You are not going to reduce
+        THAT at the end. You are going to keep a number below m at every step,
+        and the exact value will never once exist inside your program. —
+        Division does not pass through. I want you to notice that I said three
+        operations and not four. Students hear "arithmetic works" and then
+        write a slash. There is no slash here. That is the fifth secret and you
+        are not ready for it.
+      demonstrations:
+        - expression: "7 * 11 * 13 * 17, reduced modulo 100 at every step"
+          result: "17"
+          note: >-
+            The accumulator goes 7, 77, 1, 17. It passes through 1 in the
+            middle, which is the whole point — the true product 17017 never
+            appears anywhere and was never needed.
+        - expression: "the same product computed exactly, then reduced"
+          result: "17017 mod 100 = 17"
+          note: >-
+            The same answer. That agreement is the theorem. It survives at four
+            factors and it survives at two hundred thousand, where the exact
+            product does not survive at all.
+        - expression: "21 factorial, in a signed 64-bit integer"
+          result: "overflow"
+          note: >-
+            20! is 2432902008176640000 and fits, with LLONG_MAX at about
+            9.2 * 10^18. 21! is 51090942171709440000 and does not. Twenty-one
+            multiplications is all it takes, and no loop of interest is that
+            short.
+        - expression: "2^70, then 2^70 mod (10^9 + 7)"
+          result: "1180591620717411303424, and 270016253"
+          note: >-
+            The left-hand number needs 71 bits and cannot be formed. The
+            right-hand one is nine digits and is available the whole way, if
+            you reduce as you go.
+        - expression: "1234 mod 7, built one decimal digit at a time"
+          result: "1, 5, 4, 2"
+          note: >-
+            r = (r * 10 + d) % 7 at each digit, and 1234 = 176 * 7 + 2. A
+            number given as a string of a million digits has no numeric type;
+            its remainder has one the whole time.
+        - expression: "a product of 200000 factors, each near 10^9"
+          result: "about 1800000 decimal digits"
+          note: >-
+            Nine digits per factor. There is no arbitrary-precision type in
+            your standard library and no time to write one. The remainder is
+            not an approximation of the answer. It IS the answer that was
+            asked for.
+      watch_out:
+        - warning: "\"Reduce at the end\" is not slower. It is impossible."
+          why: >-
+            The exact value stops existing after about twenty multiplications
+            and after that your accumulator holds noise. The final `% m` then
+            reduces the noise very accurately. Every test passes until the
+            first one with more than twenty elements.
+        - warning: "Both operands must already be below m before they meet."
+          why: >-
+            `acc * x % m` with acc below m but x as large as 10^18 forms a
+            product of 10^27. Write `acc * (x % m) % m` — the extra reduction
+            of the incoming value is free and is the difference between a
+            product of m^2 and a product of anything the input felt like.
+        - warning: "A modulus of 1 makes every residue 0, including the empty product."
+          why: >-
+            Initialise the accumulator to `1 % m`, not to `1`. It looks like
+            pedantry until the one test with m = 1 comes back expecting 0 and
+            receiving 1, and that test exists precisely because the setter
+            knows about this.
+        - warning: "`%` is a hardware division and costs twenty to forty cycles."
+          why: >-
+            In an inner loop that runs 10^8 times, reducing three times where
+            once would do is a Time Limit Exceeded on correct code. When you
+            know a value is below 2m, subtract m conditionally instead of
+            reducing — `if (a >= m) a -= m` is one comparison.
+        - warning: "The exact answer is never asked for, so stop trying to compute it."
+          why: >-
+            Students reach for __int128 or a big-integer class because they
+            want the true value first. The statement asked for a residue. The
+            residue is the answer, not a lossy summary of it, and every
+            operation you need commutes with taking it.
+      drills:
+        - id: rag-eval-walk
+          kind: evaluate
+          prompt: >-
+            Reduce 7 * 11 * 13 * 17 modulo 100, taking the remainder after each
+            multiplication. What are the four values the accumulator takes?
+          options:
+            - "7, 77, 1, 17"
+            - "7, 77, 1001, 17017"
+            - "7, 77, 10, 70"
+            - "7, 7, 7, 7"
+          answer: "7, 77, 1, 17"
+          explanation: >-
+            77 * 13 = 1001, whose remainder is 1; then 1 * 17 = 17. The
+            accumulator passing through 1 is not a bug — it is the exact
+            residue of 1001, and the final 17 agrees with 17017 mod 100.
+        - id: rag-eval-factorial
+          kind: evaluate
+          prompt: >-
+            At which factorial does the exact value first exceed what a signed
+            64-bit integer holds, given that LLONG_MAX is about 9.2 * 10^18?
+          options: ["13!", "18!", "21!", "35!"]
+          answer: "21!"
+          explanation: >-
+            20! is 2432902008176640000 and fits with room to spare; 21! is
+            51090942171709440000 and does not. Twenty-one multiplications is
+            the entire budget of a "compute it then reduce it" solution.
+        - id: rag-eval-horner
+          kind: evaluate
+          prompt: >-
+            Fold the digits of 1234 with r = (r * 10 + d) % 7 starting from
+            r = 0. What is the final value?
+          options: ["1", "2", "4", "5"]
+          answer: "2"
+          explanation: >-
+            The four steps give 1, 5, 4, 2, and 1234 = 176 * 7 + 2. The number
+            never has to be held; only its running remainder does, which is
+            what makes a million-digit input tractable.
+        - id: rag-prop-which-ops
+          kind: property
+          prompt: >-
+            Which arithmetic operations give the same answer whether you reduce
+            first or reduce last?
+          options:
+            - "addition, subtraction and multiplication — but not division"
+            - "all four, including division"
+            - "only addition and multiplication"
+            - "only multiplication"
+          answer: "addition, subtraction and multiplication — but not division"
+          explanation: >-
+            Those three commute with taking the remainder, which is the whole
+            licence to reduce early. Division does not, and there is no
+            modular slash — what replaces it is multiplication by an inverse,
+            which is a later secret and a different theorem.
+        - id: rag-prop-why-early
+          kind: property
+          prompt: >-
+            Why must the reduction happen at every step rather than once at the
+            end of a long product?
+          options:
+            - "because the exact value stops existing in any type long before the loop does"
+            - "because % is faster than *"
+            - "because the compiler cannot optimise a single reduction"
+            - "it need not; reducing at the end is merely untidy"
+          answer: "because the exact value stops existing in any type long before the loop does"
+          explanation: >-
+            Twenty-one multiplications overflow a long long. After that the
+            accumulator holds whatever the wrap produced, and the closing `% m`
+            reduces that faithfully. It is not a precision loss — it is a
+            different number entirely.
+        - id: rag-trap-modulus-one
+          kind: trap
+          prompt: >-
+            A product routine starts with `long long acc = 1;` and reduces
+            after every factor. It fails exactly one test. Which?
+          options:
+            - "the one with m = 1, where every residue is 0 but an empty product returns 1"
+            - "the one with a factor equal to 0"
+            - "the one with n = 200000"
+            - "the one where all factors are equal"
+          answer: "the one with m = 1, where every residue is 0 but an empty product returns 1"
+          explanation: >-
+            With m = 1 every value in the world is congruent to 0. Initialise
+            with `1 % m` and the case disappears. The setter includes it
+            because it costs one character to fix and catches solutions written
+            from memory.
+        - id: rag-recall-product
+          kind: recall
+          prompt: >-
+            `acc` and `m` are long longs and `x` is the next factor, which may
+            be far larger than m. Write the statement that folds x into acc.
+          answer: "acc = acc * (x % m) % m;"
+          accepts:
+            - "acc=acc*(x%m)%m;"
+            - "acc=acc*(x%m)%m"
+            - "acc=(acc*(x%m))%m;"
+            - "acc=acc%m*(x%m)%m;"
+          explanation: >-
+            The inner `x % m` is not decoration. Without it the product is acc
+            times whatever the input felt like, rather than a product of two
+            values each below m — and only the second of those has a bound you
+            can reason about.
+        - id: rag-apply-horner
+          kind: apply
+          prompt: >-
+            `string s` holds a decimal number too long for any integer type and
+            `long long r = 0, m` are declared. Write the statement inside
+            `for (char c : s)` that keeps r equal to the residue of the prefix
+            read so far.
+          answer: "r = (r * 10 + (c - '0')) % m;"
+          accepts:
+            - "r=(r*10+(c-'0'))%m;"
+            - "r=(r*10+(c-'0'))%m"
+            - "r=(r*10+c-'0')%m;"
+            - "r=((r*10)+(c-'0'))%m;"
+          explanation: >-
+            A decimal number is built by multiply-by-ten-and-add, and both of
+            those survive the remainder. r never exceeds 10m + 9, so a long
+            long is comfortable for any m up to 10^9 — and the number itself is
+            never formed at all.
+
+  # ---------------------------------------------------------------- stage 1
+  - id: stage-silent-overflow
+    order: 1
+    pattern: modular-arithmetic
+    trial_problem_ids: [scribes-running-checksum, sky-lantern-cipher]
+    secret:
+      id: silent-overflow
+      name: The Product Is Formed First
+      idiom: "(long long)a * b % m"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        Now the secret I came here for. Read the expression `a * b % m` and
+        tell me the order of operations. Multiplication binds tighter than the
+        remainder, so the product is FORMED, in full, at the width of its
+        operands, and only then reduced. Everything in this temple depends on
+        that product being representable, and nothing in the language will tell
+        you when it is not. — Say the numbers with me. INT_MAX is 2147483647.
+        Two residues below a modulus of 10^9 multiply to 10^18. That is four
+        hundred million times too large for an int. In C++ signed overflow is
+        undefined behaviour, so what you get is not even the wrapped value
+        reliably — it is whatever the optimiser concluded from an impossible
+        premise. — And then the second boundary, which almost nobody is told.
+        A long long stops at about 9.2 * 10^18, so it holds a product of two
+        residues only while the modulus stays below 3037000499. Past that you
+        need 128 bits for one multiplication. — I have watched students write
+        this correctly on a whiteboard and then type `int` because the variable
+        was called `i`. The type is not a decoration on the name.
+      demonstrations:
+        - expression: "100000 * 100000 in a 32-bit int"
+          result: "1410065408"
+          note: >-
+            The true value is 10^10. What survives in 32 bits is 1410065408,
+            which is positive, plausible, and roughly one seventh of the truth.
+            Nothing warns you.
+        - expression: "1000000006 * 1000000006, in a long long"
+          result: "1000000012000000036"
+          note: >-
+            About 10^18, comfortably inside LLONG_MAX at 9.2 * 10^18. The same
+            product truncated to 32 bits is 1923446820. Both are numbers; only
+            one is the number.
+        - expression: "1000000006^2 mod (10^9 + 7)"
+          result: "1"
+          note: >-
+            Because 1000000006 is -1 modulo 10^9+7, and (-1)^2 is 1. Compute it
+            in an int and you reduce 1923446820 instead, which gives something
+            else entirely and looks no less like an answer.
+        - expression: "the largest modulus for which a long long still holds a * b"
+          result: "3037000499"
+          note: >-
+            The square root of LLONG_MAX. Below it, `a * b % m` in 64 bits is
+            exact. Above it, that same expression is undefined and needs
+            __int128 for the one multiplication.
+        - expression: "two residues modulo 10^9 + 7 added in a 32-bit int"
+          result: "at most 2000000012, which fits"
+          note: >-
+            INT_MAX is 2147483647, so a SUM of two such residues just fits and
+            a sum of three does not — 3000000018 is past the edge. This is why
+            an int accumulator survives some tests and not others, which is the
+            most confusing possible symptom.
+        - expression: "200000 terms, each at most 2 * 10^14, accumulated without reducing"
+          result: "up to 4 * 10^19 — past LLONG_MAX"
+          note: >-
+            Every individual term is safe and the TOTAL is not. This is the
+            quiet version: nothing you can point at is too big, and the sum
+            wraps anyway.
+        - expression: "an unsigned int holding 123456789, squared"
+          result: "2537071545"
+          note: >-
+            Unsigned overflow is defined — it wraps modulo 2^32 — so this is
+            not undefined behaviour, merely wrong. Signed overflow gives you no
+            such guarantee, which is why the symptom can change with the
+            optimisation level.
+      watch_out:
+        - warning: "`a * b % m` reduces AFTER multiplying, always."
+          why: >-
+            `*` and `%` have equal precedence and associate left to right, so
+            the expression is `(a * b) % m`. There is no reading of it in which
+            the modulus protects the product. The only protection is the width
+            of the type the product is formed in.
+        - warning: "One `long long` in the expression is enough — but it must be there before the multiply."
+          why: >-
+            `long long r = a * b;` with a and b ints computes the product in
+            int and then widens the wreckage. Write `(long long)a * b`: one
+            operand promoted makes the whole multiplication 64-bit. The
+            conversion on assignment happens too late to help.
+        - warning: "Signed overflow is undefined behaviour, not wrap-around."
+          why: >-
+            At -O2 the compiler may assume it cannot happen and delete the
+            check you wrote to detect it. That is why the same code can be
+            wrong in release and right in debug, and why you must not reason
+            about "what the wrap gives".
+        - warning: "A modulus above 3037000499 breaks the 64-bit product too."
+          why: >-
+            Problems with m near 10^18 exist and they look exactly like the
+            ordinary ones. Do the single multiplication in __int128 and cast
+            back. It costs two instructions, and the addition can stay in 64
+            bits because two residues sum to under 2m.
+        - warning: "Every term fitting does not mean the sum fits."
+          why: >-
+            2 * 10^5 terms of 2 * 10^14 reach 4 * 10^19 while each term is
+            comfortable. Reduce the accumulator on every iteration, not just
+            the products, and the whole class of bug leaves.
+        - warning: "The samples cannot find this and neither can rereading the code."
+          why: >-
+            Sample inputs are small by design, and small values do not
+            overflow. The code says exactly what you meant. Check the TYPES
+            against the CONSTRAINTS with a pencil, once, before submitting —
+            that is the only method that works.
+      drills:
+        - id: sov-eval-int-wrap
+          kind: evaluate
+          prompt: >-
+            `int a = 100000, b = 100000;` and the product a * b is stored in an
+            int. What value appears, given that the true product is 10^10?
+          options: ["10000000000", "1410065408", "2147483647", "0"]
+          answer: "1410065408"
+          explanation: >-
+            10^10 truncated to 32 bits leaves 1410065408. It is positive and
+            looks like an answer, which is exactly what makes it dangerous —
+            and because signed overflow is undefined, you are not even
+            guaranteed this particular wrong number.
+        - id: sov-eval-order
+          kind: evaluate
+          prompt: >-
+            In the expression `a * b % m`, which operation happens first?
+          options:
+            - "the multiplication — the product is formed in full, then reduced"
+            - "the remainder, so a and b are reduced before multiplying"
+            - "it depends on the types of a and b"
+            - "the compiler chooses whichever avoids overflow"
+          answer: "the multiplication — the product is formed in full, then reduced"
+          explanation: >-
+            `*` and `%` share a precedence level and associate left to right,
+            giving `(a * b) % m`. The modulus never protects the product. Only
+            the width of the type does.
+        - id: sov-eval-boundary
+          kind: evaluate
+          prompt: >-
+            Above roughly which modulus does `a * b % m` stop being safe in a
+            signed 64-bit integer, with a and b already below m?
+          options: ["10^9", "2147483647", "3037000499", "10^18"]
+          answer: "3037000499"
+          explanation: >-
+            That is the square root of LLONG_MAX, about 9.2 * 10^18. Below it
+            the product of two residues fits; above it the multiplication needs
+            __int128, and nothing in the language mentions the boundary.
+        - id: sov-eval-sum-of-two
+          kind: evaluate
+          prompt: >-
+            Two residues modulo 10^9 + 7 are added in a 32-bit int. What is the
+            largest possible sum, and does it fit in INT_MAX = 2147483647?
+          options:
+            - "2000000012 — it fits, but a sum of three residues does not"
+            - "2000000012 — it overflows"
+            - "1000000006 — it always fits"
+            - "4000000024 — it overflows"
+          answer: "2000000012 — it fits, but a sum of three residues does not"
+          explanation: >-
+            Two times 1000000006 is 2000000012, just under INT_MAX. Three of
+            them reach 3000000018 and do not. This is why an int accumulator
+            passes some tests and fails others, which is the most misleading
+            symptom in the region.
+        - id: sov-prop-undefined
+          kind: property
+          prompt: >-
+            What does the standard say happens when a signed integer
+            multiplication overflows?
+          options:
+            - "it is undefined behaviour, so the compiler may assume it never happens"
+            - "the value wraps modulo 2^32, which is well defined"
+            - "the program is required to abort"
+            - "the result is saturated at INT_MAX"
+          answer: "it is undefined behaviour, so the compiler may assume it never happens"
+          explanation: >-
+            Wrap-around is defined only for UNSIGNED types. For signed ones the
+            optimiser is entitled to delete the overflow check you wrote,
+            which is how the same code becomes wrong at -O2 and right at -O0.
+        - id: sov-prop-cast-position
+          kind: property
+          prompt: >-
+            `int a, b; long long r = a * b;` — where does this go wrong, and
+            what fixes it?
+          options:
+            - "the product is computed in int and then widened; write `(long long)a * b`"
+            - "nothing is wrong; the assignment makes the multiplication 64-bit"
+            - "r must be unsigned long long"
+            - "the fix is to declare b as long long only"
+          answer: "the product is computed in int and then widened; write `(long long)a * b`"
+          explanation: >-
+            The conversion happens on assignment, after the damage. Promoting
+            ONE operand before the multiplication makes the whole operation
+            64-bit — which is why casting b alone also works, and casting the
+            result does not.
+        - id: sov-trap-quiet-sum
+          kind: trap
+          prompt: >-
+            A checksum sums 200000 terms, each at most 2 * 10^14, in a long
+            long and reduces once at the end. Every term fits. Why is it wrong?
+          options:
+            - "the sum reaches 4 * 10^19, past LLONG_MAX, even though no single term is large"
+            - "long long cannot hold 2 * 10^14"
+            - "the terms must be sorted before summing"
+            - "it is correct; the failure must be elsewhere"
+          answer: "the sum reaches 4 * 10^19, past LLONG_MAX, even though no single term is large"
+          explanation: >-
+            The quiet version of the trap. Nothing you can point at is too big;
+            the accumulation is. Reduce the accumulator every iteration and the
+            largest value in the program becomes m plus one term.
+        - id: sov-recall-safe-product
+          kind: recall
+          prompt: >-
+            `int a, b;` and `long long m;`. Write the expression that computes
+            a times b modulo m without overflowing.
+          answer: "(long long)a * b % m"
+          accepts:
+            - "(longlong)a*b%m"
+            - "(longlong)a*(longlong)b%m"
+            - "1LL*a*b%m"
+            - "(int64_t)a*b%m"
+          explanation: >-
+            One promotion before the multiplication is enough, and `1LL * a * b`
+            is the same trick spelled differently. Casting the finished product
+            is too late — by then the int multiplication has already happened.
+        - id: sov-apply-int128
+          kind: apply
+          prompt: >-
+            `long long a, b, m;` with m as large as 10^18. Write the expression
+            that computes a times b modulo m correctly.
+          answer: "(long long)((__int128)a * b % m)"
+          accepts:
+            - "(longlong)((__int128)a*b%m)"
+            - "(longlong)((__int128)a*(__int128)b%m)"
+            - "(__int128)a*b%m"
+            - "(longlong)(((__int128)a*b)%m)"
+          explanation: >-
+            Past a modulus of 3037000499 the 64-bit product is undefined, and
+            __int128 is present in every judge's g++ and clang++ even though it
+            is not standard. Two instructions. Use it and stop thinking about
+            the boundary.
+
+  # ---------------------------------------------------------------- stage 2
+  - id: stage-sign-of-the-remainder
+    order: 2
+    pattern: modular-arithmetic
+    trial_problem_ids: [ledger-of-arrears]
+    secret:
+      id: sign-of-the-remainder
+      name: The Leftover Keeps the Sign
+      idiom: "((x % m) + m) % m"
+      memorise: true
+      baseline_drills: 4
+      teaches: >-
+        C++ integer division truncates towards zero. Not downwards. Towards
+        zero. That one choice decides the sign of every remainder in the
+        language: -3 divided by 7 is 0 with -3 left over, so `-3 % 7` is -3.
+        Python truncates downwards and answers 4. Both are internally
+        consistent, and every editorial you read was written in one of them. —
+        You will meet this the first time you subtract. Two residues can differ
+        by as much as -(m-1), and the moment a negative residue is printed
+        where a number in [0, m) was demanded, you have a wrong answer; the
+        moment it is used as an array index, you have read memory that is not
+        yours and the judge says Runtime Error and nothing else. — The repair
+        is two operations and both of them work. Add m, which lifts anything
+        above -m into range. Then reduce again, because a value that was
+        already 0 has just become m, and m is not a residue. — I say this in
+        every intake. Somebody always writes only the addition.
+      demonstrations:
+        - expression: "-3 % 7 in C++"
+          result: "-3"
+          note: >-
+            Truncation towards zero: -3 / 7 is 0, so the leftover is the whole
+            -3. In Python the same expression is 4, which is why translated
+            code fails on exactly the negative tests.
+        - expression: "((-3 % 7) + 7) % 7"
+          result: "4"
+          note: >-
+            -3, then 4, then 4. The correct residue, and 4 - (-3) = 7, so the
+            two answers differ by exactly one modulus as they must.
+        - expression: "-7 % 7, then + 7, then % 7"
+          result: "0, then 7, then 0"
+          note: >-
+            The case that justifies the second reduction. Stop after the
+            addition and you report 7, which is not in [0, 7). One test does
+            this and only one.
+        - expression: "(3 - 10) % (10^9 + 7)"
+          result: "-7"
+          note: >-
+            The correct residue is 1000000000. The two differ by a whole
+            modulus, so the answer is not slightly wrong; it is a completely
+            different number that happens to be small.
+        - expression: "7 % -3 in C++"
+          result: "1"
+          note: >-
+            The remainder takes the sign of the DIVIDEND, not the divisor. A
+            negative modulus is almost always a bug upstream, and this is the
+            symptom that finally reveals it.
+        - expression: "-1000000000 % (10^9 + 7)"
+          result: "-1000000000"
+          note: >-
+            The true residue is 7. Notice how comfortable the wrong answer
+            looks — right magnitude, right neighbourhood, wrong by one modulus
+            and one sign.
+      watch_out:
+        - warning: "C++ truncates towards zero; Python truncates downwards."
+          why: >-
+            -3 % 7 is -3 in one language and 4 in the other. Editorials and
+            Stack Overflow answers are written in both, and the transcription
+            is silent — the code compiles, runs, and is wrong only where a
+            subtraction went below zero.
+        - warning: "Both halves of the repair are load-bearing."
+          why: >-
+            The `+ m` lifts negatives into range and the second `% m` puts
+            exact multiples back to 0. Write only the addition and every value
+            already congruent to 0 comes back as m. It is one test, and it is
+            always in the test set.
+        - warning: "A negative residue used as an index is a memory error, not a wrong answer."
+          why: >-
+            `count[(i - k) % m]++` with a negative left-hand side writes before
+            the start of the array. The verdict is Runtime Error or, worse,
+            silence and corrupted neighbours, and the line that is wrong is not
+            the line that crashes.
+        - warning: "std::abs on the remainder is not the repair."
+          why: >-
+            abs(-3 % 7) is 3 and the answer is 4. Taking the magnitude reflects
+            the residue about zero rather than shifting it by a modulus, which
+            is right only when the value was already 0.
+        - warning: "Subtraction is where this appears; look for it there first."
+          why: >-
+            Products and sums of non-negative residues stay non-negative. Every
+            negative residue in a correct program came from a subtraction — an
+            inclusion-exclusion, a difference of prefix sums, a wrap backwards.
+            Grep for the minus signs.
+      drills:
+        - id: sgn-eval-minus-three
+          kind: evaluate
+          prompt: "In C++, what is the value of -3 % 7?"
+          options: ["4", "-3", "3", "-4"]
+          answer: "-3"
+          explanation: >-
+            Integer division truncates towards zero, so -3 / 7 is 0 and the
+            leftover is -3. Python answers 4 for the same expression, which is
+            the single most common source of silently wrong transcribed code.
+        - id: sgn-eval-repaired
+          kind: evaluate
+          prompt: "What is ((-3 % 7) + 7) % 7?"
+          options: ["4", "-3", "7", "0"]
+          answer: "4"
+          explanation: >-
+            -3 becomes 4 after adding the modulus, and the final reduction
+            leaves it alone. The repaired value and the raw one differ by
+            exactly 7, as any two representatives of the same residue must.
+        - id: sgn-eval-exact-multiple
+          kind: evaluate
+          prompt: >-
+            Apply only the first half of the repair — `(x % m) + m` — to
+            x = -7 with m = 7. What comes out, and what should have?
+          options:
+            - "7 comes out; 0 was correct"
+            - "0 comes out; 0 was correct"
+            - "-7 comes out; 7 was correct"
+            - "14 comes out; 7 was correct"
+          answer: "7 comes out; 0 was correct"
+          explanation: >-
+            -7 % 7 is already 0, and adding the modulus pushes it out of range.
+            The second reduction exists for precisely this case, which is why
+            omitting it fails exactly one test and passes every other.
+        - id: sgn-prop-truncation
+          kind: property
+          prompt: >-
+            Which rule about C++ integer division explains the sign of the
+            remainder?
+          options:
+            - "it truncates towards zero, so the remainder carries the sign of the dividend"
+            - "it rounds to the nearest integer, so the remainder may be either sign"
+            - "it truncates downwards, so the remainder carries the sign of the divisor"
+            - "the sign of the remainder is implementation-defined"
+          answer: "it truncates towards zero, so the remainder carries the sign of the dividend"
+          explanation: >-
+            It has been guaranteed since C++11, so it is not
+            implementation-defined and not something to test for. 7 % -3 is 1
+            and -7 % 3 is -1: the divisor's sign never appears in the answer.
+        - id: sgn-prop-where
+          kind: property
+          prompt: >-
+            In a program whose inputs are all non-negative, which operation is
+            the only possible source of a negative residue?
+          options:
+            - "subtraction"
+            - "multiplication"
+            - "addition"
+            - "taking the remainder itself"
+          answer: "subtraction"
+          explanation: >-
+            Sums and products of non-negative residues stay non-negative. Every
+            negative residue came from a difference — an inclusion-exclusion
+            term, a prefix-sum difference, a backwards wrap. That narrows the
+            search to a handful of lines.
+        - id: sgn-trap-abs
+          kind: trap
+          prompt: >-
+            A solution repairs negative residues with `abs(x % m)`. On x = -3
+            and m = 7, what does it produce and what was required?
+          options:
+            - "3, where 4 was required"
+            - "4, which is correct"
+            - "-3, unchanged"
+            - "7, which is out of range"
+          answer: "3, where 4 was required"
+          explanation: >-
+            Taking the magnitude reflects the value about zero; the residue
+            needs it SHIFTED by a modulus. The two agree only when the value
+            was already 0, so this passes the trivial tests and nothing else.
+        - id: sgn-recall-repair
+          kind: recall
+          prompt: >-
+            Write the expression that turns a possibly negative long long x
+            into the unique residue in [0, m).
+          answer: "((x % m) + m) % m"
+          accepts:
+            - "((x%m)+m)%m"
+            - "(x%m+m)%m"
+            - "((x%m)+m)%m;"
+            - "(x%m+m)%m;"
+          explanation: >-
+            Two reductions and one addition, and none of the three is optional.
+            Memorise it as a single token — this is not an expression to
+            reconstruct under a clock, and the reconstruction always drops the
+            outer reduction.
+        - id: sgn-apply-difference
+          kind: apply
+          prompt: >-
+            `long long a, b, m;` hold two residues already in [0, m). Write the
+            statement that assigns the residue of a - b to `long long d`.
+          answer: "d = (a - b + m) % m;"
+          accepts:
+            - "d=(a-b+m)%m;"
+            - "d=(a-b+m)%m"
+            - "d=((a-b)%m+m)%m;"
+            - "d=(a+m-b)%m;"
+          explanation: >-
+            Because both are already below m, a - b is above -m, so one
+            addition of m suffices before the single reduction. The general
+            form with two reductions is never wrong and is what you write when
+            you have not proved the operands were in range.
+
+  # ---------------------------------------------------------------- stage 3
+  - id: stage-halve-the-exponent
+    order: 3
+    pattern: fast-exponentiation
+    trial_problem_ids: [beacon-relay-doubling, chest-lock-tumblers]
+    secret:
+      id: halve-the-exponent
+      name: Square, and Take the Bit
+      idiom: "while (e) { if (e & 1) r = r * b % m; b = b * b % m; e >>= 1; }"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        a to the power e is a to the power e-over-two, squared, when e is even.
+        That is the entire idea and it is two thousand years old. Applied
+        repeatedly it turns e multiplications into about two log-two of e —
+        which for an exponent of 10^18 is one hundred and twenty operations
+        instead of a number of operations that outlives the building. — Read
+        the loop from the other end and it is the binary expansion of the
+        exponent. Square the base every step, so it holds a to the power of
+        the next power of two; fold it into the answer at the steps where the
+        exponent has a bit set. e = 13 is 1101, so four squarings and three
+        multiplications: seven, against twelve for the naive loop. At thirteen
+        the saving is nothing. At 10^18 it is everything, and the code is the
+        same code. — Both `r * b` and `b * b` are full products of two
+        residues. You have just spent a whole secret on that. I will not
+        repeat it. I will simply mention that the students who lose this
+        problem lose it there and not here.
+      demonstrations:
+        - expression: "3^13 mod 1000, iteration by iteration"
+          result: "323"
+          note: >-
+            e = 13 (bit set): r = 3, b becomes 9. e = 6 (clear): r = 3, b
+            becomes 81. e = 3 (set): r = 243, b becomes 561. e = 1 (set):
+            r = 323. And 3^13 = 1594323, whose last three digits are 323.
+        - expression: "the cost of 3^13 by halving, against the loop"
+          result: "7 multiplications against 12"
+          note: >-
+            Four squarings and three foldings. At this size the saving is not
+            worth the code. The code is identical at 10^18, which is the point.
+        - expression: "the number of iterations for an exponent of 10^18"
+          result: "60"
+          note: >-
+            10^18 needs 60 bits, so 60 squarings and at most 60 foldings. A
+            loop over the exponent would need 10^18 iterations, which at 10^9
+            operations a second is about thirty-two years.
+        - expression: "5^117 mod 1000"
+          result: "125"
+          note: >-
+            117 is 1110101 in binary — seven bits, four of them set. Powers of
+            5 modulo 1000 fall into a short cycle, which the routine neither
+            knows nor needs.
+        - expression: "an exponent of 0"
+          result: "1 % m"
+          note: >-
+            The loop body never runs and the accumulator is returned as
+            initialised. Initialise it to `1 % m` rather than 1, for the same
+            reason as the first secret: m may be 1.
+        - expression: "2^62 and 2^63, in a signed 64-bit integer"
+          result: "4611686018427387904, and overflow"
+          note: >-
+            LLONG_MAX is 9223372036854775807, which is one less than 2^63. The
+            squaring inside this loop is exactly where a large modulus tips the
+            product past it.
+      watch_out:
+        - warning: "Reduce after BOTH multiplications, in the same statement."
+          why: >-
+            `b = b * b` followed by a reduction two lines later is already too
+            late — the product existed unreduced in between. Write
+            `b = b * b % m` and `r = r * b % m` and there is no window at all.
+        - warning: "Reduce the base before the loop starts."
+          why: >-
+            A caller may hand you a base larger than the modulus, and then the
+            very first squaring is not a product of two residues. `b %= m;`
+            before the loop, and a `if (b < 0) b += m;` after it if the base
+            could have come from a subtraction.
+        - warning: "A negative exponent is not an error to be ignored."
+          why: >-
+            `while (e)` on a negative exponent spins until the shift saturates
+            or the behaviour is undefined; `while (e > 0)` silently returns 1.
+            Negative exponents mean inverses and must be routed there
+            deliberately, not fall through.
+        - warning: "The recursive form must compute the half-power once."
+          why: >-
+            `power(x, n/2) * power(x, n/2)` calls itself twice per level and is
+            O(e), not O(log e) — it is the naive loop wearing a recursion. Bind
+            the result to a variable and square that.
+        - warning: "Halving costs more than it saves for a small fixed exponent."
+          why: >-
+            Below about eight multiplications the routine is longer, slower to
+            write, and has more places to be wrong. Cubes and fourth powers do
+            not need a loop; an exponent read from the input does.
+      drills:
+        - id: hte-eval-three-thirteen
+          kind: evaluate
+          prompt: "What is 3^13 mod 1000?"
+          options: ["243", "323", "561", "729"]
+          answer: "323"
+          explanation: >-
+            3^13 is 1594323, so the residue modulo 1000 is its last three
+            digits. The loop reaches it as 3, then 243, then 323, folding in
+            the base at the three set bits of 1101.
+        - id: hte-eval-cost
+          kind: evaluate
+          prompt: >-
+            Computing a^13 by squaring and folding, how many multiplications
+            are performed in total, counting squarings?
+          options: ["4", "7", "12", "13"]
+          answer: "7"
+          explanation: >-
+            Four squarings, one per bit of 1101, and three foldings, one per
+            set bit. The naive loop needs twelve. At an exponent of 10^18 the
+            same code needs about 120 against a number nobody has time for.
+        - id: hte-eval-iterations
+          kind: evaluate
+          prompt: >-
+            How many times does the loop run for an exponent of 10^18?
+          options: ["18", "60", "1000", "10^9"]
+          answer: "60"
+          explanation: >-
+            10^18 occupies 60 bits, and the exponent is shifted right once per
+            iteration. That is the whole argument for the technique: sixty
+            steps where the definition asks for a million million million.
+        - id: hte-eval-zero
+          kind: evaluate
+          prompt: >-
+            With the accumulator initialised to `1 % m`, what does the routine
+            return when the exponent is 0?
+          options:
+            - "1 % m, because the loop body never runs"
+            - "0, because nothing was multiplied"
+            - "the base, unchanged"
+            - "it loops forever"
+          answer: "1 % m, because the loop body never runs"
+          explanation: >-
+            The empty product is 1, and `1 % m` handles the modulus of 1 where
+            every residue is 0. Same reasoning as the very first secret, and
+            the same one-character fix.
+        - id: hte-prop-identity
+          kind: property
+          prompt: >-
+            Which identity is the loop actually exploiting?
+          options:
+            - "a^e = (a^(e/2))^2 when e is even, and a * a^(e-1) when it is odd"
+            - "a^e = a * e, reduced modulo m"
+            - "a^e = a^(e mod m), by Fermat"
+            - "a^e = e^a when the modulus is prime"
+          answer: "a^e = (a^(e/2))^2 when e is even, and a * a^(e-1) when it is odd"
+          explanation: >-
+            Halving on the even case is where the logarithm comes from; the odd
+            case peels one factor off to make it even. Read from the other end
+            those two rules are the binary expansion of the exponent.
+        - id: hte-prop-invariant
+          kind: property
+          prompt: >-
+            Part-way through the loop, what is true of the accumulator r and
+            the current base b?
+          options:
+            - "r times b to the remaining exponent equals the original a to the original e"
+            - "r equals a to the power of the bits consumed so far, and b is unchanged"
+            - "b equals r squared"
+            - "r is always below b"
+          answer: "r times b to the remaining exponent equals the original a to the original e"
+          explanation: >-
+            That is the loop invariant, and it is what makes the exit correct:
+            when the exponent reaches 0 the remaining factor is b^0 = 1, so r
+            alone is the answer. Every step preserves it, which is the proof.
+        - id: hte-trap-double-recursion
+          kind: trap
+          prompt: >-
+            A recursive version returns `power(x, n/2, m) * power(x, n/2, m) % m`
+            for even n. It is correct and times out. Why?
+          options:
+            - "it calls itself twice per level, so the work is O(e) rather than O(log e)"
+            - "recursion is always slower than a loop"
+            - "the multiplication overflows"
+            - "the base case is missing"
+          answer: "it calls itself twice per level, so the work is O(e) rather than O(log e)"
+          explanation: >-
+            Two calls per level with the depth halving gives 2^depth leaves,
+            which is e of them. Bind the half-power to a variable and square
+            that: `long long h = power(x, n/2, m); return h * h % m;`. One
+            character of difference and an exponential change in cost.
+        - id: hte-recall-loop
+          kind: recall
+          prompt: >-
+            `long long r = 1 % m, b, e;` are declared with b already reduced.
+            Write the loop that leaves b^e mod m in r.
+          answer: "while (e) { if (e & 1) r = r * b % m; b = b * b % m; e >>= 1; }"
+          accepts:
+            - "while(e){if(e&1)r=r*b%m;b=b*b%m;e>>=1;}"
+            - "while(e>0){if(e&1)r=r*b%m;b=b*b%m;e>>=1;}"
+            - "while(e){if(e%2)r=r*b%m;b=b*b%m;e/=2;}"
+            - "for(;e;e>>=1){if(e&1)r=r*b%m;b=b*b%m;}"
+          explanation: >-
+            Four moving parts: test the low bit, fold, square, shift. The
+            reduction sits inside both multiplications rather than after them,
+            which is not a style choice — it is the only arrangement in which
+            no unreduced product ever exists.
+        - id: hte-apply-guard
+          kind: apply
+          prompt: >-
+            Before the loop, `long long b` may be larger than m or may be
+            negative. Write the two statements that make it a proper residue.
+          answer: "b %= m; if (b < 0) b += m;"
+          accepts:
+            - "b%=m;if(b<0)b+=m;"
+            - "b%=m;if(b<0)b+=m"
+            - "b=((b%m)+m)%m;"
+            - "b=(b%m+m)%m;"
+          explanation: >-
+            Without the first line the opening squaring is not a product of two
+            residues; without the second a base that arrived from a subtraction
+            squares into a positive value but folds in as a negative one. The
+            single-expression form does both and is never wrong.
+
+  # ---------------------------------------------------------------- stage 4
+  - id: stage-division-by-inverse
+    order: 4
+    pattern: fast-exponentiation
+    trial_problem_ids: [guild-share-division, banner-arrangement-count]
+    secret:
+      id: division-by-inverse
+      name: There Is No Slash
+      idiom: "inv(a) = power(a, p - 2, p)"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        I told you three operations survive the remainder. Here is the fourth,
+        which does not, and what stands in its place. — You have a residue and
+        you want to halve it. You write a slash. Watch what that does: modulo
+        7, the true quotient 10 divided by 5 is 2, but the residues are 3 and
+        5, and 3 divided by 5 in integers is 0. Not close to 2. Not a rounding
+        of 2. Zero. Division destroys the information that the remainder kept.
+        — What exists instead is the number that multiplies by 5 to give 1.
+        Modulo 7 that is 3, because 15 leaves 1. Then 3 times 3 is 9, which is
+        2, which is the answer. That number is the inverse, and it exists
+        exactly when the value and the modulus share no factor — 2 has no
+        inverse modulo 4, and no amount of arithmetic will produce one. — When
+        the modulus is PRIME, Fermat hands it to you: a to the power p-1 is 1,
+        so a to the power p-2 is the inverse, and you already have the routine
+        that computes it. That is why the last secret came first. — Counting
+        problems are ratios of factorials, so this is where most contest
+        counting actually lives. Build the factorials forwards, invert the top
+        one ONCE, and walk back down: the reciprocal of (i-1)! is i times the
+        reciprocal of i!. One inverse for the whole table.
+      demonstrations:
+        - expression: "10 / 5 = 2, done on residues modulo 7"
+          result: "3 / 5 = 0, which is not 2"
+          note: >-
+            The residues of 10 and 5 are 3 and 5. Integer division on them
+            gives 0. Division is not merely imprecise here; it is meaningless.
+        - expression: "the inverse of 5 modulo 7, and the repaired calculation"
+          result: "3, and 3 * 3 mod 7 = 2"
+          note: >-
+            5 * 3 = 15 = 2*7 + 1, so 3 is the inverse. Multiplying by it
+            recovers the 2 that the slash destroyed.
+        - expression: "3^(7-2) = 3^5"
+          result: "243 = 34*7 + 5, so the inverse of 3 modulo 7 is 5"
+          note: >-
+            And 3 * 5 = 15, which leaves 1. Fermat's exponent produced it with
+            no search, using the loop from the previous secret.
+        - expression: "the inverse of 2 modulo 10^9 + 7"
+          result: "500000004"
+          note: >-
+            Because 2 * 500000004 = 1000000008 = (10^9 + 7) + 1. The single
+            most-used inverse in competitive programming, and it is worth
+            recognising on sight in somebody else's output.
+        - expression: "the inverse of 6 modulo 17"
+          result: "3"
+          note: >-
+            6 * 3 = 18, which leaves 1. So 36 divided by 6 modulo 17 is
+            2 * 3 = 6, and 36/6 is indeed 6. The residues and the true
+            arithmetic agree once the slash is gone.
+        - expression: "the inverse of 2 modulo 4"
+          result: "does not exist"
+          note: >-
+            Every multiple of 2 is even and 1 is not, so no residue works. An
+            inverse exists exactly when the value is coprime to the modulus,
+            which is why Fermat needs a prime.
+        - expression: "C(10, 3) modulo 7, from a factorial table"
+          result: "the table gives 0; the answer is 1"
+          note: >-
+            C(10,3) = 120 = 17*7 + 1. But 10! contains 7 as a factor, so
+            fact[10] mod 7 is 0 and its "inverse" 0^(p-2) is 0 too. The table
+            is silently useless whenever n reaches p. That case is Lucas.
+        - expression: "C(200000, 100000) modulo 10^9 + 7"
+          result: "879467333"
+          note: >-
+            From fact[200000] times invfact[100000] twice. The true value has
+            about sixty thousand digits and is never formed.
+      watch_out:
+        - warning: "There is no modular division, and integer division on residues is not an approximation of it."
+          why: >-
+            3 / 5 modulo 7 gives 0 where 2 was the answer. It is not slightly
+            wrong or rounded — the residues carry no information about
+            magnitude, so ordering and division on them mean nothing at all.
+        - warning: "Fermat requires the modulus to be PRIME, and says nothing otherwise."
+          why: >-
+            a^(m-2) on a composite modulus is a perfectly good residue that
+            simply is not an inverse, and nothing complains. For a composite
+            modulus use extended Euclid, which also reports when no inverse
+            exists — Fermat never will.
+        - warning: "0 has no inverse, and neither does any multiple of the modulus."
+          why: >-
+            0 times anything is 0, never 1. In a factorial table this bites
+            indirectly: if n reaches p then fact[n] is 0, and the whole table
+            of inverse factorials becomes zeros without a single warning.
+        - warning: "Do not compute an inverse inside the query loop."
+          why: >-
+            Each one is about thirty multiplications. With 10^5 queries that is
+            a log factor between you and the time limit, and the fix is one
+            backward pass: invfact[i-1] = invfact[i] * i, which costs one
+            multiplication per entry.
+        - warning: "C(n, k) with k out of range must return 0, not index the table."
+          why: >-
+            k < 0 or k > n reads outside the array or computes a nonsense
+            product. Every problem with per-query n and k contains such a
+            query, because the setter knows the table is the natural
+            implementation.
+        - warning: "The exponent is p-2, and p-2 is not m-1 nor m."
+          why: >-
+            a^(p-1) is 1 — useful, and not an inverse. Off by one in either
+            direction gives you 1 or a, both of which are believable numbers
+            that make the whole answer wrong by a constant factor.
+      drills:
+        - id: dbi-eval-slash
+          kind: evaluate
+          prompt: >-
+            The true quotient 10 / 5 is 2. Working modulo 7, the residues are 3
+            and 5. What does integer division of the residues give?
+          options: ["2", "0", "1", "3"]
+          answer: "0"
+          explanation: >-
+            3 / 5 in integers is 0, which is not near 2 and is not a rounding
+            of it. Residues carry no magnitude, so dividing them is not a
+            damaged version of division — it is a different operation with no
+            meaning.
+        - id: dbi-eval-inverse-seven
+          kind: evaluate
+          prompt: "What is the inverse of 3 modulo 7?"
+          options: ["2", "3", "4", "5"]
+          answer: "5"
+          explanation: >-
+            3 * 5 = 15 = 2*7 + 1. Fermat produces it as 3^(7-2) = 3^5 = 243,
+            and 243 = 34*7 + 5. The search and the exponent agree, as they must.
+        - id: dbi-eval-inverse-two
+          kind: evaluate
+          prompt: "What is the inverse of 2 modulo 10^9 + 7?"
+          options: ["500000003", "500000004", "500000005", "2"]
+          answer: "500000004"
+          explanation: >-
+            2 * 500000004 = 1000000008, which is one more than the modulus.
+            Worth recognising on sight — it appears in the output of half the
+            counting problems you will ever read.
+        - id: dbi-eval-lucas-hole
+          kind: evaluate
+          prompt: >-
+            C(10, 3) is 120, so modulo 7 the answer is 1. What does a factorial
+            table built modulo 7 produce?
+          options:
+            - "0, because 10! contains 7 as a factor so fact[10] is 0"
+            - "1, correctly"
+            - "120, unreduced"
+            - "it crashes on an out-of-range index"
+          answer: "0, because 10! contains 7 as a factor so fact[10] is 0"
+          explanation: >-
+            And 0^(p-2) is also 0, so the inverse factorials are zeros too. The
+            table is silently useless whenever n reaches p. That regime needs
+            Lucas's theorem, which is a different algorithm rather than a patch.
+        - id: dbi-prop-exists
+          kind: property
+          prompt: >-
+            Under what condition does a modular inverse of a exist at all?
+          options:
+            - "when a and the modulus share no common factor above 1"
+            - "always, provided a is not zero"
+            - "only when the modulus is prime"
+            - "only when a is smaller than the modulus"
+          answer: "when a and the modulus share no common factor above 1"
+          explanation: >-
+            Coprimality is the exact condition. A prime modulus makes every
+            non-zero residue coprime to it, which is why primes are chosen —
+            but 3 has an inverse modulo 10 even though 10 is composite, and 2
+            has none modulo 4.
+        - id: dbi-prop-backwards
+          kind: property
+          prompt: >-
+            Why can a whole table of inverse factorials be built from a single
+            modular inverse?
+          options:
+            - "because the reciprocal of (i-1)! is i times the reciprocal of i!"
+            - "because inverses are additive"
+            - "because fact[i] and invfact[i] are equal"
+            - "they cannot; each entry needs its own inverse"
+          answer: "because the reciprocal of (i-1)! is i times the reciprocal of i!"
+          explanation: >-
+            i! = i * (i-1)!, so inverting both sides gives the recurrence.
+            Invert the top entry once and walk down: O(n) for the whole table
+            instead of O(n log p), and O(1) per coefficient afterwards.
+        - id: dbi-trap-composite
+          kind: trap
+          prompt: >-
+            A solution computes inverses as a^(m-2) with m = 10^9. The output
+            is plausible and wrong on most tests. What is the defect?
+          options:
+            - "10^9 is not prime, so Fermat does not apply and a^(m-2) is not an inverse"
+            - "the exponent should be m-1"
+            - "the power routine overflows at that modulus"
+            - "a must be reduced before the call"
+          answer: "10^9 is not prime, so Fermat does not apply and a^(m-2) is not an inverse"
+          explanation: >-
+            10^9 is 2^9 * 5^9 * ... — divisible by 2 at once. The computation
+            still produces a residue and nothing objects. For a composite
+            modulus use extended Euclid, which returns the inverse when one
+            exists and reports gcd > 1 when none does.
+        - id: dbi-recall-inverse
+          kind: recall
+          prompt: >-
+            `power(base, exponent, modulus)` is available and `p` is a prime.
+            Write the expression that gives the modular inverse of a.
+          answer: "power(a, p - 2, p)"
+          accepts:
+            - "power(a,p-2,p)"
+            - "power(a,p-2,p);"
+            - "power(a%p,p-2,p)"
+            - "power(a,(p-2),p)"
+          explanation: >-
+            Fermat gives a^(p-1) = 1 for prime p and a not a multiple of it, so
+            a^(p-2) multiplies by a to give 1. The exponent is p-2 and not p-1;
+            p-1 gives you the number 1, which is believable and useless.
+        - id: dbi-apply-binomial
+          kind: apply
+          prompt: >-
+            `fact` and `invfact` are filled and `p` is the prime modulus. Write
+            the expression for C(n, k) modulo p, reducing so no product exceeds
+            p squared.
+          answer: "fact[n] * invfact[k] % p * invfact[n - k] % p"
+          accepts:
+            - "fact[n]*invfact[k]%p*invfact[n-k]%p"
+            - "fact[n]*invfact[k]%p*invfact[n-k]%p;"
+            - "(fact[n]*invfact[k]%p)*invfact[n-k]%p"
+            - "fact[n]*invfact[n-k]%p*invfact[k]%p"
+          explanation: >-
+            The reduction between the two multiplications is the load-bearing
+            part: without it the expression forms a product of three residues,
+            which is 10^27 and past every type you have. With it, no
+            intermediate value exceeds p squared.
+
+  # ---------------------------------------------------------------- stage 5
+  - id: stage-remainder-descent
+    order: 5
+    pattern: euclidean-gcd
+    trial_problem_ids: [gear-tooth-alignment, rope-cut-common-length, bell-tower-coincidence]
+    secret:
+      id: remainder-descent
+      name: The Descent
+      idiom: "while (b) { long long r = a % b; a = b; b = r; }"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        Older than everything else you have been taught. Perhaps the first
+        algorithm anybody wrote down. — Anything that divides both a and b also
+        divides a minus any multiple of b, and therefore divides a mod b. So
+        the pair (a, b) and the pair (b, a mod b) have exactly the same set of
+        common divisors — not a similar set, the same set — and therefore the
+        same largest member. The second component strictly shrinks, so it
+        reaches zero, and when it does the first component is the answer,
+        because everything divides zero. — 1071 and 462. 1071 is two 462s and
+        147 left. 462 is three 147s and 21. 147 is seven 21s and nothing. The
+        answer is 21, in three steps, and the worst case over all inputs below
+        a bound is a pair of consecutive Fibonacci numbers — 987 and 610 take
+        fourteen. That is logarithmic, which is why the rest of the world
+        treats this as free. — Two things fall out. The smallest number both
+        divide is a divided by the answer, times b — in that ORDER, and I will
+        make you say why. And the extended form returns coefficients x and y
+        with ax + by = g, which decides every "can exactly t be measured"
+        question there is, and gives you the inverse Fermat cannot when the
+        modulus is composite.
+      demonstrations:
+        - expression: "gcd(1071, 462), written out"
+          result: "21"
+          note: >-
+            1071 = 2*462 + 147; 462 = 3*147 + 21; 147 = 7*21 + 0. Three
+            remainders and done. Notice that the quotients 2, 3, 7 were never
+            used for anything.
+        - expression: "gcd(987, 610)"
+          result: "1, after fourteen steps"
+          note: >-
+            Consecutive Fibonacci numbers are the worst case, which is where
+            the logarithmic bound is tight. Every other pair of that size is
+            faster.
+        - expression: "gcd(0, 5)"
+          result: "5"
+          note: >-
+            Everything divides 0, so the common divisors of 0 and 5 are the
+            divisors of 5. This is the loop's exit condition, not a special
+            case — and it is why a fold seeded with 0 needs no first-element
+            guard.
+        - expression: "lcm(3 * 10^9, 4 * 10^9) as a * b / g"
+          result: "12000000000000000000 — past LLONG_MAX"
+          note: >-
+            The product is 1.2 * 10^19 and the limit is about 9.2 * 10^18. The
+            expression overflows before the division ever runs.
+        - expression: "the same lcm as a / g * b"
+          result: "12000000000"
+          note: >-
+            g is 10^9, so a/g is 3 and 3 * 4*10^9 is 1.2 * 10^10. The true
+            answer, nowhere near the edge, from the same three values in a
+            different order. g divides a exactly, so the reordering is free.
+        - expression: "extended Euclid on (3, 7)"
+          result: "g = 1, x = -2, y = 1"
+          note: >-
+            3*(-2) + 7*1 = 1, so -2 is an inverse of 3 modulo 7 — and -2 + 7
+            is 5, which is what the previous secret computed by exponent. Two
+            routes, one answer.
+        - expression: "markers at 12, 30 and 54; the largest possible spacing"
+          result: "6"
+          note: >-
+            The differences from the first are 18 and 42, whose common divisor
+            is 6. The gcd of the POSITIONS is also 6 here by coincidence; move
+            them all by 1 and it becomes 1 while the true answer stays 6.
+        - expression: "jugs of 6 and 15; can 9 be measured, and can 8?"
+          result: "9 yes, 8 no"
+          note: >-
+            The divisor is 3. Every reachable amount is a whole-number
+            combination of 6 and 15 and therefore a multiple of 3. 9 is; 8 is
+            not, and no sequence of pourings will ever make it.
+      watch_out:
+        - warning: "lcm must divide before it multiplies."
+          why: >-
+            `a * b / g` forms the product first and overflows on inputs whose
+            ANSWER is small — 3e9 and 4e9 give 1.2e10 through a product of
+            1.2e19. `a / g * b` is exact because g divides a, and never goes
+            near the edge.
+        - warning: "Seed a gcd fold with 0, never with 1 and never with the first element."
+          why: >-
+            Seeding with 1 makes every answer 1, which is the funniest bug in
+            the region and takes twenty minutes to find. gcd(0, x) = x, so a
+            zero seed handles the first element and the empty row at once.
+        - warning: "Take the gcd of the DIFFERENCES when a common step is wanted."
+          why: >-
+            The starting point is unknown, so only the gaps constrain the step.
+            Anchoring on x[0] and folding over x[i] - x[0] is enough, and using
+            the raw positions is right only when one of them happens to be 0.
+        - warning: "Folding lcm over a row overflows even when each pair is safe."
+          why: >-
+            Coprime values multiply the running value outright, so twenty
+            distinct primes pass 10^18. If the statement gives a horizon,
+            compare by DIVISION before multiplying — `l / g > H / p` — because
+            noticing the overflow after it happens is noticing nothing.
+        - warning: "Bezout coefficients come back negative and are not residues."
+          why: >-
+            egcd(3, 7) gives x = -2. As an inverse it must be lifted into range
+            with the repair from the third secret. The routine's contract is
+            ax + by = g, and nothing more.
+        - warning: "Handle b == 0 before taking the remainder, not after."
+          why: >-
+            In the recursive form, `return gcd(b, a % b)` with b already zero
+            is a division by zero and a crash on the first test containing one.
+            It is the base case; write it first.
+      drills:
+        - id: rmd-eval-descent
+          kind: evaluate
+          prompt: >-
+            Run the descent on (1071, 462). What are the successive remainders,
+            and what is the answer?
+          options:
+            - "147, 21, 0 — the answer is 21"
+            - "462, 147, 21 — the answer is 3"
+            - "609, 147, 0 — the answer is 147"
+            - "21, 0 — the answer is 462"
+          answer: "147, 21, 0 — the answer is 21"
+          explanation: >-
+            1071 = 2*462 + 147, 462 = 3*147 + 21, 147 = 7*21 + 0. Three steps.
+            The quotients are discarded — only the remainders drive the loop.
+        - id: rmd-eval-zero
+          kind: evaluate
+          prompt: "What is gcd(0, 5)?"
+          options: ["0", "1", "5", "undefined"]
+          answer: "5"
+          explanation: >-
+            Everything divides 0, so the common divisors of 0 and 5 are just
+            the divisors of 5. This is why seeding a fold with 0 is correct and
+            removes the first-element special case entirely.
+        - id: rmd-eval-lcm-overflow
+          kind: evaluate
+          prompt: >-
+            a = 3 * 10^9 and b = 4 * 10^9, whose largest common divisor is
+            10^9. What are `a * b / g` and `a / g * b` in a signed 64-bit
+            integer?
+          options:
+            - "the first overflows at 1.2 * 10^19; the second gives 12000000000"
+            - "both give 12000000000"
+            - "both overflow"
+            - "the first gives 12000000000; the second overflows"
+          answer: "the first overflows at 1.2 * 10^19; the second gives 12000000000"
+          explanation: >-
+            LLONG_MAX is about 9.2 * 10^18 and the product is 1.2 * 10^19. The
+            division is exact because g divides a, so reordering costs nothing
+            and moves the largest intermediate value from 10^19 down to 10^10.
+        - id: rmd-eval-fibonacci
+          kind: evaluate
+          prompt: >-
+            Which pairs of inputs make the descent take the most steps for
+            their size?
+          options:
+            - "consecutive Fibonacci numbers"
+            - "consecutive primes"
+            - "powers of two"
+            - "a number and its double"
+          answer: "consecutive Fibonacci numbers"
+          explanation: >-
+            gcd(987, 610) takes fourteen steps, and every quotient along the way
+            is 1 — the slowest possible descent. That worst case is what makes
+            the bound O(log min(a, b)) rather than merely "fast in practice".
+        - id: rmd-prop-why
+          kind: property
+          prompt: >-
+            Why is the answer unchanged when (a, b) is replaced by
+            (b, a mod b)?
+          options:
+            - "anything dividing a and b divides a minus a multiple of b, so both pairs have the same set of common divisors"
+            - "because a mod b is always smaller than b"
+            - "because the product a*b is preserved"
+            - "it is not unchanged; the algorithm is an approximation"
+          answer: "anything dividing a and b divides a minus a multiple of b, so both pairs have the same set of common divisors"
+          explanation: >-
+            The same SET, not merely the same largest member — which is the
+            stronger statement and the one that makes the induction work. The
+            shrinking second component then guarantees termination.
+        - id: rmd-prop-differences
+          kind: property
+          prompt: >-
+            Markers sit at unknown-offset positions and you want the largest
+            possible common spacing. What do you take the divisor of?
+          options:
+            - "the differences x[i] - x[0]"
+            - "the positions themselves"
+            - "every pair of positions"
+            - "the positions after sorting them"
+          answer: "the differences x[i] - x[0]"
+          explanation: >-
+            The offset is unknown, so only the gaps carry information;
+            subtracting it from every position leaves the differences
+            untouched. Anchoring on one element is enough, because anything
+            dividing every x[i] - x[0] divides every x[i] - x[j] too.
+        - id: rmd-trap-seed-one
+          kind: trap
+          prompt: >-
+            A fold over a row is written `long long g = 1;` then
+            `g = gcd(g, v)` for each value. What does it report?
+          options:
+            - "1, always, because gcd(1, anything) is 1"
+            - "the correct answer"
+            - "the first element"
+            - "0 for an empty row and the correct answer otherwise"
+          answer: "1, always, because gcd(1, anything) is 1"
+          explanation: >-
+            The seed poisons the fold on the first step. Seed with 0 instead:
+            gcd(0, x) = x, so the first element enters cleanly and an empty row
+            yields 0 rather than a lie.
+        - id: rmd-recall-loop
+          kind: recall
+          prompt: >-
+            `long long a, b;` hold non-negative values. Write the loop that
+            leaves their greatest common divisor in a.
+          answer: "while (b) { long long r = a % b; a = b; b = r; }"
+          accepts:
+            - "while(b){longlongr=a%b;a=b;b=r;}"
+            - "while(b!=0){longlongr=a%b;a=b;b=r;}"
+            - "while(b){autor=a%b;a=b;b=r;}"
+            - "while(b>0){longlongr=a%b;a=b;b=r;}"
+          explanation: >-
+            Three assignments and one temporary. In a contest write std::gcd
+            from <numeric>; write this by hand once so that the day a problem
+            wants the sequence of quotients — a continued fraction, a
+            Stern-Brocot walk — you are not meeting the loop for the first time.
+        - id: rmd-apply-lcm
+          kind: apply
+          prompt: >-
+            `long long a, b;` are positive and `gcd_of` is available. Write the
+            statement assigning their lowest common multiple to `long long l`,
+            in the order that cannot overflow.
+          answer: "l = a / gcd_of(a, b) * b;"
+          accepts:
+            - "l=a/gcd_of(a,b)*b;"
+            - "l=a/gcd_of(a,b)*b"
+            - "l=b/gcd_of(a,b)*a;"
+            - "l=a/gcd_of(b,a)*b;"
+          explanation: >-
+            Divide first. g divides a exactly so nothing is lost, and the
+            largest value the expression ever forms is the answer itself rather
+            than a*b. Either operand may be the one divided; what may not
+            happen is the multiplication first.
+
+  # ---------------------------------------------------------------- stage 6
+  - id: stage-cross-out-once
+    order: 6
+    pattern: sieve-factorisation
+    trial_problem_ids: [census-of-untouchables, granary-divisor-count, quarry-distinct-veins]
+    secret:
+      id: cross-out-once
+      name: Turn the Question Round
+      idiom: "for (long long j = (long long)i * i; j <= n; j += i)"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        You know how to test one number for primality: divide by everything up
+        to its square root. It costs O(sqrt n) and it is correct and you should
+        keep it. Now somebody asks about every number up to ten million and
+        that method costs three times ten to the tenth, which does not finish.
+        — So stop asking each number who divides it. Walk each number that
+        survived and strike out its multiples. Every composite is struck by its
+        own factors and by nobody else, so the total work is n over two plus n
+        over three plus n over five — the sum of the reciprocals of the primes,
+        which is log log n. Not log n. Log LOG n, which for any n you will ever
+        see is a number below four. — Two details. Start the inner loop at i
+        squared, because every multiple of i below that already carries a
+        smaller factor. And store the SMALLEST PRIME FACTOR rather than a
+        boolean: it costs exactly the same pass and it turns the table into a
+        factoriser, so any number in the range comes apart in twenty steps with
+        no division search at all. — The other half of this secret is for one
+        enormous number, where no table exists. Divide out everything up to the
+        square root, shrinking as you go, and then look at what is left.
+        Whatever is left is one or a prime, because two factors above the root
+        would multiply past n. That last line is where the largest prime factor
+        comes from and it is the most-omitted line in the temple.
+      demonstrations:
+        - expression: "the count of primes up to 100, 10^6 and 10^7"
+          result: "25, 78498 and 664579"
+          note: >-
+            The density is about n over the natural log of n: 10^6 over
+            ln(10^6) is about 72382, against the true 78498. Frequent enough
+            that testing each one is hopeless and marking them is cheap.
+        - expression: "the inner loop's start, for i = 5"
+          result: "25"
+          note: >-
+            10, 15 and 20 were already struck by 2 and by 3. Starting at 2i is
+            correct and slower; starting at i*i is where the overflow lives.
+        - expression: "i * i with i = 46341, in a 32-bit int"
+          result: "2147488281, past INT_MAX"
+          note: >-
+            INT_MAX is 2147483647 and 46340 squared is 2147395600, which is the
+            last safe one. Cast one operand to long long and the whole class of
+            bug leaves.
+        - expression: "720 broken into its prime powers"
+          result: "2^4 * 3^2 * 5, giving 5 * 3 * 2 = 30 divisors"
+          note: >-
+            A divisor chooses how many copies of each prime to take,
+            independently, so the count is the product of the exponents plus
+            one. Checked by enumeration: 720 has exactly 30 divisors.
+        - expression: "84 broken into its prime powers"
+          result: "2^2 * 3 * 7, giving 3 * 2 * 2 = 12 divisors"
+          note: >-
+            1, 2, 3, 4, 6, 7, 12, 14, 21, 28, 42, 84. Twelve of them, and their
+            sum is 224. The exponents are all you need for either quantity.
+        - expression: "1999999874, trial-divided to its square root"
+          result: "2, and then 999999937 left over"
+          note: >-
+            The root is about 44721, and 999999937 is a prime far above it. A
+            loop without the final leftover check reports 2 and stops, which is
+            correct on most random inputs and wrong here.
+        - expression: "999999999999, factorised"
+          result: "3^3 * 7 * 11 * 13 * 37 * 101 * 9901"
+          note: >-
+            Seven distinct primes, and 9901 is the leftover above the root of
+            what remained. Trial division to 10^6 finds all of it well inside a
+            second.
+        - expression: "10^8 flags as `bool` and as `vector<bool>`"
+          result: "100 MB against 12.5 MB"
+          note: >-
+            A bool is a byte. vector<bool> is the one specialisation everybody
+            complains about, and it is the one that turns a Memory Limit
+            Exceeded into an accepted solution.
+      watch_out:
+        - warning: "`i * i` with an int i overflows at 46341."
+          why: >-
+            Correct for n up to 10^9 and undefined the first time the code is
+            reused with a larger bound. `(long long)i * i` costs nothing. The
+            same applies to `d * d <= n` in trial division, where d reaches
+            10^6 and the product reaches 10^12.
+        - warning: "The final `if (n > 1)` is not tidying up."
+          why: >-
+            It is where every prime factor above the square root comes from.
+            Without it, 1999999874 = 2 * 999999937 is reported as just 2. It is
+            right on every value whose factors are all small, which is most
+            random tests and none of the interesting ones.
+        - warning: "`d <= sqrt(n)` is a coin flip on the boundary."
+          why: >-
+            A double has 53 bits of mantissa against n's 63, so the comparison
+            can go either way exactly when n is the square of a prime — the one
+            case the loop exists for. Write `d * d <= n`.
+        - warning: "Sieve once, before answering anything."
+          why: >-
+            The whole point is that the cost is paid once and amortised over
+            every query. A sieve inside a per-query loop is Time Limit Exceeded
+            with entirely correct output, which is the most demoralising
+            verdict there is.
+        - warning: "A `bool` array of 10^8 is 100 MB."
+          why: >-
+            A bool is one byte, not one bit. vector<bool> packs to bits and
+            costs 12.5 MB for the same range. If you need the smallest prime
+            factor instead of a flag, an int array of 10^7 is 40 MB and that is
+            usually the real ceiling on n.
+        - warning: "Do not factorise to compute a gcd."
+          why: >-
+            Euclid answers in about ninety steps at 10^18, where factorisation
+            needs 10^9. When only a common divisor or a common multiple is
+            wanted, no prime need ever be discovered, and reaching for the
+            sieve is reaching for a slower and more fragile method.
+      drills:
+        - id: cro-eval-pi
+          kind: evaluate
+          prompt: "How many primes are there up to and including 100?"
+          options: ["21", "25", "26", "50"]
+          answer: "25"
+          explanation: >-
+            2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61,
+            67, 71, 73, 79, 83, 89, 97. The density thins slowly: 78498 up to
+            10^6 and 664579 up to 10^7.
+        - id: cro-eval-divisors
+          kind: evaluate
+          prompt: >-
+            720 factorises as 2^4 * 3^2 * 5. How many divisors does it have?
+          options: ["11", "24", "30", "40"]
+          answer: "30"
+          explanation: >-
+            Five choices for the power of 2, three for the 3, two for the 5, all
+            independent: 5 * 3 * 2 = 30. The count is a product over the
+            exponents plus one and needs nothing but the factorisation.
+        - id: cro-eval-int-square
+          kind: evaluate
+          prompt: >-
+            At which value of i does `i * i` first exceed INT_MAX = 2147483647,
+            with i declared as int?
+          options: ["32768", "46341", "65536", "2147483647"]
+          answer: "46341"
+          explanation: >-
+            46340 squared is 2147395600 and fits; 46341 squared is 2147488281
+            and does not. This is why the inner loop's starting index must be
+            computed as `(long long)i * i`.
+        - id: cro-eval-leftover
+          kind: evaluate
+          prompt: >-
+            After dividing out every factor up to the square root of n, what
+            can be said about whatever value of n remains?
+          options:
+            - "it is 1, or a single prime"
+            - "it is always 1"
+            - "it may be any composite number"
+            - "it is the largest divisor of the original n"
+          answer: "it is 1, or a single prime"
+          explanation: >-
+            It cannot be composite: two factors each above the square root of
+            the original n would multiply past n. So the leftover is the one
+            prime factor larger than the root, which is why the final check
+            recovers it.
+        - id: cro-prop-cost
+          kind: property
+          prompt: >-
+            Why is the sieve n log log n rather than the harmonic n log n?
+          options:
+            - "the inner loop runs only for primes, and the sum of their reciprocals is log log n"
+            - "because the inner loop starts at i squared"
+            - "because vector<bool> is faster than an array"
+            - "it is n log n; the smaller bound is a myth"
+          answer: "the inner loop runs only for primes, and the sum of their reciprocals is log log n"
+          explanation: >-
+            The naive bound sums n/x over every x and gives n log n. Only
+            primes ever enter the inner loop, and the sum of the reciprocals of
+            the primes below n grows like log log n — under four for any n you
+            will meet.
+        - id: cro-prop-spf
+          kind: property
+          prompt: >-
+            What does storing the smallest prime factor buy over storing a
+            boolean, given that both cost the same pass?
+          options:
+            - "any number in the range can be factorised in about log x steps with no division search"
+            - "it uses less memory"
+            - "it makes the sieve linear rather than n log log n"
+            - "nothing; it is a matter of taste"
+          answer: "any number in the range can be factorised in about log x steps with no division search"
+          explanation: >-
+            spf[x] hands you a factor directly, so the peel loop divides by at
+            least 2 each time and runs at most log2(x) times — about twenty for
+            a million. A boolean table would make you search for divisors again.
+        - id: cro-trap-missing-leftover
+          kind: trap
+          prompt: >-
+            A factoriser loops `for (d = 2; d*d <= n; ++d)` peeling factors,
+            and returns. On n = 1999999874 it reports only 2. What is missing?
+          options:
+            - "the final `if (n > 1)` that records the prime left above the square root"
+            - "the loop should run to n, not to its square root"
+            - "d must start at 1"
+            - "nothing; 1999999874 really is a power of 2"
+          answer: "the final `if (n > 1)` that records the prime left above the square root"
+          explanation: >-
+            1999999874 is 2 times 999999937, and 999999937 is prime and far
+            above the root. The loop divides out the 2 and then finds nothing,
+            leaving the answer sitting in n where nobody looks for it.
+        - id: cro-recall-inner
+          kind: recall
+          prompt: >-
+            `int i, n;` and the sieve is marking multiples of i. Write the
+            for-loop header that starts where it should and cannot overflow.
+          answer: "for (long long j = (long long)i * i; j <= n; j += i)"
+          accepts:
+            - "for(longlongj=(longlong)i*i;j<=n;j+=i)"
+            - "for(longlongj=1LL*i*i;j<=n;j+=i)"
+            - "for(longlongj=(longlong)i*i;j<=n;j+=i){"
+            - "for(longlongj=(int64_t)i*i;j<=n;j+=i)"
+          explanation: >-
+            Two decisions in one line. Starting at i*i skips the multiples that
+            already carry a smaller factor; promoting one operand keeps the
+            start from overflowing at i = 46341, which no test below n = 2*10^9
+            will ever reveal.
+        - id: cro-apply-peel
+          kind: apply
+          prompt: >-
+            `int x` and `vector<int> spf` are available, and `int distinct = 0;`
+            counts distinct prime factors. Write the loop body inside
+            `while (x > 1)`.
+          answer: "int p = spf[x]; ++distinct; while (x % p == 0) x /= p;"
+          accepts:
+            - "intp=spf[x];++distinct;while(x%p==0)x/=p;"
+            - "intp=spf[x];distinct++;while(x%p==0)x/=p;"
+            - "autop=spf[x];++distinct;while(x%p==0)x/=p;"
+            - "intp=spf[x];++distinct;while(x%p==0){x/=p;}"
+          explanation: >-
+            The inner loop is what collapses a repeated factor to one count,
+            and the outer condition needs no primality test because spf hands
+            you a prime by construction. Each peel divides x by at least 2, so
+            the whole thing is at most twenty steps for x up to a million.
+
+final_test_problem_ids:
+  - chronicle-digit-remainder
+  - market-tally-difference
+  - tower-of-repeated-powers
+  - stone-marker-spacing
+  - two-jug-measure
+  - tithe-of-great-numbers
+  - orchard-coprime-tally

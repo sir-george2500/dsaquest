@@ -1,0 +1,1507 @@
+# Archivist Nym Solvane's teaching plan — the State, Master of Dynamic Programming.
+#
+# Six secrets across four patterns. Every table in every demonstration has been
+# filled by hand and checked against a brute force, and every counterexample is
+# minimal. That matters more here than anywhere else in the game, because a
+# dynamic program with a wrong definition still compiles, still terminates, and
+# still agrees with any test that happens not to exercise the difference.
+#
+# The order is deliberate and is not negotiable. The first secret is not a
+# technique at all — it is the demand that the student say, in one sentence,
+# what dp[i] holds. Everything after it is a variation on that sentence: a
+# second axis when a budget must be remembered, two indices when two rows are
+# aligned, and a sorted array of best endings when the inner scan turns out to
+# be a binary search. A student who skips the first secret can still write the
+# fifth one's code, and will not be able to say what it means.
+#
+# This region is also where the Ridge of Greed stops. Strategist Dovan Rhe
+# teaches that a greedy needs an exchange argument and that its absence is a
+# counterexample you have not found yet. The coin system {1, 3, 4} and the
+# amount 6 is that counterexample, and this is the master who answers it.
+
+master_id: master_dp
+patterns:
+  - linear-dp
+  - knapsack-dp
+  - two-sequence-dp
+  - lis-tails
+title: Archivist Nym Solvane, the State — Six Secrets of the Defined Cell
+
+opening: >-
+  Before you write anything, you will answer one question, and you will answer
+  it in a single sentence containing no code. What does dp[i] mean? Not what it
+  is used for. Not roughly. Exactly: what is fixed at i, and what is still free.
+  Most of what is called dynamic programming is a student who wrote a loop that
+  looked like one he had seen, adjusted the indices until the sample passed, and
+  submitted. That is not a method, it is a resemblance. The recurrence is not
+  the technique. The recurrence is what the definition FORCES once the
+  definition is precise, and I have never seen a student who could state the
+  definition and then fail to derive the transition. Six secrets. The first is
+  the only one that matters and the other five are it, repeated in harder
+  rooms. You have come from the ridge, where you learned that some problems have
+  no safe local choice. This is where those problems are answered. Say what the
+  cell means. Then we begin.
+
+stages:
+  # ---------------------------------------------------------------- stage 0
+  - id: stage-define-the-state
+    order: 0
+    pattern: linear-dp
+    trial_problem_ids: [stone-ford-crossing]
+    secret:
+      id: define-the-state
+      name: A Sentence Before an Array
+      idiom: "dp[i] = the longest chain ending EXACTLY at i"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        A dynamic program is a definition first and a loop second. Write the
+        sentence before the array or you have not started. And the sentence must
+        pin down two things: what is FIXED at index i, and what is still free.
+        Watch what happens when it does not. "dp[i] is the longest increasing
+        subsequence among the first i elements" — that sentence is grammatical,
+        it sounds like a definition, and no transition can be written from it at
+        all. Not written badly; genuinely unwritable, because to extend the
+        answer with a[i] you would need to know what the previous chain ENDED
+        with, and your sentence does not say. Now fix one word: "the longest
+        increasing subsequence ending EXACTLY at i". Suddenly the transition
+        writes itself — look back at every j with a[j] < a[i] and take the best.
+        One word. That is the whole difference between a solvable problem and an
+        hour of adjusting indices until the sample passes. And notice the second
+        thing the word costs you: the answer is now the LARGEST cell anywhere,
+        not the last one, because the best chain need not end at the last
+        element. Students who choose the forced definition and then print dp[n]
+        get the recurrence right and the final line wrong. The definition tells
+        you where the answer lives. It tells you everything.
+      demonstrations:
+        - expression: "a = [6, 2, 5, 1, 7, 4, 8, 3], dp[i] = longest rising chain ENDING at i"
+          result: "[1, 1, 2, 1, 3, 2, 4, 2]"
+          note: >-
+            dp[6] = 4 because 2, 5, 7, 8 ends at position 6. Every cell is a
+            fact you can check by hand, which is exactly what a good definition
+            buys you.
+        - expression: "the answer, from that same array"
+          result: "4, the maximum — not dp[7], which is 2"
+          note: >-
+            The forced definition puts the answer at the largest cell anywhere.
+            Printing the last cell gives 2 here and is the standard way to lose
+            a correct recurrence on the final line.
+        - expression: "dp[i] = longest rising chain among the first i, with i not fixed"
+          result: "no transition exists"
+          note: >-
+            To extend by a[i] you must know what the chain ended with, and this
+            sentence has thrown that away. The sentence is the bug, and no
+            amount of staring at the loop will show it to you.
+        - expression: "stores [5, 1, 1, 5], no two adjacent, FREE definition dp[i] over the first i"
+          result: "[0, 5, 5, 6, 10]"
+          note: >-
+            dp[i] = max(dp[i-1], dp[i-2] + a[i-1]). The answer is dp[4] = 10,
+            the last cell, because nothing was fixed at i.
+        - expression: "the same stores, FORCED definition f[i] where store i IS taken"
+          result: "[5, 1, 6, 10]"
+          note: >-
+            Same problem, same answer of 10, different recurrence and a
+            different place to read it from — the maximum, not the last cell.
+            Two correct definitions, and you must know which one you chose.
+        - expression: "coins {1, 3, 4}, dp[i] = fewest coins paying exactly i"
+          result: "[0, 1, 2, 1, 1, 2, 2, 2, 2, 3, 3]"
+          note: >-
+            dp[6] = 2, by 3 + 3. The Ridge of Greed's largest-first rule answers
+            3 here. Note that "exactly" is part of the definition, which is why
+            the cell must also be able to say "impossible".
+      watch_out:
+        - warning: "If you cannot say what dp[i] means in one sentence, you have not started."
+          why: >-
+            The symptom is not a compile error. It is a loop that means one
+            thing on line 3 and something else on line 5, an answer wrong by a
+            small amount on medium inputs, and a debugging session with nothing
+            to check the table against — because you cannot say what any cell
+            was supposed to hold. Write the sentence in a comment. It costs ten
+            seconds and it is the only thing that makes the table falsifiable.
+        - warning: "\"Ending exactly at i\" and \"among the first i\" are different states."
+          why: >-
+            They have different recurrences, different base cases, and the
+            answer lives in a different place: the last cell for the free
+            definition, the maximum over all cells for the forced one. Mixing
+            them is the most common bug in the region, and on [6,2,5,1,7,4,8,3]
+            it silently answers 2 instead of 4.
+        - warning: "The answer is not always the last cell."
+          why: >-
+            It is wherever your definition says it is. If i is fixed by the
+            definition, the answer is a maximum or minimum over every i. Decide
+            this when you write the sentence, not after the recurrence works.
+        - warning: "A cell must be able to represent impossibility when the question allows it."
+          why: >-
+            "Fewest coins paying exactly i" has no answer for some i on some
+            systems, and a table that returns 0 there is lying. Choose a
+            sentinel, and choose one that survives the transition — see the next
+            secret for why INT_MAX does not.
+        - warning: "Naming a variable dp does not make it a state."
+          why: >-
+            The array is the least important part. Two students write identical
+            code; one can tell you what cell 7 holds and the other cannot, and
+            only one of them can fix it when it is wrong. I am not interested in
+            your array. I am interested in your sentence.
+      drills:
+        - id: dts-eval-lis-cells
+          kind: evaluate
+          prompt: >-
+            a = [6, 2, 5, 1, 7, 4, 8, 3] and dp[i] is the length of the longest
+            strictly rising subsequence ENDING exactly at position i (0-based).
+            What is dp[6]?
+          options: ["2", "3", "4", "5"]
+          answer: "4"
+          explanation: >-
+            The chain 2, 5, 7, 8 ends at position 6 and has four elements, and
+            nothing longer ends there. The full array of cells is
+            1, 1, 2, 1, 3, 2, 4, 2.
+        - id: dts-eval-lis-answer
+          kind: evaluate
+          prompt: >-
+            With that same array and that same definition, where is the answer
+            to "how long is the longest rising subsequence" to be read from?
+          options:
+            - "the largest cell anywhere, which is 4"
+            - "the last cell, dp[7], which is 2"
+            - "the sum of every cell"
+            - "dp[0], since the definition starts there"
+          answer: "the largest cell anywhere, which is 4"
+          explanation: >-
+            The definition FIXES the ending position, so each cell answers only
+            about chains ending there. The best chain need not end at the last
+            element — here it ends at position 6 — so the answer is the maximum.
+            Printing dp[7] gives 2.
+        - id: dts-eval-robber-free
+          kind: evaluate
+          prompt: >-
+            Stores hold [5, 1, 1, 5] and no two adjacent may be taken. With the
+            FREE definition — dp[i] is the best from the first i stores, saying
+            nothing about store i — what is dp[3]?
+          options: ["5", "6", "10", "11"]
+          answer: "6"
+          explanation: >-
+            dp[3] = max(dp[2], dp[1] + a[2]) = max(5, 5 + 1) = 6. The whole
+            array is 0, 5, 5, 6, 10, and the answer is the last cell because
+            nothing is fixed at i.
+        - id: dts-eval-coins-cell
+          kind: evaluate
+          prompt: >-
+            Coins are {1, 3, 4} and dp[i] is the fewest coins paying exactly i.
+            What is dp[6]?
+          options: ["1", "2", "3", "6"]
+          answer: "2"
+          explanation: >-
+            3 + 3. The Ridge of Greed's largest-first rule gives 4 + 1 + 1 = 3
+            here, and this cell is the reason that rule needed a master to
+            replace it rather than a tie-break to repair it.
+        - id: dts-prop-unwritable
+          kind: property
+          prompt: >-
+            "dp[i] is the longest rising subsequence among the first i
+            elements." What is actually wrong with this definition?
+          options:
+            - "no transition can be written from it, because extending by a[i] needs to know what the previous chain ended with"
+            - "it is correct but slower than the alternative"
+            - "it uses 1-based indexing"
+            - "nothing is wrong; it is the standard definition"
+          answer: "no transition can be written from it, because extending by a[i] needs to know what the previous chain ended with"
+          explanation: >-
+            The sentence has thrown away the one fact the recurrence needs. Add
+            the word "ending exactly at i" and the transition falls out
+            immediately. The bug is in the sentence, and no amount of staring at
+            the loop will reveal it.
+        - id: dts-prop-where-answer
+          kind: property
+          prompt: >-
+            What decides whether the answer is dp[n] or the maximum over every
+            cell?
+          options:
+            - "whether the definition FIXES something at i, or leaves i free"
+            - "whether the problem is a maximisation or a minimisation"
+            - "whether the array is 0-based or 1-based"
+            - "whether the recurrence looks backwards or forwards"
+          answer: "whether the definition FIXES something at i, or leaves i free"
+          explanation: >-
+            A forced definition — "ending exactly at i" — makes each cell answer
+            a narrower question, so the answer is a maximum or minimum over
+            them. A free definition already covers everything up to i, so the
+            last cell is the answer. The sentence decides it, not the code.
+        - id: dts-trap-last-cell
+          kind: trap
+          prompt: >-
+            A student defines dp[i] as the longest rising chain ending exactly
+            at i, fills the array correctly, and returns dp[n-1]. On
+            [6, 2, 5, 1, 7, 4, 8, 3] what does he print, and why?
+          options:
+            - "2 — the chain ending at the final element, because the best chain ends earlier"
+            - "4 — the code is correct"
+            - "1 — the last cell is never assigned"
+            - "8 — he printed the value instead of the length"
+          answer: "2 — the chain ending at the final element, because the best chain ends earlier"
+          explanation: >-
+            The recurrence is right and the final line is wrong, which is the
+            characteristic failure of the forced definition. The best chain
+            2, 5, 7, 8 ends at position 6; the last element is 3 and only 1, 3
+            or 2, 3 ends there.
+        - id: dts-recall-lis-state
+          kind: recall
+          prompt: >-
+            Write the definition of dp[i] that makes the longest increasing
+            subsequence solvable — the one word that matters is the one about
+            where the chain ends.
+          answer: "dp[i] = the longest increasing subsequence ending exactly at i"
+          accepts:
+            - "dp[i]=thelongestincreasingsubsequenceendingexactlyati"
+            - "thelongestincreasingsubsequenceendingati"
+            - "longestrisingchainendingexactlyati"
+            - "lengthofthelongestincreasingsubsequencethatendsatindexi"
+            - "dp[i]=longestissendingati"
+          explanation: >-
+            "Ending exactly at i" is the whole secret. It fixes what the chain
+            finished with, which is precisely the fact the transition needs, and
+            it moves the answer to the maximum over all cells.
+        - id: dts-apply-lis-answer
+          kind: apply
+          prompt: >-
+            `vector<int> dp(n, 1);` has been filled so that dp[i] is the longest
+            rising chain ending exactly at i. Write the expression that produces
+            the answer to the problem.
+          answer: "*max_element(dp.begin(), dp.end())"
+          accepts:
+            - "*max_element(dp.begin(),dp.end())"
+            - "*max_element(dp.begin(),dp.end());"
+            - "*ranges::max_element(dp)"
+            - "*std::max_element(dp.begin(),dp.end())"
+            - "*max_element(all(dp))"
+          explanation: >-
+            The maximum, not dp[n-1]. Because the definition fixed the ending
+            position, every cell answers a narrower question than the problem
+            did, and the problem's answer is the best of them.
+
+  # ---------------------------------------------------------------- stage 1
+  - id: stage-the-last-decision
+    order: 1
+    pattern: linear-dp
+    trial_problem_ids: [granary-tithe-run, mint-strike-count]
+    secret:
+      id: the-last-decision
+      name: Split on the Last Decision
+      idiom: "dp[i] = min over c of dp[i - c] + 1"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        You have the sentence. Now the transition, and it is mechanical — there
+        is exactly one question to ask. What was the LAST decision made? Not the
+        first. The last, because everything before it is described by a smaller
+        instance of your own definition, which is the entire trick. To pay 6
+        from {1, 3, 4}, the final coin was a 1, a 3 or a 4; whichever it was,
+        the rest paid exactly 6 minus it, and your definition already tells you
+        what that cost. So dp[6] = 1 + min(dp[5], dp[3], dp[2]) = 1 + min(2, 1,
+        2) = 2. Three cases, one line, no cleverness. Two rules govern the
+        cases. First, they must COVER every possibility, or you will miss the
+        optimum silently. Second, for a COUNT they must not overlap, or you will
+        count the same thing twice — and this is where students lose whole
+        contests, because overlap does not crash, it just returns a number that
+        is too big. Then the base case, which is not chosen but forced: dp[0] is
+        what your sentence says about the empty prefix. Paying nothing costs
+        zero coins. There is exactly one way to do nothing, so a count starts at
+        1, not 0. Say the sentence about nothing, out loud, and the base case is
+        already written.
+      demonstrations:
+        - expression: "coins {1, 3, 4}, dp[6] = 1 + min(dp[5], dp[3], dp[2])"
+          result: "1 + min(2, 1, 2) = 2"
+          note: >-
+            One case per possible last coin. The middle case wins: the final
+            coin was a 3, and the 3 before it is what dp[3] = 1 recorded.
+        - expression: "CPH's chain for the same system: solve(10)"
+          result: "solve(7) + 1 = solve(4) + 2 = solve(0) + 3 = 3"
+          note: >-
+            Unwinding the recurrence three times reaches the base case and the
+            answer is 3, by 3 + 3 + 4. The base case is where every chain stops.
+        - expression: "dp[0] for a COST, and dp[0] for a COUNT of ways"
+          result: "0 and 1"
+          note: >-
+            Paying nothing costs no coins. But there is exactly ONE way to do
+            nothing — the empty way — so a count starts at 1. Setting a count's
+            base to 0 makes every cell 0 and the bug is invisible.
+        - expression: "coins {1, 3, 4}, number of ORDERED ways to make 5"
+          result: "6"
+          note: >-
+            1+1+1+1+1, 1+1+3, 1+3+1, 3+1+1, 1+4, 4+1. The cases split on the
+            last coin and do not overlap, because two sequences with different
+            last coins are different sequences.
+        - expression: "coins {1, 2}, amount 3, outer loop over the AMOUNT"
+          result: "3"
+          note: >-
+            1+1+1, 1+2, 2+1. This counts ordered sequences, because the loop
+            lets a smaller amount be extended by any coin at any time.
+        - expression: "the same {1, 2} and 3, outer loop over the COIN"
+          result: "2"
+          note: >-
+            {1,1,1} and {1,2}. Committing to finish with one coin before
+            starting the next makes the cases disjoint as SETS. One loop order,
+            two different questions, and no error message tells you which you
+            asked.
+        - expression: "INT_MAX used as the \"impossible\" sentinel, then dp[i-c] + 1"
+          result: "INT_MIN"
+          note: >-
+            2147483647 + 1 wraps to -2147483648, which then wins every min() and
+            floods the table. Use 1e9, or guard the read before adding.
+      watch_out:
+        - warning: "Split on the LAST decision, not the first."
+          why: >-
+            Everything before the last decision must be describable by your own
+            definition on a smaller index, and that is only true when you cut at
+            the end. Cutting at the front leaves a suffix, which your sentence
+            says nothing about, and you will find yourself inventing a second
+            array to describe it.
+        - warning: "For a COUNT the cases must not overlap; for an OPTIMUM they need only cover."
+          why: >-
+            A maximum does not care if two cases both find the same answer. A
+            count does: it adds it twice. This is the difference between the two
+            coin-counting loop orders — 3 against 2 on {1,2} and the amount 3 —
+            and neither version crashes.
+        - warning: "The base case is forced by the definition, not chosen."
+          why: >-
+            dp[0] is the answer for the empty prefix. For a cost it is 0; for a
+            count of ways it is 1, because there is exactly one way to do
+            nothing. A count based at 0 makes the entire table 0, and every test
+            fails identically, which reads like the recurrence being wrong.
+        - warning: "INT_MAX is the wrong infinity."
+          why: >-
+            The transition adds to it. INT_MAX + 1 is signed overflow —
+            undefined behaviour, in practice INT_MIN — and it then wins every
+            comparison and poisons everything downstream. Use a constant like
+            1e9 or 1e18 that survives the additions the recurrence performs, or
+            check for the sentinel before adding to it.
+        - warning: "A case that is illegal must be omitted, not scored as zero."
+          why: >-
+            In the runic tablet a two-digit group beginning with 0 is not a rune
+            at all. Adding dp[i-2] anyway does not merely inflate the count, it
+            makes the impossible readable. Write the guard on the case, not on
+            the answer.
+      drills:
+        - id: tld-eval-coin-six
+          kind: evaluate
+          prompt: >-
+            Coins {1, 3, 4}, and dp[5] = 2, dp[3] = 1, dp[2] = 2 are already
+            known. Splitting on the last coin, what is dp[6]?
+          options: ["1", "2", "3", "4"]
+          answer: "2"
+          explanation: >-
+            dp[6] = 1 + min(dp[6-1], dp[6-3], dp[6-4]) = 1 + min(2, 1, 2) = 2.
+            The winning case is a final 3, leaving 3, which dp[3] = 1 already
+            settled.
+        - id: tld-eval-base-count
+          kind: evaluate
+          prompt: >-
+            dp[i] is the NUMBER of ways to reach step i. What must dp[0] be?
+          options: ["0", "1", "i", "it does not matter"]
+          answer: "1"
+          explanation: >-
+            There is exactly one way to do nothing — the empty way. Basing a
+            count at 0 multiplies every later cell by zero and the whole table
+            comes back empty, which looks like a broken recurrence rather than a
+            broken base case.
+        - id: tld-eval-ordered-ways
+          kind: evaluate
+          prompt: >-
+            Coins {1, 3, 4}. How many ORDERED sequences of coins total exactly
+            5? (1+4 and 4+1 count separately.)
+          options: ["4", "5", "6", "8"]
+          answer: "6"
+          explanation: >-
+            1+1+1+1+1, 1+1+3, 1+3+1, 3+1+1, 1+4, 4+1. Splitting on the last coin
+            gives disjoint cases, because two sequences ending in different
+            coins are different sequences.
+        - id: tld-eval-loop-order
+          kind: evaluate
+          prompt: >-
+            Coins {1, 2}, amount 3. The outer loop runs over the AMOUNT and the
+            inner over the coins, adding dp[s - c] into dp[s]. What does dp[3]
+            come out as?
+          options: ["1", "2", "3", "4"]
+          answer: "3"
+          explanation: >-
+            1+1+1, 1+2 and 2+1 — ordered sequences, because a partly built
+            amount can be extended by any coin at any point. Swapping the two
+            loops gives 2, counting the SETS {1,1,1} and {1,2}. Same code
+            shape, different question.
+        - id: tld-prop-why-last
+          kind: property
+          prompt: >-
+            Why does the case split have to be on the LAST decision rather than
+            the first?
+          options:
+            - "everything before the last decision is a smaller instance of the same definition, which is what makes the recurrence close"
+            - "the last decision is always the cheapest"
+            - "compilers optimise backward loops better"
+            - "it does not matter; either works equally well"
+          answer: "everything before the last decision is a smaller instance of the same definition, which is what makes the recurrence close"
+          explanation: >-
+            Cutting at the end leaves a prefix, and your sentence is about
+            prefixes. Cutting at the front leaves a suffix, which your sentence
+            does not describe, so you would need a second array to say anything
+            about it.
+        - id: tld-prop-cover-disjoint
+          kind: property
+          prompt: >-
+            What must be true of the cases when the cell holds a COUNT, that
+            need not be true when it holds a maximum?
+          options:
+            - "they must not overlap, or the same object is counted twice"
+            - "they must be sorted"
+            - "there must be exactly two of them"
+            - "each must be individually optimal"
+          answer: "they must not overlap, or the same object is counted twice"
+          explanation: >-
+            A maximum is indifferent to two cases finding the same answer; a sum
+            is not. Overlap does not crash and does not warn — it returns a
+            number that is simply too large, which is why the two coin loop
+            orders are worth knowing apart.
+        - id: tld-trap-intmax
+          kind: trap
+          prompt: >-
+            The impossible sentinel is INT_MAX, and the transition is
+            `dp[i] = min(dp[i], dp[i-c] + 1)` with no guard. What happens?
+          options:
+            - "INT_MAX + 1 wraps to INT_MIN, which wins every min() and floods the table"
+            - "nothing; INT_MAX saturates rather than wrapping"
+            - "the program crashes with an arithmetic exception"
+            - "the compiler rejects the addition"
+          answer: "INT_MAX + 1 wraps to INT_MIN, which wins every min() and floods the table"
+          explanation: >-
+            Signed overflow is undefined behaviour and in practice wraps to
+            -2147483648. That value then beats every real candidate, so
+            unreachable amounts come out as hugely negative and drag their
+            neighbours down with them. Use 1e9, or check the sentinel before
+            adding.
+        - id: tld-recall-coin-transition
+          kind: recall
+          prompt: >-
+            Write the recurrence for the fewest coins paying exactly i, given a
+            container `coin`. Use dp and a minimum over the possible last coins.
+          answer: "dp[i] = min(dp[i], dp[i - c] + 1)"
+          accepts:
+            - "dp[i]=min(dp[i],dp[i-c]+1)"
+            - "dp[i]=min(dp[i],dp[i-c]+1);"
+            - "dp[i]=min(dp[i],1+dp[i-c])"
+            - "dp[x]=min(dp[x],dp[x-c]+1)"
+          explanation: >-
+            One case per possible last coin c, guarded by c <= i and by the
+            sentinel. Memorise the shape rather than the letters: one plus the
+            best answer for what remains after the last decision.
+        - id: tld-apply-count-base
+          kind: apply
+          prompt: >-
+            `vector<long long> dp(n + 1, 0);` will count routes to each of n
+            stones. Write the single statement that sets the base case correctly.
+          answer: "dp[0] = 1;"
+          accepts:
+            - "dp[0]=1;"
+            - "dp[0]=1"
+            - "dp.at(0)=1;"
+            - "dp[0]=1LL;"
+          explanation: >-
+            One way to do nothing. This is the whole reason the stone ford's
+            counts come out as Fibonacci numbers rather than as zeros, and it is
+            forced by the definition rather than chosen to make the sample pass.
+
+  # ---------------------------------------------------------------- stage 2
+  - id: stage-memo-or-table
+    order: 2
+    pattern: linear-dp
+    trial_problem_ids: [runic-tablet-decoding]
+    secret:
+      id: memo-or-table
+      name: The Same Recurrence, Twice
+      idiom: "for (int i = 1; i <= n; ++i)   // every cell it reads is already final"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        Two ways to run one recurrence, and they are the SAME recurrence — this
+        is not a choice of algorithm, it is a choice of who decides the order.
+        Top-down you write the recursion the definition describes and cache each
+        answer; the call stack works out the order for you. Bottom-up you write
+        a loop and take responsibility for the order yourself. What makes either
+        correct is one invariant, and it is the only thing worth memorising
+        here: every cell the transition READS must already be final. Top-down
+        gets that free, which is its whole virtue — when the dependency order is
+        awkward, or the reachable states are a sparse scattering of the possible
+        ones, write the recursion and stop thinking about it. Bottom-up costs
+        you the thought and repays it with a constant factor, no stack, and the
+        chance to throw the array away entirely when the recurrence only reaches
+        back two cells. What neither is, is optional. Naive recursion on
+        Fibonacci makes 331160281 calls to reach fib(40); the same recursion with
+        a cache visits 41 states. That is not an optimisation. The subproblems
+        overlap, and remembering them is the technique — the word "programming"
+        here means tabulation, and it always did.
+      demonstrations:
+        - expression: "naive recursive fib(40), counting calls"
+          result: "331160281"
+          note: >-
+            Three hundred and thirty-one million calls to produce one number.
+            The tree is exponential because the same subproblems are recomputed
+            along every branch.
+        - expression: "the same recursion with a cache"
+          result: "41 distinct states"
+          note: >-
+            fib(0) through fib(40). Each is computed once and read thereafter.
+            Identical code plus four lines of caching, and the exponent is gone.
+        - expression: "fib(40) itself"
+          result: "102334155"
+          note: >-
+            Worth knowing that this fits in an int and fib(47) does not. Counts
+            that grow like this are why counting problems arrive with a modulus.
+        - expression: "the bottom-up invariant, for dp[i] = dp[i-1] + dp[i-2]"
+          result: "i ascending"
+          note: >-
+            Both cells the transition reads have smaller indices, so an
+            ascending loop settles them first. The loop direction is not a
+            style; it is derived from which cells are read.
+        - expression: "the same recurrence, rolled into scalars"
+          result: "O(1) space"
+          note: >-
+            The transition never reaches back further than two, so two variables
+            replace the array. Available exactly when the recurrence has fixed
+            width, and worth taking when n is 10^7.
+        - expression: "top-down over 10^6 states on the default stack"
+          result: "segfault, no output"
+          note: >-
+            The recursion is correct and the depth is not. Every sample passes,
+            because samples are small. Rewrite as a loop rather than raising the
+            stack limit.
+        - expression: "memo initialised to -1 on a problem whose true answer can be -1"
+          result: "that state is recomputed every time"
+          note: >-
+            The cache silently stops caching and the exponent comes back. Use a
+            separate `ready` flag, as CPH does, or a sentinel the answer cannot
+            take.
+      watch_out:
+        - warning: "The invariant is the whole of it: every cell the transition reads must already be final."
+          why: >-
+            That single sentence decides the loop direction bottom-up and is
+            granted automatically top-down. When you cannot see the order, that
+            is not a reason to guess at the loop bounds — it is the signal to
+            write the recursion and let the stack discover it.
+        - warning: "Recursion depth is a real limit and it fails only on the judge."
+          why: >-
+            A chain of 10^6 frames overflows the default stack. There is no
+            warning and no output, just a segfault on the large tests while
+            every sample passes. If the state space is a long chain rather than
+            a shallow tree, write the loop.
+        - warning: "A memo sentinel must be a value the answer cannot take."
+          why: >-
+            -1 is the usual choice and it is wrong for any problem whose answer
+            may legitimately be -1, or which stores minimums that go negative.
+            The state is then recomputed on every visit, the cache does nothing,
+            and the only symptom is a time-limit verdict on an algorithm you
+            believe is linear. Keep a separate ready flag.
+        - warning: "Store the answer BEFORE returning it, on every path out."
+          why: >-
+            An early return that skips the write leaves that state uncached
+            forever. It is the same failure as the wrong sentinel and has the
+            same symptom — correct output, exponential time — which makes it
+            invisible to every test that checks answers rather than clocks.
+        - warning: "Rolling the array away is only safe for a fixed-width recurrence."
+          why: >-
+            Two scalars work for dp[i-1] and dp[i-2]. The moment the transition
+            reaches back a variable distance — "you may jump up to k" — you need
+            the last k cells, and collapsing to scalars silently reads stale
+            values instead of failing.
+      drills:
+        - id: mot-eval-fib-calls
+          kind: evaluate
+          prompt: >-
+            The naive recursion `fib(n) = fib(n-1) + fib(n-2)` is called on
+            n = 40. Roughly how many calls are made in total?
+          options:
+            - "about 40"
+            - "about 1600"
+            - "about 331 million"
+            - "about 10^18"
+          answer: "about 331 million"
+          explanation: >-
+            331160281 calls exactly. The recursion tree is exponential because
+            every branch recomputes the same subproblems, and remembering them
+            is the entire technique.
+        - id: mot-eval-memo-states
+          kind: evaluate
+          prompt: >-
+            The same recursion, with each answer cached the first time it is
+            computed. How many distinct states are visited for n = 40?
+          options: ["41", "80", "1600", "331160281"]
+          answer: "41"
+          explanation: >-
+            fib(0) through fib(40) inclusive. Each is computed once; every other
+            request reads the cache. Same code, four extra lines, exponent gone.
+        - id: mot-eval-direction
+          kind: evaluate
+          prompt: >-
+            The transition is dp[i] = dp[i-1] + dp[i-2]. Which loop direction
+            satisfies "every cell the transition reads is already final"?
+          options:
+            - "i ascending, because both cells read have smaller indices"
+            - "i descending, because the answer is at the end"
+            - "either; the recurrence is symmetric"
+            - "neither; this recurrence needs recursion"
+          answer: "i ascending, because both cells read have smaller indices"
+          explanation: >-
+            The direction is derived, not chosen: list the cells the transition
+            reads, and run the loop so those are settled first. That is all the
+            invariant ever asks.
+        - id: mot-prop-when-topdown
+          kind: property
+          prompt: >-
+            When is top-down memoisation the better choice over a bottom-up
+            loop?
+          options:
+            - "when the dependency order is awkward to write, or the reachable states are sparse among the possible ones"
+            - "when n is very large"
+            - "when the answer must be exact"
+            - "never; tabulation is strictly better"
+          answer: "when the dependency order is awkward to write, or the reachable states are sparse among the possible ones"
+          explanation: >-
+            The stack works the order out for you, and it visits only states
+            that are actually reached. You pay a constant factor and the risk of
+            a deep stack. The recurrence is identical either way — this is a
+            choice about who decides the order, nothing more.
+        - id: mot-prop-invariant
+          kind: property
+          prompt: >-
+            State the single condition that makes a bottom-up fill correct.
+          options:
+            - "every cell the transition reads must already hold its final value"
+            - "the loop must run in increasing order of i"
+            - "the array must be initialised to zero"
+            - "the base case must be the smallest index"
+          answer: "every cell the transition reads must already hold its final value"
+          explanation: >-
+            Ascending order is a consequence of this condition for a backward
+            recurrence, not the condition itself — some recurrences need
+            descending, and the knapsack's capacity loop needs descending for a
+            reason that only this sentence explains.
+        - id: mot-trap-memo-sentinel
+          kind: trap
+          prompt: >-
+            The memo array is filled with -1 to mean "not yet computed", on a
+            problem whose true answer for some states genuinely is -1. What is
+            the symptom?
+          options:
+            - "those states are recomputed on every visit, so the runtime goes exponential while the answers stay correct"
+            - "the answers come back as -1 everywhere"
+            - "the program crashes on the first cache read"
+            - "nothing; -1 is always a safe sentinel"
+          answer: "those states are recomputed on every visit, so the runtime goes exponential while the answers stay correct"
+          explanation: >-
+            The cache stops caching precisely where the answer is -1. Every test
+            that checks answers passes and the judge reports a time limit, which
+            sends you looking for the wrong bug. Keep a separate ready flag.
+        - id: mot-recall-invariant
+          kind: recall
+          prompt: >-
+            Write, in one sentence, the condition that decides the order a
+            bottom-up table is filled in.
+          answer: "every cell the transition reads must already be final"
+          accepts:
+            - "everycellthetransitionreadsmustalreadybefinal"
+            - "everystatetherecurrencereadsmustalreadybecomputed"
+            - "fillinanorderwhereallthecellsyoureadarealreadydone"
+            - "dependenciesmustbecomputedfirst"
+            - "topologicalorderofthedependencies"
+          explanation: >-
+            Memorise this rather than "loop upwards". Upwards is the answer for
+            a backward-looking recurrence and the WRONG answer for the
+            knapsack's capacity axis, which the next secret will show you.
+        - id: mot-apply-roll
+          kind: apply
+          prompt: >-
+            `long long a = 1, b = 1;` hold dp[i-2] and dp[i-1] for
+            dp[i] = dp[i-1] + dp[i-2]. Write the statement that advances both by
+            one step, using a temporary or std::exchange.
+          answer: "b = a + b, a = b - a;"
+          accepts:
+            - "b=a+b,a=b-a;"
+            - "a=exchange(b,a+b);"
+            - "a=std::exchange(b,a+b);"
+            - "longlongt=a+b;a=b;b=t;"
+            - "tie(a,b)=make_pair(b,a+b);"
+          explanation: >-
+            Any form that leaves a holding the old b and b holding their sum.
+            The recurrence reaches back a FIXED distance of two, which is
+            exactly the condition that lets the array collapse to scalars.
+
+  # ---------------------------------------------------------------- stage 3
+  - id: stage-capacity-axis
+    order: 3
+    pattern: knapsack-dp
+    trial_problem_ids: [quarry-cart-load, tribute-exact-weight]
+    secret:
+      id: capacity-axis
+      name: What the Budget Forces Into the State
+      idiom: "for (int w = C; w >= weight; --w) dp[w] = max(dp[w], dp[w - weight] + value);"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        Here is where the Ridge of Greed ends, and I want you to see exactly
+        where the ground gives way. Capacity 50, three blocks: 60 at weight 10,
+        100 at weight 20, 120 at weight 30. Rank them by value per weight — 6,
+        5, 4 — and take greedily: 60 and 100, filling 30 of your 50, and the
+        third will not fit in the remaining 20. You have 160. The answer is 220,
+        from the second and third, which fill the cart exactly. No ranking finds
+        it. There is no tie-break that repairs it, because the failure is not in
+        the order: taking a block consumes capacity that a better COMBINATION
+        needed, and a ranking of blocks one at a time cannot see combinations.
+        So the remaining room becomes part of what you must remember, and the
+        state grows an axis: dp[i][w], the best value from the first i blocks
+        within w of room. Both cases of the transition — take it, skip it — read
+        row i-1. That fact is not decoration; it is what forces everything that
+        follows. Roll the item axis away to save memory and dp[w] must still see
+        row i-1's value in dp[w - weight] when it reads it. The cell it reads is
+        to its LEFT. So the sweep must go RIGHT to LEFT, leaving the left stale
+        until read. Run it the other way and dp[w - weight] has already taken
+        this block, so it is taken twice, and three times — which is the
+        unbounded problem, computed silently and correctly, in answer to a
+        question nobody asked. One item of weight 1 and value 1 in a capacity of
+        3: descending gives 0 1 1 1, ascending gives 0 1 2 3. Learn both. They
+        differ by one character and the compiler will never tell you which one
+        you meant.
+      demonstrations:
+        - expression: "capacity 50, blocks (60,10) (100,20) (120,30), by value per weight"
+          result: "160"
+          note: >-
+            Ratios 6, 5, 4. Takes the first two, fills 30, and cannot fit the
+            third into the remaining 20. This is the greedy that Dovan Rhe
+            warned you could not be defended.
+        - expression: "the same three blocks, by table"
+          result: "220"
+          note: >-
+            100 + 120, filling the cart exactly at 50. No ordering of the blocks
+            produces this, because the winning pair is not a prefix of any
+            ranking.
+        - expression: "the same three blocks, if they could be cut"
+          result: "240"
+          note: >-
+            60 + 100 + two thirds of 120. With divisibility the ratio order is
+            provably optimal and no table is needed. One word in the statement
+            moves the problem across the boundary, in both directions.
+        - expression: "one item (value 1, weight 1), capacity 3, sweep DESCENDING"
+          result: "dp = 0 1 1 1"
+          note: "Correct 0/1: the item exists once and contributes once."
+        - expression: "the identical code with the sweep ASCENDING"
+          result: "dp = 0 1 2 3"
+          note: >-
+            The item is taken three times, because dp[w-1] had already been
+            updated with it. That is the unbounded answer, delivered silently to
+            a question about a single block.
+        - expression: "capacity 4, items (value 4, weight 2) and (value 5, weight 3)"
+          result: "0/1 gives 5, unbounded gives 8"
+          note: >-
+            Two of the first item is 8 and beats any single choice. The two
+            tables differ by one character of loop direction and by nothing else.
+        - expression: "weights [1, 3, 3, 5], every reachable total from 0 to 12"
+          result: "all of them except 2 and 10"
+          note: >-
+            The reachability form, where the cell is a yes or no. 7 is reachable
+            as 1 + 3 + 3; 2 is not reachable at all, and neither is its mirror.
+        - expression: "crates [1, 5, 11, 5] split between two towers"
+          result: "difference 0"
+          note: >-
+            The total is 22 and 11 is reachable, so both sides carry 11.
+            Partition is subset-sum against half the total, read out at the end.
+      watch_out:
+        - warning: "The 0/1 capacity sweep runs DOWNWARDS. This is derived, not remembered."
+          why: >-
+            Both cases of the transition read row i-1. Rolled onto one row, the
+            cell read is dp[w - weight], to the left, so the left must still be
+            stale when it is read — which means w descends. Ascending computes
+            the unbounded answer instead: 0 1 2 3 rather than 0 1 1 1 on a
+            single item of weight 1 in a capacity of 3.
+        - warning: "Every sample where no item is worth repeating passes under BOTH directions."
+          why: >-
+            That is what makes this a judge bug rather than a sample bug. If the
+            optimal solution happens to use each item at most once anyway, the
+            two loops agree exactly. Test it deliberately on a capacity that is
+            a multiple of one item's weight.
+        - warning: "The \"skip\" case needs no code, and writing it can break the roll."
+          why: >-
+            Leaving the cell alone IS keeping row i-1's value, which is exactly
+            what skipping means. Students who roll the axis away and then still
+            assign dp[w] = dp[w] or clear the row between items lose the skip
+            case and count only subsets containing the last item.
+        - warning: "\"At most w\" and \"exactly w\" have different borders."
+          why: >-
+            For the exact form only dp[0] starts legal and everything else
+            starts impossible; initialising the row to all-zero claims every
+            total is already achievable from no items at all. On [1,3,3,5] that
+            is the difference between correctly refusing 2 and cheerfully
+            accepting it.
+        - warning: "Pseudo-polynomial means the capacity must fit in memory."
+          why: >-
+            O(n * W) is linear in the VALUE of the capacity, not in its number
+            of digits. W up to 10^5 is routine; W up to 10^18 means this pattern
+            is not the intended one and no amount of optimisation will make it
+            so. Read the bound before choosing the method.
+        - warning: "The capacity axis is usually int; the value in the cell usually is not."
+          why: >-
+            100 items worth 10^9 each reach 10^11, which overflows int while the
+            weights sit comfortably inside it. Declare the dp array long long
+            and leave the index alone.
+      drills:
+        - id: cax-eval-greedy-fail
+          kind: evaluate
+          prompt: >-
+            Capacity 50, indivisible blocks (value 60, weight 10), (100, 20),
+            (120, 30). Taking greedily by value per weight, what total is
+            collected?
+          options: ["160", "180", "220", "240"]
+          answer: "160"
+          explanation: >-
+            Ratios are 6, 5 and 4, so the first two go in for 160 and fill 30 of
+            the 50; the third needs 30 and only 20 remains. The optimum is
+            100 + 120 = 220.
+        - id: cax-eval-optimum
+          kind: evaluate
+          prompt: >-
+            The same capacity and the same three blocks. What is the true
+            optimum?
+          options: ["160", "180", "220", "240"]
+          answer: "220"
+          explanation: >-
+            100 + 120 at weights 20 + 30, filling the cart exactly. Note that it
+            omits the best-rated block entirely, which is why no ranking and no
+            tie-break can reach it.
+        - id: cax-eval-direction
+          kind: evaluate
+          prompt: >-
+            One item of weight 1 and value 1, capacity 3, one rolled dp row. The
+            capacity loop runs ASCENDING. What does dp end up as?
+          options:
+            - "0 1 2 3 — the item is taken three times"
+            - "0 1 1 1 — correct 0/1 behaviour"
+            - "0 0 0 0 — the item never fits"
+            - "1 1 1 1"
+          answer: "0 1 2 3 — the item is taken three times"
+          explanation: >-
+            dp[2] reads dp[1], which this same item has already updated, so the
+            item is reused. That is the unbounded answer. Descending gives
+            0 1 1 1, and the two differ by one character.
+        - id: cax-eval-unbounded
+          kind: evaluate
+          prompt: >-
+            Capacity 4, unlimited supply, items (value 4, weight 2) and
+            (value 5, weight 3). What is the best total value?
+          options: ["5", "8", "9", "4"]
+          answer: "8"
+          explanation: >-
+            Two of the first item: weight 4 exactly, value 8. Restricted to one
+            of each the answer is 5, so this pair separates the two loop
+            directions on real data.
+        - id: cax-eval-reachable
+          kind: evaluate
+          prompt: >-
+            Bars weighing 1, 3, 3 and 5. Which totals between 0 and 12 cannot be
+            assembled from some subset?
+          options:
+            - "2 and 10"
+            - "2 and 11"
+            - "none; all are reachable"
+            - "2, 7 and 10"
+          answer: "2 and 10"
+          explanation: >-
+            Nothing sums to 2 — the only pieces below it are a single 1 — and 10
+            is its mirror, being the total 12 minus 2. 7 is reachable as
+            1 + 3 + 3.
+        - id: cax-prop-why-second-axis
+          kind: property
+          prompt: >-
+            What exactly forces the remaining capacity into the state?
+          options:
+            - "whether taking an item is legal depends on how much room is left, so position alone does not determine the choice"
+            - "the items are given in an arbitrary order"
+            - "the values can be large"
+            - "there are two numbers per item"
+          answer: "whether taking an item is legal depends on how much room is left, so position alone does not determine the choice"
+          explanation: >-
+            One index suffices while "where I am" is the whole answer. When the
+            legality and the value of a decision both depend on a shared budget
+            already spent, that remainder is state, and leaving it out makes the
+            recurrence unwritable.
+        - id: cax-prop-divisible
+          kind: property
+          prompt: >-
+            Which single word in a statement decides between the ratio greedy
+            and this table?
+          options:
+            - "divisible — a fractional item makes the ratio order provably optimal, and an indivisible one makes it wrong"
+            - "positive — negative values would break the ordering"
+            - "distinct — repeated weights make the comparator ambiguous"
+            - "unlimited — repetition is what needs a table"
+          answer: "divisible — a fractional item makes the ratio order provably optimal, and an indivisible one makes it wrong"
+          explanation: >-
+            With divisibility the capacity is filled a unit at a time and every
+            unit is interchangeable, which is a one-line exchange argument.
+            Without it, taking a better ratio can consume capacity a better
+            combination needed, and the argument has nothing to say. Repetition
+            changes the loop direction, not the method.
+        - id: cax-trap-forward
+          kind: trap
+          prompt: >-
+            A 0/1 solution answers correctly on every sample and comes back too
+            LARGE on the judge. The capacity loop reads
+            `for (int w = weight; w <= C; ++w)`. What is happening?
+          options:
+            - "dp[w - weight] has already taken this item, so items are reused — it is solving the unbounded problem"
+            - "the loop reads past the end of the array"
+            - "the values overflow int"
+            - "the items need to be sorted first"
+          answer: "dp[w - weight] has already taken this item, so items are reused — it is solving the unbounded problem"
+          explanation: >-
+            Too large, never too small, and correct on every input where the
+            optimum happens to use each item once anyway. Reverse the loop. The
+            reason is the invariant from the previous secret: both cases read
+            row i-1, so the cell to the left must still be stale.
+        - id: cax-recall-loop
+          kind: recall
+          prompt: >-
+            Write the 0/1 knapsack inner loop header, over capacity `C` for an
+            item of weight `weight`.
+          answer: "for (int w = C; w >= weight; --w)"
+          accepts:
+            - "for(intw=C;w>=weight;--w)"
+            - "for(intw=C;w>=weight;w--)"
+            - "for(intw=C;w>=wt;--w)"
+            - "for(intw=C;w>=weight;--w){"
+            - "for(intw=capacity;w>=weight;--w)"
+          explanation: >-
+            Descending, stopping at the item's weight so no bounds check is
+            needed inside. Memorise the pairing rather than the letters: 0/1
+            descends, unbounded ascends, and the difference is which row the
+            cell you read belongs to.
+        - id: cax-apply-transition
+          kind: apply
+          prompt: >-
+            Inside that loop, with `vector<long long> dp` rolled to one row,
+            write the statement that considers taking the item of weight
+            `weight` and value `value`.
+          answer: "dp[w] = max(dp[w], dp[w - weight] + value);"
+          accepts:
+            - "dp[w]=max(dp[w],dp[w-weight]+value);"
+            - "dp[w]=max(dp[w],dp[w-weight]+value)"
+            - "dp[w]=max(dp[w],value+dp[w-weight]);"
+            - "dp[w]=max(dp[w],dp[w-wt]+val);"
+          explanation: >-
+            Two cases in one line. `dp[w]` unchanged is the skip case — leaving
+            the cell alone IS keeping the previous item's answer — and the
+            second argument is the take case. Writing the skip case explicitly
+            is how students break the rolled version.
+
+  # ---------------------------------------------------------------- stage 4
+  - id: stage-two-prefixes
+    order: 4
+    pattern: two-sequence-dp
+    trial_problem_ids: [scribe-copy-errors, twin-ledger-agreement]
+    secret:
+      id: two-prefixes
+      name: One Index Per Input
+      idiom: "dp[i][j] over a[0..i) and b[0..j); compare a[i-1] with b[j-1]"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        Two inputs being aligned against each other need two indices, and the
+        state is a table. Say the sentence with BOTH indices in it: dp[i][j] is
+        the answer for the first i characters of a against the first j of b. Now
+        fix the convention once, in a comment, and obey it everywhere: cell
+        (i, j) covers a[0..i) and b[0..j), so the characters it has just
+        consumed are a[i-1] and b[j-1]. Almost every bug in this family is that
+        convention breaking halfway down a loop — comparing a[i] with b[j], or
+        sizing the table n by m and having nowhere to put row 0. The table is
+        (n+1) by (m+1) because the empty prefix is a real case with a real
+        answer, and the border is where that answer goes. It is forced, not
+        chosen: turning the first i characters into the empty string costs i
+        deletions, so dp[i][0] = i. Leave the border out and every distance comes
+        back too small by the length of the shorter prefix, and every test where
+        the two inputs are the same length still passes. Then the recurrence,
+        which reads exactly three cells and each is a move: from above, delete;
+        from the left, insert; from the diagonal, match or substitute. Every
+        problem in the family is those three moves with different costs. And one
+        asymmetry worth holding: in LCS a match is not a CHOICE. If the two
+        consumed characters agree, pairing them is always safe, so the cell is
+        the diagonal plus one and the other two moves need not be considered at
+        all.
+      demonstrations:
+        - expression: "edit distance LOVE to MOVIE, final cell"
+          result: "2"
+          note: >-
+            Substitute L to M, then insert I. The full bottom row of the table
+            is 4 4 3 2 2 2, and the corner is the answer.
+        - expression: "the border of that table, dp[i][0]"
+          result: "0 1 2 3 4"
+          note: >-
+            Turning i characters into nothing costs i deletions. Forced by the
+            definition. Omit it and every answer is short by the length of the
+            shorter prefix.
+        - expression: "edit distance kitten to sitting"
+          result: "3"
+          note: >-
+            Two substitutions and one insertion. Different lengths in both
+            directions, so a missing border shows up immediately.
+        - expression: "abcde against bcde, compared position by position"
+          result: "5 mismatches"
+          note: >-
+            Every column differs and one character is left over. The true
+            distance is 1 — strike the leading a. One missing character shifts
+            everything, which is precisely why two independent indices exist.
+        - expression: "LCS of AGGTAB and GXTXAYB"
+          result: "4, namely GTAB"
+          note: >-
+            The border here is all zeros: nothing is common to a prefix and the
+            empty string. A match is free, so the cell is the diagonal plus one.
+        - expression: "ABCD against DCBA, counting shared letters without order"
+          result: "4, but the LCS is 1"
+          note: >-
+            Every letter is present in both and the longest run in order is a
+            single letter. A frequency count throws away exactly the thing being
+            measured.
+        - expression: "the fewest deletions from BOTH of sea and eat to make them equal"
+          result: "2"
+          note: >-
+            The LCS is ea, of length 2, so 3 + 3 - 2 * 2 = 2. The same table
+            read differently, and the coefficient is 2 because both parties pay.
+        - expression: "the shortest string containing both abac and cab in order"
+          result: "5"
+          note: >-
+            n + m - LCS = 4 + 3 - 2 = 5, namely cabac. Note the coefficient is
+            1 here, not 2, because a shared character is written once.
+      watch_out:
+        - warning: "Fix the index convention in a comment before you write the loop."
+          why: >-
+            Cell (i, j) covers a[0..i) and b[0..j), so it compares a[i-1] with
+            b[j-1]. Comparing a[i] with b[j] inside a one-based table shifts
+            every answer by one and reads out of range at the last cell. This is
+            the most common bug in the family, by a wide margin.
+        - warning: "The table is (n+1) by (m+1). The empty prefix is a real case."
+          why: >-
+            Sizing it n by m leaves nowhere for the border, and the border is
+            where the definition's answer about nothing lives. The symptom is
+            either an out-of-range write or an off-by-one everywhere, depending
+            on which mistake you make first.
+        - warning: "Fill the border explicitly. Zero-initialisation is only right for LCS."
+          why: >-
+            For edit distance dp[i][0] = i and dp[0][j] = j; for LCS both are 0.
+            A zeroed border on an edit distance quietly claims that turning six
+            characters into nothing is free, and every test with equal-length
+            inputs still passes.
+        - warning: "Rolling to a SINGLE row loses the diagonal before it is read."
+          why: >-
+            The substitution case needs the previous row's left-diagonal, and a
+            single row has already overwritten it with the current row's value.
+            Answers come back too small on inputs with many substitutions. Two
+            full rows is the safe reduction; one row plus a saved scalar is the
+            fast one, and it is not worth the saving unless the memory limit
+            demands it.
+        - warning: "dp[n][m] is the answer only if the question was about the WHOLE inputs."
+          why: >-
+            Longest common SUBSTRING — contiguous — is a different recurrence
+            whose answer is the maximum over the entire table. Reaching for the
+            corner out of habit is correct for edit distance and LCS and wrong
+            for the contiguous variants.
+        - warning: "The product of the lengths is the constraint that decides viability."
+          why: >-
+            n, m <= 5000 is 25 million cells and intended. n, m <= 100000 is
+            10^10 cells and 40 GB, which means the setter had something else in
+            mind entirely. Read the bound on the PRODUCT, not on the sum.
+      drills:
+        - id: tpx-eval-love-movie
+          kind: evaluate
+          prompt: >-
+            What is the edit distance between LOVE and MOVIE, allowing
+            insertion, deletion and substitution at a cost of one each?
+          options: ["1", "2", "3", "5"]
+          answer: "2"
+          explanation: >-
+            Substitute L to M, giving MOVE, then insert I, giving MOVIE. One
+            operation is plainly not enough, so 2 is minimal.
+        - id: tpx-eval-border
+          kind: evaluate
+          prompt: >-
+            In an edit-distance table over a of length 6 and b of length 4, what
+            is dp[6][0]?
+          options: ["0", "4", "6", "10"]
+          answer: "6"
+          explanation: >-
+            Turning the first six characters of a into the empty string takes
+            six deletions. The border is forced by the definition — it is what
+            your sentence says when one prefix is empty.
+        - id: tpx-eval-naive
+          kind: evaluate
+          prompt: >-
+            Someone compares abcde with bcde position by position, counting
+            mismatched columns plus the leftover character. What does that give,
+            and what is the true edit distance?
+          options:
+            - "5 and 1"
+            - "1 and 1"
+            - "4 and 4"
+            - "5 and 5"
+          answer: "5 and 1"
+          explanation: >-
+            Every column mismatches after the shift and one character is left
+            over. The truth is a single deletion of the leading a. Position-wise
+            comparison cannot express a shift, which is exactly what the second
+            index buys.
+        - id: tpx-eval-lcs
+          kind: evaluate
+          prompt: >-
+            What is the length of the longest common subsequence of AGGTAB and
+            GXTXAYB?
+          options: ["2", "3", "4", "5"]
+          answer: "4"
+          explanation: >-
+            GTAB. Note it is not contiguous in either string — the freedom to
+            skip in both is what two independent indices are for.
+        - id: tpx-prop-three-moves
+          kind: property
+          prompt: >-
+            The recurrence reads exactly three cells. Which are they, and what
+            does each correspond to?
+          options:
+            - "above is delete, left is insert, diagonal is match or substitute"
+            - "above is insert, left is delete, diagonal is skip both"
+            - "left, right and diagonal — one per character of the alphabet"
+            - "only the diagonal matters; the others are an optimisation"
+          answer: "above is delete, left is insert, diagonal is match or substitute"
+          explanation: >-
+            Above advances in a alone, left advances in b alone, and the
+            diagonal advances in both. Every problem in this family is those
+            three moves with different costs attached.
+        - id: tpx-prop-match-free
+          kind: property
+          prompt: >-
+            In LCS, why does the recurrence stop considering the other two moves
+            when the consumed characters agree?
+          options:
+            - "pairing two equal characters is always safe, so no better answer can come from dropping either"
+            - "the other two cells are always smaller anyway"
+            - "it is an optimisation that is technically incorrect but passes"
+            - "because the border is zero"
+          answer: "pairing two equal characters is always safe, so no better answer can come from dropping either"
+          explanation: >-
+            A match is not a choice. That is why the LCS recurrence is shorter
+            than edit distance despite living in the same table, and it is the
+            one place in this family where a case may be dropped rather than
+            compared.
+        - id: tpx-trap-index-shift
+          kind: trap
+          prompt: >-
+            Inside a table indexed from 1, a student writes
+            `if (a[i] == b[j])`. What goes wrong?
+          options:
+            - "the cell compares the characters AFTER the ones it covers, so every answer shifts and the last cell reads out of range"
+            - "nothing; both conventions work"
+            - "the comparison is always false"
+            - "it only fails when the strings are the same length"
+          answer: "the cell compares the characters AFTER the ones it covers, so every answer shifts and the last cell reads out of range"
+          explanation: >-
+            Cell (i, j) covers a[0..i) and b[0..j), so the characters it just
+            consumed are a[i-1] and b[j-1]. Write the convention above the loop
+            and check both indices against it before compiling; this single bug
+            accounts for most wrong answers in the family.
+        - id: tpx-recall-border
+          kind: recall
+          prompt: >-
+            Write the two border assignments for an edit-distance table, as they
+            would appear inside their loops.
+          answer: "dp[i][0] = i; dp[0][j] = j;"
+          accepts:
+            - "dp[i][0]=i;dp[0][j]=j;"
+            - "dp[i][0]=i;dp[0][j]=j"
+            - "dp[0][j]=j;dp[i][0]=i;"
+            - "dp[i][0]=i,dp[0][j]=j;"
+          explanation: >-
+            i deletions to reach nothing, j insertions to build from nothing.
+            Forced by the definition, not chosen. For LCS both are zero, and
+            knowing which problem gets which is the point.
+        - id: tpx-apply-edit-cell
+          kind: apply
+          prompt: >-
+            Write the assignment for the interior cell of an edit-distance
+            table, given `int cost` already set to 0 or 1 for the diagonal move.
+          answer: "dp[i][j] = min({dp[i-1][j] + 1, dp[i][j-1] + 1, dp[i-1][j-1] + cost});"
+          accepts:
+            - "dp[i][j]=min({dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+cost});"
+            - "dp[i][j]=min({dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+cost})"
+            - "dp[i][j]=min(min(dp[i-1][j]+1,dp[i][j-1]+1),dp[i-1][j-1]+cost);"
+            - "dp[i][j]=min({dp[i][j-1]+1,dp[i-1][j]+1,dp[i-1][j-1]+cost});"
+          explanation: >-
+            Three moves, one minimum. The braced form of std::min takes an
+            initialiser list and is the readable way to compare three
+            candidates. Only the diagonal is ever free, and only when the
+            characters agree.
+
+  # ---------------------------------------------------------------- stage 5
+  - id: stage-tails-not-lengths
+    order: 5
+    pattern: lis-tails
+    trial_problem_ids: [watchtower-beacon-heights, nesting-crates]
+    secret:
+      id: tails-not-lengths
+      name: The Array That Is Not an Answer
+      idiom: "it = lower_bound(tails.begin(), tails.end(), x); if (it == tails.end()) tails.push_back(x); else *it = x;"
+      memorise: true
+      baseline_drills: 5
+      teaches: >-
+        The quadratic recurrence for the longest increasing subsequence is
+        correct and you should write it first — dp[k] = one plus the best dp[i]
+        over every earlier i with a[i] < a[k]. Now look at what its inner loop
+        spends its time on. It is searching earlier states for the longest chain
+        whose last value is below a[k]. That is a search over an ordered thing,
+        and a search over an ordered thing is a binary search. So keep the
+        ordered thing directly, and say precisely what it is, because everything
+        depends on the sentence: tails[k] is the SMALLEST value that can end an
+        increasing subsequence of length k+1 among the elements seen so far. Two
+        consequences follow at once, and neither is visible without the
+        sentence. First, tails is strictly increasing — always — so it can be
+        binary searched. Second, each new element changes exactly one cell:
+        either it is larger than everything and the array grows, or it lowers
+        one existing entry. Lowering is safe because a smaller tail can only be
+        extended by more of what comes later, and the LENGTH that cell
+        represents has not changed. Nothing is ever lost. And now the thing that
+        catches everyone: THE TAILS ARRAY IS NOT A SUBSEQUENCE OF THE INPUT. On
+        6, 2, 5, 1, 7, 4, 8, 3 it finishes as 1, 3, 7, 8 — but 3 is the last
+        element of the input, so nothing can follow it. The true answer is
+        2, 5, 7, 8. Only the SIZE of the array means anything. Print its contents
+        and you have a wrong answer with the right length, which is the most
+        expensive kind.
+      demonstrations:
+        - expression: "a = [6, 2, 5, 1, 7, 4, 8, 3], tails after each element"
+          result: "[6] [2] [2,5] [1,5] [1,5,7] [1,4,7] [1,4,7,8] [1,3,7,8]"
+          note: >-
+            Exactly one cell changes per element. The array only ever grows when
+            the new value exceeds everything in it.
+        - expression: "the answer, from that run"
+          result: "4"
+          note: >-
+            The length of the array. The quadratic recurrence agrees: its cells
+            are 1 1 2 1 3 2 4 2 and the maximum is 4.
+        - expression: "is [1, 3, 7, 8] a subsequence of that input?"
+          result: "no"
+          note: >-
+            3 is the final element of the input, so 7 and 8 would have to come
+            after it. The true witness is 2, 5, 7, 8. The array's contents are
+            not an answer; its size is.
+        - expression: "a = [2, 2, 2] with lower_bound"
+          result: "1"
+          note: >-
+            Each 2 overwrites the existing 2, because lower_bound finds the
+            first entry NOT LESS than it. Strictly increasing: one element.
+        - expression: "the same [2, 2, 2] with upper_bound"
+          result: "3"
+          note: >-
+            upper_bound walks past the equals, so each 2 extends the array.
+            Non-decreasing: three elements. One function name, and no input with
+            distinct values can tell the two apart.
+        - expression: "logs [1, 5, 2, 3, 4], fewest removals leaving a non-decreasing row"
+          result: "1"
+          note: >-
+            The longest non-decreasing subsequence is 1, 2, 3, 4, so one removal
+            — the 5. A scan that drops each log narrower than the last one kept
+            removes three.
+        - expression: "crates (1,2) (2,1) (3,2), longest nesting tower"
+          result: "2"
+          note: >-
+            The 2 by 1 inside the 3 by 2. Ranking by area opens with a 1 by 2
+            and then finds nothing that fits around it, giving 1.
+        - expression: "the tie-break for nesting: sort by width ascending, height DESCENDING"
+          result: "equal widths can never both be chosen"
+          note: >-
+            Descending heights within a width make a strictly increasing run of
+            heights unable to take two crates of the same width, which is
+            exactly what strict nesting forbids.
+      watch_out:
+        - warning: "Say what tails[k] holds, or the code is an incantation."
+          why: >-
+            "The smallest value that can end an increasing subsequence of length
+            k+1." From that sentence, the array being sorted and exactly one
+            cell changing per element are both immediate. Without it there is
+            nothing to check the code against and nothing to reconstruct it from
+            in six months.
+        - warning: "The tails array is NOT a subsequence of the input."
+          why: >-
+            On [6,2,5,1,7,4,8,3] it ends as [1,3,7,8], which cannot occur in
+            that order in the input at all. Only its length is meaningful. If
+            the statement asks WHICH elements, record a parent index as each
+            element is placed and walk it backwards.
+        - warning: "lower_bound is strict, upper_bound is non-strict."
+          why: >-
+            lower_bound overwrites an equal entry, so equal values cannot extend
+            a chain — strictly increasing. upper_bound walks past equals, so
+            they can — non-decreasing. On [2,2,2] that is 1 against 3, and no
+            sample with distinct values distinguishes them. Read the statement's
+            wording twice.
+        - warning: "Assign when the search lands inside; push_back only at the end."
+          why: >-
+            Appending when lower_bound returned an interior position destroys
+            the array's sortedness, and every subsequent binary search is then
+            meaningless. The symptom is an answer that grows far too large on
+            long inputs.
+        - warning: "Sorting a two-dimensional chain needs a deliberate tie-break."
+          why: >-
+            Sort by the first coordinate ascending and break ties by the second
+            DESCENDING. Then two items of equal first coordinate can never both
+            appear in a strictly increasing run of the second, which is what
+            strict nesting requires. Ties broken ascending silently allow the
+            illegal pair.
+        - warning: "Write the quadratic form first, and submit it when the bound allows."
+          why: >-
+            n up to 5000 makes O(n^2) the intended solution and the fast version
+            a needless risk. n up to 2 * 10^5 makes it 4 * 10^10 operations and
+            a time-limit verdict. The bound decides the method; it never decides
+            the answer.
+      drills:
+        - id: tnl-eval-tails-run
+          kind: evaluate
+          prompt: >-
+            a = [6, 2, 5, 1, 7, 4, 8, 3], maintaining the tails array with
+            lower_bound. What does it hold after every element has been
+            processed?
+          options:
+            - "[1, 3, 7, 8]"
+            - "[2, 5, 7, 8]"
+            - "[1, 2, 3, 4]"
+            - "[6, 5, 7, 8]"
+          answer: "[1, 3, 7, 8]"
+          explanation: >-
+            The run is [6], [2], [2,5], [1,5], [1,5,7], [1,4,7], [1,4,7,8],
+            [1,3,7,8]. Its length, 4, is the answer; its contents are not.
+        - id: tnl-eval-not-subsequence
+          kind: evaluate
+          prompt: >-
+            For that same input, the tails array ends as [1, 3, 7, 8]. Is that a
+            valid increasing subsequence of the input?
+          options:
+            - "no — 3 is the last element of the input, so nothing can follow it"
+            - "yes, and it is the only one"
+            - "yes, but there are others of the same length"
+            - "no, because it is not sorted"
+          answer: "no — 3 is the last element of the input, so nothing can follow it"
+          explanation: >-
+            A real witness is 2, 5, 7, 8. Only the SIZE of the tails array is
+            meaningful. Printing its contents is a wrong answer that has exactly
+            the right length, which is the hardest kind to notice.
+        - id: tnl-eval-strict
+          kind: evaluate
+          prompt: >-
+            a = [2, 2, 2]. What does the tails method report with lower_bound,
+            and what with upper_bound?
+          options:
+            - "1 and 3"
+            - "3 and 1"
+            - "1 and 1"
+            - "3 and 3"
+          answer: "1 and 3"
+          explanation: >-
+            lower_bound finds the first entry not less than 2 and overwrites it,
+            so the array never grows — strictly increasing gives 1. upper_bound
+            walks past the equals, so each 2 extends it — non-decreasing gives
+            3.
+        - id: tnl-eval-removals
+          kind: evaluate
+          prompt: >-
+            Logs of diameter 1, 5, 2, 3, 4 must be thinned until the remaining
+            diameters never decrease. What is the fewest that must be removed?
+          options: ["1", "2", "3", "4"]
+          answer: "1"
+          explanation: >-
+            Remove the 5, leaving 1, 2, 3, 4. A scan that drops each log
+            narrower than the last one kept would remove the 2, the 3 and the 4
+            — three where one sufficed.
+        - id: tnl-prop-what-it-holds
+          kind: property
+          prompt: >-
+            State exactly what tails[k] holds.
+          options:
+            - "the smallest value that can end an increasing subsequence of length k+1 among the elements seen so far"
+            - "the k-th element of the longest increasing subsequence"
+            - "the largest value that can end a chain of length k+1"
+            - "the number of chains of length k+1"
+          answer: "the smallest value that can end an increasing subsequence of length k+1 among the elements seen so far"
+          explanation: >-
+            From that sentence everything follows: the array is sorted, exactly
+            one cell changes per element, and lowering an entry is safe because
+            the length it represents is unchanged while its tail got smaller.
+        - id: tnl-prop-why-safe
+          kind: property
+          prompt: >-
+            Why is overwriting an existing entry with a smaller value safe?
+          options:
+            - "the length that cell represents is unchanged, and a smaller tail can only be extended by more of what follows"
+            - "the overwritten value was already used"
+            - "it is not safe, but the error cancels out"
+            - "because the array is re-sorted afterwards"
+          answer: "the length that cell represents is unchanged, and a smaller tail can only be extended by more of what follows"
+          explanation: >-
+            Nothing is ever lost. The cell still says "a chain of this length is
+            achievable"; it now says so with a smaller ending value, which is
+            strictly more useful for everything that comes after.
+        - id: tnl-trap-tiebreak
+          kind: trap
+          prompt: >-
+            A nesting solution sorts crates by width ascending and breaks ties
+            by height ASCENDING, then runs the strict tails method on heights.
+            What goes wrong?
+          options:
+            - "two crates of equal width can both enter the rising run, so the answer allows a nesting the statement forbids"
+            - "the sort is unstable and the order is arbitrary"
+            - "the heights are no longer sorted"
+            - "nothing; the tie-break does not matter"
+          answer: "two crates of equal width can both enter the rising run, so the answer allows a nesting the statement forbids"
+          explanation: >-
+            Strict nesting needs both measurements strictly smaller. Breaking
+            ties by DESCENDING height makes equal widths appear in decreasing
+            height order, so a strictly increasing run of heights can never pick
+            two of them — the tie-break enforces the strictness for free.
+        - id: tnl-recall-step
+          kind: recall
+          prompt: >-
+            Write the two statements that process one value x into the `tails`
+            vector for a STRICTLY increasing chain, given an iterator `it`
+            already declared.
+          answer: "it = lower_bound(tails.begin(), tails.end(), x); if (it == tails.end()) tails.push_back(x); else *it = x;"
+          accepts:
+            - "it=lower_bound(tails.begin(),tails.end(),x);if(it==tails.end())tails.push_back(x);else*it=x;"
+            - "it=lower_bound(tails.begin(),tails.end(),x);if(it==tails.end())tails.push_back(x);else*it=x"
+            - "it=lower_bound(all(tails),x);if(it==tails.end())tails.push_back(x);else*it=x;"
+            - "it=ranges::lower_bound(tails,x);if(it==tails.end())tails.push_back(x);else*it=x;"
+          explanation: >-
+            lower_bound for strict, upper_bound for non-decreasing. Append only
+            when the search ran off the end; otherwise assign, because appending
+            from an interior position would break the sortedness the next search
+            depends on.
+        - id: tnl-apply-quadratic
+          kind: apply
+          prompt: >-
+            Inside `for (int k = 0; k < n; ++k) for (int i = 0; i < k; ++i)`,
+            with `vector<int> length(n, 1)`, write the guarded statement that
+            builds the quadratic recurrence for a strictly increasing chain.
+          answer: "if (a[i] < a[k]) length[k] = max(length[k], length[i] + 1);"
+          accepts:
+            - "if(a[i]<a[k])length[k]=max(length[k],length[i]+1);"
+            - "if(a[i]<a[k])length[k]=max(length[k],length[i]+1)"
+            - "if(a[i]<a[k]){length[k]=max(length[k],length[i]+1);}"
+            - "if(a[k]>a[i])length[k]=max(length[k],length[i]+1);"
+          explanation: >-
+            Strictly less than, for a strictly increasing chain; `<=` would give
+            the non-decreasing answer. This inner scan is what the binary search
+            replaces, and writing it first is what makes the fast version
+            readable rather than memorised.
+
+final_test_problem_ids:
+  - ledger-line-breaks
+  - signal-fire-relay
+  - armoury-halving
+  - spice-vault-refill
+  - siege-ration-count
+  - charter-restoration
+  - log-drive-removals
+  - banner-pole-cuts

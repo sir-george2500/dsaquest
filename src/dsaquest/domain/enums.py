@@ -194,6 +194,12 @@ class MistakeCode(StrEnum):
     """Built prefix sums when the elements' adjacency was irrelevant and counting sufficed."""
     PATTERN_WINDOW_OVER_HASH = "PATTERN_WINDOW_OVER_HASH"
     """Maintained a window on a problem where order and adjacency did not matter."""
+    PATTERN_BFS_OVER_DIJKSTRA = "PATTERN_BFS_OVER_DIJKSTRA"
+    """An unweighted shortest path used where the edges have weights. The
+    central mistake of the graph region, and the one that fails silently: a
+    breadth-first sweep returns a path, and the path is real, and it is not
+    the shortest one."""
+
     PATTERN_UNRECOGNISED = "PATTERN_UNRECOGNISED"
 
     # --- invariants ----------------------------------------------------------

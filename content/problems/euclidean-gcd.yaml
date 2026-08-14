@@ -1,0 +1,295 @@
+# Problems that are really The Remainder Is the Whole Method.
+#
+# None of these may say "greatest common divisor" or "lowest common multiple";
+# each has to describe the quantity instead — a longest equal cut, a first
+# coincidence, a largest step. Three of them hide an overflow that only appears
+# when the true answer is small and the product of the inputs is not.
+
+- id: gear-tooth-alignment
+  pattern: euclidean-gcd
+  title: The Two Gears
+  difficulty: easy
+  statement: >-
+    Two gears mesh in a mill. The first has a teeth and the second has b, and
+    exactly one tooth of each is painted white. At the start the two white
+    teeth are touching. Every tick, each gear advances by exactly one tooth.
+    Report the number of ticks until the two white teeth touch again for the
+    first time. The mill has run long enough that the answer is known to fit in
+    a signed 64-bit integer, but the two tooth counts multiplied together
+    frequently do not.
+  constraints: |
+    1 <= a, b <= 4 * 10^9
+    the answer is guaranteed to fit in a signed 64-bit integer
+    a * b may exceed 9.2 * 10^18
+    one test has a = 3 * 10^9 and b = 4 * 10^9
+  signals_present:
+    - two cycles of different periods that must coincide again
+    - the answer is the first moment both return to their starting position
+    - the product of the two inputs is explicitly allowed to exceed the answer's type
+  decoy_signals:
+    - "\"advances one tooth per tick\" invites simulating the ticks"
+    - two counts with a shared event invites counting matches with a table
+    - the guarantee about the answer fitting invites assuming every intermediate fits too
+  expected_complexity: O(log min(a, b))
+  hints:
+    - text: >-
+        The first gear is back at white after a ticks, 2a ticks, 3a ticks. The
+        second after b, 2b, 3b. You want the smallest tick that is on both
+        lists.
+    - text: >-
+        That number times the largest quantity dividing both a and b equals
+        a times b. So compute the divisor first, by repeatedly replacing the
+        larger count with its remainder against the smaller.
+    - text: >-
+        Write it as `a / g * b`, never `a * b / g`. With a = 3 * 10^9 and
+        b = 4 * 10^9 the answer is 1.2 * 10^10 while the product is 1.2 * 10^19,
+        which is past what a signed 64-bit integer holds.
+      reveals_pattern: true
+  why: >-
+    "When do two periods coincide again" is the smallest number both divide,
+    and there is no direct formula for it — it is reached through the largest
+    number that divides both, which Euclid's replacement finds in a logarithmic
+    number of steps. The constraint block is the real problem: it promises the
+    ANSWER fits and warns that the product does not, which forces the division
+    to happen before the multiplication.
+  classic_ref: CPH 21.1 (Euclid's algorithm; lcm from gcd)
+
+- id: rope-cut-common-length
+  pattern: euclidean-gcd
+  title: The Quartermaster's Ropes
+  difficulty: easy
+  statement: >-
+    A quartermaster has n ropes, the i-th of length L[i]. Every rope must be
+    cut into pieces of one single length, the same for all of them, with no
+    scrap left over from any rope. She wants the pieces as long as possible,
+    because short rope is worthless. Report that longest possible piece length,
+    and how many pieces she ends up with in total.
+  constraints: |
+    1 <= n <= 200000
+    1 <= L[i] <= 10^18
+    the total number of pieces fits in a signed 64-bit integer
+    the ropes are given in arbitrary order
+  signals_present:
+    - one length must divide every given length exactly, with nothing left over
+    - the largest such length is wanted, not any such length
+    - lengths reach 10^18, so nothing may be enumerated
+  decoy_signals:
+    - "\"as long as possible\" invites searching over candidate lengths and testing each"
+    - a row of lengths to be processed once invites sorting them first
+    - "\"how many pieces in total\" invites a running sum that hides the real question"
+  expected_complexity: O(n log C)
+  hints:
+    - text: >-
+        A piece length that works for rope i must divide L[i] exactly. Write
+        down what must be true of a length that works for two ropes, then for
+        all n.
+    - text: >-
+        It must divide every one of them, so the largest such length divides
+        them all and is divisible by nothing larger that does. Fold the ropes
+        one at a time, keeping the largest common length so far.
+    - text: >-
+        Seed the fold with 0, because a length and 0 share exactly that length,
+        which removes the first-element special case. Then `g = gcd(g, L[i])`
+        for every rope, and the piece count is the sum of L[i] / g.
+      reveals_pattern: true
+  why: >-
+    "Divides every one of them exactly, as large as possible" is the definition
+    in the statement's own words, and it is decided by the descent rather than
+    by any search — a candidate test over 10^18 possible lengths does not exist.
+    The fold seeded with 0 is the detail worth keeping: a length and zero share
+    that length, so no special case for the first rope is needed and none for
+    an empty row either.
+  classic_ref: USACO 13.2 (GCD and LCM over more than two elements)
+
+- id: stone-marker-spacing
+  pattern: euclidean-gcd
+  title: The Stones of the Old Road
+  difficulty: medium
+  statement: >-
+    Surveyors find n stones along an ancient road, at positions x[1] < x[2] <
+    ... < x[n]. They believe the road once carried stones at every position of
+    the form c + k*d for some starting point c and some fixed spacing d, and
+    that the ones they found are a subset of those. They want the largest
+    spacing d consistent with what survives. Report it. If only one stone
+    survives, no spacing is determined and you should report 0.
+  constraints: |
+    1 <= n <= 200000
+    -10^18 <= x[i] <= 10^18
+    positions are strictly increasing
+    positions may be negative, and the road extends in both directions
+  signals_present:
+    - every surviving position must be congruent to every other one modulo the spacing
+    - the largest spacing consistent with all of them is wanted
+    - the starting point c is unknown, so only the gaps carry information
+  decoy_signals:
+    - "\"largest d such that ...\" invites a monotone feasibility search over d"
+    - positions on a line invite walking two ends towards each other
+    - negative positions invite an offset that changes the answer if applied wrongly
+  hints:
+    - text: >-
+        The starting point c is not given and not asked for. Ask what remains
+        true of the surviving positions once c has been subtracted from all of
+        them.
+    - text: >-
+        Any valid spacing divides x[i] - x[j] for every pair. Two positions are
+        enough to constrain it, and all n positions constrain it to the largest
+        number dividing every difference.
+    - text: >-
+        Anchor on x[1] and fold the largest common divisor over x[i] - x[1] for
+        i from 2 to n — there is no need for every pair. Take absolute values,
+        or note that the positions are increasing so the differences are
+        already positive.
+      reveals_pattern: true
+  expected_complexity: O(n log C)
+  why: >-
+    The unknown starting point is what makes the raw positions useless and the
+    gaps decisive: subtracting c from everything leaves the differences
+    unchanged, so any spacing that fits must divide all of them. Anchoring on
+    one element is enough because a number dividing x[i] - x[1] for every i
+    also divides every x[i] - x[j]. Taking the divisor of the positions
+    themselves is the classic wrong answer, and it happens to be right whenever
+    one position is zero.
+  classic_ref: CPH 21.1 (Euclid's algorithm on differences)
+
+- id: two-jug-measure
+  pattern: euclidean-gcd
+  title: The Two Jugs
+  difficulty: medium
+  statement: >-
+    An apothecary has two unmarked jugs holding exactly a and b measures, and a
+    well of unlimited water. She may fill either jug from the well, empty either
+    jug onto the ground, or pour one jug into the other until the source is
+    empty or the destination is full. For each of q requests she is asked
+    whether some jug can be made to hold exactly t measures at some moment.
+    Report yes or no for each request.
+  constraints: |
+    1 <= q <= 100000
+    1 <= a, b <= 10^18
+    0 <= t <= 10^18
+    a request with t larger than both jugs can never be satisfied
+  signals_present:
+    - an amount must be reachable by repeatedly adding and removing two fixed quantities
+    - the two capacities are fixed and only the target changes across queries
+    - capacities reach 10^18, so no state can be enumerated
+  decoy_signals:
+    - "\"fill, empty, pour\" invites a breadth-first search over jug states"
+    - many queries against fixed capacities invites a precomputed table of reachable amounts
+    - "\"can exactly t be made\" invites a monotone predicate and a search over t"
+  hints:
+    - text: >-
+        Whatever sequence of moves she makes, the amount in a jug is always
+        some whole number of a-fulls plus some whole number of b-fulls, where
+        either count may be negative. Write that as an equation.
+    - text: >-
+        So t must be expressible as a*x + b*y with integers x and y. Such an
+        expression exists exactly when t is a multiple of the largest number
+        dividing both a and b — and never otherwise.
+    - text: >-
+        Compute that divisor once by repeated remainder, then each query is
+        `t % g == 0 && t <= max(a, b)`. The second condition is the physical
+        one — no jug holds more than its own capacity.
+      reveals_pattern: true
+  expected_complexity: O(log min(a, b) + q)
+  why: >-
+    Every reachable amount is a whole-number combination of the two capacities,
+    and the set of such combinations is exactly the multiples of the largest
+    number dividing both — that is Bezout, and it is why the search over jug
+    states is not merely slow but unnecessary. The capacity check is the half
+    that gets forgotten: 8 measures is a multiple of the divisor of 6 and 15
+    only if that divisor divides it, and even a valid multiple has to fit in a
+    jug.
+  classic_ref: CPH 21.3 (Diophantine equations; solvable when gcd divides c)
+
+- id: bell-tower-coincidence
+  pattern: euclidean-gcd
+  title: The Bells of the Watchtower
+  difficulty: medium
+  statement: >-
+    A watchtower carries n bells. Bell i rings at every multiple of p[i]
+    minutes after dawn, and all of them ring at dawn itself, which is minute
+    zero. Report the first minute strictly after dawn at which every bell rings
+    together, or report -1 if that moment falls later than the horizon H the
+    watch keeper cares about.
+  constraints: |
+    1 <= n <= 200000
+    1 <= p[i] <= 10^9
+    1 <= H <= 10^18
+    the true coincidence may be astronomically later than H
+  signals_present:
+    - n cycles of different periods that must all coincide
+    - the answer is the smallest positive moment shared by every cycle
+    - the true answer may be far larger than any type, which is why a horizon is given
+  decoy_signals:
+    - "\"first minute after dawn\" invites walking the minutes, or the multiples of one bell"
+    - a horizon H invites a search over candidate minutes with a feasibility test
+    - periods up to 10^9 with n up to 2 * 10^5 invites sorting or counting them
+  hints:
+    - text: >-
+        Two bells coincide at the smallest number both periods divide. Fold that
+        over the row — but first work out how large that number can get when
+        the periods share no factors.
+    - text: >-
+        Twenty distinct primes already put it past 10^18. So the fold must stop
+        the moment it passes H, and it must never form a product that overflows
+        on the way to noticing.
+    - text: >-
+        Fold with `l = l / gcd(l, p) * p`, and before each step check whether
+        `l / gcd(l, p) > H / p` — if so the answer already exceeds the horizon
+        and you report -1 without ever forming the product.
+      reveals_pattern: true
+  expected_complexity: O(n log C)
+  why: >-
+    A coincidence of many cycles is the smallest number every period divides,
+    reached one pair at a time through the largest common divisor. What makes
+    it a medium rather than an easy is the growth: coprime periods multiply
+    outright, so the running value passes 10^18 within twenty bells and the
+    horizon exists precisely so you must detect that BEFORE the overflow rather
+    than after it. Dividing first is necessary and not sufficient here; the
+    comparison has to be done as a division too.
+  classic_ref: CPH 21.1 (lcm from gcd) with overflow-aware folding
+
+- id: tithe-fraction-lowest-terms
+  pattern: euclidean-gcd
+  title: The Tithe in Lowest Terms
+  difficulty: easy
+  statement: >-
+    A steward records each tithe as a pair of whole numbers, a share out of a
+    whole — for instance 84 out of 210. The abbot insists these be written in
+    the plainest possible form, meaning the same proportion expressed with the
+    smallest whole numbers available. For each of q recorded tithes, report the
+    plain form. A share of 0 out of anything is written as 0 out of 1.
+  constraints: |
+    1 <= q <= 200000
+    0 <= share <= 10^18
+    1 <= whole <= 10^18
+    the proportion is never altered, only the numbers used to express it
+  signals_present:
+    - two numbers must be shrunk by the same factor while their proportion is preserved
+    - the smallest such pair is wanted
+    - the values reach 10^18, so nothing can be enumerated or trial-divided
+  decoy_signals:
+    - "\"smallest whole numbers\" invites a search over candidate divisors"
+    - a proportion invites floating point, which cannot represent these values exactly
+    - "\"the plainest form\" invites factorising both numbers, which is far more work than needed"
+  hints:
+    - text: >-
+        Dividing both numbers by any number that divides both leaves the
+        proportion unchanged. You want to do that as far as it will go.
+    - text: >-
+        As far as it will go means dividing by the largest number that divides
+        both. Finding it by trying divisors is hopeless at 10^18; finding it by
+        repeated remainder takes about ninety steps.
+    - text: >-
+        Compute g by replacing the pair with (b, a mod b) until the second is
+        zero, then print share/g and whole/g. Check what that does to a share
+        of 0 before you add a special case for it.
+      reveals_pattern: true
+  expected_complexity: O(q log C)
+  why: >-
+    Reducing a proportion is division by the largest number dividing both, and
+    the bound rules out every method except the descent — a trial-division
+    approach would need 10^9 steps per query where the remainder loop needs
+    about ninety. The zero case is worth writing out rather than guarding
+    reflexively: a share of 0 and a whole of w share w, so the division is
+    already correct and produces 0 out of 1 on its own.
+  classic_ref: USACO 13.2 (GCD; reducing fractions)

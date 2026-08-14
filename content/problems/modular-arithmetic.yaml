@@ -197,3 +197,100 @@
     past it. The addition still fits, because two residues sum to under 2m; the
     product does not, and needs 128 bits for exactly one operation.
   classic_ref: CPH 21.2 (computer arithmetic; wrap-around on overflow)
+
+- id: scribes-running-checksum
+  pattern: modular-arithmetic
+  title: The Scribe's Running Checksum
+  difficulty: medium
+  statement: >-
+    A scriptorium checks its copies with a positional sum. For a page of n
+    numbers a[1..n], the checksum is 1*a[1] + 2*a[2] + ... + n*a[n], and only
+    what remains of that total after dividing by the house number m is
+    recorded. Given the page and m, report the recorded checksum. The scribes
+    note, without explanation, that the untruncated total has been known to
+    exceed forty billion billion.
+  constraints: |
+    1 <= n <= 200000
+    1 <= a[i] <= 10^9
+    1 <= m <= 10^9
+    a signed 64-bit integer holds values up to about 9.2 * 10^18
+  signals_present:
+    - a sum of products is reported only as what remains after dividing by a given m
+    - the untruncated total is stated to pass 4 * 10^19, which no 64-bit type holds
+    - each individual term is small enough to form safely, which is what makes the trap quiet
+  decoy_signals:
+    - "\"positional sum over a row\" invites a prefix-sum table"
+    - each term fitting comfortably invites accumulating first and reducing once at the end
+    - "\"the untruncated total\" invites computing it in a wider type instead of not computing it"
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        Work out the largest a single term i*a[i] can be, then the largest the
+        whole sum can be, and compare each with what a signed 64-bit integer
+        holds.
+    - text: >-
+        One term reaches 2 * 10^14 and is perfectly safe. The sum of 2 * 10^5
+        of them reaches 4 * 10^19 and is not. So the term may be formed and the
+        total may not.
+    - text: >-
+        Reduce the accumulator after every term — `acc = (acc + (long long)i * a[i]) % m`
+        — which keeps it below m for ever while the one product it meets stays
+        under 2 * 10^14.
+      reveals_pattern: true
+  why: >-
+    This is the quiet version of the trap, because nothing individually
+    overflows. Each term is at most 2 * 10^5 times 10^9, which a long long
+    holds easily; it is the ACCUMULATION of 2 * 10^5 such terms that reaches
+    4 * 10^19 and wraps. Reducing once at the end is therefore too late, and
+    the symptom is a wrong answer only on the largest tests — which is the
+    signature of every overflow in this region.
+  classic_ref: CPH 21.2 (taking remainders before doing calculations)
+
+- id: market-tally-difference
+  pattern: modular-arithmetic
+  title: The Market's Two Tallies
+  difficulty: medium
+  statement: >-
+    Two rival stalls each compute a tally: stall A multiplies together its n
+    weights, stall B multiplies together its own n weights, and the market
+    warden wants the amount by which A's tally exceeds B's, reported as a
+    number from 0 to m-1 after dividing by the market seal m. B's tally may be
+    the larger of the two, in which case the warden still wants a number in
+    that range and treats the difference as wrapping around the seal. Neither
+    tally is ever written out in full.
+  constraints: |
+    1 <= n <= 200000
+    1 <= weights <= 10^9
+    2 <= m <= 10^9
+    the true tallies have hundreds of thousands of digits each
+  signals_present:
+    - two multiplicative quantities are combined by subtraction and reported in [0, m)
+    - neither quantity can be formed, so only the residues are ever available
+    - the second tally may exceed the first, so the difference can go below zero
+  decoy_signals:
+    - "\"the amount by which A exceeds B\" invites comparing the two tallies, which cannot be formed"
+    - "\"treats the difference as wrapping\" invites a cycle length to be discovered"
+    - two rows of weights invites pairing them off or sorting them
+  expected_complexity: O(n)
+  hints:
+    - text: >-
+        You can never hold either tally. Ask which of the two operations here —
+        the multiplying and the subtracting — survives being done on remainders
+        instead.
+    - text: >-
+        Both do. So reduce each tally as you build it, then subtract the two
+        residues. Now check what your language gives you when the second is
+        larger.
+    - text: >-
+        It gives a negative number, because C++ keeps the sign of the dividend.
+        Finish with `(a - b % m + m) % m`, and note that both the reduction and
+        the addition of m are doing work.
+      reveals_pattern: true
+  why: >-
+    Two rules, applied in sequence, and each has its own failure. The
+    multiplication rule lets both tallies be built as residues, so the product
+    that meets `%` is at most 10^18 and needs a long long. The subtraction rule
+    then needs the sign repair, because two residues can differ by as much as
+    -(m-1) and C++ truncates towards zero rather than downwards — so the answer
+    comes back negative where a number in [0, m) was demanded.
+  classic_ref: CPH 21.2 (modular arithmetic; the subtraction rule)

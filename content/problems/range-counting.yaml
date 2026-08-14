@@ -1,0 +1,273 @@
+# Problems that are really Count Without Walking.
+#
+# None may name the pattern, and none may say "formula", "divide" or
+# "inclusion-exclusion" as an instruction. What is being trained is the reflex
+# of checking WHAT the huge bound is attached to: an interval whose members are
+# to be counted is answered by arithmetic on the endpoints, and never visited.
+# `decoy_signals` records the loop each statement invites, and every one of
+# those loops is instant on the sample and hopeless on the real input.
+
+- id: lantern-festival-nights
+  pattern: range-counting
+  title: Lantern Nights
+  difficulty: easy
+  statement: >-
+    A city lights its lanterns on every k-th night of the calendar, counting
+    from night k itself. A traveller will be in the city from night l to night r
+    inclusive. Report how many lantern nights fall inside his stay. Several
+    independent stays are asked about in one run.
+  constraints: |
+    1 <= q <= 200000 independent stays
+    1 <= l <= r <= 10^18
+    1 <= k <= 10^18
+  signals_present:
+    - "\"how many nights between l and r\", with the endpoints stated as inclusive"
+    - the endpoints reach 10^18, so the nights cannot be visited
+    - the property is divisibility by a fixed number
+    - q up to 2*10^5 independent questions, so each must be answered in constant time
+  decoy_signals:
+    - "\"count the nights in the stay\" invites a loop from l to r, which is instant on the sample"
+    - many independent questions over one calendar invites a table of running totals built once
+    - a stay described by two endpoints invites two pointers walking the calendar
+  expected_complexity: O(1) per stay
+  hints:
+    - text: >-
+        There is nothing stored to walk over — the nights are not data, they are
+        every integer in an interval, and there may be 10^18 of them.
+    - text: >-
+        Count from the very beginning twice. If you can say how many lantern
+        nights fall in nights 1 through x for any x, the stay is a subtraction.
+    - text: >-
+        The lantern nights up to x number exactly x / k in whole division, so
+        the answer is r / k minus (l - 1) / k.
+      reveals_pattern: true
+  why: >-
+    The bound of 10^18 is attached to the INTERVAL, not to the input, so the
+    members are counted rather than read. Counting from the start twice and
+    subtracting is the whole method, and the l - 1 rather than l is what
+    includes the left endpoint — an answer one too small on exactly the stays
+    that begin on a lantern night.
+  classic_ref: CSES Counting Divisors kin; the multiples-in-an-interval identity
+
+- id: twin-bell-towers
+  pattern: range-counting
+  title: The Twin Bells
+  difficulty: easy
+  statement: >-
+    Two bell towers ring on their own cycles: the first every a hours and the
+    second every b hours, both counting from hour zero, and hour zero itself is
+    not counted. A scribe records every hour in which at least one bell rings.
+    Given an inclusive span of hours from l to r, report how many hours of it
+    the scribe records.
+  constraints: |
+    1 <= q <= 100000 independent spans
+    1 <= l <= r <= 10^18
+    1 <= a, b <= 10^9
+  signals_present:
+    - two properties combined with "or", with a small number of conditions
+    - the endpoints reach 10^18, so the hours cannot be visited
+    - both properties are divisibility, whose overlap is itself a divisibility
+    - the answer is a count over an inclusive interval
+  decoy_signals:
+    - "\"at least one bell\" invites a sweep marking the hours, which needs 10^18 marks"
+    - two cycles meeting invites simulating both towers until they agree
+    - "\"how many hours\" over a span reads like a table of running totals over the hours"
+  expected_complexity: O(1) per span, plus one gcd
+  hints:
+    - text: >-
+        Count the hours of the first bell and the hours of the second. Try it on
+        a = 2, b = 3, hours 1 to 12, and compare your total with the truth.
+    - text: >-
+        You counted 6 and 4 and got 10, but the truth is 8: hours 6 and 12 were
+        counted twice. Which hours are exactly the ones counted twice?
+    - text: >-
+        Add the count of multiples of a and the count of multiples of b, then
+        subtract the count of multiples of their least common multiple, each
+        taken over the interval by counting from the start twice.
+      reveals_pattern: true
+  why: >-
+    A union of two conditions is added and its overlap subtracted once, and the
+    overlap of two divisibilities is divisibility by the least common multiple.
+    The least common multiple of two numbers up to 10^9 reaches 10^18, so it
+    must be formed as a / gcd(a, b) * b in a 64-bit type — multiplying first
+    overflows on exactly the largest tests.
+  classic_ref: inclusion and exclusion over two divisors; CPH 22.3 kin
+
+- id: frozen-lake-soundings
+  pattern: range-counting
+  title: Frozen Lake Soundings
+  difficulty: medium
+  statement: >-
+    A surveyor marks depths along a shaft, one mark every k units, measured from
+    the waterline: the waterline itself is a mark, marks above it are at
+    positive heights and marks below it at negative ones. He must report how
+    many marks lie in an inclusive band from height l to height r, where either
+    height may be negative. Several independent bands are asked about.
+  constraints: |
+    1 <= q <= 200000 independent bands
+    -10^18 <= l <= r <= 10^18
+    1 <= k <= 10^18
+  signals_present:
+    - the interval may reach below zero, or start exactly at zero
+    - the endpoints reach 10^18 in magnitude, so the marks cannot be visited
+    - the property is divisibility by a fixed step
+    - the answer is a count over an inclusive interval whose sign may vary
+  decoy_signals:
+    - a band with two endpoints invites walking from l to r, which is instant on the sample
+    - negative heights invite shifting everything up by a constant, which overflows at 10^18
+    - "\"how many marks in a band\" reads like counting stored soundings, of which there are none"
+  expected_complexity: O(1) per band
+  hints:
+    - text: >-
+        Write the answer as a count from the start, taken twice and subtracted.
+        Then test it on the band from -7 to -1 with k = 2, by hand.
+    - text: >-
+        The true count of multiples of 2 from the start down to -7 is -4 (the
+        marks at -2, -4, -6 and 0 counted with sign), but C++ gives -7 / 2 = -3.
+        The language truncates towards zero, not downwards.
+    - text: >-
+        Write a division that rounds towards minus infinity whatever the sign,
+        and answer each band as that division at r minus the same at l - 1.
+      reveals_pattern: true
+  why: >-
+    The formula is unchanged; the division is not. C++ truncates towards zero,
+    so every count that touches or crosses the waterline is off by one, and
+    every band lying strictly above it is right — which is exactly the set of
+    bands a sample contains. The second trap is l - 1 at l = -10^18, which is
+    within range of a signed 64-bit integer but only just.
+  classic_ref: floor division under negative operands; CPH 21 arithmetic caveats
+
+- id: caravan-cask-loading
+  pattern: range-counting
+  title: Cask Loading
+  difficulty: easy
+  statement: >-
+    A caravan must carry n casks and each mule can carry at most k of them; a
+    mule carrying even one cask still counts as a mule, and the last mule may go
+    out part-loaded. The quartermaster wants two figures for each of several
+    independent consignments: how many mules are needed, and how many casks the
+    last mule carries. Report both figures per consignment.
+  constraints: |
+    1 <= q <= 200000 consignments
+    1 <= n <= 10^18
+    1 <= k <= 10^18
+  signals_present:
+    - how many full groups of size k, and how many are left over
+    - n reaches 10^18, so the casks cannot be counted one at a time
+    - the answer is arithmetic on two numbers with no data to read
+    - a partial group still counts, which is the rounding-up case
+  decoy_signals:
+    - loading mules one cask at a time is the obvious simulation and is instant at n = 10
+    - "\"how many mules\" with a capacity reads like a budget being spent down in a loop"
+    - the leftover invites tracking a running remainder while the loop runs
+  expected_complexity: O(1) per consignment
+  hints:
+    - text: >-
+        There is no list of casks — only two numbers. Both figures are decided
+        by arithmetic before a single mule is loaded.
+    - text: >-
+        Whole groups are n / k in integer division and the remainder is n % k.
+        The only care needed is that a partial group still needs a mule.
+    - text: >-
+        The number of mules is (n + k - 1) / k, and the last mule carries n % k
+        casks unless that remainder is zero, in which case it carries k.
+      reveals_pattern: true
+  why: >-
+    Grouping is this pattern seen from the other side: n / k whole groups, n % k
+    left over, and one more group when the remainder is not zero. The ceiling
+    written as (n + k - 1) / k is exact for non-negative integers and overflows
+    only if n + k passes the type — at n and k both 10^18 it does, which is why
+    n / k + (n % k != 0) is the safer spelling of the same figure.
+  classic_ref: ceiling division; USACO 3 constraint arithmetic
+
+- id: quarry-marker-stones
+  pattern: range-counting
+  title: Marker Stones
+  difficulty: medium
+  statement: >-
+    A road has a marker stone at position s and at every k units after it, going
+    forward only. A magistrate asks, for each of several inclusive stretches
+    from l to r, how many marker stones stand within the stretch. Stones before
+    position s do not exist.
+  constraints: |
+    1 <= q <= 200000 stretches
+    1 <= l <= r <= 10^18
+    1 <= s <= 10^18
+    1 <= k <= 10^18
+  signals_present:
+    - "\"how many stones between l and r\", with the endpoints stated as inclusive"
+    - the endpoints reach 10^18, so the stones cannot be visited
+    - the property is an arithmetic progression rather than plain divisibility
+    - each of 2*10^5 stretches must be answered in constant time
+  decoy_signals:
+    - "\"walk the road from l to r counting stones\" is the obvious reading and is instant on the sample"
+    - a progression starting at s invites halving the stretch to find the first stone, which is a search where arithmetic suffices
+    - stretches given in bulk invite a table of running totals over the road
+  expected_complexity: O(1) per stretch
+  hints:
+    - text: >-
+        The stones stand at s, s + k, s + 2k and so on. Shift the question so
+        that the stones sit at plain multiples of k, and see what the endpoints
+        become.
+    - text: >-
+        A stone at s + jk lies in [l, r] exactly when j lies in an interval of
+        its own. Count the whole numbers j that satisfy it, and remember that j
+        may not be negative.
+    - text: >-
+        Clamp the left endpoint up to s, then the answer is (r - s) / k minus
+        (l - 1 - s) / k, with both divisions rounding downwards and the whole
+        thing zero when r is below s.
+      reveals_pattern: true
+  why: >-
+    A progression is the same counting question after a shift, and the shift is
+    where the bugs live: the clamp at s (stones before it do not exist), the
+    l - 1 that keeps the left endpoint included, and the rounding, since after
+    the shift l - 1 - s can be negative even though every original endpoint was
+    positive.
+  classic_ref: counting an arithmetic progression inside an interval
+
+- id: mint-double-struck-coins
+  pattern: range-counting
+  title: Double-Struck Coins
+  difficulty: hard
+  statement: >-
+    A mint stamps every a-th blank with a crown and every b-th blank with a
+    crest, both counting from the first blank. Coins bearing exactly one of the
+    two marks are sold; coins bearing both are melted, and unmarked blanks are
+    returned. For each of several inclusive runs of blanks from l to r, report
+    how many coins are sold.
+  constraints: |
+    1 <= q <= 100000 runs
+    1 <= l <= r <= 10^18
+    1 <= a, b <= 10^9
+  signals_present:
+    - two divisibility properties combined, with the overlap treated differently from the union
+    - the endpoints reach 10^18, so the blanks cannot be visited
+    - the overlap of two divisibilities is divisibility by their least common multiple
+    - the answer is a count over an inclusive interval
+  decoy_signals:
+    - "\"exactly one of the two\" invites stamping a table of blanks and reading it off"
+    - two cycles interacting invites simulating the mint until the pattern repeats, which is a period of up to 10^18
+    - "\"how many are sold\" over a run reads like a table of running totals, which needs 10^18 cells"
+  expected_complexity: O(1) per run, plus one gcd
+  hints:
+    - text: >-
+        Count the crowns and count the crests over the run. Then ask what a
+        blank bearing both has contributed to that total so far.
+    - text: >-
+        A double-struck blank was counted twice. Removing it from the union
+        needs one subtraction; removing it from the answer altogether needs two,
+        because it must not be counted at all.
+    - text: >-
+        The answer is the count of multiples of a plus the count of multiples of
+        b minus twice the count of multiples of their least common multiple,
+        each taken over the interval by counting from the start twice.
+      reveals_pattern: true
+  why: >-
+    "Exactly one" is not the union, and the difference is a factor of two on the
+    overlap term: the union subtracts the double-struck blanks once, this
+    subtracts them twice. The least common multiple of two numbers up to 10^9
+    reaches 10^18, so it must be formed as a / gcd(a, b) * b — and if it exceeds
+    r there is no overlap at all, which is the case worth checking before
+    dividing by it.
+  classic_ref: symmetric difference by inclusion and exclusion; CPH 22.3 kin

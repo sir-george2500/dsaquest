@@ -1,0 +1,286 @@
+# Problems that are really The Row That Keeps Moving.
+#
+# None may name the pattern, and none may say "set", "multiset" or "balanced
+# tree" as an instruction. The recognition being trained is the pair of facts
+# that force a searchable structure: the row is EDITED between questions, and
+# what is removed is not always the extreme. `decoy_signals` records what makes
+# each one hard — usually that a heap or a plain sort would be enough if one
+# sentence of the statement were deleted.
+
+- id: berth-nearest-free
+  pattern: ordered-set
+  title: Harbour Berths
+  difficulty: easy
+  statement: >-
+    A harbour has berths numbered along the quay, and at the start of the day
+    m of them are free. Ships arrive one at a time; a ship that wants berth x
+    is put in the free berth whose number is nearest to x, ties going to the
+    smaller number, and that berth is then occupied for the rest of the day.
+    Report the berth given to each ship.
+  constraints: |
+    1 <= m <= 200000 free berths at the start
+    1 <= q <= 200000 arrivals
+    1 <= berth numbers, x <= 10^9
+    a ship always finds a berth; there are never more arrivals than free berths
+  signals_present:
+    - for each arrival, find the value already present that is nearest to it
+    - the collection shrinks between questions, and the removed element is not an extreme
+    - the answer is an element of the collection, not a count of them
+    - q up to 2*10^5 arrivals against 2*10^5 free berths
+  decoy_signals:
+    - a sorted list of berths and a value to locate reads like halving the range of a fixed array
+    - "\"nearest to x\" invites walking two pointers outwards from a position"
+    - berth numbers up to 10^9 with only 2*10^5 of them suggests compressing them onto an axis and counting
+  expected_complexity: O((m + q) log m)
+  hints:
+    - text: >-
+        Halving a fixed array is the right idea for the FIRST ship. Write down
+        what the array looks like after that ship has taken its berth.
+    - text: >-
+        Removing from the middle of a vector shifts everything after it, which
+        is O(m) per arrival. The search must still be logarithmic AFTER an
+        arbitrary element has been taken out.
+    - text: >-
+        Keep the free berths in a structure that supports insert, erase and
+        "the first element at least x" in a log factor, and check both that
+        element and the one before it.
+      reveals_pattern: true
+  why: >-
+    Two candidates, two guards, and one edit per query. The nearest value is
+    always either the first element at least x or the element immediately
+    before it, and both ends must be checked before dereferencing. What rules
+    out a plain sorted array is not the search but the removal: an arbitrary
+    element leaves the collection after every question.
+  classic_ref: CPH 4 "nearest element" idiom; CSES Room Allocation family
+
+- id: apothecary-stock-line
+  pattern: ordered-set
+  title: The Apothecary's Shelf
+  difficulty: easy
+  statement: >-
+    An apothecary keeps phials on a shelf, each labelled with a potency, and
+    several phials may share a potency. Through the day he processes q orders,
+    each either adding one phial of a given potency to the shelf or removing one
+    phial of a given potency from it. After every order he must state the
+    strongest potency currently on the shelf, or that the shelf is bare.
+  constraints: |
+    1 <= q <= 200000
+    1 <= potency <= 10^9
+    a removal never names a potency that is absent
+    potencies repeat freely
+  signals_present:
+    - values are inserted and removed while questions about the order are still being asked
+    - the same value may appear several times and the count of copies matters
+    - a named value must be removed, not the current extreme
+    - an answer is required after every one of 2*10^5 operations
+  decoy_signals:
+    - "\"state the strongest\" is the exact advertisement for a structure that shows one end"
+    - counting how many phials of each potency exist reads like tallying occurrences in a table
+    - potencies up to 10^9 with 2*10^5 operations invites compressing the values onto an axis
+  expected_complexity: O(q log q)
+  hints:
+    - text: >-
+        A structure that shows only its largest element handles every ADD and
+        every query here. Write down what it does with "remove one phial of
+        potency 5" when 5 is not the strongest.
+    - text: >-
+        The removal names a value, not a position and not an extreme. So the
+        structure has to be searchable — and it must survive three phials of
+        potency 5 with only one of them being taken.
+    - text: >-
+        Keep the potencies in a searchable ordered collection that permits
+        duplicates, and erase ONE copy by erasing the iterator that find returns.
+      reveals_pattern: true
+  why: >-
+    The removal is by value, so the top-only structure is out; the duplicates
+    mean erasing by value would take every copy at once, which is the single
+    most common silent wrong answer in this region. It is invisible on any test
+    with distinct potencies, and the sample almost always has distinct
+    potencies.
+  classic_ref: CPH 4 (multiset erase-one); CSES Sorted Set family
+
+- id: kennel-window-spread
+  pattern: ordered-set
+  title: Kennel Window
+  difficulty: medium
+  statement: >-
+    A kennel weighs its dogs every morning in a fixed order. For a fixed window
+    of w consecutive mornings, the keeper wants the difference between the
+    heaviest and the lightest weight recorded inside that window, for every
+    window position. Weights repeat. Report the difference for each window in
+    order.
+  constraints: |
+    1 <= w <= n <= 200000
+    1 <= weight[i] <= 10^9
+    weights repeat freely
+  signals_present:
+    - a window over the data must report two extremes at once while elements leave it
+    - the element that leaves is the oldest, not the largest or the smallest
+    - the same value may appear several times inside one window
+    - n up to 2*10^5 with a window of arbitrary width
+  decoy_signals:
+    - a fixed-width window sliding forward is the exact shape a monotonic deque was built for
+    - "\"heaviest minus lightest\" invites two independent passes with two running extremes"
+    - repeated weights invite counting occurrences rather than ordering them
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        A deque holding a monotone run answers one extreme in O(1) amortised.
+        You need two extremes of the SAME window at once — try writing both
+        deques and check what each discards.
+    - text: >-
+        Each deque throws away elements the other one still needs, so neither
+        can answer a question about the window as a whole. What you need is a
+        structure that holds every member of the window and shows both ends.
+    - text: >-
+        Hold the w current weights in a searchable ordered collection that
+        permits duplicates; on each step insert the arrival and erase ONE copy
+        of the departure, then read both ends.
+      reveals_pattern: true
+  why: >-
+    Two deques would each be correct alone and cannot be combined, because each
+    discards what the other needs. Holding the whole window costs a log factor
+    and buys both ends at once. The departure is the OLDEST element, so the
+    removal is arbitrary — and with weights repeating, it must remove exactly
+    one copy.
+  classic_ref: sliding window minimum and maximum together; CPH 8.3 contrast
+
+- id: quarantine-bands
+  pattern: ordered-set
+  title: Quarantine Bands
+  difficulty: hard
+  statement: >-
+    A magistrate seals stretches of road. Each order names a stretch [l, r] and
+    seals every mile in it; a new stretch that touches or overlaps an already
+    sealed one becomes a single continuous sealed stretch with it, and touching
+    at a single mile counts as overlapping. After each order the magistrate
+    wants the number of separate sealed stretches on the road. Report it after
+    every order.
+  constraints: |
+    1 <= q <= 200000
+    1 <= l <= r <= 10^9
+    the stretches arrive in no particular order and may repeat
+  signals_present:
+    - a collection of disjoint stretches is merged and probed as new stretches arrive
+    - the stretches consumed by a merge are erased from the middle of the collection
+    - the neighbours of a new stretch are the two candidates on either side of its left endpoint
+    - endpoints reach 10^9 while there are only 2*10^5 orders
+  decoy_signals:
+    - overlapping stretches to be merged is the standard advertisement for sorting them all and sweeping once
+    - "\"how many separate stretches\" reads like counting connected groups, which suggests a union-find"
+    - endpoints to 10^9 with few orders invites compressing them onto an axis and totalling a prefix
+  expected_complexity: O(q log q)
+  hints:
+    - text: >-
+        Sorting every order first and sweeping once answers the question at the
+        END. Read the last sentence again — the count is wanted after each
+        order, while later orders are still unknown.
+    - text: >-
+        Keep the sealed stretches disjoint at all times, keyed by where they
+        begin. A new stretch can only interact with the stretches immediately
+        around its own left endpoint, and with the ones it swallows entirely.
+    - text: >-
+        Keep the stretches in a searchable ordered collection keyed by left
+        endpoint; find the first stretch beginning at or after l, step back once
+        to check the one before it, and erase every stretch the merge absorbs.
+      reveals_pattern: true
+  why: >-
+    Online is the whole difficulty: an answer after every order forbids the
+    single sweep. Keyed by left endpoint, the only neighbours that can touch a
+    new stretch are the one at or after l and the one before it — the same two
+    candidates as a nearest-value query — and the absorbed stretches are erased
+    from the interior. Each stretch is inserted once and erased at most once, so
+    the total work stays O(q log q).
+  classic_ref: interval union maintained online; CSES Room Allocation kin
+
+- id: courier-slot-claim
+  pattern: ordered-set
+  title: Courier Slots
+  difficulty: medium
+  statement: >-
+    A courier house has slots numbered 1 to m, all free at dawn. Each request is
+    one of two kinds: a claim naming a preferred slot x, which takes the
+    smallest free slot with number at least x and reports it, or a release
+    naming a slot that is currently taken, which frees it again. A claim whose
+    preference cannot be met at all reports that it failed. Report the outcome
+    of every claim.
+  constraints: |
+    1 <= m <= 10^6
+    1 <= q <= 200000 requests
+    1 <= x <= m
+    a release always names a slot that is currently taken
+  signals_present:
+    - values are removed and reinserted while questions about the order continue
+    - the query asks for the smallest present value at least x
+    - the element removed by a claim is not an extreme of the collection
+    - m up to 10^6 with 2*10^5 requests, so a scan upwards from x is 2*10^11 steps
+  decoy_signals:
+    - "\"the smallest free slot at least x\" invites scanning upwards from x, which is instant on the sample"
+    - free and taken looks like a table of flags, which is a lookup rather than an ordering
+    - releases restoring earlier slots reads like an undo stack
+  expected_complexity: O((m + q) log m)
+  hints:
+    - text: >-
+        Scanning upwards from x is fine until a long block of slots is taken.
+        Construct the input where every claim scans most of the way to m.
+    - text: >-
+        The set of FREE slots is what the question is really about, and it both
+        shrinks (a claim) and grows again (a release) between queries.
+    - text: >-
+        Hold the free slot numbers in a searchable ordered collection; a claim
+        is the first element at least x, erased, and a release is an insertion.
+      reveals_pattern: true
+  why: >-
+    Track the free slots, not the taken ones, and the query becomes exactly "the
+    first element at least x". Both edits are arbitrary — a claim erases an
+    interior element and a release puts one back — so nothing built on a fixed
+    row survives, and the guard against end() is what distinguishes a failed
+    claim from undefined behaviour.
+  classic_ref: free-list allocation; the "first fit at or after x" idiom
+
+- id: bell-founders-tally
+  pattern: ordered-set
+  title: The Bell Founder's Tally
+  difficulty: medium
+  statement: >-
+    A bell founder casts bells one after another and records each bell's tone.
+    For every bell after the first, he wants the tone already cast that is
+    closest to it in pitch — that is, closest among all bells cast strictly
+    before it — and if two are equally close he takes the lower tone. Tones
+    repeat, and a repeated tone is distance zero from itself. Report the chosen
+    tone for each bell after the first.
+  constraints: |
+    1 <= n <= 200000
+    1 <= tone[i] <= 10^9
+    tones may repeat
+  signals_present:
+    - for each arrival, find the value already present that is nearest to it
+    - the collection grows between every two questions
+    - the answer is an element previously seen, not a count of them
+    - n up to 2*10^5, so comparing each bell with every earlier bell is 2*10^10 steps
+  decoy_signals:
+    - "\"among all bells cast before it\" reads like a running prefix answered by a single accumulator"
+    - a sorted list of the earlier tones with a value to locate invites halving a fixed array
+    - "\"closest in pitch\" invites two pointers over the tones after sorting everything at once"
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        Sorting all the tones first destroys the word "before" — a bell cast
+        later would become a candidate for one cast earlier. Whatever you build
+        has to grow in the order the bells are cast.
+    - text: >-
+        Suppose the earlier tones are held in order. The closest one is either
+        the first tone at least as high as this bell, or the one immediately
+        below it — exactly two candidates.
+    - text: >-
+        Walk the bells once, keeping the earlier tones in a searchable ordered
+        collection: check the first element at least x and the element before
+        it, guarding both ends, then insert x.
+      reveals_pattern: true
+  why: >-
+    "Among those cast before it" forbids the single sort — the collection must
+    grow in the order given while queries are answered against it. That is the
+    exact division of labour a searchable ordered structure exists for, and the
+    two candidates around the query value are the whole answer once it is in
+    place.
+  classic_ref: CPH 4 nearest-element code; CSES Nearest Smaller Values kin

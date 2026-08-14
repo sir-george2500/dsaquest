@@ -1,0 +1,259 @@
+# Problems that are really The Tails Array.
+#
+# The recognition being trained is one row, a fixed order, a monotone condition
+# on a subsequence of it, and a bound that kills the quadratic recurrence. The
+# statements must never say "increasing subsequence" as an instruction — the
+# whole point is noticing that the question IS one. `decoy_signals` records the
+# reading that a window or a sort would seem to answer.
+
+- id: watchtower-beacon-heights
+  pattern: lis-tails
+  title: The Beacon Line
+  difficulty: medium
+  statement: >-
+    A frontier has n watchtowers standing in a fixed line, the i-th of height
+    h[i]. The marshal wants to light a set of beacons such that, reading from
+    west to east, each lit tower is strictly taller than the previous lit one —
+    so that a rider heading east always sees the next fire above the last. The
+    lit towers need not be next to each other; any may be skipped. The towers
+    cannot be moved. Report the largest number of towers that can be lit.
+  constraints: |
+    1 <= n <= 200000
+    1 <= h[i] <= 10^9
+    the towers stand where they stand and may not be reordered
+  signals_present:
+    - the largest set obeying a monotone condition, with skipping explicitly allowed
+    - the order along the frontier is fixed and stated to be unchangeable
+    - "\"strictly taller\" is spelled out rather than left as \"taller\", which decides the answer on equal heights"
+    - n reaches 2 * 10^5, which rules out comparing every pair
+  decoy_signals:
+    - "\"each taller than the last\" reads like a run to be scanned with a counter"
+    - the heights invite sorting, which would make the condition free and the question meaningless
+    - a set chosen under a rule reads like a selection against a budget
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        Take the heights 6, 2, 5, 1, 7, 4, 8, 3. Count the longest run of
+        consecutive towers that rises — it is short. Now allow skipping and
+        find the best set by hand. It has four towers, and they are not
+        adjacent.
+    - text: >-
+        Ask, for each tower, how many beacons the best chain ENDING EXACTLY at
+        that tower contains. The word "exactly" is the whole definition; drop
+        it and no rule connects one tower to the next. That gives a correct
+        answer in n squared steps.
+    - text: >-
+        Keep one array whose k-th entry is the smallest height that can end a
+        chain of k+1 beacons so far. It is always sorted, so each new height
+        replaces the first entry not below it, or extends the array. Its LENGTH
+        is the answer; its contents are not a valid set of towers.
+      reveals_pattern: true
+  why: >-
+    A fixed order that may not be sorted, a monotone condition, and skipping
+    allowed: those three together are the signature. The bound is what decides
+    the method rather than the answer — the quadratic recurrence is correct and
+    is the right thing to write first, but 2 * 10^5 towers make it 4 * 10^10
+    comparisons, and the inner scan it spends that time on is a binary search
+    over an array that is already sorted.
+  classic_ref: CPH 7, longest increasing subsequence
+
+- id: log-drive-removals
+  pattern: lis-tails
+  title: The Log Drive
+  difficulty: medium
+  statement: >-
+    Logs are floated down a flume in a fixed order, the i-th of diameter d[i].
+    The mill downstream jams unless the diameters arriving never decrease, so a
+    log narrower than one already past is a jam. The foreman may pull logs out
+    of the flume and set them aside, but he may not reorder what remains and
+    may not add anything. Two logs of equal diameter pass safely together.
+    Report the fewest logs he must pull out.
+  constraints: |
+    1 <= n <= 200000
+    1 <= d[i] <= 10^9
+    the order in the flume is fixed
+    equal diameters are permitted to follow one another
+  signals_present:
+    - the fewest removals leaving the remainder obeying a monotone condition
+    - the order is fixed and may not be changed, only thinned
+    - equal values are explicitly declared safe, which is the non-strict reading
+    - n reaches 2 * 10^5
+  decoy_signals:
+    - "\"fewest removals\" invites a scan that drops each offending log as it is met, which is wrong"
+    - "\"never decrease\" sounds like a window condition to be maintained with two indices"
+    - the diameters invite sorting, which would trivially satisfy the condition and answer nothing
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        Take the diameters 1, 5, 2, 3, 4 and pull out each log narrower than
+        the last one you let through. That pulls the 2, the 3 and the 4 — three
+        logs. But pulling only the 5 leaves 1, 2, 3, 4, which never decreases.
+        The scan paid three where one was enough.
+    - text: >-
+        Every log you do not pull stays, in order. So minimising what is removed
+        is the same question as maximising what is kept, and what is kept must
+        never decrease.
+    - text: >-
+        Find the longest run of logs, in order and possibly with gaps, whose
+        diameters never decrease. The answer is n minus that. Because equal
+        diameters are allowed, the search that places each diameter must walk
+        PAST its equals rather than replacing them.
+      reveals_pattern: true
+  why: >-
+    "Fewest removed" and "most kept" are the same question, and what is kept is
+    a subsequence obeying a monotone condition — the same array, subtracted from
+    n. The sentence permitting equal diameters is not scenery: it selects the
+    non-strict reading, which changes the answer on any input with repeats and
+    on no input without them.
+  classic_ref: CPH 7 family; longest non-decreasing subsequence as a removal count
+
+- id: nesting-crates
+  pattern: lis-tails
+  title: The Nesting Crates
+  difficulty: medium
+  statement: >-
+    A shipwright has n crates, the i-th measuring w[i] by h[i]. One crate fits
+    inside another only if it is strictly narrower AND strictly shorter — a
+    crate equal in either measurement will not go in, and crates may not be
+    turned on their side. He wants the longest tower of crates each nested
+    inside the next. The crates are lying in the yard in no particular order
+    and may be arranged however he likes. Report the largest number of crates
+    that can be nested one inside another.
+  constraints: |
+    1 <= n <= 200000
+    1 <= w[i], h[i] <= 10^9
+    nesting requires both measurements to be strictly smaller
+    the crates may be considered in any order
+  signals_present:
+    - the longest chain of items each fitting strictly inside the next
+    - two measurements per crate, both of which must improve together
+    - the crates may be reordered, which makes one of the two measurements free
+    - n reaches 2 * 10^5, which rules out comparing every pair
+  decoy_signals:
+    - "the crates being reorderable invites ranking by area or by perimeter, and neither works"
+    - "\"strictly smaller in both\" reads like a pairwise conflict between crates"
+    - two numbers per crate suggests a ratio key derived by swapping two neighbours
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        Rank by area and nest greedily, on the crates 1 by 2, 2 by 1 and 3 by
+        2. Their areas are 2, 2 and 6, so the rule opens with the 1 by 2 — and
+        then nothing fits around it, because the 3 by 2 is no taller. One
+        crate. Yet the 2 by 1 sits inside the 3 by 2 for a tower of two. Area
+        is not an argument.
+    - text: >-
+        Sorting is allowed here, unlike most problems of this shape, and it buys
+        you exactly one of the two measurements. Put the crates in order of
+        width; now the width condition is satisfied by position alone, and only
+        the heights remain to be chosen.
+    - text: >-
+        Sort by width ascending, breaking ties by height DESCENDING so that two
+        crates of equal width can never both be chosen. Then find the longest
+        strictly increasing run of heights, with gaps allowed.
+      reveals_pattern: true
+  why: >-
+    Two conditions that must improve together become one condition after a sort,
+    because the sort discharges the first. The tie-break is the whole difficulty
+    and it is not decoration: ordering equal widths by DESCENDING height makes
+    it impossible for two crates of the same width to both appear in a strictly
+    increasing run of heights, which is exactly what the statement forbids.
+  classic_ref: CPH 7 family; the nested-boxes or envelopes chain
+
+- id: banner-pole-cuts
+  pattern: lis-tails
+  title: The Banner Poles
+  difficulty: hard
+  statement: >-
+    A herald receives n banners in a fixed order, the i-th of weight b[i]. He
+    hangs them on poles. A pole may carry any number of banners, but a banner
+    may only be hung below one that is at least as heavy, so the weights down
+    any single pole never increase. Each banner is hung as it arrives, on any
+    pole already standing or on a fresh one, and once hung it is never moved.
+    Report the fewest poles that can hold the whole delivery.
+  constraints: |
+    1 <= n <= 200000
+    1 <= b[i] <= 10^9
+    the banners arrive in a fixed order and are hung as they arrive
+    weights down a single pole must never increase
+  signals_present:
+    - the fewest groups the fixed row can be cut into, each group obeying a monotone condition
+    - the order of arrival is fixed and nothing may be moved once placed
+    - "\"at least as heavy\" makes the pole condition non-strict, which decides the pairing"
+    - n reaches 2 * 10^5
+  decoy_signals:
+    - "\"fewest groups covering everything\" reads like an interval or scheduling question"
+    - "hanging each banner on the first pole that accepts it looks like a rule needing a proof it does not have"
+    - the weights invite sorting, which the fixed arrival order forbids
+  expected_complexity: O(n log n)
+  hints:
+    - text: >-
+        Take the weights 5, 1, 4, 2, 3 and hang each banner on the pole whose
+        bottom banner is the lightest that still accepts it. Count the poles —
+        it is three. Now find any set of banners that must all be on DIFFERENT
+        poles, and see how large it can be.
+    - text: >-
+        Two banners must be on different poles exactly when the later one is
+        strictly heavier than the earlier one. So a set of banners rising
+        strictly in weight, in arrival order, forces one pole each — which is a
+        floor on the answer.
+    - text: >-
+        The fewest poles equals the largest number of banners that rise strictly
+        in weight in arrival order. Compute that with one sorted array holding
+        the smallest weight that can end a rising run of each length.
+      reveals_pattern: true
+  why: >-
+    The floor and the answer coincide, which is the whole content of the
+    problem: any set of banners rising strictly in weight needs a pole each, and
+    the natural placement rule never uses more poles than that. So a covering
+    question and a chain question turn out to be the same number, and the chain
+    is the one with a fast method.
+  classic_ref: CPH 7 family; patience sorting and Dilworth's theorem on a sequence
+
+- id: ledger-seal-chain
+  pattern: lis-tails
+  title: The Seal Chain
+  difficulty: easy
+  statement: >-
+    A guild ledger records n seals in the order they were pressed, the i-th
+    bearing rank r[i]. A herald wants to exhibit as many seals as he can, laid
+    out left to right in the order they were pressed, such that the ranks he
+    exhibits rise strictly from one to the next. He may leave out any seals he
+    likes but may never change the order of those he shows. The ledger is
+    short, so a straightforward method will do. Report the largest number of
+    seals he can exhibit.
+  constraints: |
+    1 <= n <= 3000
+    1 <= r[i] <= 10^9
+    the order in the ledger is fixed
+  signals_present:
+    - the largest set obeying a strictly rising condition, with omissions allowed
+    - the recorded order is fixed and may not be changed
+    - n is only 3000, so a method comparing every pair is explicitly affordable
+    - the statement notes that a straightforward method suffices
+  decoy_signals:
+    - "\"as many as he can\" with omissions allowed reads like a selection against a budget"
+    - the ranks invite sorting, which would make the condition free
+    - the small bound invites trying every subset, and 2^3000 ends that
+  expected_complexity: O(n^2)
+  hints:
+    - text: >-
+        Take the ranks 6, 2, 5, 1, 7, 4, 8, 3 and find the answer by hand. It
+        is four. Notice that the exhibited seals are spread across the ledger
+        rather than sitting together.
+    - text: >-
+        For each seal, ask how long the best rising exhibit ending EXACTLY at
+        that seal is. Every such exhibit's second-to-last seal is some earlier
+        seal of lower rank.
+    - text: >-
+        length[k] = 1 + the largest length[i] over every i before k with
+        r[i] < r[k], or 1 when no such i exists. The answer is the largest
+        entry anywhere in the array, not the last one.
+      reveals_pattern: true
+  why: >-
+    A fixed order, a monotone condition, and free omissions. The small bound is
+    deliberate: it makes the quadratic recurrence the intended solution, and
+    that recurrence is the thing worth writing first, because the fast method is
+    unreadable until you have seen what its inner scan replaced. Note where the
+    answer lives — the largest cell anywhere, since the best exhibit need not
+    end at the final seal.
+  classic_ref: CPH 7, longest increasing subsequence, the O(n^2) formulation

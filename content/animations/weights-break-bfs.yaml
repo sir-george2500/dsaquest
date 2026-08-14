@@ -1,0 +1,101 @@
+id: weights-break-bfs
+title: The path that was always there
+secret: weights-break-bfs
+pattern: dijkstra-weighted
+summary: >-
+  Four nodes, one shortcut. The queue finds a real path to node 4 in a single
+  edge and reports it without complaint. Then we price it.
+kind: array
+data: ["-", "-", "-", "-"]
+labels: ["1", "2", "3", "4"]
+idiom: "if (d > dist[u]) continue;"
+note: "edges  1-2 cost 1   2-3 cost 1   3-4 cost 1   1-4 cost 5"
+
+steps:
+  - say: >-
+      Four nodes in a line, each hop costing 1, plus one shortcut straight from
+      1 to 4 that costs 5. Node 1 is the source. Run an ordinary queue on it
+      first, exactly as you have been drilled.
+    set: {0: "0"}
+    mark: {0: "active"}
+    point: {u: 0}
+    note: "queue: [1]        counting EDGES"
+
+  - say: >-
+      Take node 1. Both of its neighbours are unseen, so both are one edge out:
+      node 2 along the cheap chain, and node 4 along the shortcut. The queue
+      does not look at the numbers on the edges. It has no place to put them.
+    set: {1: "1", 3: "1"}
+    mark: {0: "settled", 1: "in", 3: "in"}
+    note: "queue: [2, 4]     both one edge from the source"
+
+  - say: >-
+      And there it is. Node 4 is one edge from the source, the sweep is
+      finished for it, and that answer is completely correct — the shortcut
+      really is a single edge, and there really is no shorter chain of edges.
+    mark: {3: "answer"}
+    span: [3, 3]
+    note: "fewest edges to 4 = 1        this is TRUE"
+
+  - say: >-
+      Now price the route it handed you. The one edge it used is the shortcut,
+      and the shortcut costs 5. Nothing in the sweep noticed, because nothing
+      in the sweep was ever asked to.
+    set: {3: "5"}
+    mark: {3: "active"}
+    note: "cost of that route = 5       nobody asked for edges"
+
+  - say: >-
+      Start again, and this time keep the frontier ordered by COST rather than
+      by arrival. Node 1 is settled at 0. That is the only change, and it is
+      the whole of the next algorithm.
+    set: {1: "-", 2: "-", 3: "-"}
+    mark: {0: "active", 1: "plain", 2: "plain", 3: "plain"}
+    point: {u: 0}
+    span: null
+    note: "settled: {}       ordering by COST"
+
+  - say: >-
+      Relax the edges out of node 1. Node 2 is reachable for 1, node 4 for 5.
+      Both are on the frontier now, and the frontier is sorted by what they
+      cost, not by when they arrived.
+    set: {1: "1", 3: "5"}
+    mark: {0: "settled", 1: "in", 3: "in"}
+    note: "frontier: 2 at 1, 4 at 5"
+
+  - say: >-
+      The cheapest thing on the frontier is node 2, at 1. Settle it — with no
+      negative edges anywhere, nothing reached later can make it cheaper. Relax
+      onward: node 3 costs 2.
+    point: {u: 1}
+    set: {2: "2"}
+    mark: {1: "settled", 2: "in"}
+    note: "frontier: 3 at 2, 4 at 5"
+
+  - say: >-
+      Cheapest is now node 3, at 2. Settle it and relax its edge to node 4:
+      2 + 1 = 3, which beats the 5 already recorded there. The shortcut has
+      just been undercut by three cheap edges.
+    point: {u: 2}
+    set: {3: "3"}
+    mark: {2: "settled", 3: "in"}
+    note: "frontier: 4 at 3   (was 5)"
+
+  - say: >-
+      Settle node 4 at 3. Three edges, total cost 3, against one edge costing
+      5. More edges, less money — which is exactly the case a queue cannot see,
+      because a queue is counting the wrong thing.
+    point: {u: 3}
+    mark: {3: "answer"}
+    span: [3, 3]
+    note: "cost to 4 = 3, along THREE edges"
+
+  - say: >-
+      Look at what the first sweep did wrong. It did not crash, it did not
+      loop, it did not slow down, and it did not return an impossible number.
+      It returned a real path, of the wrong price, and said nothing. That is
+      the failure mode of this whole region, and the only defence is to find
+      the sentence that prices a move before you choose a container.
+    unpoint: [u]
+    mark: {0: "settled", 1: "settled", 2: "settled"}
+    note: "queue: 5.  heap: 3.  no error was ever reported."
