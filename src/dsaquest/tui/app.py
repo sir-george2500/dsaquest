@@ -60,6 +60,7 @@ from .card import (
     clip,
     quest_theme,
 )
+from .codex import CODEX_CSS, CodexScreen
 from .duel import DUEL_CSS, DuelScreen
 from .editor import code_editor
 from .journey import JOURNEY_CSS, JourneyScreen
@@ -121,6 +122,7 @@ Screen { background: $surface; }
 """
     + MASTER_CSS
     + JOURNEY_CSS
+    + CODEX_CSS
     + ARENA_CSS
     + DUEL_CSS
     + UNDERSTANDING_CSS
@@ -150,7 +152,8 @@ class HomeScreen(Screen):
         Binding("4", "review", "Review due"),
         Binding("5", "duel", "Duel"),
         Binding("6", "roster", "Roster"),
-        Binding("7", "strength", "Strength", show=False),
+        Binding("7", "codex", "Codex"),
+        Binding("8", "strength", "Strength", show=False),
         Binding("s", "story", "Story", show=False),
         Binding("p", "practice", "", show=False),
         Binding("r", "review", "", show=False),
@@ -353,6 +356,9 @@ class HomeScreen(Screen):
 
     def action_roster(self) -> None:
         self.app.push_screen(RosterScreen())
+
+    def action_codex(self) -> None:
+        self.app.push_screen(CodexScreen())
 
     def action_story(self) -> None:
         story = load_story()
