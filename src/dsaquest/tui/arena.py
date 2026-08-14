@@ -32,34 +32,83 @@ from ..game.understanding import grade_understanding, remark
 from ..learning.mastery import all_mastery
 from ..learning.par import format_duration
 from ..storage import repositories as repo
-from .card import accent_for
+from .card import (
+    BAD,
+    BODY,
+    FAINT,
+    FRAME,
+    GOLD,
+    GOOD,
+    INK,
+    MEASURE,
+    MUTE,
+    RULE,
+    SEALED,
+    accent_for,
+    clip,
+    gauge,
+)
 from .editor import code_editor
 from .master import safe
 from .stage import stage_text
 from .understanding import UnderstandingPanel
 
-ARENA_CSS = """
-#arena-title { padding: 1 2 0 2; text-style: bold; }
-#bars { padding: 0 2 1 2; height: auto; }
-#arena-mid { layout: horizontal; height: 18; padding: 0 1; }
-#arena-left, #arena-right { width: 30; height: 18; padding: 0 1; }
-.arena-panel { border: round #2b2822; padding: 0 1; height: 18; }
-.panel-head { color: #8a7f6d; text-style: bold; }
-#arena-stage { width: 1fr; height: 18; }
-#boss-say { padding: 1 2; margin: 0 2; border: round $error; height: auto; }
-#arena-clock { padding: 0 2; text-style: bold; }
-#arena-clock.urgent { color: $error; }
-#arena-body { padding: 1 2; margin: 1 2; border: round $primary; height: auto; }
-#arena-choices { padding: 0 2; height: auto; }
-#arena-choices Button { width: 100%; margin: 0 0 1 0; }
-#arena-verdict { padding: 1 2; margin: 1 2; border: round $success; height: auto; }
-#arena-verdict.lost { border: round $error; }
+#: The room needs a gutter. `#arena-mid` used to put the side panels flush
+#: against the stage, so the leftmost pillar was painted hard against the
+#: panel's own border — one continuous run of box-drawing and stone that read
+#: as a single broken widget rather than as a room seen between two dossiers.
+#:
+#: The panels also collapse below 100 columns. At 80 they took 60 of the 80
+#: available and left 20 for a stage whose minimum is 40, so the room
+#: overflowed its widget, was cropped, and the boss was painted off centre.
+#: A narrow terminal gets the room and drops the dossiers.
+ARENA_CSS = f"""
+#arena-title {{ padding: 1 2 0 2; text-style: bold; }}
+#bars {{ padding: 0 2 1 2; height: auto; }}
+#arena-mid {{ layout: horizontal; height: 18; padding: 0 2; }}
+#arena-left {{ width: 30; height: 18; padding: 0 1; margin: 0 2 0 0; }}
+#arena-right {{ width: 30; height: 18; padding: 0 1; margin: 0 0 0 2; }}
+.arena-panel {{ border: round {RULE}; padding: 0 1; height: 18; }}
+.panel-head {{ color: {MUTE}; text-style: bold; }}
+#arena-stage {{ width: 1fr; height: 18; }}
+/* A left bar, as on the master screen and on a warden card. Boxed, the
+   guardian's line cost six rows — two of border, two of padding, one of margin
+   and one of speech — which at eighty by twenty-four is a quarter of the
+   terminal spent framing one sentence. */
+/* A margin below as well as above. Without it the clock sat on the row under
+   the guardian's last word and read as part of what it was saying. */
+#boss-say {{
+    padding: 0 2; margin: 1 2; height: auto;
+    border-left: outer {FRAME}; max-width: {MEASURE + 6};
+}}
+#arena-clock {{ padding: 0 5; text-style: bold; }}
+#arena-clock.urgent {{ color: {BAD}; }}
+#arena-scroll {{ height: 1fr; scrollbar-gutter: stable; }}
+#arena-body {{
+    padding: 1 2; margin: 1 2; border: round {FRAME}; height: auto;
+    max-width: {MEASURE + 6};
+}}
+#arena-choices {{ padding: 0 5; height: auto; max-width: {MEASURE + 6}; }}
+
+#arena-verdict {{
+    padding: 1 2; margin: 1 2; border: round {GOOD}; height: auto;
+    max-width: {MEASURE + 6};
+}}
+#arena-verdict.lost {{ border: round {BAD}; }}
 """
 
 
-def _bar(current: int, total: int, width: int = 28) -> str:
-    filled = max(0, int(round(current / total * width))) if total else 0
-    return "█" * filled + "░" * (width - filled)
+#: A sentinel distinguishing "not looked for yet" from "looked for, absent" —
+#: eight of the twelve guardians have no sprite drawn, and `None` is a real
+#: answer for them that must not send us back to the filesystem every redraw.
+_UNLOADED = object()
+
+
+def _and_list(items) -> str:
+    items = list(items)
+    if len(items) < 2:
+        return "".join(items)
+    return f"{', '.join(items[:-1])} and {items[-1]}"
 
 
 class ArenaScreen(Screen):
@@ -85,6 +134,10 @@ class ArenaScreen(Screen):
         self._generation = 0
         self._ticker = None
         self.checking = False
+        #: What the room was last painted for, and the sprite it was painted
+        #: with. Both are caches; see ``refresh_portrait``.
+        self._stage_key: tuple[int, int, bool] | None = None
+        self._sprite = _UNLOADED
         self.pending_code: str | None = None
         self.check_answer = None
         self.check_verdict = None
@@ -101,9 +154,18 @@ class ArenaScreen(Screen):
                 yield Static(id="blows-panel")
         yield Static(id="boss-say")
         yield Static(id="arena-clock")
-        yield VerticalScroll(Static(id="arena-body"))
-        yield Vertical(id="arena-choices")
-        yield Static(id="arena-verdict")
+        # One scroll region for the question, the answer and the verdict. They
+        # used to be three siblings after a container that had already taken
+        # every remaining row: at eighty by twenty-four the screen overflowed,
+        # Textual scrolled it, and the fight opened with the boss's name, both
+        # health bars and the phase title *above the top of the terminal*. You
+        # could not see what you were fighting or how close it was to dying.
+        yield VerticalScroll(
+            Static(id="arena-body"),
+            Vertical(id="arena-choices"),
+            Static(id="arena-verdict"),
+            id="arena-scroll",
+        )
         yield Footer()
 
     # ---------------------------------------------------------------- setup
@@ -114,6 +176,7 @@ class ArenaScreen(Screen):
         self.query_one("#arena-clock", Static).display = False
         self.query_one("#arena-verdict", Static).display = False
 
+        self.fit_panels()
         self.refresh_bars()
 
         context = self.app.context
@@ -145,17 +208,28 @@ class ArenaScreen(Screen):
         )
 
     def show_gate(self, status) -> None:
-        self._blockers = ", ".join(status.blockers)
+        # The guardians' `gate_locked` lines are written as "Not yet.
+        # {blockers}", so what goes in has to read as a clause and not as a
+        # CSV. It still is not a sentence — see the note in the report — but
+        # "recognition, understanding and the master's final test" is at least
+        # English where "a, b, c, d, e" was not.
+        self._blockers = _and_list(status.blockers)
         self.say("gate_locked")
-        lines = ["[b]IT WILL NOT FIGHT YOU YET[/]", ""]
+        lines = [f"[b {INK}]IT WILL NOT FIGHT YOU YET[/]", ""]
+        # `describe()` already ends in its own ✓/✗, so the rows carry no second
+        # mark. They also carry no red: not having got there yet is not a
+        # failure, and five crimson lines read as one.
         for requirement in status.requirements:
-            colour = "green" if requirement.met else "red"
-            lines.append(f"  [{colour}]{safe(requirement.describe())}[/]")
+            lines.append(
+                f"  [{BODY if requirement.met else FAINT}]{safe(requirement.describe())}[/]"
+            )
         if status.final_test_needed:
-            mark = "✓" if status.final_test_passed else "✗"
-            colour = "green" if status.final_test_passed else "red"
-            lines.append(f"  [{colour}]{'master final test':<16}{'passed':>14}  {mark}[/]")
-        lines += ["", "[dim]escape — leave[/]"]
+            passed = status.final_test_passed
+            lines.append(
+                f"  [{BODY if passed else FAINT}]{'master final test':<20}"
+                f"{'passed':>10}  {'✓' if passed else '✗'}[/]"
+            )
+        lines += ["", f"[{FAINT}]escape — leave[/]"]
         self.query_one("#arena-body", Static).update("\n".join(lines))
         self.refresh_bars()
         self.phase = "locked"
@@ -182,75 +256,194 @@ class ArenaScreen(Screen):
         player_hp = fight.player_hp if fight else self.boss.player_hp
         width = max(20, self.size.width - 6)
 
-        filled = int(round(boss_hp / self.boss.boss_hp * width)) if self.boss.boss_hp else 0
+        # A bar the width of the terminal is a banner, not a gauge. Drawn full
+        # bleed in solid crimson it was by a wide margin the loudest thing in
+        # the arena — louder than the boss, louder than the question — and at
+        # full health that meant the screen opened on a hundred-and-fourteen
+        # cell block of red. Thirty-six cells is legible and stays a gauge.
+        # A third of the row, capped. Fixed at thirty-six it was forty-five per
+        # cent of an eighty column terminal, and a crimson slab that wide is the
+        # loudest thing on a screen whose loudest thing should be the boss.
+        gauge_w = max(16, min(36, width // 3))
+        share = boss_hp / self.boss.boss_hp if self.boss.boss_hp else 0.0
         accent = accent_for(self.boss.id)
-        enraged = "   [b red]ENRAGED[/]" if fight and fight.enraged else ""
+        enraged = f"   [b {BAD}]ENRAGED[/]" if fight and fight.enraged else ""
 
         # Name left, health right, on one line — the reference's arrangement,
         # and the two things you look at first.
         count = f"{boss_hp} / {self.boss.boss_hp}"
         gap = max(1, width - len(self.boss.name) - len(count))
         self.query_one("#arena-title", Static).update(
-            f"[b #ece5d6]{safe(self.boss.name)}[/]{' ' * gap}[#8a7f6d]{count}[/]{enraged}\n"
-            f"[{accent}]{safe(self.boss.title)}[/]   [dim]TIER {self.boss.tier.name}[/]"
+            f"[b {INK}]{safe(self.boss.name)}[/]{' ' * gap}[{MUTE}]{count}[/]{enraged}\n"
+            f"[{accent}]{safe(self.boss.title)}[/]   "
+            f"[{FAINT}]tier[/] [{MUTE}]{safe(self.boss.tier.name.title())}[/]"
         )
 
         blows = max(0, -(-player_hp // self.boss.damage_taken))
         total_blows = max(1, -(-self.boss.player_hp // self.boss.damage_taken))
         ticks = " ".join(
-            f"[{accent}]▬▬▬[/]" if i < blows else "[#3a352c]▬▬▬[/]" for i in range(total_blows)
+            f"[{accent}]▬▬▬[/]" if i < blows else f"[{SEALED}]▬▬▬[/]" for i in range(total_blows)
         )
+        # Both readouts on one line and both labelled. They used to be two
+        # unlabelled rows in two different visual languages — a solid bar for
+        # the boss, spaced ticks for you — with nothing saying which was which.
         self.query_one("#bars", Static).update(
-            f"[#c04a3a]{'█' * filled}[/][#2b2822]{'░' * (width - filled)}[/]\n{ticks}"
+            f"[{FAINT}]it[/]   {gauge(share, gauge_w, BAD)}    [{FAINT}]you[/]  {ticks}"
         )
         self.refresh_portrait()
+
+    #: Below this the dossiers are dropped and the whole width goes to the room.
+    #: Two 30-column panels out of 80 leave 20 for a stage whose minimum width
+    #: is 40: the room overflowed its own widget, was cropped on both sides,
+    #: and the pillars — placed relative to a width the widget did not have —
+    #: marched through the middle where the boss stands.
+    #: Two thirty-column dossiers, four columns of margin and four of padding
+    #: cost sixty-eight. A hundred left thirty-two for a room whose minimum
+    #: width is forty, so `stage_text` painted a forty-column room into a
+    #: thirty-two column widget: the pillars, placed relative to a width the
+    #: widget did not have, were cropped, and the boss — centred in the room
+    #: rather than in the widget — came out as a sliver of shoulder against a
+    #: torn wall. The room needs forty-four of its own before the panels get
+    #: any, so the panels wait until a hundred and twelve.
+    PANELS_NEED = 112
+
+    #: And below this many rows the room goes entirely. A fourteen-row room is
+    #: the smallest that holds a twelve-row sprite with floor under its feet and
+    #: wall above its head; under thirty-two rows of terminal, fourteen for the
+    #: room leaves nothing for the question.
+    STAGE_NEEDS = 32
 
     def on_resize(self, event) -> None:
         """The stage is painted to the widget's size, so it must be repainted."""
+        self.fit_panels()
         self.refresh_portrait()
 
+    def fit_panels(self) -> None:
+        """Give the room what is left over, not a fixed eighteen rows.
+
+        Eighteen rows out of twenty-four is three quarters of a short terminal
+        spent on scenery, with the question you are being asked pushed off the
+        bottom. The room is the occasion; it is not the fight.
+
+        """
+        room = self.size.width >= self.PANELS_NEED
+        for side in ("#arena-left", "#arena-right"):
+            self.query_one(side).display = room
+
+        # Below this the room goes entirely. Twenty-two rows of terminal cannot
+        # hold a title, two gauges, a room, the guardian speaking, a clock and a
+        # question: squeezed to eight rows the room cropped the boss at the
+        # mouth and still left one row for the question, so the fight opened on
+        # a picture of half a face and nothing to answer.
+        self.query_one("#arena-mid").display = self.size.height >= self.STAGE_NEEDS
+
+        height = max(14, min(18, self.size.height - 20))
+        self.query_one("#arena-mid").styles.height = height
+        for widget in ("#arena-left", "#arena-right", "#arena-stage"):
+            self.query_one(widget).styles.height = height
+
     def refresh_portrait(self) -> None:
-        """The room, with the boss standing in it."""
+        """The room, with the boss standing in it.
+
+        Painted only when what it depends on has changed. The room is a full
+        text buffer — measured at 3.9 ms to build plus 3.8 ms to render for a
+        120x18 stage, and 5.9 plus 7.3 at 160x32, after the run-merging in
+        ``stage._to_text``; before it, 20.6 plus 31.1 and 31.2 plus 49.0 — and
+        ``refresh_bars`` calls this on every answer, every phase change and
+        every resize event, so it was repainting an identical picture several
+        times a second and re-reading the sprite off disk each time. Nothing on
+        this screen changes the room except its size and whether the torches
+        are lit.
+        """
         from ..tui.roster import sprite_for
 
         stage = self.query_one("#arena-stage", Static)
-        path = sprite_for(self.boss.id)
-        sprite = load_sprite(path) if path.is_file() else None
         size = stage.size
         beaten = self.fight is not None and self.fight.boss_hp <= 0
-        stage.update(
-            stage_text(
-                sprite,
-                width=max(40, size.width or 60),
-                height=max(16, size.height or 18),
-                lit=not beaten,
-            )
-        )
+        width = max(40, size.width or 60)
+        height = max(16, size.height or 18)
+        key = (width, height, not beaten)
+        if key == self._stage_key:
+            self.refresh_panels()
+            return
+        self._stage_key = key
+
+        if self._sprite is _UNLOADED:
+            path = sprite_for(self.boss.id)
+            self._sprite = load_sprite(path) if path.is_file() else None
+        stage.update(stage_text(self._sprite, width=width, height=height, lit=not beaten))
         self.refresh_panels()
 
     def refresh_panels(self) -> None:
-        """The two side panels: what is being asked, and what has landed."""
+        """The two side panels: the whole trial, and what has landed.
+
+        Both used to hold three lines in an eighteen-row box — "THE TRIAL", a
+        phase title and "phase 1 of 4" on the left; on the right, the single
+        sentence "The ring is drawn; no blow has landed." Two thirds of each
+        panel stood empty on the most theatrical screen in the game.
+
+        The left one now shows every phase at once, marked with what happened to
+        it, which is the question a player actually has mid-fight: how much of
+        this is left. The right keeps the scroll of blows and gains the
+        guardian's dossier under it — tier, health, what a miss costs, and your
+        own record against it. Every value is already in content or the save
+        file; none of it is invented to fill the box.
+
+        The colours here were five raw hex literals — ``#8a7f6d``, ``#ece5d6``,
+        ``#a89e8d``, ``#6b6459``, ``#c04a3a`` — which are MUTE, INK, BODY, FAINT
+        and BAD spelled out. They are the palette's names now, so a change to
+        the palette reaches this screen like every other.
+        """
         accent = accent_for(self.boss.id)
         challenge = self.fight.current if self.fight else None
+        outcomes = list(self.fight.outcomes) if self.fight else []
+        cleared_by_number = {o.challenge.number: o.cleared for o in outcomes}
+        width = max(20, self.query_one("#arena-left").content_size.width or 26)
 
-        trial = ["[#8a7f6d]THE TRIAL[/]", ""]
+        trial = [f"[b {MUTE}]THE TRIAL[/]", ""]
+        for number, phase in enumerate(self.boss.phases, start=1):
+            here = challenge is not None and challenge.number == number
+            done = cleared_by_number.get(number)
+            if done is True:
+                mark, style = f"[{GOOD}]✓[/]", BODY
+            elif done is False:
+                mark, style = f"[{BAD}]✗[/]", FAINT
+            elif here:
+                mark, style = f"[{accent}]▸[/]", INK
+            else:
+                mark, style = f"[{SEALED}]·[/]", SEALED
+            trial.append(
+                f"{mark} [{'b ' if here else ''}{style}]{safe(clip(phase.title, width - 2))}[/]"
+            )
+            trial.append(f"  [{FAINT if here else SEALED}]{safe(phase.kind.label)}[/]")
+            trial.append("")
         if challenge is not None:
-            trial.append(f"[b #ece5d6]{safe(challenge.phase.title)}[/]")
-            trial.append("")
-            trial.append(f"[#a89e8d]{safe(challenge.phase.kind.label)}[/]")
-            trial.append("")
-            trial.append(f"[#6b6459]phase[/]   {challenge.number} of {challenge.total}")
-        else:
-            trial.append(f"[#a89e8d]{safe(self.boss.title)}[/]")
+            trial.append(f"[{FAINT}]phase {challenge.number} of {challenge.total}[/]")
         self.query_one("#trial-panel", Static).update("\n".join(trial))
 
-        blows = ["[#8a7f6d]SCROLL OF BLOWS[/]", ""]
-        outcomes = list(self.fight.outcomes) if self.fight else []
+        blows = [f"[b {MUTE}]SCROLL OF BLOWS[/]", ""]
         if not outcomes:
-            blows.append("[#6b6459]The ring is drawn; no blow has landed.[/]")
-        for outcome in outcomes[-6:]:
-            mark = f"[{accent}]landed[/]" if outcome.cleared else "[#c04a3a]taken[/]"
-            blows.append(f"{mark}  [#a89e8d]{safe(outcome.challenge.phase.title)}[/]")
+            blows.append(f"[{SEALED}]The ring is drawn;[/]")
+            blows.append(f"[{SEALED}]no blow has landed.[/]")
+        for outcome in outcomes[-4:]:
+            mark = f"[{GOOD}]landed[/]" if outcome.cleared else f"[{BAD}]taken[/]"
+            blows.append(
+                f"{mark}  [{BODY}]{safe(clip(outcome.challenge.phase.title, width - 8))}[/]"
+            )
+
+        record = repo.get_boss_record(self.app.context.conn, self.boss.id)
+        rows = (
+            ("TIER", self.boss.tier.name.title()),
+            ("HEALTH", str(self.boss.boss_hp)),
+            ("A MISS", f"-{self.boss.damage_taken}"),
+            ("FOUGHT", str(record.attempts) if record.attempts else "never"),
+            ("BEST", (record.best_grade or "—").upper()),
+        )
+        label = max(len(name) for name, _ in rows)
+        blows += ["", f"[b {MUTE}]THE GUARDIAN[/]", ""]
+        for name, value in rows:
+            gap = max(1, width - label - len(value))
+            blows.append(f"[{FAINT}]{name:<{label}}[/]{' ' * gap}[{BODY}]{value}[/]")
         self.query_one("#blows-panel", Static).update("\n".join(blows))
 
     def next_phase(self) -> None:
@@ -271,7 +464,7 @@ class ArenaScreen(Screen):
         head = (
             f"[b]PHASE {challenge.number}/{challenge.total}[/]   "
             f"[dim]{challenge.phase.kind.label}[/]\n"
-            f"[b yellow]{safe(challenge.phase.title)}[/]\n\n"
+            f"[b $warning]{safe(challenge.phase.title)}[/]\n\n"
         )
 
         if challenge.kind in (PhaseKind.RECOGNISE, PhaseKind.SURVIVE):
@@ -295,7 +488,7 @@ class ArenaScreen(Screen):
             assert challenge.recall is not None
             self.query_one("#arena-body", Static).update(
                 head
-                + f"[b cyan]{safe(challenge.recall.pattern.name)}[/]\n\n"
+                + f"[b $secondary]{safe(challenge.recall.pattern.name)}[/]\n\n"
                 + "State it from memory: the signals that reveal it, the invariant\n"
                 + "that makes it correct, and what it costs.\n\n"
                 + "[dim]ctrl+s to commit[/]"
@@ -344,7 +537,12 @@ class ArenaScreen(Screen):
             return
         clock = self.query_one("#arena-clock", Static)
         clock.set_class(remaining <= 30_000, "urgent")
-        clock.update(f"{format_duration(remaining)}  {challenge.budget.bar(elapsed)}")
+        # The game's one bar, not `Budget.bar`'s ``░`` hatch — see the note on
+        # ``MasterScreen._clock_bar``.
+        used = challenge.budget.fraction_used(elapsed)
+        clock.update(
+            f"{format_duration(remaining)}  {gauge(used, 24, BAD if used >= 0.75 else GOLD)}"
+        )
         if challenge.budget.expired(elapsed):
             self.answer(None)
 
@@ -401,7 +599,7 @@ class ArenaScreen(Screen):
             context.library[self.fight.current.pattern_id], event.answer
         )
         self.query_one("#arena-choices", Vertical).remove_children()
-        self.query_one("#arena-clock", Static).update("[yellow]Compiling and running…[/]")
+        self.query_one("#arena-clock", Static).update("[$warning]Compiling and running…[/]")
         self.judge_strike(self.pending_code or "")
 
     @work(thread=True)
@@ -434,9 +632,9 @@ class ArenaScreen(Screen):
         panel = self.query_one("#arena-verdict", Static)
         panel.set_class(not outcome.cleared, "lost")
         lines = [
-            f"[b green]-{outcome.challenge.phase.damage} to the beast[/]"
+            f"[b $success]-{outcome.challenge.phase.damage} to the beast[/]"
             if outcome.cleared
-            else f"[b red]-{self.boss.damage_taken} to you[/]"
+            else f"[b $error]-{self.boss.damage_taken} to you[/]"
         ]
         if outcome.timed_out:
             lines.append("[dim]the clock ran out[/]")
@@ -445,7 +643,7 @@ class ArenaScreen(Screen):
         if self.check_verdict is not None:
             lines += ["", self.record_understanding(outcome)]
         if was_enraged and self.fight.failures == self.boss.enrage_after:
-            lines += ["", "[b red]IT IS ENRAGED[/]  [dim]no hints; everything is doubled[/]"]
+            lines += ["", "[b $error]IT IS ENRAGED[/]  [dim]no hints; everything is doubled[/]"]
         lines += ["", "[dim]space — continue[/]"]
         panel.update("\n".join(lines))
         panel.display = True
@@ -508,9 +706,9 @@ class ArenaScreen(Screen):
         self.refresh_bars()
 
         if verdict.won:
-            head = f"[b green]DEFEATED[/]   [b]{(verdict.grade or '').upper()}[/]"
+            head = f"[b $success]DEFEATED[/]   [b]{(verdict.grade or '').upper()}[/]"
         else:
-            head = "[b red]IT STANDS[/]"
+            head = "[b $error]IT STANDS[/]"
 
         lines = [
             head,

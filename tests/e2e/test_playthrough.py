@@ -34,6 +34,7 @@ from dsaquest.learning import apply_review
 from dsaquest.storage import repositories as repo
 from dsaquest.tui.app import DsaQuestApp, HomeScreen
 from dsaquest.tui.arena import ArenaScreen
+from dsaquest.tui.card import BAD as BAD_RED
 from dsaquest.tui.journey import JourneyScreen
 from dsaquest.tui.master import MasterScreen
 
@@ -253,10 +254,12 @@ async def _open_the_arena_from_the_map(app, pilot, boss_id: str):
     await pilot.pause()
     assert isinstance(app.screen, JourneyScreen)
 
-    button = next(
-        b for b in app.screen.query(Button) if (b.id or "").startswith(f"boss-{boss_id}-")
-    )
-    assert boss_id.replace("-", " ") or True
+    # The id is exactly `boss-<boss-id>` now. It used to carry a generation
+    # suffix because the journey map tore its whole list down and rebuilt it on
+    # every refresh, so ids were handed out afresh each time and could collide
+    # with the ones Textual had not finished unmounting. The list is built once
+    # and updated in place, so there is no generation to match past.
+    button = next(b for b in app.screen.query(Button) if b.id == f"boss-{boss_id}")
     button.press()
     await pilot.pause()
     assert isinstance(app.screen, ArenaScreen)
@@ -544,7 +547,21 @@ def test_a_boss_fight_won(context):
             assert "0 / 100" in _flat(screen, "#arena-title"), (
                 "clearing every phase must empty its health"
             )
-            assert "█" not in _flat(screen, "#bars"), "an emptied bar has no filled cells"
+            # An emptied bar has no cells in the damage colour. Asserted on the
+            # *style*, not on the glyph: every bar in the game now draws its
+            # unlit track as a full block in a near-background grey rather than
+            # as `▁`, because a baseline rule reads as an underscore — at nought
+            # per cent the home screen showed two long horizontal lines and
+            # nothing that could be taken for a gauge. Filled and unlit cells
+            # therefore share a glyph and differ only in colour, so "no `█`
+            # anywhere" no longer distinguishes an empty bar from a full one.
+            bars = screen.query_one("#bars", Static).visual
+            lit = {
+                str(span.style) for span in bars.spans if "█" in bars.plain[span.start : span.end]
+            }
+            assert not any(BAD_RED in style for style in lit), (
+                f"an emptied bar has no cells in the damage colour: {lit}"
+            )
 
             verdict = _flat(screen, "#arena-verdict")
             assert "DEFEATED" in verdict
