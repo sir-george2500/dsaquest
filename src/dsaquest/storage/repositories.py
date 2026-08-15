@@ -757,6 +757,30 @@ def drill_kinds_passed(conn: sqlite3.Connection, master_id: str, secret_id: str)
     return frozenset(r["kind"] for r in rows)
 
 
+def drill_failure_streak(conn: sqlite3.Connection, master_id: str, secret_id: str) -> int:
+    """How many drills in a row the student has just got wrong on this secret.
+
+    Counted from the most recent attempt backwards and reset by any correct
+    answer, because what a master needs to know is whether the student is stuck
+    *now*. A total failure count would keep a bad afternoon on the record for
+    ever and go on simplifying a lesson the student has since got right.
+    """
+    rows = conn.execute(
+        """
+        SELECT correct FROM drill_attempt
+         WHERE master_id = ? AND secret_id = ?
+         ORDER BY id DESC LIMIT 10
+        """,
+        (master_id, secret_id),
+    ).fetchall()
+    streak = 0
+    for row in rows:
+        if row["correct"]:
+            break
+        streak += 1
+    return streak
+
+
 def drills_answered(conn: sqlite3.Connection, master_id: str, secret_id: str) -> frozenset[str]:
     rows = conn.execute(
         "SELECT DISTINCT drill_id FROM drill_attempt WHERE master_id = ? AND secret_id = ?",

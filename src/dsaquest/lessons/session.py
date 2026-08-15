@@ -119,6 +119,7 @@ def deal(
         answered=repo.drills_answered(conn, master_id, secret_id),
         kinds_passed=repo.drill_kinds_passed(conn, master_id, secret_id),
         seed=seed,
+        failure_streak=repo.drill_failure_streak(conn, master_id, secret_id),
     )
 
 

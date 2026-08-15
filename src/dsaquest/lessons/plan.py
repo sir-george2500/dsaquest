@@ -123,6 +123,27 @@ def assess(secret: Secret, progress: SecretProgress, kinds_passed: frozenset[str
     return DrillVerdict(fluent=False, exhausted=False, remaining_estimate=remaining, reason=reason)
 
 
+#: Consecutive wrong answers on one secret before the master stops pressing and
+#: goes back a step. Two, not one: a single slip is a slip, and a master who
+#: retreats at the first wrong answer teaches the student that being wrong is an
+#: emergency. Three is too many — by then the student has decided they are the
+#: problem.
+SIMPLIFY_AFTER = 2
+
+
+def simpler_than(kind: DrillKind) -> frozenset[DrillKind]:
+    """The kinds a master would fall back to from ``kind``.
+
+    ``opening_kind_order`` is already a ladder from mechanical to demanding, so
+    "simpler" is "earlier in the order the master teaches in" — there is no
+    second notion of difficulty to invent.
+    """
+    order = opening_kind_order()
+    if kind not in order:
+        return frozenset()
+    return frozenset(order[: order.index(kind)])
+
+
 def next_drill(
     secret: Secret,
     progress: SecretProgress,
@@ -130,6 +151,7 @@ def next_drill(
     answered: frozenset[str],
     kinds_passed: frozenset[str],
     seed: int,
+    failure_streak: int = 0,
 ) -> Drill | None:
     """Choose the next drill, or ``None`` when the secret has nothing left.
 
@@ -141,6 +163,14 @@ def next_drill(
     3. **A seen drill of a kind not yet passed.** They failed this kind; the
        repeat is the point.
     4. **Anything.** Repetition for a student who has run out of new drills.
+
+    **Unless the student is stuck.** After ``SIMPLIFY_AFTER`` wrong answers in a
+    row the order above is exactly the wrong thing to do: it keeps handing them
+    the hardest kind they have not passed, which is the kind they are currently
+    failing. A student who cannot yet name what an idiom reveals is not helped
+    by being asked to write it from memory; they are helped by computing it once
+    on real numbers. So the ladder is walked back down, and only if there is
+    nothing simpler left does the usual order apply.
     """
     pool = list(secret.drills)
     if not pool:
@@ -148,12 +178,25 @@ def next_drill(
 
     missing_kinds = {k for k in secret.drill_kinds if k.value not in kinds_passed}
 
-    tiers = (
+    tiers: tuple[list[Drill], ...] = (
         [d for d in pool if d.id not in answered and d.kind in missing_kinds],
         [d for d in pool if d.id not in answered],
         [d for d in pool if d.kind in missing_kinds],
         pool,
     )
+
+    if failure_streak >= SIMPLIFY_AFTER:
+        # The hardest kind they still owe is the one defeating them; anything
+        # below it on the ladder is a step back rather than the same wall again.
+        order = opening_kind_order()
+        stuck_at = max(missing_kinds, key=order.index, default=None)
+        if stuck_at is not None:
+            easier = simpler_than(stuck_at)
+            fallback = [
+                [d for d in pool if d.kind in easier and d.id not in answered],
+                [d for d in pool if d.kind in easier],
+            ]
+            tiers = (*fallback, *tiers)
 
     rng = Random(seed)
     for tier in tiers:
