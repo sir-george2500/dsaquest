@@ -22,6 +22,7 @@ from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Input, Static
 
 from ..art.sprite import load_sprite, sprite_text
+from ..codex import read_student
 from ..content.lessons import CurriculumSet
 from ..domain.lesson import Drill, Stage
 from ..learning.par import format_duration
@@ -72,6 +73,20 @@ def safe(text: str) -> str:
     this is the only variant with zero failures.
     """
     return text.replace("[", r"\[")
+
+
+def _quoted(line: str) -> str:
+    """Put a line in quotation marks, unless the author already did.
+
+    The dialogue pools are written bare and the lore's diagnosis lines are
+    written with their own quotes around them, because in the Codex they are
+    set as a quotation on their own. Wrapping unconditionally printed
+    ``""Stop. You can write all four of these...""``.
+    """
+    text = safe(line.strip())
+    if text.startswith('"') and text.endswith('"'):
+        return text
+    return f'"{text}"'
 
 
 def hang(text: str, indent: int, width: int = MEASURE) -> str:
@@ -174,6 +189,9 @@ class MasterScreen(Screen):
         self.exam: ft.FinalTest | None = None
         self._ticker = None
         self.phase = "greet"
+        #: What the master noticed about the player on this visit. Shown
+        #: under whatever they are saying until the player starts work.
+        self._note = ""
         self.started = datetime.now(UTC)
         self.drills_done = 0
 
@@ -239,6 +257,11 @@ class MasterScreen(Screen):
         self.query_one("#say").styles.border_left = ("outer", accent_for(self.master.id))
 
         conn = self.app.context.conn
+        # The greeting, then what they have noticed since you were last
+        # here. Arrival is the moment a mentor says it; interrupting a
+        # drill to deliver a verdict would be the same words at the worst
+        # possible time.
+        self._note = self.diagnosis()
         self.say(greet(conn, self.master, seed=self._seed()))
         self.stage = current_stage(conn, self.curriculum)
         self.fit_head()
@@ -317,7 +340,41 @@ class MasterScreen(Screen):
         return int(datetime.now(UTC).timestamp() * 1000) % 2**31
 
     def say(self, line: str) -> None:
-        self.query_one("#say", Static).update(f'[i]"{safe(line)}"[/]')
+        """What the master says, plus anything they noticed on your way in.
+
+        The remark rides along rather than being said once and lost. Mounting
+        greets the player and then immediately opens the first lesson, which
+        says something else — so a diagnosis delivered only in the greeting was
+        overwritten before a single frame was drawn, and the whole feature was
+        invisible while every test of the engine underneath it passed.
+
+        It is set as speech, with a blank line for the beat. A second panel, or
+        a heading over it, would turn a remark into an interface element and
+        lose the only thing that makes it land: that the person teaching you
+        said it.
+        """
+        said = [_quoted(line)]
+        if self._note:
+            # The remark comes first: the master stops you at the door with what
+            # they have noticed, and only then begins the lesson. After the
+            # lesson line it reads as an afterthought about what was just said.
+            said.insert(0, _quoted(self._note))
+        self.query_one("#say", Static).update("\n\n".join(f"[i]{s}[/]" for s in said))
+
+    def start_work(self) -> None:
+        """The player has begun. The remark has been read; stop repeating it."""
+        self._note = ""
+
+    def diagnosis(self) -> str:
+        """What this master can see in the player that the player cannot.
+
+        Empty most visits, and that is the point. It is gated on six recorded
+        attempts and on one dimension standing clear of the others, so a master
+        who remarks on your work has actually got something — and one who
+        remarks every single time is wallpaper.
+        """
+        reading = read_student(self.app.context, self.master.id, seed=self._seed())
+        return reading.line if reading else ""
 
     def refresh_track(self) -> None:
         """Seven pips and the one idiom you are on — not seven idioms.
@@ -506,6 +563,7 @@ class MasterScreen(Screen):
             self.answer(event.value)
 
     def action_pick(self, index: int) -> None:
+        self.start_work()
         if self.phase == "exam" and self.exam and self.exam.current:
             if index < len(self.exam.current.round.options):
                 self.answer_exam(index)
@@ -562,6 +620,7 @@ class MasterScreen(Screen):
     # ---------------------------------------------------------------- flow
 
     def action_advance(self) -> None:
+        self.start_work()
         if self.phase == "teach" or self.phase == "feedback":
             self.show_drill()
         elif self.phase in ("fluent", "trial_done"):

@@ -428,3 +428,48 @@ def test_moving_between_masters_changes_the_page(context):
             assert str(screen.query_one("#codex-name", Static).visual) != first
 
     _run(journey())
+
+
+# ------------------------------------------------ the master says it out loud
+
+
+def test_the_master_speaks_the_diagnosis_when_they_have_one(context):
+    """The engine is only worth having if the person teaching you says it."""
+    from dsaquest.tui.master import MasterScreen
+
+    pattern_id = context.curricula[ARRAYS].patterns[0]
+    _drill(context, pattern_id, GameMode.COMPLETE, times=8, correct=True)
+    _drill(context, pattern_id, GameMode.RECALL, times=6, correct=True)
+    _drill(context, pattern_id, GameMode.HUNTER, times=8, correct=False)
+    reading = read_student(context, ARRAYS)
+    assert reading is not None
+
+    async def journey():
+        app = DsaQuestApp(context)
+        app.pending_screen = MasterScreen(context.masters[ARRAYS], context.curricula, seed=7)
+        async with app.run_test(size=(120, 40)) as pilot:
+            await pilot.pause()
+            await asyncio.sleep(0.2)
+            await pilot.pause()
+            said = str(app.screen.query_one("#say", Static).visual)
+            assert reading.line[:40] in said, "the master kept the diagnosis to themselves"
+
+    _run(journey())
+
+
+def test_a_master_with_nothing_to_say_does_not_invent_something(context):
+    """Silence is the honest answer, and it is what makes the remark land."""
+    from dsaquest.tui.master import MasterScreen
+
+    async def journey():
+        app = DsaQuestApp(context)
+        app.pending_screen = MasterScreen(context.masters[ARRAYS], context.curricula, seed=7)
+        async with app.run_test(size=(120, 40)) as pilot:
+            await pilot.pause()
+            await asyncio.sleep(0.2)
+            await pilot.pause()
+            said = str(app.screen.query_one("#say", Static).visual)
+            for line in load_lore()[ARRAYS].diagnosis.get("recognition", ()):
+                assert line[:40] not in said
+
+    _run(journey())
