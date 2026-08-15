@@ -28,30 +28,48 @@ write one. One "mastery" number hides that. Three cards don't.
 
 ## Status
 
-**Phase 1 (MVP) complete and playable.** 283 tests.
+**Playable end to end.** 1238 tests.
 
 - [x] Domain model
 - [x] Sandboxed C++ judge — cgroups + bubblewrap + rlimits, ~9 ms overhead
-- [x] Content: 6 patterns, 23 problems, 18 cloze holes
+- [x] Content: 39 patterns, 189 problems, 41 templates, 9 concept animations
 - [x] SQLite storage + migrations
 - [x] FSRS-6 scheduling and the mastery model
 - [x] Game engine: XP, levels, streaks, unlocks, achievements
-- [x] Mode A (Pattern Hunter) and Mode C (Code Completion)
-- [x] Textual TUI + CLI
-- [x] nvim workspace handoff
+- [x] All five modes — Hunter, Recall, Completion, Duel, Boss Fight
+- [x] 11 masters with full curricula, 12 guardians including the Elite Coder
+- [x] Story mode: a prologue, 11 chapters, and a journey that always knows
+      what comes next
+- [x] The Codex — each master's biography, school, legend and failure,
+      opening as you earn your way in
+- [x] Masters who diagnose *which* of the three dimensions is holding you
+      back, in their own voice
+- [x] Textual TUI + CLI, nvim workspace handoff
 
-Next: Modes B (Pattern Recall), D (Duel) and E (Boss Fight); the remaining
-27 patterns; live-reload watch mode.
+- [x] Masters who go back a step when you are stuck, rather than pressing the
+      same drill you keep failing
 
-### The six MVP patterns
+Known gap: 14 more problems would let every trial and final test draw something
+you have not already seen. Until then a trial may reuse a problem you have met.
 
-Chosen as the most *confusable* cluster rather than the easiest — mixing these
-up is the exact failure this app exists to fix.
+### The eleven regions
+
+Ordered for teaching, not by difficulty. The clusters are chosen to be
+*confusable* — mixing them up is the exact failure this app exists to fix.
 
 ```
-World 1   Hashing & Frequency · Prefix Sums & Difference Arrays
-          Two Pointers · Sliding Window
-World 2   Binary Search on Sorted Data · Binary Search on the Answer
+I    The Warrior Awakens     Elder Vhast          constraints and estimation
+II   The Straight Line       Warden Ilsa Korrin   arrays, prefix sums, windows
+III  The Halving             Adjudicator Kol      binary search, on data and answer
+IV   The Unlit               Grandmaster Ragine   bitmasks and subset DP
+V    The Standing Record     Keeper Maelin Vore   heaps, ordered sets, Fenwick, segment trees
+VI   The One Swap            Strategist Dovan Rhe greedy and exchange arguments
+VII  The Unrooted            Sage Orenna Thal     trees, diameters, binary lifting
+VIII The Second Reading      Scribe Halvern Ash   strings, hashing, tries, Manacher
+IX   The Long Way Round      Warlord Grune        graphs, BFS/DFS, Dijkstra, toposort
+X    The Last Safe Number    Oracle Cassiun       modular arithmetic, sieves, gcd
+XI   The Kept Answer         Archivist Solvane    dynamic programming
+XII  The True Secret         THE ELITE CODER      everything, unlabelled
 ```
 
 ## Requirements
@@ -96,15 +114,59 @@ uv venv && uv pip install -e ".[dev]"
 Note this one does **not** put `dsa` on your `PATH` — it lives at
 `.venv/bin/dsa` and only works inside the project directory.
 
-## Run
+## Play
 
 ```bash
-dsa              # interactive
-dsa practice     # a session picked by the scheduler
-dsa review       # only what's due
+dsa
+```
+
+That is the whole of it. The first run opens the prologue, asks your name, and
+puts you on the road; every run after that resumes exactly where you stopped.
+
+The home screen always leads with **one** action — *Continue Journey* — and it
+is always the right one. Take it and the game decides whether you are meeting a
+master, training under them, sitting a trial, facing their guardian, or walking
+into the next region. You never have to work out what to do next.
+
+| Key | |
+|---|---|
+| `enter` or `1` | Continue Journey — the only thing you need |
+| `2` | The road: every chapter, its master and its guardian |
+| `3` | Training grounds — free practice |
+| `4` | Review what is due |
+| `5` | Pattern Duel — two statements that want to be confused |
+| `6` | Roster — the character cards |
+| `7` | Codex — who the masters are, as you earn it |
+| `q` | Quit. Progress is saved continuously; there is no save command |
+
+Inside a lesson, `w` plays the concept animation for the idea being taught —
+the same idea, moving, before anyone asks you to reproduce it.
+
+Other entry points, if you want to skip the story and drill:
+
+```bash
+dsa practice     # a session the scheduler picked
+dsa review       # only what is due today
 dsa stats        # progress and weakest patterns
 dsa pattern sliding-window
+dsa doctor       # check the sandbox and toolchain
 ```
+
+### Make it look right
+
+The art is half-block pixel work, so it wants a font with square-ish cells and
+no ligature surprises. Monaspace Xenon is what it was drawn against:
+
+```bash
+yay -S ttf-monaspace          # Arch (AUR)
+```
+
+Then set your terminal font to **Monaspace Xenon**. Anything monospaced works;
+this one is what the portraits were tuned for.
+
+A terminal of at least **100×34** gets the full layout — portraits, the arena
+floor, the side dossiers. Below that the game drops the art rather than
+cropping it, and stays fully playable down to 80×24.
 
 ## Documentation
 
@@ -134,11 +196,16 @@ Note: OpenSSL also ships a `dsa(1ssl)` page. `make install-man` indexes ours so
 ## Test
 
 ```bash
-pytest                    # everything
-pytest -m "not slow"      # skip the ones that compile C++
+pytest                    # everything — about an hour, 514 of these compile C++
+pytest -m "not slow"      # the other 722, about fifteen minutes
+pytest tests/e2e          # the game driven through its real screens
 pytest tests/security     # sandbox escape attempts
-make test-fast            # same, skipping the C++ compilation tests
 ```
+
+The suite leans on **end-to-end** tests: they drive the real Textual screens
+against a real database and a real C++ judge, because that is where the bugs
+actually were. A unit test would not have caught a boss whose explain phase was
+unanswerable, or a portrait whose bottom border was cropped on every master.
 
 ## Architecture
 
